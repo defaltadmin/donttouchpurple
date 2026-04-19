@@ -32,12 +32,12 @@
  * ================================================================
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── Firebase (modular npm SDK) ──────────────────────────────────
 import { initializeApp, getApps } from "firebase/app";
 import {
-  getFirestore, collection, addDoc, getDocs,
+  getFirestore, collection, addDoc, getDocs, doc, setDoc,
   query, orderBy, limit, serverTimestamp
 } from "firebase/firestore";
 
@@ -65,33 +65,7 @@ export function getDB(): any {
   }
 }
 
-function fbColName(mode: "classic" | "evolve"): string {
-  return mode === "classic" ? "lb_classic" : "lb_evolve";
-}
 
-async function fbAddScore(mode: "classic" | "evolve", entry: {score: number, initials: string, date: string}): Promise<void> {
-  const db = getDB();
-  if (!db) return; // silent fail as requested in submitScore but here just for safety
-  await addDoc(collection(db, mode === "classic" ? "lb_classic" : "lb_evolve"), {
-    ...entry,
-    ts: serverTimestamp(),
-  });
-}
-
-async function fbFetchTop10(mode: "classic" | "evolve"): Promise<any[]> {
-  const db = getDB();
-  if (!db) throw new Error("no db");
-  const q = query(collection(db, mode === "classic" ? "lb_classic" : "lb_evolve"), orderBy("score", "desc"), limit(10));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => {
-    const data = d.data();
-    return {
-      score:    data.score    ?? 0,
-      initials: data.initials ?? "???",
-      date:     data.date     ?? "",
-    };
-  });
-}
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -124,10 +98,9 @@ async function fbFetchTop20Global(): Promise<any[]> {
 async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = getDB();
   if (!db) return;
-  const colRef = collection(db, "dust_wallet");
-  const q = query(colRef, orderBy("name"), limit(50));
-  // We just add/update a document keyed by name (upsert-ish via addDoc — acceptable for a hobby game)
-  await addDoc(colRef, { name, dust, ts: serverTimestamp() });
+  // Use setDoc with a stable doc ID (sanitized player name) so we upsert instead of accumulate
+  const docRef = doc(db, "dust_wallet", name.toLowerCase().replace(/\s+/g, "_"));
+  await setDoc(docRef, { name, dust, ts: serverTimestamp() }, { merge: true });
 }
 
 async function fbCheckWeeklyBonus(name: string): Promise<number> {
@@ -291,7 +264,7 @@ type Screen          = "menu" | "howto" | "leaderboard" | "keybind" | "playing" 
 type NumPlayers      = 1 | 2;
 type Winner          = "p1" | "p2" | "tie" | null;
 type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
-type CellSize        = "sm" | "md" | "lg";
+
 
 interface ActiveCell {
   idx: number;
@@ -300,6 +273,7 @@ interface ActiveCell {
   iceCount?: number;      // for ice blocks: taps remaining
   holdStart?: number;     // for hold blocks: timestamp when hold started
   holdRequired?: number;  // ms needed to hold
+  _holding?: boolean;     // true while pointer is held down on a hold cell
 }
 
 interface PlayerState {
@@ -354,8 +328,7 @@ function getSpinConfig(level: number, gameSeed: number): { duration: number; dir
   return { duration, direction };
 }
 
-interface LeaderboardEntry       { score: number; date: string; initials: string; }
-interface LeaderboardEntryGlobal { score: number; date: string; initials: string; }
+interface LeaderboardEntry { score: number; date: string; initials: string; }
 
 // ─── End-screen messages ─────────────────────────────────────────
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
@@ -456,20 +429,6 @@ const DEFAULT_P1_KEYS = ["1","2","3","4","q","w","e","r","a","s","d","f","z","x"
 // P2: Row1: 7 8 9 0 | Row2: u i o p | Row3: j k l ; | Row4: m , . /
 const DEFAULT_P2_KEYS = ["7","8","9","0","u","i","o","p","j","k","l",";","m",",",".","/"];
 
-// Item 3: Key mapping for keyboard mode. 
-// For a 16-key base (1234, qwer, asdf, zxcv), we pick which keys represent which grid cell.
-function getKeyForCell(player: 1|2, cellIdx: number, stage: number, keys: string[]): string {
-  const { cols } = STAGES[stage];
-  // We want to map the grid (row, col) to our 4x4 key physical layout.
-  const row = Math.floor(cellIdx / cols);
-  const col = cellIdx % cols;
-  
-  // For 3x3 (stage 2), user wants 123, qwe, asd. 
-  // This means grid row 0 -> keys 0,1,2; grid row 1 -> keys 4,5,6; grid row 2 -> keys 8,9,10
-  // General formula for mapping grid to 4x4 physical: keys[row * 4 + col]
-  const keyIdx = row * 4 + col;
-  return keys[keyIdx] || "";
-}
 
 function toLabel(k: string) {
   if (!k) return "?";
@@ -838,7 +797,7 @@ function Cell({ type, animState, keyLabel, showKey, pressing, onTap, onHoldStart
               {holdPct > 0 ? "⬤" : "HOLD"}
             </span>
           </span>
-          {holdPct > 0 && <span className="hold-progress" style={{width:holdPct+"%"}} />}
+          {holdPct > 0 && <span className="hold-progress"><span className="hold-progress-fill" style={{width:holdPct+"%"}} /></span>}
         </span>
       )}
       {/* Symbol */}
@@ -1211,40 +1170,6 @@ function getNextRegenMs(): number {
   return remaining;
 }
 
-// ─── NEW: Energy Bar component ────────────────────────────────────
-function EnergyBar({ energy, nextRegenMs, onRefill, dust }: {
-  energy: number; nextRegenMs: number; onRefill: () => void; dust: number;
-}) {
-  const [timer, setTimer] = useState(nextRegenMs);
-  useEffect(() => {
-    if (energy >= MAX_ENERGY) return;
-    const id = setInterval(() => setTimer(getNextRegenMs()), 1000);
-    return () => clearInterval(id);
-  }, [energy]);
-
-  const mins = Math.floor(timer / 60000);
-  const secs = Math.floor((timer % 60000) / 1000);
-
-  return (
-    <div className="energy-bar-wrap">
-      <div className="energy-pips">
-        {Array.from({length: MAX_ENERGY}, (_,i) => (
-          <span key={i} className={`energy-pip${i < energy ? " energy-pip--full" : ""}`}>⚡</span>
-        ))}
-      </div>
-      {energy < MAX_ENERGY && (
-        <div className="energy-regen-row">
-          <span className="energy-timer">+1 in {mins}:{String(secs).padStart(2,"0")}</span>
-          {dust >= DUST_PER_ENERGY && (
-            <button className="energy-refill-btn" onClick={onRefill}>
-              💜 {DUST_PER_ENERGY} → +1
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── NEW: Shop ─────────────────────────────────────────────────────
 function loadShopData(): {unlockedThemes:string[];equippedTheme:string} {
@@ -1701,13 +1626,6 @@ function cbFilterStyle(mode: ColorblindMode): string {
   return "";
 }
 
-// ─── Cell size CSS var values ─────────────────────────────────────
-// Item 7
-const CELL_SIZE_VALUES: Record<CellSize, string> = {
-  sm: "clamp(54px, 14vw, 66px)",
-  md: "clamp(68px, 18vw, 88px)",
-  lg: "clamp(82px, 22vw, 108px)",
-};
 
 // ─── Main App ─────────────────────────────────────────────────────
 // ─── Error codes registry ─────────────────────────────────────────
@@ -1907,6 +1825,42 @@ export class ErrorBoundary extends React.Component<{children: React.ReactNode}, 
     }
     return this.props.children;
   }
+}
+
+// ─── SwitchModal — must be outside App to avoid identity change on every render ──
+function SwitchModal({ playerName, onSave, onClose }: {
+  playerName: string | null;
+  onSave: (name: string) => void;
+  onClose: () => void;
+}) {
+  const [val, setVal] = useState(playerName || "");
+  const save = () => {
+    const safe = sanitizeName(val.trim()) || "Player";
+    try { localStorage.setItem(LS_PLAYER_NAME, safe); } catch {}
+    onSave(safe);
+  };
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="glass-panel" onClick={e => e.stopPropagation()}>
+        <h2 style={{fontFamily:"var(--font-game)",fontSize:20,marginBottom:4,color:"var(--text)"}}>Switch Player</h2>
+        <p style={{fontSize:12,color:"var(--muted)",fontFamily:"var(--font-ui)",marginBottom:16}}>Enter a name for this device's player</p>
+        <input
+          className="go-input"
+          maxLength={8}
+          placeholder="Name (8 chars)"
+          autoFocus
+          value={val}
+          style={{width:"100%",marginBottom:14}}
+          onChange={e => setVal(e.target.value.replace(/[^a-zA-Z0-9_ ]/g,"").slice(0,8))}
+          onKeyDown={e => e.key === "Enter" && save()}
+        />
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn-ghost" style={{flex:1}} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{flex:1,padding:"10px"}} onClick={save}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────
@@ -2171,22 +2125,10 @@ export default function App() {
     cell.clicked = true;
     const dmg = isEvolve ? 0.5 : 1;
 
-    if (cell.type === dangerColor || (cell.type === "purple" && dangerColor !== "purple")) {
-      if (ref.current.shieldCount > 0) {
-        ref.current.shieldCount -= 1; ref.current.shield = ref.current.shieldCount > 0;
-        playSound("ok"); addAnim(ref, set, idx, "pop");
-      } else {
-        ref.current.health = Math.max(0, ref.current.health - dmg);
-        ref.current.shield = false; ref.current.streak = 0;
-        playSound("bad"); addAnim(ref, set, idx, "shake");
-        heartAnim(player); triggerShake(player);
-        if (ref.current.health <= 0) {
-          ref.current.alive = false;
-          const other = npRef.current === 2 ? (player===1 ? p2Ref.current.alive : p1Ref.current.alive) : false;
-          gameOver(npRef.current === 1 ? null : other ? (player===1?"p2":"p1") : "tie");
-        }
-      }
-    } else if (cell.type === "purple") {
+    // dangerColor is "purple" by default, or another color in rare mode.
+    // A cell is dangerous if it matches the current danger color OR is purple while danger is something else.
+    const isDanger = cell.type === dangerColor || (cell.type === "purple" && dangerColor !== "purple");
+    if (isDanger) {
       if (ref.current.shieldCount > 0) {
         ref.current.shieldCount -= 1; ref.current.shield = ref.current.shieldCount > 0;
         playSound("ok"); addAnim(ref, set, idx, "pop");
@@ -2233,7 +2175,7 @@ export default function App() {
     const cell = ref.current.active.find(c => c.idx === idx && c.type === "hold" && !c.clicked);
     if (!cell) return;
     cell.holdStart = Date.now();
-    (cell as any)._holding = true;
+    cell._holding = true;
     set({...ref.current});
   }, []);
 
@@ -2249,7 +2191,7 @@ export default function App() {
       : { cols:3, rows:3, mask:null as number[]|null };
     const elapsed = Date.now() - cell.holdStart;
     if (elapsed >= cell.holdRequired) {
-      cell.clicked = true; (cell as any)._holding = false;
+      cell.clicked = true; cell._holding = false;
       addAnim(ref, set, idx, "pop"); playSound("powerup");
       const mult = Date.now() < ref.current.multiplierEnd ? 2 : 1;
       ref.current.score += mult * 2; ref.current.streak += 1; ref.current.stageProgress += 1;
@@ -2306,7 +2248,7 @@ export default function App() {
       ref.current.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold"].includes(c.type);
-        const isBeingHeld = (c as any)._holding === true;
+        const isBeingHeld = c._holding === true;
         if (c.type !== dangerColor && c.type !== "purple" && !isPwr && !isBeingHeld) {
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (ref.current.shieldCount > 0) {
@@ -2340,7 +2282,8 @@ export default function App() {
     tickRef.current += 1;
     setEvolveTick(eTick);
 
-    if (tickRef.current > 60 && tickRef.current % 20 === 0) {
+    // Guard: gameOver() may have been called inside the forEach above; don't award bonus post-death
+    if (screenRef.current === "playing" && tickRef.current > 60 && tickRef.current % 20 === 0) {
       if (p1Ref.current.alive) p1Ref.current.score += 2;
       if (npRef.current === 2 && p2Ref.current.alive) p2Ref.current.score += 2;
       toast$("🔥 Survival +2!");
@@ -2694,40 +2637,13 @@ export default function App() {
                 </div>
               </div>
 
-              {showSwitchPlayer && (() => {
-                const SwitchModal = () => {
-                  const [val, setVal] = useState(playerName || "");
-                  const save = () => {
-                    const safe = sanitizeName(val.trim()) || "Player";
-                    try { localStorage.setItem(LS_PLAYER_NAME, safe); } catch {}
-                    setPlayerName(safe);
-                    setShowSwitchPlayer(false);
-                  };
-                  return (
-                    <div className="overlay" onClick={() => setShowSwitchPlayer(false)}>
-                      <div className="glass-panel" onClick={e => e.stopPropagation()}>
-                        <h2 style={{fontFamily:"var(--font-game)",fontSize:20,marginBottom:4,color:"var(--text)"}}>Switch Player</h2>
-                        <p style={{fontSize:12,color:"var(--muted)",fontFamily:"var(--font-ui)",marginBottom:16}}>Enter a name for this device's player</p>
-                        <input
-                          className="go-input"
-                          maxLength={8}
-                          placeholder="Name (8 chars)"
-                          autoFocus
-                          value={val}
-                          style={{width:"100%",marginBottom:14}}
-                          onChange={e => setVal(e.target.value.replace(/[^a-zA-Z0-9_ ]/g,"").slice(0,8))}
-                          onKeyDown={e => e.key === "Enter" && save()}
-                        />
-                        <div style={{display:"flex",gap:8}}>
-                          <button className="btn-ghost" style={{flex:1}} onClick={() => setShowSwitchPlayer(false)}>Cancel</button>
-                          <button className="btn-primary" style={{flex:1,padding:"10px"}} onClick={save}>Save</button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                };
-                return <SwitchModal />;
-              })()}
+              {showSwitchPlayer && (
+                <SwitchModal
+                  playerName={playerName}
+                  onSave={name => { setPlayerName(name); setShowSwitchPlayer(false); }}
+                  onClose={() => setShowSwitchPlayer(false)}
+                />
+              )}
 
               <div className="menu-header">
                 <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
@@ -3714,12 +3630,12 @@ body {
 .hold-btn-pressed .hold-btn-inner { font-size: 12px; color: #fff; }
 .hold-progress {
   position: absolute; bottom: 5px; left: 6px; right: 6px; height: 3px; border-radius: 99px;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.25); overflow: hidden;
 }
-.hold-progress::after {
-  content: ''; position: absolute; inset: 0; border-radius: 99px;
+.hold-progress-fill {
+  display: block; height: 100%; border-radius: 99px;
   background: linear-gradient(90deg, #ff6b6b, #fff);
-  width: inherit; transition: width 0.05s linear;
+  transition: width 0.05s linear;
 }
 
 /* ── Stage badge (removed per item 14, but kept for potential future use) ── */
@@ -4035,8 +3951,10 @@ body {
   .root--2p .game-area { gap: 24px; }
 }
 
-/* ── Screen transitions ── */
-* { transition: background-color 0.4s ease, border-color 0.3s ease, color 0.3s ease; }
+/* ── Screen transitions — scoped to UI panels only, not game cells ── */
+.menu-card, .hud-card, .lb-row, .how-row, .btn-ghost, .btn-primary, .opt-btn, .pill-opt, .drawer-panel, .pause-card {
+  transition: background-color 0.4s ease, border-color 0.3s ease, color 0.3s ease;
+}
 .root, .menu-card, .hud-card, .gpanel, .ppanel { transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); }
 
 /* ── Loading screen ── */
