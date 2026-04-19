@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# 1. Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. Handle React Routing (SPA)
+# This ensures that if you refresh the page on a sub-route, it doesn't 404
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
