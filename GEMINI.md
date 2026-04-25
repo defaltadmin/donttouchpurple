@@ -13,7 +13,8 @@ High-intensity avoid-em-up game built with React, TypeScript, and Vite. Uses Fir
 1. **The Sonnet Bridge:** 
    - User often brings logic/UI code from Sonnet (web).
    - CLI Agent must apply these changes surgically.
-   - Always verify imports and type safety after applying Sonnet code.
+   - **Verification:** After applying changes, Gemini MUST run `pnpm build` or `npx tsc` to check for type errors.
+   - **Branching:** For complex changes, Gemini should create a temporary branch (e.g., `git checkout -b feature/sonnet-patch`) before applying.
 2. **Git First:** 
    - Every feature or fix must be committed with a clear message.
    - To update Sonnet, use `git diff` to provide context.
