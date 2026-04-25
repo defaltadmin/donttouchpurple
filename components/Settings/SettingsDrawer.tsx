@@ -15,6 +15,7 @@ interface SettingsDrawerProps {
   onClose: () => void;
   onNameChange?: () => void;
   playerName?: string;
+  onOpenBuildDeploy?: () => void;
 }
 
 export function SettingsDrawer({
@@ -29,6 +30,7 @@ export function SettingsDrawer({
   onClose,
   onNameChange,
   playerName,
+  onOpenBuildDeploy,
 }: SettingsDrawerProps) {
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -89,6 +91,22 @@ export function SettingsDrawer({
               onClick={() => { onClose(); setTimeout(onNameChange, 150); }}
             >
               ✏️ Change Name
+            </button>
+          </div>
+        )}
+
+        {onOpenBuildDeploy && (
+          <div className="opt-section">
+            <div className="opt-label">🔧 Balance & Deploy</div>
+            <button
+              className="btn-ghost"
+              style={{ width: "100%", textAlign: "center" }}
+              onClick={() => {
+                onClose();
+                setTimeout(onOpenBuildDeploy!, 150);
+              }}
+            >
+              ⚙ Tune Difficulty Constants
             </button>
           </div>
         )}

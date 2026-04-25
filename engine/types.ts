@@ -87,6 +87,7 @@ export interface GameSnapshot {
     rows: number;
     mask: number[] | null;
   };
+  devRotationSpeed?: number;
   spinCfg: { duration: number; direction: 1 | -1 } | null;
 }
 

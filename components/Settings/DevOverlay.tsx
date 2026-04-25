@@ -25,6 +25,12 @@ interface DevOverlayProps {
   onDustAdd: (amount: number) => void;
   onSpawnPowerup: (type: "shield" | "freeze" | "heart") => void;
   gameSeed: number;
+  autoPlay:          boolean;
+  onAutoPlayToggle:  () => void;
+  heatmap:           Record<number, number>;
+  onResetHeatmap:    () => void;
+  gridCols:          number;
+  gridRows:          number;
 }
 
 const SPARKLINE_CAP = 30;
@@ -44,11 +50,11 @@ function Sparkline({ data }: { data: number[] }) {
   );
 }
 
-function Section({ title, icon, children, defaultOpen = true }: { title: string; icon: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function Section({ title, icon, children, defaultOpen = true, help }: { title: string; icon: string; children: React.ReactNode; defaultOpen?: boolean; help?: string }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="devs-section">
-      <button className="devs-section-hdr" onClick={() => setOpen(o => !o)}>
+      <button className="devs-section-hdr" onClick={() => setOpen(o => !o)} title={help}>
         <span>{icon} {title}</span>
         <span style={{ opacity: 0.5 }}>{open ? "▲" : "▼"}</span>
       </button>
@@ -102,10 +108,45 @@ function Slider({ label, min, max, step, value, onChange, format, help }: {
   );
 }
 
+function HeatmapGrid({ heatmap, cols, rows }: { heatmap: Record<number, number>; cols: number; rows: number }) {
+  const total = cols * rows;
+  const vals = Object.values(heatmap);
+  const max = vals.length ? Math.max(...vals, 1) : 1;
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: `repeat(${cols}, 1fr)`,
+      gap: 3,
+      marginTop: 4,
+    }}>
+      {Array.from({ length: total }, (_, i) => {
+        const count = heatmap[i] ?? 0;
+        const alpha = count === 0 ? 0.08 : 0.15 + (count / max) * 0.85;
+        return (
+          <div key={i} title={`Cell ${i}: ${count} taps`} style={{
+            background: `rgba(192, 38, 211, ${alpha})`,
+            borderRadius: 3,
+            aspectRatio: "1",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 8,
+            fontFamily: "monospace",
+            color: "rgba(255,255,255,0.7)",
+          }}>
+            {count > 0 ? count : ""}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function DevOverlay({
   p1, p2, tick, gameMode, numPlayers, rareMode, cellShape, paused, screen, onClose,
   godMode, onGodModeToggle, speedMult, onSpeedMult, rotationSpeed, onRotationSpeed,
   freezeTime, onFreezeTimeToggle, dust, onDustAdd, onSpawnPowerup, gameSeed,
+  autoPlay, onAutoPlayToggle, heatmap, onResetHeatmap, gridCols, gridRows,
 }: DevOverlayProps) {
   const [tickMs, setTickMs] = useState<number[]>([]);
   const lastTickRef = useRef(Date.now());
@@ -208,6 +249,8 @@ export function DevOverlay({
             help="All hits are ignored. Health won't drop." />
           <Toggle label="Freeze Time — no speed scaling" active={freezeTime} onToggle={onFreezeTimeToggle}
             help="Difficulty scaler is paused. Speed stays constant." />
+          <Toggle label="Auto-Play — bot taps safe cells" active={autoPlay} onToggle={onAutoPlayToggle}
+            help="Automatically taps all non-purple active cells every 120ms. God Mode recommended." />
           <div className="devs-divider" />
           <div className="devs-sublabel">DUST INJECTOR</div>
           <div className="devs-btn-row">
@@ -222,6 +265,14 @@ export function DevOverlay({
               help="Force a Shield powerup to appear on next tick spawn" />
             <Btn label="♥ Medpack" onClick={() => onSpawnPowerup("heart")}
               help="Force a Medpack to appear on next tick spawn" />
+          </div>
+        </Section>
+
+        <Section title="Tap Heatmap" icon="🔥" defaultOpen={false}>
+          <div className="devs-sublabel">Tap count per cell (this session)</div>
+          <HeatmapGrid heatmap={heatmap} cols={gridCols} rows={gridRows} />
+          <div style={{ marginTop: 6 }}>
+            <Btn label="Reset Heatmap" onClick={onResetHeatmap} help="Clear all tap counts" />
           </div>
         </Section>
 

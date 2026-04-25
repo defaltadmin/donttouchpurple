@@ -32,6 +32,7 @@ import { KeyBinder } from "./components/Settings/KeyBinder";
 import { ShopPanel } from "./components/Shop/ShopPanel";
 import { LeaderboardPanel } from "./components/Leaderboard/LeaderboardPanel";
 import { DevOverlay, DevUnlockModal, DevFab } from "./components/Settings/DevOverlay";
+import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 
 // Services
 import {
@@ -189,6 +190,9 @@ export default function App() {
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
   const [devRotationSpeed, setDevRotationSpeed] = useState(1);
+  const [devAutoPlay, setDevAutoPlay] = useState(false);
+  const [devHeatmap, setDevHeatmap]   = useState<Record<number, number>>({});
+  const [showBuildDeploy, setShowBuildDeploy] = useState(false);
 
   const [p1Keys, setP1Keys] = useState(() => loadKeys(LS_KEYS.P1_KEYS, DEFAULT_P1_KEYS));
   const [p2Keys, setP2Keys] = useState(() => loadKeys(LS_KEYS.P2_KEYS, DEFAULT_P2_KEYS));
@@ -270,6 +274,25 @@ export default function App() {
   useEffect(() => { devSetGodMode(godMode); }, [godMode, devSetGodMode]);
   useEffect(() => { devSetFreezeTime(devFreezeTime); }, [devFreezeTime, devSetFreezeTime]);
   useEffect(() => { devSetRotationSpeed(devRotationSpeed); }, [devRotationSpeed, devSetRotationSpeed]);
+
+  useEffect(() => {
+    if (!devAutoPlay || !snapshot || snapshot.phase !== "playing") return;
+    const id = setInterval(() => {
+      snapshot.p1.active.forEach(cell => {
+        if (cell.type !== "purple") {
+          handleTap(1, cell.idx);
+        }
+      });
+      if (numPlayers === 2 && snapshot.p2) {
+        snapshot.p2.active.forEach(cell => {
+          if (cell.type !== "purple") {
+            handleTap(2, cell.idx);
+          }
+        });
+      }
+    }, 120);
+    return () => clearInterval(id);
+  }, [devAutoPlay, snapshot, handleTap, numPlayers]);
 
   const { pressP1, pressP2 } = useInputHandler({
     mode: gameMode,
@@ -421,6 +444,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           onNameChange={() => setShowNameEntry(true)}
           playerName={playerName}
+          onOpenBuildDeploy={() => setShowBuildDeploy(true)}
         />
       )}
 
@@ -429,6 +453,10 @@ export default function App() {
           onUnlock={() => { setShowDevUnlock(false); setDevMode(true); }}
           onClose={() => setShowDevUnlock(false)}
         />
+      )}
+
+      {showBuildDeploy && (
+        <BuildDeploySection onClose={() => setShowBuildDeploy(false)} />
       )}
 
       {showNameEntry && appReady && (
@@ -587,6 +615,12 @@ export default function App() {
           }}
           onSpawnPowerup={devSpawnPowerup}
           gameSeed={snapshot?.gameSeed || 0}
+          autoPlay={devAutoPlay}
+          onAutoPlayToggle={() => setDevAutoPlay(v => !v)}
+          heatmap={devHeatmap}
+          onResetHeatmap={() => setDevHeatmap({})}
+          gridCols={snapshot?.grid?.cols ?? 3}
+          gridRows={snapshot?.grid?.rows ?? 3}
         />
       )}
 
@@ -672,7 +706,8 @@ export default function App() {
             </div>
           )}
 
-          <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim} onTap={i => handleTap(1,i)}
+          <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim} 
+            onTap={i => { handleTap(1, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
             onHoldStart={i => handleHoldStart(1,i)} onHoldEnd={i => handleHoldEnd(1,i)}
             keyLabels={p1Keys} showKeys={inputMode === "keyboard"} pressing={new Set(pressP1)}
             label={is2P ? "P1" : null} heartAnim={heartAnimP1} mode={gameMode}
@@ -681,7 +716,8 @@ export default function App() {
             onPause={pauseGame} isFS={isFS}
             equippedSkin={shopData.equippedSkin} snapshot={snapshot} />
           {is2P && (
-            <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} onTap={i => handleTap(2,i)}
+            <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
+              onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
               onHoldStart={i => handleHoldStart(2,i)} onHoldEnd={i => handleHoldEnd(2,i)}
               keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={new Set(pressP2)}
               label="P2" heartAnim={heartAnimP2} mode={gameMode}
