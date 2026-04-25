@@ -1,16 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { DIFFICULTY } from "../../config/difficulty";
-
-// In-memory live overrides (module-level so DifficultyScaler reads them)
-export const difficultyOverrides: Partial<typeof DIFFICULTY> = {};
-
-export function applyOverride(key: keyof typeof DIFFICULTY, value: number) {
-  (difficultyOverrides as any)[key] = value;
-}
-
-export function clearOverrides() {
-  Object.keys(difficultyOverrides).forEach(k => delete (difficultyOverrides as any)[k]);
-}
+import { difficultyOverrides, applyOverride, clearOverrides } from "../../config/difficultyOverrides";
 
 interface SliderDef {
   key: keyof typeof DIFFICULTY;

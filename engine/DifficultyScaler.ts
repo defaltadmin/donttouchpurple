@@ -1,5 +1,5 @@
 import { DIFFICULTY } from "../config/difficulty";
-import { difficultyOverrides } from "../components/Settings/BuildDeploySection";
+import { difficultyOverrides } from "../config/difficultyOverrides";
 
 // ─── Tick interval (ms) ───────────────────────────────────────────
 export function computeMs(tick: number, mult = 1): number {
