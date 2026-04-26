@@ -73,6 +73,8 @@ export interface UseGameEngineReturn {
   shakeGrid1:  boolean;
   shakeGrid2:  boolean;
   toast:       string | null;
+  pwrToastP1:  string | null;
+  pwrToastP2:  string | null;
   levelUpBadge: string | null;
   rareSplash:  { color: string; cssColor: string } | null;
   winner:      Winner;
@@ -117,6 +119,8 @@ export function useGameEngine(
   const [shakeGrid1,  setShake1]      = useState(false);
   const [shakeGrid2,  setShake2]      = useState(false);
   const [toast,       setToast]       = useState<string | null>(null);
+  const [pwrToastP1,  setPwrToastP1]  = useState<string | null>(null);
+  const [pwrToastP2,  setPwrToastP2]  = useState<string | null>(null);
   const [levelUpBadge, setLevelUpBadge] = useState<string | null>(null);
   const [rareSplash,  setRareSplash]  = useState<{ color: string; cssColor: string } | null>(null);
   const [winner,      setWinner]      = useState<Winner>(null);
@@ -125,6 +129,8 @@ export function useGameEngine(
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rareSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pwrToastP1TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pwrToastP2TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ha1TimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ha2TimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shake1TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -166,6 +172,18 @@ export function useGameEngine(
 
         case "toast":
           toast$(event.message);
+          break;
+
+        case "pwrToast":
+          if (event.player === 1) {
+            setPwrToastP1(event.message);
+            if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
+            pwrToastP1TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP1(null); }, 2000);
+          } else {
+            setPwrToastP2(event.message);
+            if (pwrToastP2TimerRef.current) clearTimeout(pwrToastP2TimerRef.current);
+            pwrToastP2TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP2(null); }, 2000);
+          }
           break;
 
         case "damage":
@@ -247,6 +265,8 @@ export function useGameEngine(
       engine.destroy();
       document.removeEventListener("visibilitychange", handleVisibility);
       if (toastTimerRef.current)      clearTimeout(toastTimerRef.current);
+      if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
+      if (pwrToastP2TimerRef.current) clearTimeout(pwrToastP2TimerRef.current);
       if (levelUpTimerRef.current)    clearTimeout(levelUpTimerRef.current);
       if (rareSplashTimerRef.current) clearTimeout(rareSplashTimerRef.current);
       if (ha1TimerRef.current)        clearTimeout(ha1TimerRef.current);
@@ -309,7 +329,7 @@ export function useGameEngine(
     snapshot,
     heartAnimP1, heartAnimP2,
     shakeGrid1,  shakeGrid2,
-    toast, levelUpBadge, rareSplash, winner, lastGameScore,
+    toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
     start, pause, resume,
     handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield,

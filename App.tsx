@@ -204,16 +204,9 @@ export default function App() {
     toastRef.current = setTimeout(() => setToast(null), 2200);
   }, []);
 
-  // Dev Toggle — Ctrl+Shift+D (quick toggle if already unlocked), or type //dev// in name field
+  // Dev Toggle — type //dev// in name field to unlock
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-        if (devMode) { setDevMode(false); }
-        else { setShowDevUnlock(true); }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    // Shortcut removed for stealth (Task 6)
   }, []);
 
   // Engine Setup
@@ -244,6 +237,7 @@ export default function App() {
     heartAnimP1, heartAnimP2,
     shakeGrid1, shakeGrid2,
     toast: engineToast, 
+    pwrToastP1, pwrToastP2,
     levelUpBadge, 
     rareSplash,
     winner: engineWinner,
@@ -277,15 +271,16 @@ export default function App() {
 
   useEffect(() => {
     if (!devAutoPlay || !snapshot || snapshot.phase !== "playing") return;
+    const dangerColor = snapshot.rareMode.active ? snapshot.rareMode.color : "purple";
     const id = setInterval(() => {
       snapshot.p1.active.forEach(cell => {
-        if (cell.type !== "purple") {
+        if (cell.type !== dangerColor && cell.type !== "purple") {
           handleTap(1, cell.idx);
         }
       });
       if (numPlayers === 2 && snapshot.p2) {
         snapshot.p2.active.forEach(cell => {
-          if (cell.type !== "purple") {
+          if (cell.type !== dangerColor && cell.type !== "purple") {
             handleTap(2, cell.idx);
           }
         });
@@ -309,6 +304,25 @@ export default function App() {
   });
 
   useEffect(() => { setAudioMuted(muted); }, [muted]);
+
+  // Task 5: Natural Energy Regeneration
+  useEffect(() => {
+    if (energyData.count >= GAME.MAX_ENERGY) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - energyData.lastRegen;
+      if (elapsed >= GAME.ENERGY_REGEN_MS) {
+        const gained = Math.floor(elapsed / GAME.ENERGY_REGEN_MS);
+        const newCount = Math.min(GAME.MAX_ENERGY, energyData.count + gained);
+        const newLastRegen = energyData.lastRegen + gained * GAME.ENERGY_REGEN_MS;
+        const newEd = { count: newCount, lastRegen: newLastRegen };
+        setEnergyData(newEd);
+        localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      }
+    }, 30000);
+    return () => clearInterval(id);
+  }, [energyData]);
+
   useEffect(() => {
     let p = 0;
     const interval = setInterval(() => {
@@ -353,6 +367,24 @@ export default function App() {
     setPaused(false);
     setScreen("menu");
   }, [pauseEngine]);
+
+  const refillEnergy = useCallback(() => {
+    if (energyData.count >= GAME.MAX_ENERGY) {
+      toast$("⚡ Energy already full!");
+      return;
+    }
+    if (dust >= GAME.DUST_PER_ENERGY) {
+      const newDust = dust - GAME.DUST_PER_ENERGY;
+      const newEd = { count: energyData.count + 1, lastRegen: energyData.lastRegen };
+      setDust(newDust);
+      localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+      setEnergyData(newEd);
+      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      toast$("⚡ Energy refilled!");
+    } else {
+      toast$("💜 Not enough dust!");
+    }
+  }, [dust, energyData, toast$]);
 
   const submitScore = useCallback(async () => {
     const score = numPlayers === 1 ? snapshot?.p1.score : Math.max(snapshot?.p1.score || 0, (snapshot?.p2?.score || 0));
@@ -568,24 +600,29 @@ export default function App() {
           onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
           onShop={() => setScreen("shop")}
           onKeybind={() => setScreen("keybind")}
-          onRefillEnergy={() => {
-            if (dust >= GAME.DUST_PER_ENERGY) {
-              const newDust = dust - GAME.DUST_PER_ENERGY;
-              const newEd = { count: Math.min(GAME.MAX_ENERGY, energyData.count + 1), lastRegen: energyData.lastRegen };
+          onRefillEnergy={refillEnergy}
+          onSwitchPlayer={() => setShowNameEntry(true)}
+          dustWidget={<DustWidget dust={dust} />}
+          energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={refillEnergy} onRefillFull={() => {
+            const needed = GAME.MAX_ENERGY - energyData.count;
+            if (needed <= 0) { toast$("⚡ Energy already full!"); return; }
+            const cost = needed * GAME.DUST_PER_ENERGY;
+            if (dust >= cost) {
+              const newDust = dust - cost;
+              const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
               setDust(newDust);
               localStorage.setItem(LS_KEYS.DUST, newDust.toString());
               setEnergyData(newEd);
               localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-              toast$("⚡ Energy refilled!");
+              toast$("⚡ Energy fully refilled!");
+            } else {
+              toast$("💜 Not enough dust!");
             }
-          }}
-          onSwitchPlayer={() => setShowNameEntry(true)}
-          dustWidget={<DustWidget dust={dust} />}
-          energyBar={<EnergyBar energy={energyData.count} nextRegenMs={GAME.ENERGY_REGEN_MS - ((Date.now() - energyData.lastRegen) % GAME.ENERGY_REGEN_MS)} onRefill={()=>{}} onRefillFull={()=>{}} dust={dust} getNextRegenMs={()=>0} />}
+          }} dust={dust} />}
         />
       )}
 
-      <DevFab isDevMode={devMode} onClick={() => devMode ? setDevMode(false) : setShowDevUnlock(true)} />
+      {/* DevFab removed for stealth (Task 6) */}
 
       {devMode && (
         <DevOverlay
@@ -655,8 +692,9 @@ export default function App() {
 
       {!is2P && isPlaying && snapshot && (
         <>
-          <div className="pwr-zone pwr-zone--1p">
+          <div className="pwr-zone pwr-zone--1p" style={{ flexDirection: "column", gap: 2 }}>
             <PwrBadges shield={snapshot.p1.shield} freezeEnd={snapshot.p1.freezeEnd} multiplierEnd={snapshot.p1.multiplierEnd} levelUpBadge={levelUpBadge} />
+            {pwrToastP1 && <div className="pwr-toast">{pwrToastP1}</div>}
           </div>
           {screen === "playing" && (snapshot.p1.storedFreezeCharges > 0 || snapshot.p1.storedShieldCharges > 0) && (
             <div className="stored-pwr-inline">
@@ -714,7 +752,8 @@ export default function App() {
             colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={shakeGrid1}
             cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
             onPause={pauseGame} isFS={isFS}
-            equippedSkin={shopData.equippedSkin} snapshot={snapshot} />
+            equippedSkin={shopData.equippedSkin} snapshot={snapshot}
+            pwrToast={pwrToastP1} />
           {is2P && (
             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
               onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
@@ -724,7 +763,8 @@ export default function App() {
               colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={shakeGrid2}
               cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
               onPause={pauseGame} isFS={isFS}
-              equippedSkin={shopData.equippedSkin} snapshot={snapshot} />
+              equippedSkin={shopData.equippedSkin} snapshot={snapshot}
+              pwrToast={pwrToastP2} />
           )}        </div>
       )}
 

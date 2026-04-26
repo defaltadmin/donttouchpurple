@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { EVOLVE_PATTERNS, RARE_COLORS, STAGES } from "../../config/gridPatterns";
-import type { CellShape, GameMode, NumPlayers, PlayerState, RareColorMode } from "../../engine/types";
+import type { CellShape, GameMode, NumPlayers, PlayerState, RareColorMode, CellType } from "../../engine/types";
 
 interface DevOverlayProps {
   p1: PlayerState;
@@ -63,18 +63,25 @@ function Section({ title, icon, children, defaultOpen = true, help }: { title: s
   );
 }
 
+function Tip({ text }: { text: string }) {
+  return <span className="devs-tip" data-tip={text}>ⓘ</span>;
+}
+
 function Row({ label, val, help }: { label: string; val: string | number | boolean; help?: string }) {
   return (
-    <div className="devs-row" title={help}>
-      <span className="devs-key">{label}{help ? " ⓘ" : ""}</span>
+    <div className="devs-row">
+      <span className="devs-key">{label}{help && <Tip text={help} />}</span>
       <span className="devs-val">{String(val)}</span>
     </div>
   );
 }
 
-function Btn({ label, onClick, color, help }: { label: string; onClick: () => void; color?: string; help?: string }) {
+function Chip({ label, onClick, color, help, icon }: {
+  label: string; onClick: () => void; color?: string; help?: string; icon?: string;
+}) {
   return (
-    <button className="devs-btn" onClick={onClick} style={{ color }} title={help}>
+    <button className="devs-chip" onClick={onClick} style={{ borderColor: color, color }} title={help}>
+      {icon && <span className="devs-chip-icon">{icon}</span>}
       {label}
     </button>
   );
@@ -82,8 +89,8 @@ function Btn({ label, onClick, color, help }: { label: string; onClick: () => vo
 
 function Toggle({ label, active, onToggle, help }: { label: string; active: boolean; onToggle: () => void; help?: string }) {
   return (
-    <div className="devs-toggle-row" title={help}>
-      <span className="devs-key">{label}{help ? " ⓘ" : ""}</span>
+    <div className="devs-toggle-row">
+      <span className="devs-key">{label}{help && <Tip text={help} />}</span>
       <button className={"devs-toggle" + (active ? " devs-toggle--on" : "")} onClick={onToggle}>
         {active ? "ON" : "OFF"}
       </button>
@@ -97,9 +104,9 @@ function Slider({ label, min, max, step, value, onChange, format, help }: {
   format?: (v: number) => string; help?: string;
 }) {
   return (
-    <div className="devs-slider-row" title={help}>
+    <div className="devs-slider-row">
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span className="devs-key">{label}{help ? " ⓘ" : ""}</span>
+        <span className="devs-key">{label}{help && <Tip text={help} />}</span>
         <span className="devs-val">{format ? format(value) : value}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
@@ -177,10 +184,9 @@ export function DevOverlay({
             <Row label="cellShape" val={cellShape} />
             <Row label="rareMode" val={rareMode.active ? (rareMode.color + " ×" + rareMode.turnsLeft) : "off"} />
             <div className="devs-row">
-              <span className="devs-key">gameSeed ⓘ</span>
+              <span className="devs-key">gameSeed <Tip text="Unique seed for this round" /></span>
               <span className="devs-val" onClick={copySeed}
-                style={{ cursor: "pointer", textDecoration: "underline dotted" }}
-                title="Click to copy — paste into //dev// seed field to replay">
+                style={{ cursor: "pointer", textDecoration: "underline dotted" }}>
                 {gameSeed}
               </span>
             </div>
@@ -202,10 +208,6 @@ export function DevOverlay({
             <Row label="shield" val={p1.shield} />
             <Row label="alive" val={p1.alive} />
             <Row label="active cells" val={p1.active.length} help="Non-void cells on grid" />
-            {p1.active.map((cell, i) => (
-              <Row key={i} label={"  [" + i + "] idx:" + cell.idx}
-                val={cell.type + (cell.iceCount != null ? " ×" + cell.iceCount : "") + (cell.holdRequired != null ? " hold" : "")} />
-            ))}
           </Section>
           {numPlayers === 2 && (
             <Section title="Player 2" icon="👤" defaultOpen={false}>
@@ -245,25 +247,25 @@ export function DevOverlay({
         )}
 
         <Section title="Cheats" icon="⚡">
-          <Toggle label="God Mode — no damage" active={godMode} onToggle={onGodModeToggle}
+          <Toggle label="God Mode" active={godMode} onToggle={onGodModeToggle}
             help="All hits are ignored. Health won't drop." />
-          <Toggle label="Freeze Time — no speed scaling" active={freezeTime} onToggle={onFreezeTimeToggle}
+          <Toggle label="Freeze Time" active={freezeTime} onToggle={onFreezeTimeToggle}
             help="Difficulty scaler is paused. Speed stays constant." />
-          <Toggle label="Auto-Play — bot taps safe cells" active={autoPlay} onToggle={onAutoPlayToggle}
-            help="Automatically taps all non-purple active cells every 120ms. God Mode recommended." />
+          <Toggle label="Auto-Play" active={autoPlay} onToggle={onAutoPlayToggle}
+            help="Automatically taps all safe cells every 120ms. God Mode recommended." />
           <div className="devs-divider" />
           <div className="devs-sublabel">DUST INJECTOR</div>
-          <div className="devs-btn-row">
-            <Btn label="+1K 💜" onClick={() => onDustAdd(1000)} help="Add 1,000 dust to balance" />
-            <Btn label="+10K 💜" onClick={() => onDustAdd(10000)} help="Add 10,000 dust to balance" />
+          <div className="devs-chip-grid">
+            <Chip label="+1K 💜" onClick={() => onDustAdd(1000)} help="Add 1,000 dust to balance" />
+            <Chip label="+10K 💜" onClick={() => onDustAdd(10000)} help="Add 10,000 dust to balance" />
           </div>
           <div className="devs-sublabel" style={{ marginTop: 8 }}>FORCE SPAWN NEXT TICK</div>
-          <div className="devs-btn-row">
-            <Btn label="❄ Freeze" onClick={() => onSpawnPowerup("freeze")}
+          <div className="devs-chip-grid">
+            <Chip label="Freeze" onClick={() => onSpawnPowerup("freeze")} icon="❄"
               help="Force a Freeze powerup to appear on next tick spawn" />
-            <Btn label="◈ Shield" onClick={() => onSpawnPowerup("shield")}
+            <Chip label="Shield" onClick={() => onSpawnPowerup("shield")} icon="◈"
               help="Force a Shield powerup to appear on next tick spawn" />
-            <Btn label="♥ Medpack" onClick={() => onSpawnPowerup("heart")}
+            <Chip label="Medpack" onClick={() => onSpawnPowerup("heart")} icon="♥"
               help="Force a Medpack to appear on next tick spawn" />
           </div>
         </Section>
@@ -272,7 +274,7 @@ export function DevOverlay({
           <div className="devs-sublabel">Tap count per cell (this session)</div>
           <HeatmapGrid heatmap={heatmap} cols={gridCols} rows={gridRows} />
           <div style={{ marginTop: 6 }}>
-            <Btn label="Reset Heatmap" onClick={onResetHeatmap} help="Clear all tap counts" />
+            <Chip label="Reset Heatmap" onClick={onResetHeatmap} help="Clear all tap counts" />
           </div>
         </Section>
 
@@ -287,9 +289,9 @@ export function DevOverlay({
 
         <Section title="Force Stage" icon="📐" defaultOpen={false}>
           <div className="devs-sublabel">Click to jump to any stage</div>
-          <div className="devs-btn-row devs-btn-row--wrap">
+          <div className="devs-chip-grid">
             {STAGES.map((stage, i) => (
-              <Btn key={stage.name}
+              <Chip key={stage.name}
                 label={i + ": " + stage.name}
                 onClick={() => window.dispatchEvent(new CustomEvent("dtp-dev-stage", { detail: i }))}
                 help={stage.cols + "×" + stage.rows + (stage.mask ? " masked" : " full") + " — " + stage.total + " cells"} />
@@ -299,25 +301,25 @@ export function DevOverlay({
 
         <Section title="Force Pattern" icon="🔲" defaultOpen={false}>
           <div className="devs-sublabel">Evolve patterns — click to force</div>
-          <div className="devs-btn-row devs-btn-row--wrap">
-            {EVOLVE_PATTERNS.slice(0, 12).map((pattern, i) => (
-              <Btn key={pattern.cols + "-" + pattern.rows + "-" + i}
-                label={"P" + i + " " + pattern.cols + "×" + pattern.rows + (pattern.mask ? "m" : "")}
+          <div className="devs-chip-grid">
+            {EVOLVE_PATTERNS.slice(0, 16).map((pattern, i) => (
+              <Chip key={pattern.cols + "-" + pattern.rows + "-" + i}
+                label={"P" + i}
                 onClick={() => window.dispatchEvent(new CustomEvent("dtp-dev-pattern", { detail: i }))}
-                help={"cols:" + pattern.cols + " rows:" + pattern.rows + " minStage:" + pattern.minStage} />
+                help={pattern.cols + "×" + pattern.rows + (pattern.mask ? " masked" : "") + " — minStage:" + pattern.minStage} />
             ))}
           </div>
         </Section>
 
         <Section title="Rare Mode" icon="🌈" defaultOpen={false}>
           <div className="devs-sublabel">Force a rare color event</div>
-          <div className="devs-btn-row devs-btn-row--wrap">
+          <div className="devs-chip-grid">
             {RARE_COLORS.map(rare => (
-              <Btn key={rare.color} label={rare.color} color={rare.cssColor}
+              <Chip key={rare.color} label={rare.color} color={rare.cssColor}
                 onClick={() => window.dispatchEvent(new CustomEvent("dtp-dev-rare", { detail: rare }))}
                 help={"Force Don't Touch " + rare.color.toUpperCase()} />
             ))}
-            <Btn label="⊘ Clear"
+            <Chip label="⊘ Clear"
               onClick={() => window.dispatchEvent(new CustomEvent("dtp-dev-rare", { detail: null }))}
               help="End rare mode immediately" />
           </div>

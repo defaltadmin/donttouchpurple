@@ -306,6 +306,17 @@ export class GameEngine {
     for (const { ref, pi } of players) {
       if (!ref.alive || (pi === 1 && this.config.numPlayers === 1)) continue;
 
+      // ── Stable Stages Update (Task 2) ──
+      // If a stage update was pending, apply it now between rounds
+      if ((ref as any).pendingStageUpdate) {
+        (ref as any).pendingStageUpdate = false;
+        ref.gridStage += 1;
+        ref.stageProgress = 0;
+        this.spinLevel += 1;
+        this.emit({ type: "sound",   name: "levelup" });
+        this.emit({ type: "levelUp", player: (pi + 1) as 1 | 2, stage: ref.gridStage });
+      }
+
       const curStage = ref.gridStage;
       const patIdx   = ref.patternIdx;
       const pat = mode === "evolve"
@@ -377,6 +388,16 @@ export class GameEngine {
         : Math.min(Math.floor(this.tickCount / 12), 7);
 
       const newActive = spawnActive(spawnStage, ref.health, nextPat, mode === "evolve", rareColor, this.tickCount);
+      
+      // Apply dev-forced powerup
+      if (this.devForcedPwr && newActive.length > 0) {
+        const forcedType = this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr;
+        newActive[0] = { ...newActive[0], type: forcedType as CellType };
+        if (pi === (this.config.numPlayers === 1 ? 0 : 1)) { // Consume after last player spawn
+          this.devForcedPwr = null;
+        }
+      }
+
       ref.active = newActive;
       ref.cells  = activeToCellsP(newActive, nextPat);
       if (newActive.length === 0) console.warn("[DTP-010]");
@@ -419,12 +440,13 @@ export class GameEngine {
     // ── Ice block ──
     if (cell.type === "ice") {
       const remaining = (cell.iceCount ?? 1) - 1;
-      this.emit({ type: "cellAnim", player, idx, anim: remaining <= 0 ? "pop" : "shake" });
+      this.triggerCellAnim(player, idx, remaining <= 0 ? "pop" : "shake");
       this.emit({ type: "sound",    name: remaining <= 0 ? "ok" : "tick" });
       if (remaining <= 0) {
         cell.clicked = true;
         const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
         ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
+        this.checkStageProgress(player);
         // Fast-advance if grid cleared
         const allDone = ref.active.every(c => c.clicked || c.type === "void");
         if (allDone) {
@@ -453,17 +475,20 @@ export class GameEngine {
     // ── Danger color ──
     if (cell.type === dangerColor || (cell.type === "purple" && dangerColor !== "purple")) {
       cell.clicked = true;
-      if (ref.shieldCount > 0) {
+      if (this.devGodMode) {
+        this.emit({ type: "sound",    name: "ok" });
+        this.triggerCellAnim(player, idx, "pop");
+      } else if (ref.shieldCount > 0) {
         ref.shieldCount -= 1;
         ref.shield = ref.shieldCount > 0;
         this.emit({ type: "sound",    name: "ok" });
-        this.emit({ type: "cellAnim", player, idx, anim: "pop" });
+        this.triggerCellAnim(player, idx, "pop");
       } else {
         ref.health = Math.max(0, ref.health - dmg);
         ref.shield = false;
         ref.streak = 0;
         this.emit({ type: "sound",  name: "bad" });
-        this.emit({ type: "cellAnim", player, idx, anim: "shake" });
+        this.triggerCellAnim(player, idx, "shake");
         this.emit({ type: "damage", player });
         this.emit({ type: "shake",  player });
         if (ref.health <= 0) {
@@ -481,40 +506,56 @@ export class GameEngine {
     } else if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
       cell.clicked = true;
       this.emit({ type: "sound",    name: "powerup" });
-      this.emit({ type: "cellAnim", player, idx, anim: "pop" });
+      this.triggerCellAnim(player, idx, "pop");
       if (cell.type === "medpack")    ref.health += 1;
       if (cell.type === "shield")  { ref.shieldCount += 1; ref.shield = true; }
       if (cell.type === "freeze")    ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
-      const toastMsg =
-        cell.type === "medpack"    ? "♥ +1 Heart!" :
-        cell.type === "shield"     ? `🛡 Shield ×${ref.shieldCount}!` :
-        cell.type === "freeze"     ? "❄ Freeze activated!" :
-                                     "⚡ 2× Points!";
-      this.emit({ type: "toast", message: toastMsg });
+      
+      if (cell.type === "shield") {
+        this.emit({ type: "pwrToast", message: `🛡 Shield ×${ref.shieldCount}!`, player });
+      } else {
+        const toastMsg =
+          cell.type === "medpack"    ? "♥ +1 Heart!" :
+          cell.type === "freeze"     ? "❄ Freeze activated!" :
+                                       "⚡ 2× Points!";
+        this.emit({ type: "toast", message: toastMsg });
+      }
 
     // ── Safe color ──
     } else {
       cell.clicked = true;
       this.emit({ type: "sound",    name: "ok" });
-      this.emit({ type: "cellAnim", player, idx, anim: "pop" });
+      this.triggerCellAnim(player, idx, "pop");
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
-      if (
-        isEvolve &&
-        ref.stageProgress >= GAME.STAGE_TAPS_NEEDED &&
-        ref.gridStage < STAGES.length - 1
-      ) {
-        ref.gridStage += 1;
-        ref.stageProgress = 0;
-        this.spinLevel += 1;
-        this.emit({ type: "sound",   name: "levelup" });
-        this.emit({ type: "levelUp", player, stage: ref.gridStage });
-      }
+      this.checkStageProgress(player);
     }
 
     ref.cells = activeToCellsP(ref.active, pat);
     this.emitSnapshot();
+  }
+
+  private checkStageProgress(player: 1 | 2): void {
+    const ref = player === 1 ? this.p1 : this.p2;
+    if (
+      this.config.mode === "evolve" &&
+      ref.stageProgress >= GAME.STAGE_TAPS_NEEDED &&
+      ref.gridStage < STAGES.length - 1
+    ) {
+      // Mark as pending stage update (Task 2: Stable Stages)
+      (ref as any).pendingStageUpdate = true;
+    }
+  }
+
+  private triggerCellAnim(player: 1 | 2, idx: number, anim: "pop" | "shake"): void {
+    const ref = player === 1 ? this.p1 : this.p2;
+    ref.anim[idx] = anim;
+    this.emit({ type: "cellAnim", player, idx, anim });
+    // Clear anim state after 500ms so it can re-trigger
+    setTimeout(() => {
+      if (ref.anim[idx] === anim) delete ref.anim[idx];
+    }, 500);
   }
 
   handleHoldStart(player: 1 | 2, idx: number): void {
@@ -544,10 +585,11 @@ export class GameEngine {
     if (elapsed >= cell.holdRequired) {
       cell.clicked = true;
       (cell as any)._holding = false;
-      this.emit({ type: "cellAnim", player, idx, anim: "pop" });
+      this.triggerCellAnim(player, idx, "pop");
       this.emit({ type: "sound",    name: "powerup" });
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult * 2; ref.streak += 1; ref.stageProgress += 1;
+      this.checkStageProgress(player);
       this.emit({ type: "toast", message: "💪 Hold! +2" });
       const allDone = ref.active.every(c => c.clicked || c.type === "void");
       if (allDone) {
@@ -563,7 +605,7 @@ export class GameEngine {
     } else {
       cell.holdStart = undefined;
       (cell as any)._holding = false;
-      this.emit({ type: "cellAnim", player, idx, anim: "shake" });
+      this.triggerCellAnim(player, idx, "shake");
     }
 
     ref.cells = activeToCellsP(ref.active, pat);
@@ -606,14 +648,26 @@ export class GameEngine {
   // ── Dev helpers ───────────────────────────────────────────────────
 
   devForceStage(stage: number): void {
+    const validPatterns = EVOLVE_PATTERNS
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.minStage <= stage);
+    const pick = validPatterns[Math.floor(Math.random() * validPatterns.length)];
     this.p1.gridStage = stage; this.p1.stageProgress = 0;
+    this.p1.patternIdx = pick?.i ?? 0;
     this.p2.gridStage = stage; this.p2.stageProgress = 0;
+    this.p2.patternIdx = pick?.i ?? 0;
     this.emitSnapshot();
   }
 
   devForcePattern(idx: number): void {
     this.p1.patternIdx = idx;
     this.p2.patternIdx = idx;
+    const pat = EVOLVE_PATTERNS[idx] ?? EVOLVE_PATTERNS[0];
+    const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
+    this.p1.active = spawnActive(this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount);
+    this.p1.cells  = activeToCellsP(this.p1.active, pat);
+    this.p2.active = spawnActive(this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount);
+    this.p2.cells  = activeToCellsP(this.p2.active, pat);
     this.emitSnapshot();
   }
 

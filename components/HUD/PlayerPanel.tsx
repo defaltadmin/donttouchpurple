@@ -43,6 +43,7 @@ export interface PlayerPanelProps {
   equippedSkin?: string;
   levelUpBadge?: string | null;
   snapshot?:    any; 
+  pwrToast?:    string | null;
 }
 
 // ─── PlayerPanel ──────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export function PlayerPanel({
   cellShape, rareMode, onPause, isFS,
   equippedSkin,
   levelUpBadge, snapshot,
+  pwrToast,
 }: PlayerPanelProps) {
   const now = Date.now();
   const { cols, rows, mask } = snapshot?.grid ?? { 
@@ -69,15 +71,33 @@ export function PlayerPanel({
 
   const prevDirectionRef = useRef<number | null>(null);
   const [elasticClass, setElasticClass] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [preservedAngle, setPreservedAngle] = useState<number>(0);
 
   useEffect(() => {
     if (!spinCfg) { prevDirectionRef.current = null; return; }
     const prev = prevDirectionRef.current;
     const cur = spinCfg.direction;
     if (prev !== null && prev !== cur) {
+      // Snapshot current computed rotation angle
+      let angle = 0;
+      if (gridRef.current) {
+        const matrix = getComputedStyle(gridRef.current).transform;
+        if (matrix && matrix !== "none") {
+          const vals = matrix.match(/matrix\(([^)]+)\)/);
+          if (vals) {
+            const [a, b] = vals[1].split(",").map(Number);
+            angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+          }
+        }
+      }
+      setPreservedAngle(angle);
       const cls = cur === -1 ? "gpanel--elastic-cw-to-ccw" : "gpanel--elastic-ccw-to-cw";
       setElasticClass(cls);
-      const t = setTimeout(() => setElasticClass(null), 650);
+      const t = setTimeout(() => {
+        setElasticClass(null);
+        setPreservedAngle(0);
+      }, 650);
       return () => clearTimeout(t);
     }
     prevDirectionRef.current = cur;
@@ -88,6 +108,7 @@ export function PlayerPanel({
   } : {};
 
   const elasticStyle: React.CSSProperties = elasticClass && spinCfg ? {
+    transform: `rotate(${preservedAngle}deg)`,
     animation: `${elasticClass === "gpanel--elastic-cw-to-ccw" ? "elasticCWtoCCW" : "elasticCCWtoCW"} 0.65s cubic-bezier(0.22,1,0.36,1) forwards`,
   } : {};
 
@@ -120,21 +141,24 @@ export function PlayerPanel({
         <div className="pwr-zone">
           <PwrBadges shield={ps.shield} freezeEnd={ps.freezeEnd} multiplierEnd={ps.multiplierEnd}
             freezeTotal={15000} multTotal={24000} />
+          {pwrToast && <div className="pwr-toast">{pwrToast}</div>}
         </div>
       )}
       <div className="gpanel-wrap" style={{ "--cell": getDynamicCellVar(cols, rows, is2P, mode) } as any}>
-        <div
-          className={`gpanel${shakeGrid ? " shake-grid" : ""}${skinClass ? " " + skinClass : ""}`}
-          style={{
-            gridTemplateColumns: `repeat(${cols}, var(--cell))`,
-            gridTemplateRows:    `repeat(${rows}, var(--cell))`,
-            ...(frozen        ? { outline: "2px solid #60a5fa" } : {}),
-            ...(cbFilter      ? { filter: cbFilter } : {}),
-            ...(rareMode.active ? { outline: `2px solid ${rareMode.cssColor}` } : {}),
-            ...spinStyle,
-            ...elasticStyle,
-          }}>
-          {Array.from({ length: gridTotal }, (_, i) => {
+        <div className={shakeGrid ? "gpanel-shake-wrap shake-grid" : "gpanel-shake-wrap"}>
+          <div
+            ref={gridRef}
+            className={`gpanel${skinClass ? " " + skinClass : ""}`}
+            style={{
+              gridTemplateColumns: `repeat(${cols}, var(--cell))`,
+              gridTemplateRows:    `repeat(${rows}, var(--cell))`,
+              ...(frozen        ? { outline: "2px solid #60a5fa" } : {}),
+              ...(cbFilter      ? { filter: cbFilter } : {}),
+              ...(rareMode.active ? { outline: `2px solid ${rareMode.cssColor}` } : {}),
+              ...spinStyle,
+              ...elasticStyle,
+            }}>
+            {Array.from({ length: gridTotal }, (_, i) => {
             const isVoid = maskSet && !maskSet.has(i);
             if (isVoid) return <div key={i} className="cell-void" />;
             const type       = ps.cells[i] ?? "inactive";
@@ -166,6 +190,7 @@ export function PlayerPanel({
               />
             );
           })}
+          </div>
         </div>
       </div>
     </div>

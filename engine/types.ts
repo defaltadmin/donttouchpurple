@@ -42,6 +42,7 @@ export interface PlayerState {
   patternIdx:          number;           // current EVOLVE_PATTERNS index
   storedFreezeCharges: number;
   storedShieldCharges: number;
+  pendingStageUpdate?: boolean;          // Task 2: defer stage change
 }
 
 // ─── Rare color mode ──────────────────────────────────────────────
@@ -99,6 +100,7 @@ export type GameEvent =
   | { type: "levelUp";     player: 1 | 2; stage: number }
   | { type: "sound";       name: "ok" | "bad" | "tick" | "powerup" | "levelup" }
   | { type: "toast";       message: string }
+  | { type: "pwrToast";    message: string; player: 1 | 2 } // Task 1: Inline pwr toast
   | { type: "rareStart";   color: string; cssColor: string }
   | { type: "cellAnim";    player: 1 | 2; idx: number; anim: "pop" | "shake" }
   | { type: "gameOver";    winner: Winner }

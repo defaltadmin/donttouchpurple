@@ -3,35 +3,30 @@ import { GAME } from "../../config/difficulty";
 
 interface EnergyBarProps {
   energy: number;
-  nextRegenMs: number;
+  energyLastRegen: number;
   onRefill: () => void;
   onRefillFull: () => void;
   dust: number;
-  getNextRegenMs: () => number;
 }
 
 export function EnergyBar({
   energy,
-  nextRegenMs,
+  energyLastRegen,
   onRefill,
   onRefillFull,
   dust,
-  getNextRegenMs,
 }: EnergyBarProps) {
-  const [timer, setTimer] = useState(nextRegenMs);
-
-  useEffect(() => {
-    setTimer(nextRegenMs);
-  }, [nextRegenMs]);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     if (energy >= GAME.MAX_ENERGY) return;
-    const id = setInterval(() => setTimer(getNextRegenMs()), 250);
+    const id = setInterval(() => setNow(Date.now()), 1000); // 1s for visual precision
     return () => clearInterval(id);
-  }, [energy, getNextRegenMs]);
+  }, [energy]);
 
-  const mins = Math.floor(timer / 60000);
-  const secs = Math.floor((timer % 60000) / 1000);
+  const remaining = GAME.ENERGY_REGEN_MS - ((now - energyLastRegen) % GAME.ENERGY_REGEN_MS);
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
   const costFull = GAME.DUST_PER_ENERGY * (GAME.MAX_ENERGY - energy);
 
   return (
