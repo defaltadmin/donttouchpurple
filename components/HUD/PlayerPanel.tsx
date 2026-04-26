@@ -137,13 +137,11 @@ export function PlayerPanel({
           </div>
         </div>
       )}
-      {is2P && (
-        <div className="pwr-zone">
-          <PwrBadges shield={ps.shield} freezeEnd={ps.freezeEnd} multiplierEnd={ps.multiplierEnd}
-            freezeTotal={15000} multTotal={24000} />
-          {pwrToast && <div className="pwr-toast">{pwrToast}</div>}
-        </div>
-      )}
+      <div className="pwr-zone">
+        <PwrBadges shield={ps.shield} freezeEnd={ps.freezeEnd} multiplierEnd={ps.multiplierEnd}
+          freezeTotal={15000} multTotal={24000} />
+        {pwrToast && <div className="pwr-toast">{pwrToast}</div>}
+      </div>
       <div className="gpanel-wrap" style={{ "--cell": getDynamicCellVar(cols, rows, is2P, mode) } as any}>
         <div className={shakeGrid ? "gpanel-shake-wrap shake-grid" : "gpanel-shake-wrap"}>
           <div

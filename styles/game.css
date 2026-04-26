@@ -1416,7 +1416,7 @@ body {
   100% { opacity: 0; transform: translateY(-18px); }
 }
 
-.gpanel-shake-wrap { display: contents; }
+.gpanel-shake-wrap { display: block; width: fit-content; margin: 0 auto; }
 .gpanel-shake-wrap.shake-grid { animation: shakeGrid 0.4s ease; }
 @keyframes shakeGrid {
   0%,100% { transform: translateX(0); }

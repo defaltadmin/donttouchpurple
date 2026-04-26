@@ -306,22 +306,26 @@ export default function App() {
   useEffect(() => { setAudioMuted(muted); }, [muted]);
 
   // Task 5: Natural Energy Regeneration
+  const energyDataRef = useRef(energyData);
+  useEffect(() => { energyDataRef.current = energyData; }, [energyData]);
+
   useEffect(() => {
-    if (energyData.count >= GAME.MAX_ENERGY) return;
     const id = setInterval(() => {
+      const ed = energyDataRef.current;
+      if (ed.count >= GAME.MAX_ENERGY) return;
       const now = Date.now();
-      const elapsed = now - energyData.lastRegen;
+      const elapsed = now - ed.lastRegen;
       if (elapsed >= GAME.ENERGY_REGEN_MS) {
         const gained = Math.floor(elapsed / GAME.ENERGY_REGEN_MS);
-        const newCount = Math.min(GAME.MAX_ENERGY, energyData.count + gained);
-        const newLastRegen = energyData.lastRegen + gained * GAME.ENERGY_REGEN_MS;
+        const newCount = Math.min(GAME.MAX_ENERGY, ed.count + gained);
+        const newLastRegen = ed.lastRegen + gained * GAME.ENERGY_REGEN_MS;
         const newEd = { count: newCount, lastRegen: newLastRegen };
         setEnergyData(newEd);
         localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
       }
     }, 30000);
     return () => clearInterval(id);
-  }, [energyData]);
+  }, []);
 
   useEffect(() => {
     let p = 0;
@@ -694,7 +698,6 @@ export default function App() {
         <>
           <div className="pwr-zone pwr-zone--1p" style={{ flexDirection: "column", gap: 2 }}>
             <PwrBadges shield={snapshot.p1.shield} freezeEnd={snapshot.p1.freezeEnd} multiplierEnd={snapshot.p1.multiplierEnd} levelUpBadge={levelUpBadge} />
-            {pwrToastP1 && <div className="pwr-toast">{pwrToastP1}</div>}
           </div>
           {screen === "playing" && (snapshot.p1.storedFreezeCharges > 0 || snapshot.p1.storedShieldCharges > 0) && (
             <div className="stored-pwr-inline">
