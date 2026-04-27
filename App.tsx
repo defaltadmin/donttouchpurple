@@ -9,7 +9,7 @@ import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys, saveKeys, toLabel } from ".
 import { SHOP_THEMES } from "./config/powerupWeights";
 import { setAudioMuted, useGameEngine } from "./hooks/useGameEngine";
 import { useInputHandler } from "./hooks/useInputHandler";
-import type { GameConfig as EngineGameConfig, Winner } from "./engine/types";
+import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups } from "./engine/types";
 
 // Components - HUD
 import { EnergyBar } from "./components/HUD/EnergyBar";
@@ -45,7 +45,7 @@ import {
 // Types
 type GameMode        = "classic" | "evolve";
 type InputMode       = "touch" | "keyboard";
-type Screen          = "menu" | "howto" | "leaderboard" | "keybind" | "playing" | "gameover" | "shop";
+type GameScreen    = "menu" | "howto" | "leaderboard" | "keybind" | "playing" | "gameover" | "shop";
 type NumPlayers      = 1 | 2;
 type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
@@ -130,7 +130,13 @@ function loadShopData() {
   return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default" };
 }
 
-function saveShopData(d: any) {
+type ShopData = {
+  unlockedThemes: string[]; equippedTheme: string;
+  unlockedBadges: string[]; equippedBadge: string;
+  unlockedSkins:  string[]; equippedSkin:  string;
+};
+
+function saveShopData(d: ShopData) {
   try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch {}
 }
 
@@ -142,7 +148,7 @@ function loadStoredPwr() {
   return { freeze: 0, shield: 0, mult: 0, heart: 0 };
 }
 
-function saveStoredPwr(d: any) {
+function saveStoredPwr(d: StoredPowerups) {
   try { localStorage.setItem(LS_KEYS.STORED_PWR, JSON.stringify(d)); } catch {}
 }
 
@@ -166,8 +172,31 @@ export default function App() {
 
   const [shopData, setShopDataState] = useState(() => loadShopData());
 
-  // UI State
-  const [screen, setScreen]         = useState<Screen>("menu");
+  // Daily login streak (Phase 3 seed)
+  const [loginStreak, setLoginStreak] = useState(() => {
+    try {
+      const r = localStorage.getItem("dtp_login_streak");
+      if (!r) return { count: 1, lastDate: new Date().toDateString() };
+      const d = JSON.parse(r);
+      const today = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (d.lastDate === today) return d;
+      if (d.lastDate === yesterday) {
+        const updated = { count: d.count + 1, lastDate: today };
+        localStorage.setItem("dtp_login_streak", JSON.stringify(updated));
+        return updated;
+      }
+      // Streak broken
+      const reset = { count: 1, lastDate: today };
+      localStorage.setItem("dtp_login_streak", JSON.stringify(reset));
+      return reset;
+    } catch { return { count: 1, lastDate: new Date().toDateString() }; }
+  });
+
+  // Persist login streak on first load
+  useEffect(() => {
+    try { localStorage.setItem("dtp_login_streak", JSON.stringify(loginStreak)); } catch {}
+  }, []);
   const [gameMode, setGameMode]      = useState<GameMode>("classic");
   const [numPlayers, setNumPlayers]  = useState<NumPlayers>(1);
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
@@ -252,16 +281,16 @@ export default function App() {
 
   // Dev Events
   useEffect(() => {
-    const s = (e: any) => devForceStage(e.detail);
-    const p = (e: any) => devForcePattern(e.detail);
-    const r = (e: any) => devForceRare(e.detail);
-    window.addEventListener("dtp-dev-stage", s);
-    window.addEventListener("dtp-dev-pattern", p);
-    window.addEventListener("dtp-dev-rare", r);
+    const s = (e: CustomEvent) => devForceStage(e.detail);
+    const p = (e: CustomEvent) => devForcePattern(e.detail);
+    const r = (e: CustomEvent) => devForceRare(e.detail);
+    window.addEventListener("dtp-dev-stage",   s as EventListener);
+    window.addEventListener("dtp-dev-pattern", p as EventListener);
+    window.addEventListener("dtp-dev-rare",    r as EventListener);
     return () => {
-      window.removeEventListener("dtp-dev-stage", s);
-      window.removeEventListener("dtp-dev-pattern", p);
-      window.removeEventListener("dtp-dev-rare", r);
+      window.removeEventListener("dtp-dev-stage",   s as EventListener);
+      window.removeEventListener("dtp-dev-pattern", p as EventListener);
+      window.removeEventListener("dtp-dev-rare",    r as EventListener);
     };
   }, [devForceStage, devForcePattern, devForceRare]);
 
@@ -269,25 +298,35 @@ export default function App() {
   useEffect(() => { devSetFreezeTime(devFreezeTime); }, [devFreezeTime, devSetFreezeTime]);
   useEffect(() => { devSetRotationSpeed(devRotationSpeed); }, [devRotationSpeed, devSetRotationSpeed]);
 
+  const BOT_HUMAN_MIN_MS = 180; // ~max human reaction speed
+  const BOT_REACTION_JITTER = 60; // ±30ms randomness
+
   useEffect(() => {
     if (!devAutoPlay || !snapshot || snapshot.phase !== "playing") return;
     const dangerColor = snapshot.rareMode.active ? snapshot.rareMode.color : "purple";
-    const id = setInterval(() => {
-      snapshot.p1.active.forEach(cell => {
-        if (cell.type !== dangerColor && cell.type !== "purple") {
-          handleTap(1, cell.idx);
-        }
-      });
-      if (numPlayers === 2 && snapshot.p2) {
-        snapshot.p2.active.forEach(cell => {
-          if (cell.type !== dangerColor && cell.type !== "purple") {
-            handleTap(2, cell.idx);
-          }
-        });
-      }
-    }, 120);
-    return () => clearInterval(id);
-  }, [devAutoPlay, snapshot, handleTap, numPlayers]);
+    // Clamp bot speed to at most human-limit; add jitter so it doesn't feel mechanical
+    const tickMs = computeMs(snapshot.tick, false);
+    const botMs = Math.max(BOT_HUMAN_MIN_MS, tickMs * 0.85)
+      + (Math.random() - 0.5) * BOT_REACTION_JITTER;
+
+    const id = setTimeout(() => {
+      const tapPlayer = (active: typeof snapshot.p1.active, player: 1 | 2) => {
+        active
+          .filter(cell => !cell.clicked && cell.type !== dangerColor && cell.type !== "purple" && cell.type !== "hold")
+          .forEach(cell => handleTap(player, cell.idx));
+        // Handle hold cells: simulate a full hold
+        active
+          .filter(cell => !cell.clicked && cell.type === "hold")
+          .forEach(cell => {
+            handleHoldStart(player, cell.idx);
+            setTimeout(() => handleHoldEnd(player, cell.idx), (cell.holdRequired ?? 800) + 50);
+          });
+      };
+      tapPlayer(snapshot.p1.active, 1);
+      if (numPlayers === 2 && snapshot.p2) tapPlayer(snapshot.p2.active, 2);
+    }, botMs);
+    return () => clearTimeout(id);
+  }, [devAutoPlay, snapshot, handleTap, handleHoldStart, handleHoldEnd, numPlayers]);
 
   const { pressP1, pressP2 } = useInputHandler({
     mode: gameMode,
@@ -304,6 +343,22 @@ export default function App() {
   });
 
   useEffect(() => { setAudioMuted(muted); }, [muted]);
+
+  // Escape key → pause/resume
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (screen === "playing" && snapshot?.phase === "playing") { pauseGame(); return; }
+      if (screen === "playing" && paused) { resumeGame(); return; }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, paused, snapshot?.phase, pauseGame, resumeGame]);
+
+  useEffect(() => {
+    if (theme === "light") document.documentElement.classList.add("light-theme");
+    else document.documentElement.classList.remove("light-theme");
+  }, [theme]);
 
   // Task 5: Natural Energy Regeneration
   const energyDataRef = useRef(energyData);
@@ -370,7 +425,10 @@ export default function App() {
     pauseEngine();
     setPaused(false);
     setScreen("menu");
-  }, [pauseEngine]);
+    setInitials(playerName || "Player");
+    setIE(false);
+    setShareMsg("");
+  }, [pauseEngine, playerName]);
 
   const refillEnergy = useCallback(() => {
     if (energyData.count >= GAME.MAX_ENERGY) {
@@ -445,7 +503,7 @@ export default function App() {
 
   return (
     <div className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}`}
-      style={{ "--cell-1p": cellSizeVar, ...themeVars } as any}>
+      style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
       <div className="bg-pulse" style={snapshot?.rareMode.active ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
       <div className="orb orb-1" />
@@ -496,10 +554,10 @@ export default function App() {
       )}
 
       {showNameEntry && appReady && (
-        <div className="drawer-overlay" style={{ zIndex: 9999 }} onClick={() => setShowNameEntry(false)}>
-          <div className="drawer-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 320 }}>
-            <div className="drawer-header">
-              <span className="drawer-title">✏️ Change Name</span>
+        <div className="modal-overlay" onClick={() => setShowNameEntry(false)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">✏️ Change Name</span>
               <button className="btn-icon" onClick={() => setShowNameEntry(false)}>✕</button>
             </div>
             <NameChangeForm
@@ -519,9 +577,20 @@ export default function App() {
         <div className="pause-overlay">
           <div className="pause-card">
             <div className="pause-title">⏸ PAUSED</div>
-            <div className="pause-score">Score: <strong>{snapshot?.p1.score}{is2P ? ` · ${snapshot?.p2.score}` : ""}</strong></div>
+            <div className="pause-score">
+              Score: <strong>{snapshot?.p1.score}{is2P ? ` · ${snapshot?.p2?.score}` : ""}</strong>
+              {(snapshot?.p1.streak ?? 0) >= 3 && <span className="pause-streak"> · 🔥 ×{snapshot?.p1.streak}</span>}
+            </div>
+            <div className="pause-speed-row">
+              Speed: <strong>{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</strong>
+            </div>
             <button className="btn-play" onClick={resumeGame}>▶ RESUME</button>
-            <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => { resumeGame(); setTimeout(() => startGame(), 50); }}>↺ Restart</button>
+            <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => {
+              resumeEngine();
+              setPaused(false);
+              // Restart: refund then spend so energy stays same; just restart engine
+              setTimeout(() => { startEngine(); }, 50);
+            }}>↺ Restart</button>
             <div className="pause-settings-row">
               <button className="pause-setting-btn" onClick={() => setMuted(m => !m)} title="Sound">
                 {muted ? "🔇" : "🔊"}<span>{muted ? "Muted" : "Sound On"}</span>
@@ -534,7 +603,7 @@ export default function App() {
               </button>
             </div>
             <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={goMenu}>🏠 Exit to Menu</button>
-            <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>Exiting will end your current game</div>
+            <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>Esc to resume · Exiting ends your game</div>
           </div>
         </div>
       )}
@@ -543,10 +612,10 @@ export default function App() {
         <span className="logo" style={{cursor: screen !== "menu" && screen !== "playing" && screen !== "gameover" ? "pointer" : "default"}}
           onClick={() => { if (screen !== "menu" && screen !== "playing" && screen !== "gameover") setScreen("menu"); }}>
           Don't Touch the{" "}
-          <span className="txt-p" style={snapshot?.rareMode.active
+          <span className="txt-p" style={snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop"
             ? { color: snapshot.rareMode.cssColor, textShadow: `0 0 20px ${snapshot.rareMode.cssColor}99`, transition:"color 0.5s, text-shadow 0.5s" }
             : {}}>
-            {snapshot?.rareMode.active ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
+            {snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop" ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
           </span>
         </span>
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
@@ -630,8 +699,8 @@ export default function App() {
 
       {devMode && (
         <DevOverlay
-          p1={snapshot?.p1 || { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: 0, alive: true, active: [] } as any}
-          p2={snapshot?.p2 || { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: 0, alive: true, active: [] } as any}
+          p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
+          p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
           tick={snapshot?.tick || 0}
           gameMode={gameMode}
           numPlayers={numPlayers}
@@ -670,7 +739,9 @@ export default function App() {
           <div className="hud-card hud-card--score">
             <div className="hud-lbl">Score</div>
             <div className="hud-score-row">
-              <div className="hud-val">{snapshot.p1.score}</div>
+              <div className={`hud-val${snapshot.p1.score > (gameMode === "classic" ? best1 : best2) && snapshot.p1.score > 0 ? " hud-val--pb" : ""}`}>
+                {snapshot.p1.score}
+              </div>
               {snapshot.p1.streak >= 3 && <div className="combo-wrap">×{snapshot.p1.streak}</div>}
             </div>
           </div>
@@ -694,32 +765,6 @@ export default function App() {
         </div>
       )}
 
-      {!is2P && isPlaying && snapshot && (
-        <>
-          <div className="pwr-zone pwr-zone--1p" style={{ flexDirection: "column", gap: 2 }}>
-            <PwrBadges shield={snapshot.p1.shield} freezeEnd={snapshot.p1.freezeEnd} multiplierEnd={snapshot.p1.multiplierEnd} levelUpBadge={levelUpBadge} />
-          </div>
-          {screen === "playing" && (snapshot.p1.storedFreezeCharges > 0 || snapshot.p1.storedShieldCharges > 0) && (
-            <div className="stored-pwr-inline">
-              {snapshot.p1.storedFreezeCharges > 0 && (
-                <button className="stored-pwr-inline-btn stored-pwr-inline-btn--freeze" onClick={() => activateStoredFreeze(1)}>
-                  <span className="stored-pwr-inline-icon">❄</span>
-                  <span className="stored-pwr-inline-label">Freeze</span>
-                  <span className="stored-pwr-inline-count">×{snapshot.p1.storedFreezeCharges}</span>
-                </button>
-              )}
-              {snapshot.p1.storedShieldCharges > 0 && (
-                <button className="stored-pwr-inline-btn stored-pwr-inline-btn--shield" onClick={() => activateStoredShield(1)}>
-                  <span className="stored-pwr-inline-icon">◈</span>
-                  <span className="stored-pwr-inline-label">Shield</span>
-                  <span className="stored-pwr-inline-count">×{snapshot.p1.storedShieldCharges}</span>
-                </button>
-              )}
-            </div>
-          )}
-        </>
-      )}
-
       {isPlaying && snapshot && (
         <div className="game-area">
           {screen === "gameover" && (
@@ -734,7 +779,7 @@ export default function App() {
                 shareMsg={shareMsg}
                 gameSeed={snapshot.gameSeed || 0}
                 tick={snapshot.tick}
-                p1={snapshot.p1 as any}
+                p1={snapshot.p1}
                 initialsEntered={initialsEntered}
                 initials={initials}
                 onInitialsChange={setInitials}
@@ -743,6 +788,7 @@ export default function App() {
                 onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
                 onMenu={goMenu}
                 spinLevel={snapshot.spinLevel}
+                isHumanLimit={snapshot.phase === "humanlimit"}
               />
             </div>
           )}
@@ -756,7 +802,13 @@ export default function App() {
             cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
             onPause={pauseGame} isFS={isFS}
             equippedSkin={shopData.equippedSkin} snapshot={snapshot}
-            pwrToast={pwrToastP1} />
+            pwrToast={pwrToastP1}
+            levelUpBadge={levelUpBadge}
+            storedFreezeCharges={snapshot.p1.storedFreezeCharges}
+            storedShieldCharges={snapshot.p1.storedShieldCharges}
+            onActivateFreeze={() => activateStoredFreeze(1)}
+            onActivateShield={() => activateStoredShield(1)}
+            showStoredPwr={screen === "playing"} />
           {is2P && (
             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
               onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
@@ -773,6 +825,9 @@ export default function App() {
 
       {screen === "menu" && (
         <footer className="credit">
+          {loginStreak.count >= 2 && (
+            <span className="daily-streak-badge">🗓 Day {loginStreak.count} streak</span>
+          )}
           <span>By Mohammed Ahmed Siddiqui · <a href="https://mscarabia.com" target="_blank" rel="noopener noreferrer" className="credit-link">mscarabia.com</a></span>
           <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="credit-link" style={{marginLeft:6}}>Privacy</a>
         </footer>
