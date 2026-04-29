@@ -148,12 +148,14 @@ function pickPattern(rng: () => number, stage: number, lastIdx: number, score: n
   return pick?.i ?? valid[0].i;
 }
 
-function makePS(config: GameConfig): PlayerState {
-  const stored = config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
+function makePS(config: GameConfig, storedOverride?: { freeze: number; shield: number; mult: number; heart: number }): PlayerState {
+  const stored = storedOverride ?? config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
   const bonusHearts = (config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
   const hasMult = (config.mode === "evolve" && (stored.mult ?? 0) > 0);
-  if (hasMult) config.storage?.saveStoredPowerups({ ...stored, mult: (stored.mult ?? 1) - 1 });
-  if (bonusHearts > 0) config.storage?.saveStoredPowerups({ ...stored, heart: 0 });
+  if (!storedOverride) {
+    if (hasMult) config.storage?.saveStoredPowerups({ ...stored, mult: (stored.mult ?? 1) - 1 });
+    if (bonusHearts > 0) config.storage?.saveStoredPowerups({ ...stored, heart: 0 });
+  }
   return {
     cells: Array(25).fill("inactive"), active: [], score: 0, streak: 0,
     alive: true, anim: {}, health: GAME.MAX_HEARTS + bonusHearts,
@@ -175,6 +177,7 @@ export class GameEngine {
   private paused     = false;
   private phase: GameSnapshot["phase"] = "playing";
   private holdTimers = new Map<string, { timer: NodeJS.Timeout, cell: ActiveCell, player: 1 | 2 }>();
+  private dirty      = true;
 
   private rng: () => number = () => Math.random();
   private p1: PlayerState;
@@ -195,8 +198,9 @@ export class GameEngine {
   constructor(private config: GameConfig) {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
+    const stored = config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     this.p1 = makePS(config);
-    this.p2 = makePS(config);
+    this.p2 = makePS(config, stored);
   }
 
   start(): void {
@@ -212,9 +216,9 @@ export class GameEngine {
     this.gameSeed   = makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+    const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     this.p1 = makePS(this.config);
-    if (this.config.numPlayers === 2) this.p2 = makePS(this.config);
-    else this.p2 = makePS({ ...this.config, storage: undefined });
+    this.p2 = makePS(this.config, stored);
     this.tapBuffer  = { 1: null, 2: null };
 
     this.emit({ type: "phaseChange", phase: "playing" });
@@ -237,7 +241,10 @@ export class GameEngine {
   private startSnapshotRaf(): void {
     const loop = () => {
       if (this.rafId === null) return;
-      this.emitSnapshot();
+      if (this.dirty && this.phase !== "gameover") {
+        this.dirty = false;
+        this.emitSnapshot();
+      }
       if (this.phase !== "gameover") {
         this.rafId = requestAnimationFrame(loop);
       }
@@ -263,6 +270,7 @@ export class GameEngine {
     this.paused = true;
     this.phase  = "paused";
     if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
+    this.dirty = true;
     this.emit({ type: "phaseChange", phase: "paused" });
     this.emitSnapshot();
   }
@@ -272,6 +280,7 @@ export class GameEngine {
     this.paused = false;
     this.phase  = "playing";
     this.scheduleTick();
+    this.dirty = true;
     this.emit({ type: "phaseChange", phase: "playing" });
     this.emitSnapshot();
   }
@@ -291,6 +300,7 @@ export class GameEngine {
   }
 
   private emitSnapshot(): void {
+    this.dirty = false;
     this.emit({ type: "tick", snapshot: this.getSnapshot() });
   }
 
@@ -394,6 +404,7 @@ export class GameEngine {
       if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += bonus;
       this.emit({ type: "toast", message: `🔥 Survival +${bonus}!` });
     }
+    this.dirty = true;
     this.emit({ type: "sound", name: "tick" });
   }
 
@@ -432,9 +443,10 @@ export class GameEngine {
         const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
         ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
         this.checkStageProgress(player);
-        if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
+        if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
       } else cell.iceCount = rem;
       ref.cells = activeToCellsP(ref.active, pat);
+      this.dirty = true;
       this.emitSnapshot();
       return;
     }
@@ -475,6 +487,7 @@ export class GameEngine {
       this.checkStageProgress(player);
     }
     ref.cells = activeToCellsP(ref.active, pat);
+    this.dirty = true;
     this.emitSnapshot();
   }
 
@@ -503,11 +516,13 @@ export class GameEngine {
       const entry = this.holdTimers.get(key);
       if (!entry || entry.cell.clicked) return;
       (entry.cell as any).holdStart = undefined;
+      this.dirty = true;
       this.triggerCellAnim(entry.player, entry.cell.idx, "shake");
       this.emitSnapshot();
       this.holdTimers.delete(key);
     }, GAME.HOLD_TIMEOUT_MS);
     this.holdTimers.set(key, { timer, cell, player });
+    this.dirty = true;
     this.emitSnapshot();
   }
 
@@ -540,7 +555,8 @@ export class GameEngine {
     if (!ref.alive || ref.storedFreezeCharges <= 0) return;
     ref.storedFreezeCharges -= 1;
     ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
-    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: 0, heart: 0 });
+    const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
+    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: stored.mult, heart: stored.heart });
     this.emit({ type: "toast", message: "❄ Freeze activated!" });
     this.emitSnapshot();
   }
@@ -551,7 +567,8 @@ export class GameEngine {
     ref.storedShieldCharges -= 1;
     ref.shieldCount += 1;
     ref.shield = true;
-    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: 0, heart: 0 });
+    const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
+    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: stored.mult, heart: stored.heart });
     this.emit({ type: "toast", message: `🛡 Shield ×${ref.shieldCount}!` });
     this.emitSnapshot();
   }
@@ -569,6 +586,7 @@ export class GameEngine {
     const pat = EVOLVE_PATTERNS[idx] ?? EVOLVE_PATTERNS[0];
     const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
     this.p1.active = spawnActive(this.rng, this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
+    this.p1.cells  = activeToCellsP(this.p1.active, pat);
 
     this.p2.active = spawnActive(this.rng, this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
     this.p2.cells  = activeToCellsP(this.p2.active, pat);
