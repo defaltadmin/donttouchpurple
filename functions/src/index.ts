@@ -11,6 +11,12 @@ export const updateStreak = functions.https.onCall(async (data, context) => {
   const deviceId: string | undefined = data?.deviceId;
   if (!deviceId) throw new functions.https.HttpsError("invalid-argument", "deviceId required");
 
+  const clientDate: string | undefined = data?.clientDate;
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const todayStr = (clientDate && dateRegex.test(clientDate))
+    ? clientDate
+    : dateString(new Date());
+
   const streakRef = admin.firestore().collection("streaks").doc(deviceId);
   const now = admin.firestore.Timestamp.now();
   const streakDoc = await streakRef.get();
@@ -22,16 +28,12 @@ export const updateStreak = functions.https.onCall(async (data, context) => {
 
   const { count, lastLogin } = streakDoc.data()!;
   const lastDate = new Date(lastLogin.seconds * 1000);
-  const today = new Date();
-  const yesterday = new Date(today);
+  const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-
-  const lastDay = dateString(lastDate);
-  const todayStr = dateString(today);
   const yesterdayStr = dateString(yesterday);
 
-  if (lastDay === todayStr) return { streak: count };
-  if (lastDay === yesterdayStr) {
+  if (dateString(lastDate) === todayStr) return { streak: count };
+  if (dateString(lastDate) === yesterdayStr) {
     const newCount = count + 1;
     await streakRef.update({ count: newCount, lastLogin: now });
     return { streak: newCount };

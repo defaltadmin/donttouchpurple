@@ -79,21 +79,26 @@ export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
 export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
   if (!db) return;
-  const { collection, addDoc, serverTimestamp } = await import(
+  const { doc, setDoc, serverTimestamp } = await import(
     "firebase/firestore"
   );
-  await addDoc(collection(db, "dust_wallet"), { name, dust, ts: serverTimestamp() });
+  await setDoc(doc(db, "dust_wallet", name), { name, dust, ts: serverTimestamp() });
 }
 
 export async function fbCheckWeeklyBonus(name: string): Promise<number> {
   const db = await getDB();
   if (!db) return 0;
   try {
-    const { collection, query, orderBy, limit, getDocs } = await import(
+    const { collection, query, where, orderBy, limit, getDocs } = await import(
       "firebase/firestore"
     );
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const q = query(collection(db, "lb_global"), orderBy("score", "desc"), limit(50));
+    const q = query(
+      collection(db, "lb_global"),
+      where("date", ">=", oneWeekAgo),
+      orderBy("date", "desc"),
+      limit(50)
+    );
     const snap = await getDocs(q);
     const entries = snap.docs.map((doc: any) => doc.data());
     const weekly = entries.filter((entry: any) => entry.date >= oneWeekAgo);
@@ -117,17 +122,29 @@ async function getAppInstance(): Promise<any> {
 }
 
 export function getDeviceId(): string {
-  const key = "dtp-device-id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem(key, id);
+  try {
+    const key = "dtp-device-id";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
-  return id;
 }
 
-export async function fbGetStreak(): Promise<number> {
-  return getLocalStreakFallback();
+export async function fbGetStreak(opts?: { clientDate?: string }): Promise<number> {
+  try {
+    if (!IS_PROD) return getLocalStreakFallback();
+    const app = await getAppInstance();
+    const func = httpsCallable(getFunctions(app), "updateStreak");
+    const result = await func({ clientDate: opts?.clientDate });
+    return (result.data as any).streak;
+  } catch {
+    return getLocalStreakFallback();
+  }
 }
 
 function getLocalStreakFallback(): number {

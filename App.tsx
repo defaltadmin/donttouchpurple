@@ -173,7 +173,7 @@ export default function App() {
   const [loginStreak, setLoginStreak] = useState<{ count: number }>({ count: 1 });
 
   useEffect(() => {
-    fbGetStreak().then(streak => {
+    fbGetStreak({ clientDate: new Date().toISOString().split("T")[0] }).then(streak => {
       setLoginStreak({ count: streak });
       localStorage.setItem("dtp_login_streak", JSON.stringify({
         count: streak,

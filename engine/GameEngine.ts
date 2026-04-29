@@ -148,14 +148,7 @@ function pickPattern(rng: () => number, stage: number, lastIdx: number, score: n
   return pick?.i ?? valid[0].i;
 }
 
-function makePS(config: GameConfig, storedOverride?: { freeze: number; shield: number; mult: number; heart: number }): PlayerState {
-  const stored = storedOverride ?? config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
-  const bonusHearts = (config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
-  const hasMult = (config.mode === "evolve" && (stored.mult ?? 0) > 0);
-  if (!storedOverride) {
-    if (hasMult) config.storage?.saveStoredPowerups({ ...stored, mult: (stored.mult ?? 1) - 1 });
-    if (bonusHearts > 0) config.storage?.saveStoredPowerups({ ...stored, heart: 0 });
-  }
+function makePS(bonusHearts: number, hasMult: boolean, stored: { freeze: number; shield: number; mult: number; heart: number }): PlayerState {
   return {
     cells: Array(25).fill("inactive"), active: [], score: 0, streak: 0,
     alive: true, anim: {}, health: GAME.MAX_HEARTS + bonusHearts,
@@ -199,8 +192,8 @@ export class GameEngine {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
     const stored = config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
-    this.p1 = makePS(config);
-    this.p2 = makePS(config, stored);
+    this.p1 = makePS(stored.heart > 0 ? stored.heart : 0, (config.mode === "evolve" && (stored.mult ?? 0) > 0), stored);
+    this.p2 = makePS(stored.heart > 0 ? stored.heart : 0, (config.mode === "evolve" && (stored.mult ?? 0) > 0), stored);
   }
 
   start(): void {
@@ -216,9 +209,14 @@ export class GameEngine {
     this.gameSeed   = makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+    // Load stored once, compute deductions, call saveStoredPowerups once each
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
-    this.p1 = makePS(this.config);
-    this.p2 = makePS(this.config, stored);
+    const bonusHearts = (this.config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
+    const hasMult = (this.config.mode === "evolve" && (stored.mult ?? 0) > 0);
+    if (hasMult) this.config.storage?.saveStoredPowerups({ ...stored, mult: (stored.mult ?? 1) - 1 });
+    if (bonusHearts > 0) this.config.storage?.saveStoredPowerups({ ...stored, heart: 0 });
+    this.p1 = makePS(bonusHearts, hasMult, stored);
+    this.p2 = makePS(bonusHearts, hasMult, stored);
     this.tapBuffer  = { 1: null, 2: null };
 
     this.emit({ type: "phaseChange", phase: "playing" });
@@ -586,7 +584,7 @@ export class GameEngine {
     const pat = EVOLVE_PATTERNS[idx] ?? EVOLVE_PATTERNS[0];
     const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
     this.p1.active = spawnActive(this.rng, this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
-    this.p1.cells  = activeToCellsP(this.p1.active, pat);
+    this.p1.cells = activeToCellsP(this.p1.active, pat);
 
     this.p2.active = spawnActive(this.rng, this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
     this.p2.cells  = activeToCellsP(this.p2.active, pat);
