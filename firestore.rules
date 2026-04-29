@@ -24,9 +24,5 @@ service cloud.firestore {
         && request.resource.data.dust >= 0
         && request.resource.data.dust < 1000000;
     }
-    match /streaks/{deviceId} {
-      allow read: if true;
-      allow write: if false;
-    }
   }
 }

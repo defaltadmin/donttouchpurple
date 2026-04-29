@@ -129,15 +129,7 @@ export function getDeviceId(): string {
 }
 
 export async function fbGetStreak(): Promise<number> {
-  try {
-    if (!IS_PROD) return getLocalStreakFallback();
-    const app = await getAppInstance();
-    const func = httpsCallable(getFunctions(app), "updateStreak");
-    const result = await func({ deviceId: getDeviceId() });
-    return (result.data as any).streak;
-  } catch {
-    return getLocalStreakFallback();
-  }
+  return getLocalStreakFallback();
 }
 
 function getLocalStreakFallback(): number {
