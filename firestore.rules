@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /lb_global/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.ts == request.time
+        && request.resource.data.score is number
+        && request.resource.data.score > 0
+        && request.resource.data.score < 100000
+        && request.resource.data.initials is string
+        && request.resource.data.initials.size() > 0
+        && request.resource.data.initials.size() <= 8
+        && request.resource.data.mode in ['classic', 'evolve']
+        && request.resource.data.date is string
+        && (!('badge' in request.resource.data) || request.resource.data.badge is string);
+    }
+    match /dust_wallet/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.ts == request.time
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.dust is number
+        && request.resource.data.dust >= 0
+        && request.resource.data.dust < 1000000;
+    }
+    match /streaks/{deviceId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
