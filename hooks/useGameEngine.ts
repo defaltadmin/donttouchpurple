@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GameEngine } from "../engine/GameEngine";
 import type { GameConfig, GameEvent, GameSnapshot, Winner, StoredPowerups } from "../engine/types";
-import { LS_KEYS } from "../config/difficulty";
+import { LS_KEYS, GAME } from "../config/difficulty";
 
 // ─── Storage Helpers (Hook layer) ──────────────────────────────────
-function loadStoredPwr(): StoredPowerups {
+export function loadStoredPwr(): StoredPowerups {
   try {
     const r = localStorage.getItem(LS_KEYS.STORED_PWR);
     if (r) {
@@ -15,28 +15,63 @@ function loadStoredPwr(): StoredPowerups {
   return { freeze: 0, shield: 0, mult: 0, heart: 0 };
 }
 
-function saveStoredPwr(d: StoredPowerups): void {
+export function saveStoredPwr(d: StoredPowerups): void {
   try { localStorage.setItem(LS_KEYS.STORED_PWR, JSON.stringify(d)); } catch {}
 }
 
 // ─── Audio (lives here so engine stays React-free) ────────────────
 let _actx: AudioContext | null = null;
+let _masterGain: GainNode | null = null;
 let _muted = false;
+let _volume = 0.7;
 
 export function setAudioMuted(muted: boolean): void { _muted = muted; }
+export function setAudioVolume(v: number): void {
+  _volume = Math.max(0, Math.min(1, v));
+  if (_masterGain) _masterGain.gain.setValueAtTime(_volume, _masterGain.context.currentTime);
+}
+
+export function playVolumeChime(): void {
+  if (_muted) return;
+  try {
+    const ctx = getACtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(_masterGain!);
+    const t = ctx.currentTime;
+    o.type = "sine";
+    o.frequency.setValueAtTime(880, t);
+    o.frequency.exponentialRampToValueAtTime(1100, t + 0.08);
+    g.gain.setValueAtTime(_volume * 0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    o.start(); o.stop(t + 0.15);
+  } catch {}
+}
 
 function getACtx(): AudioContext {
-  if (!_actx) _actx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  if (!_actx) {
+    _actx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    _masterGain = _actx.createGain();
+    _masterGain.gain.setValueAtTime(_volume, _actx.currentTime);
+    _masterGain.connect(_actx.destination);
+  }
   return _actx;
 }
 
 function playSound(type: "ok" | "bad" | "tick" | "powerup" | "levelup"): void {
   if (_muted) return;
   try {
+    if (navigator.vibrate) {
+      if (type === "bad") navigator.vibrate(50);
+      else if (type === "powerup" || type === "levelup") navigator.vibrate([30, 20, 30]);
+      else navigator.vibrate(15);
+    }
+  } catch {}
+  try {
     const ctx = getACtx();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
+    o.connect(g); g.connect(_masterGain!);
     const t = ctx.currentTime;
     if (type === "ok") {
       o.type = "sine"; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
@@ -65,9 +100,7 @@ function playSound(type: "ok" | "bad" | "tick" | "powerup" | "levelup"): void {
 
 // ─── Hook return type ─────────────────────────────────────────────
 export interface UseGameEngineReturn {
-  // Latest game snapshot (read-only mirror)
   snapshot:    GameSnapshot | null;
-  // UI feedback state
   heartAnimP1: boolean;
   heartAnimP2: boolean;
   shakeGrid1:  boolean;
@@ -78,7 +111,6 @@ export interface UseGameEngineReturn {
   levelUpBadge: string | null;
   rareSplash:  { color: string; cssColor: string } | null;
   winner:      Winner;
-  // Engine actions
   start:       () => void;
   pause:       () => void;
   resume:      () => void;
@@ -94,7 +126,6 @@ export interface UseGameEngineReturn {
   devSetFreezeTime:(v: boolean) => void;
   devSetRotationSpeed: (v: number) => void;
   devSpawnPowerup: (type: "shield" | "freeze" | "heart") => void;
-  // Dust awarded on game-over (for App to consume)
   lastGameScore: number | null;
 }
 
@@ -107,13 +138,12 @@ export function useGameEngine(
   const mountedRef = useRef(true);
   const onGameOverRef = useRef(onGameOver);
 
-  // Sync ref on every render
-  useEffect(() => {
-    onGameOverRef.current = onGameOver;
-  });
+  useEffect(() => { onGameOverRef.current = onGameOver; });
 
-  // React mirror state
-  const [snapshot,    setSnapshot]    = useState<GameSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
+  const latestSnapshotRef = useRef<GameSnapshot | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
   const [heartAnimP1, setHA1]         = useState(false);
   const [heartAnimP2, setHA2]         = useState(false);
   const [shakeGrid1,  setShake1]      = useState(false);
@@ -137,17 +167,15 @@ export function useGameEngine(
   const shake2TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameOverTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Toast helper ──
   const toast$ = useCallback((msg: string) => {
     if (!mountedRef.current) return;
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(msg);
     toastTimerRef.current = setTimeout(() => {
       if (mountedRef.current) setToast(null);
-    }, 2200);
+    }, GAME.TOAST_DURATION_MS);
   }, []);
 
-  // ── Build engine once; rebuild when config changes ──
   useEffect(() => {
     mountedRef.current = true;
     const engineConfig: GameConfig = {
@@ -161,101 +189,72 @@ export function useGameEngine(
       if (!mountedRef.current) return;
 
       switch (event.type) {
-
         case "tick":
-          setSnapshot({ ...event.snapshot });
+          if (mountedRef.current) setSnapshot({ ...event.snapshot });
           break;
-
-        case "sound":
-          playSound(event.name);
-          break;
-
-        case "toast":
-          toast$(event.message);
-          break;
-
+        case "sound": playSound(event.name); break;
+        case "toast": toast$(event.message); break;
         case "pwrToast":
           if (event.player === 1) {
             setPwrToastP1(event.message);
             if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
-            pwrToastP1TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP1(null); }, 2000);
+            pwrToastP1TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP1(null); }, GAME.PWR_TOAST_DURATION_MS);
           } else {
             setPwrToastP2(event.message);
             if (pwrToastP2TimerRef.current) clearTimeout(pwrToastP2TimerRef.current);
-            pwrToastP2TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP2(null); }, 2000);
+            pwrToastP2TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP2(null); }, GAME.PWR_TOAST_DURATION_MS);
           }
           break;
-
         case "damage":
           if (event.player === 1) {
             setHA1(true);
             if (ha1TimerRef.current) clearTimeout(ha1TimerRef.current);
-            ha1TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA1(false); }, 420);
+            ha1TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA1(false); }, GAME.HEART_ANIM_MS);
           } else {
             setHA2(true);
             if (ha2TimerRef.current) clearTimeout(ha2TimerRef.current);
-            ha2TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA2(false); }, 420);
+            ha2TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA2(false); }, GAME.HEART_ANIM_MS);
           }
           break;
-
         case "shake":
           if (event.player === 1) {
             setShake1(true);
             if (shake1TimerRef.current) clearTimeout(shake1TimerRef.current);
-            shake1TimerRef.current = setTimeout(() => { if (mountedRef.current) setShake1(false); }, 400);
+            shake1TimerRef.current = setTimeout(() => { if (mountedRef.current) setShake1(false); }, GAME.SHAKE_ANIM_MS);
           } else {
             setShake2(true);
             if (shake2TimerRef.current) clearTimeout(shake2TimerRef.current);
-            shake2TimerRef.current = setTimeout(() => { if (mountedRef.current) setShake2(false); }, 400);
+            shake2TimerRef.current = setTimeout(() => { if (mountedRef.current) setShake2(false); }, GAME.SHAKE_ANIM_MS);
           }
           break;
-
         case "levelUp":
           if (levelUpTimerRef.current) clearTimeout(levelUpTimerRef.current);
           setLevelUpBadge(`Stage ${event.stage}`);
-          levelUpTimerRef.current = setTimeout(() => {
-            if (mountedRef.current) setLevelUpBadge(null);
-          }, 2200);
+          levelUpTimerRef.current = setTimeout(() => { if (mountedRef.current) setLevelUpBadge(null); }, GAME.LEVELUP_BADGE_MS);
           break;
-
         case "rareStart":
           setRareSplash({ color: event.color, cssColor: event.cssColor });
           if (rareSplashTimerRef.current) clearTimeout(rareSplashTimerRef.current);
-          rareSplashTimerRef.current = setTimeout(() => {
-            if (mountedRef.current) setRareSplash(null);
-          }, 5000);
+          rareSplashTimerRef.current = setTimeout(() => { if (mountedRef.current) setRareSplash(null); }, GAME.RARE_SPLASH_MS);
           break;
-
-        case "gameOver": {
-          // 400ms delay matches original App.tsx before showing gameover screen
+        case "gameOver":
           const snap = engine.getSnapshot();
           if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
           gameOverTimerRef.current = setTimeout(() => {
             if (!mountedRef.current) return;
             setWinner(event.winner);
-            setLastGameScore(
-              config.numPlayers === 1
-                ? snap.p1.score
-                : Math.max(snap.p1.score, snap.p2.score)
-            );
+            setLastGameScore(config.numPlayers === 1 ? snap.p1.score : Math.max(snap.p1.score, snap.p2.score));
             onGameOverRef.current(event.winner, snap.p1.score, snap.p2.score);
-          }, 400);
+          }, GAME.GAME_OVER_DELAY_MS);
           break;
-        }
-
-        case "phaseChange":
-          // snapshot update handles phase; nothing extra needed here
-          break;
-
-        // cellAnim events are handled by PlayerPanel/Cell directly via snapshot.p1/p2.anim
       }
     });
 
-    // Tab visibility: pause/resume automatically
     const handleVisibility = () => {
       if (!engineRef.current) return;
-      if (document.hidden) engineRef.current.pause();
-      else if (engineRef.current.getSnapshot().phase === "paused") engineRef.current.resume();
+      if (document.hidden) {
+        engineRef.current.pause();
+      }
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
@@ -263,6 +262,7 @@ export function useGameEngine(
       mountedRef.current = false;
       unsub();
       engine.destroy();
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       document.removeEventListener("visibilitychange", handleVisibility);
       if (toastTimerRef.current)      clearTimeout(toastTimerRef.current);
       if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
@@ -275,11 +275,7 @@ export function useGameEngine(
       if (shake2TimerRef.current)     clearTimeout(shake2TimerRef.current);
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
     };
-  // config object identity changes when mode/numPlayers/speedMult change — engine rebuilds
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.mode, config.numPlayers, config.speedMult]);
-
-  // ── Stable action callbacks ───────────────────────────────────────
 
   const start = useCallback(() => {
     setWinner(null);
@@ -291,49 +287,23 @@ export function useGameEngine(
 
   const pause  = useCallback(() => engineRef.current?.pause(),  []);
   const resume = useCallback(() => engineRef.current?.resume(), []);
-
-  const handleTap = useCallback(
-    (player: 1 | 2, idx: number) => engineRef.current?.handleTap(player, idx),
-    []
-  );
-  const handleHoldStart = useCallback(
-    (player: 1 | 2, idx: number) => engineRef.current?.handleHoldStart(player, idx),
-    []
-  );
-  const handleHoldEnd = useCallback(
-    (player: 1 | 2, idx: number) => engineRef.current?.handleHoldEnd(player, idx),
-    []
-  );
-
-  const activateStoredFreeze = useCallback(
-    (player: 1 | 2) => engineRef.current?.activateStoredFreeze(player),
-    []
-  );
-  const activateStoredShield = useCallback(
-    (player: 1 | 2) => engineRef.current?.activateStoredShield(player),
-    []
-  );
-
+  const handleTap = useCallback((player: 1 | 2, idx: number) => engineRef.current?.handleTap(player, idx), []);
+  const handleHoldStart = useCallback((player: 1 | 2, idx: number) => engineRef.current?.handleHoldStart(player, idx), []);
+  const handleHoldEnd = useCallback((player: 1 | 2, idx: number) => engineRef.current?.handleHoldEnd(player, idx), []);
+  const activateStoredFreeze = useCallback((player: 1 | 2) => engineRef.current?.activateStoredFreeze(player), []);
+  const activateStoredShield = useCallback((player: 1 | 2) => engineRef.current?.activateStoredShield(player), []);
   const devForceStage   = useCallback((s: number) => engineRef.current?.devForceStage(s),   []);
   const devForcePattern = useCallback((i: number) => engineRef.current?.devForcePattern(i),  []);
-  const devForceRare    = useCallback(
-    (r: { color: string; cssColor: string } | null) => engineRef.current?.devForceRare(r),
-    []
-  );
+  const devForceRare    = useCallback((r: { color: string; cssColor: string } | null) => engineRef.current?.devForceRare(r), []);
   const devSetGodMode   = useCallback((v: boolean) => engineRef.current?.devSetGodMode(v), []);
   const devSetFreezeTime= useCallback((v: boolean) => engineRef.current?.devSetFreezeTime(v), []);
   const devSetRotationSpeed = useCallback((v: number) => engineRef.current?.devSetRotationSpeed(v), []);
   const devSpawnPowerup = useCallback((type: "shield" | "freeze" | "heart") => engineRef.current?.devSpawnPowerup(type), []);
 
   return {
-    snapshot,
-    heartAnimP1, heartAnimP2,
-    shakeGrid1,  shakeGrid2,
-    toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
-    start, pause, resume,
-    handleTap, handleHoldStart, handleHoldEnd,
-    activateStoredFreeze, activateStoredShield,
-    devForceStage, devForcePattern, devForceRare,
+    snapshot, heartAnimP1, heartAnimP2, shakeGrid1, shakeGrid2, toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
+    start, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
+    activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
   };
 }

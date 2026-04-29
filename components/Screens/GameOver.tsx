@@ -22,15 +22,16 @@ export function getMessage(score: number): string {
 // ─── Share card ───────────────────────────────────────────────────
 import { useState, useEffect, useRef } from "react";
 
-function ShareCard({ score, mode, onClose }: { score: number; mode: GameMode; onClose: () => void }) {
+function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: GameMode; gameSeed: number; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [copiedSeed, setCopiedSeed] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup copied timer on unmount
   useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
   const url        = "https://game.mscarabia.com";
   const modeLabel  = mode === "classic" ? "Classic" : "Evolve";
-  const shareText  = `🎮 I scored ${score} in Don't Touch the Purple — ${modeLabel} Mode!\nCan you beat me? 👇\n${url}`;
+  const shareText  = `🎮 I scored ${score} in Don't Touch the Purple — ${modeLabel} Mode!\nSeed: ${gameSeed}\nCan you beat me? 👇\n${url}`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   const waUrl      = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -53,12 +54,25 @@ function ShareCard({ score, mode, onClose }: { score: number; mode: GameMode; on
     } else { tryFallback(); }
   };
 
+  const copySeed = () => {
+    try {
+      navigator.clipboard?.writeText(gameSeed.toString());
+      setCopiedSeed(true);
+      setTimeout(() => setCopiedSeed(false), 2000);
+    } catch {}
+  };
+
   return (
     <div className="share-card">
       <div className="share-inner">
         <div className="share-logo">Don't Touch the <span style={{ color: "#c026d3" }}>Purple</span></div>
         <div className="share-score">{score}</div>
         <div className="share-mode">{modeLabel} Mode</div>
+        <div className="share-seed-row">
+          <span className="share-seed-label">Seed:</span>
+          <span className="share-seed-val">{gameSeed}</span>
+          <button className="share-seed-copy" onClick={copySeed} title="Copy seed">{copiedSeed ? "✓" : "📋"}</button>
+        </div>
         <div className="share-invite">Think you can beat that? 👀</div>
         <div className="share-url">{url}</div>
       </div>
@@ -98,6 +112,7 @@ export interface GameOverProps {
   onLeaderboard:  () => void;
   onMenu:         () => void;
   spinLevel:      number;
+  isHumanLimit?:  boolean;
 }
 
 // ─── GameOver ─────────────────────────────────────────────────────
@@ -106,11 +121,31 @@ export function GameOver({
   shareMsg, gameSeed, tick, p1,
   initialsEntered, initials, onInitialsChange, onSubmitScore,
   onPlay, onLeaderboard, onMenu, spinLevel,
+  isHumanLimit,
 }: GameOverProps) {
   const [showShare, setShowShare] = useState(false);
+  const [displayScore, setDisplayScore] = useState(0);
+
+  // Animated score counter on mount
+  useEffect(() => {
+    if (is2P || p1Score === 0) { setDisplayScore(p1Score); return; }
+    let start: number | null = null;
+    const duration = Math.min(1200, 400 + p1Score * 8);
+    const step = (ts: number) => {
+      if (!start) start = ts;
+      const elapsed = ts - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayScore(Math.round(eased * p1Score));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    const raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [p1Score, is2P]);
 
   if (showShare) {
-    return <ShareCard score={p1Score} mode={mode} onClose={() => setShowShare(false)} />;
+    return <ShareCard score={p1Score} mode={mode} gameSeed={gameSeed} onClose={() => setShowShare(false)} />;
   }
 
   return (
@@ -129,10 +164,14 @@ export function GameOver({
         </>
       ) : (
         <>
-          <div className="go-num">{p1Score}</div>
+          {isHumanLimit && <div className="go-humanlimit">HUMAN LIMIT</div>}
+          <div className="go-num go-num--anim">{displayScore}</div>
           <div className="go-best">Best: {best}</div>
+          {p1.streak >= 5 && <div className="go-streak">🔥 {p1.streak} streak</div>}
           <div className="go-msg">"{shareMsg}"</div>
-          {p1Score > 0 && <div className="go-dust-earned">+{p1Score} 💜 dust earned!</div>}
+          {p1Score > 0 && <div className={`go-dust-earned${isHumanLimit ? " go-dust-earned--hl" : ""}`}>
+            +{p1Score} 💜 dust earned!
+          </div>}
           {!initialsEntered ? (
             <div className="go-lb-form">
               <input className="go-input" maxLength={8} placeholder="Your name"

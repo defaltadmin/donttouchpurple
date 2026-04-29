@@ -84,9 +84,9 @@ export function Cell({
     if (animState !== "pop" || type === "inactive") return;
     setTilt(Math.round(Math.random() * 16 - 8));
     const color = getShardColor(type);
-    const newShards: Shard[] = Array.from({ length: 5 }, (_, i) => {
-      const angle = (i / 5) * Math.PI * 2 + Math.random() * 0.8;
-      const dist  = 28 + Math.random() * 22;
+    const newShards: Shard[] = Array.from({ length: 7 }, (_, i) => {
+      const angle = (i / 7) * Math.PI * 2 + Math.random() * 0.6;
+      const dist  = 26 + Math.random() * 26;
       return {
         id:    Date.now() + i,
         dx:    `${Math.round(Math.cos(angle) * dist)}px`,
@@ -125,9 +125,17 @@ export function Cell({
     ? { animation: `cellCounterSpin ${counterSpinDur} linear infinite` }
     : {};
 
-  const isTriangle  = cellShape === "triangle";
+  const isTriangle        = cellShape === "triangle";
+  const isRoundedTriangle = cellShape === "roundedTriangle";
   const shapeStyle: React.CSSProperties = {};
   if (cellShape === "circle") shapeStyle.borderRadius = "50%";
+
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    if (type !== "hold" || animState === "pop" || !holdStart) return;
+    const id = setInterval(() => forceUpdate(n => n + 1), 50);
+    return () => clearInterval(id);
+  }, [holdStart, type, animState]);
 
   return (
     <button
@@ -148,16 +156,13 @@ export function Cell({
       aria-label={`${type} cell`}
     >
       {isTriangle && <span className="cell-tri-shape" />}
+      {isRoundedTriangle && <span className="cell-rtri-shape" />}
       {type === "ice" && iceCount != null && <span className="cell-overlay-ice">❄{iceCount}</span>}
       {type === "hold" && (
-        <span className="cell-overlay-hold">
-          <span className="hold-btn-outer">
-            <span className={`hold-btn-inner${holdPct > 0 ? " hold-btn-pressed" : ""}`}>
-              {holdPct > 0 ? "⬤" : "HOLD"}
-            </span>
-          </span>
-          {holdPct > 0 && <span className="hold-progress" style={{ width: holdPct + "%" }} />}
-        </span>
+        <div className="hold-ring-wrap" style={{ overflow: 'hidden' }}>
+          <div className="hold-fill" style={{ width: `${holdPct}%` }} />
+          <span className="hold-label">HOLD</span>
+        </div>
       )}
       {sym && type !== "ice" && type !== "hold" && <span className="sym">{sym}</span>}
       {showKey && type !== "inactive" && <span className="kbadge">{toLabel(keyLabel)}</span>}

@@ -7,17 +7,20 @@ import { GAME, LS_KEYS } from "./config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
 import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys, saveKeys, toLabel } from "./config/keybindings";
 import { SHOP_THEMES } from "./config/powerupWeights";
-import { setAudioMuted, useGameEngine } from "./hooks/useGameEngine";
+import { setAudioMuted, setAudioVolume, playVolumeChime, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
 import { useInputHandler } from "./hooks/useInputHandler";
-import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups } from "./engine/types";
+import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups, HoldCell } from "./engine/types";
 
 // Components - HUD
 import { EnergyBar } from "./components/HUD/EnergyBar";
 import { DustWidget } from "./components/HUD/DustWidget";
 import { Toast, RareSplash } from "./components/HUD/Toasts";
 import { Hearts } from "./components/HUD/Hearts";
-import { PwrBadges } from "./components/HUD/PwrBadges";
+import { PwrBar } from "./components/HUD/PwrBar";
 import { PlayerPanel } from "./components/HUD/PlayerPanel";
+import { ShieldDrop } from "./components/Animations/ShieldDrop";
+import { FreezeDrop } from "./components/Animations/FreezeDrop";
+import { EnergyDrop } from "./components/Animations/EnergyDrop";
 
 // Components - Screens
 import { LoadingScreen } from "./components/Screens/LoadingScreen";
@@ -25,6 +28,8 @@ import { StartScreen } from "./components/Screens/StartScreen";
 import { HowToPlay } from "./components/Screens/HowToPlay";
 import { GameOver, getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
+import { EvolveTutorial, shouldShowEvolveTutorial } from "./components/Screens/EvolveTutorial";
+import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
 
 // Components - Settings & Shop
 import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
@@ -34,12 +39,16 @@ import { LeaderboardPanel } from "./components/Leaderboard/LeaderboardPanel";
 import { DevOverlay, DevUnlockModal, DevFab } from "./components/Settings/DevOverlay";
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 
+// Daily Objective
+import { getDailyObjective, markObjectiveComplete, checkObjective, type DailyObjective } from "./config/dailyObjective";
+
 // Services
 import {
   fbAddScoreGlobal,
   fbCheckWeeklyBonus,
   fbFetchTop20Global,
   fbSyncDust,
+  fbGetStreak,
 } from "./services/firebase";
 
 // Types
@@ -140,18 +149,6 @@ function saveShopData(d: ShopData) {
   try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch {}
 }
 
-function loadStoredPwr() {
-  try {
-    const r = localStorage.getItem(LS_KEYS.STORED_PWR);
-    if (r) return JSON.parse(r);
-  } catch {}
-  return { freeze: 0, shield: 0, mult: 0, heart: 0 };
-}
-
-function saveStoredPwr(d: StoredPowerups) {
-  try { localStorage.setItem(LS_KEYS.STORED_PWR, JSON.stringify(d)); } catch {}
-}
-
 // --- App Component ---
 export default function App() {
   const [appReady, setAppReady] = useState(false);
@@ -173,46 +170,63 @@ export default function App() {
   const [shopData, setShopDataState] = useState(() => loadShopData());
 
   // Daily login streak (Phase 3 seed)
-  const [loginStreak, setLoginStreak] = useState(() => {
-    try {
-      const r = localStorage.getItem("dtp_login_streak");
-      if (!r) return { count: 1, lastDate: new Date().toDateString() };
-      const d = JSON.parse(r);
-      const today = new Date().toDateString();
-      const yesterday = new Date(Date.now() - 86400000).toDateString();
-      if (d.lastDate === today) return d;
-      if (d.lastDate === yesterday) {
-        const updated = { count: d.count + 1, lastDate: today };
-        localStorage.setItem("dtp_login_streak", JSON.stringify(updated));
-        return updated;
-      }
-      // Streak broken
-      const reset = { count: 1, lastDate: today };
-      localStorage.setItem("dtp_login_streak", JSON.stringify(reset));
-      return reset;
-    } catch { return { count: 1, lastDate: new Date().toDateString() }; }
-  });
+  const [loginStreak, setLoginStreak] = useState<{ count: number }>({ count: 1 });
 
-  // Persist login streak on first load
   useEffect(() => {
-    try { localStorage.setItem("dtp_login_streak", JSON.stringify(loginStreak)); } catch {}
+    fbGetStreak().then(streak => {
+      setLoginStreak({ count: streak });
+      localStorage.setItem("dtp_login_streak", JSON.stringify({
+        count: streak,
+        lastDate: new Date().toDateString()
+      }));
+    });
   }, []);
+
+  useEffect(() => {
+    if (shouldShowWhatsNew()) setShowWhatsNew(true);
+  }, []);
+
   const [gameMode, setGameMode]      = useState<GameMode>("classic");
   const [numPlayers, setNumPlayers]  = useState<NumPlayers>(1);
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
-  const [muted, setMuted]            = useState(false);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [muted, setMuted]            = useState(() => {
+    try { return localStorage.getItem("dtp_muted") === "true"; } catch { return false; }
+  });
+  const [volume, setVolumeState]     = useState(() => {
+    try { return parseFloat(localStorage.getItem("dtp_volume") || "0.7"); } catch { return 0.7; }
+  });
+  const [screenShake, setScreenShake] = useState(() => {
+    try { return localStorage.getItem("dtp_screen_shake") !== "false"; } catch { return true; }
+  });
+  const setVolume = useCallback((v: number) => {
+    setVolumeState(v);
+    try { localStorage.setItem("dtp_volume", v.toString()); } catch {}
+    setAudioVolume(v);
+    playVolumeChime();
+  }, []);
+  const toggleMuted = useCallback((m: boolean) => {
+    setMuted(m);
+    try { localStorage.setItem("dtp_muted", m.toString()); } catch {}
+    setAudioMuted(m);
+  }, []);
   const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
+  const [screen, setScreen]          = useState<GameScreen>("menu");
+  const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
   const [initials, setInitials]      = useState("");
   const [initialsEntered, setIE]     = useState(false);
   const [theme, setTheme]            = useState<"dark"|"light">("dark");
   const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
   const [showSettings, setShowSettings]     = useState(false);
+  const [settingsFromPause, setSettingsFromPause] = useState(false);
+  const [showEvolveTutorial, setShowEvolveTutorial] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showPrivacy, setShowPrivacy]       = useState(() => !localStorage.getItem(LS_KEYS.PRIVACY_OK));
-  const [best1, setBest1]           = useState(0);
-  const [best2, setBest2]           = useState(0);
+  const [best1, setBest1]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
+  const [best2, setBest2]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
   const [paused, setPaused]         = useState(false);
   const [devMode, setDevMode]       = useState(false);
   const [showDevUnlock, setShowDevUnlock] = useState(false);
@@ -230,13 +244,25 @@ export default function App() {
   const toast$ = useCallback((msg: string) => {
     if (toastRef.current) clearTimeout(toastRef.current);
     setToast(msg);
-    toastRef.current = setTimeout(() => setToast(null), 2200);
+    toastRef.current = setTimeout(() => setToast(null), GAME.TOAST_DURATION_MS);
   }, []);
 
-  // Dev Toggle — type //dev// in name field to unlock
+  // Dev Toggle — type //dev// in name field (legacy) OR type d→d→p on menu screen
+  const devKeyBuffer = useRef<string[]>([]);
   useEffect(() => {
-    // Shortcut removed for stealth (Task 6)
-  }, []);
+    if (devMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (screen !== "menu") return;
+      devKeyBuffer.current = [...devKeyBuffer.current.slice(-2), e.key.toLowerCase()];
+      if (devKeyBuffer.current.join("") === "ddp") {
+        setDevMode(true);
+        devKeyBuffer.current = [];
+        toast$("🔧 Dev mode");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, devMode, toast$]);
 
   // Engine Setup
   const [speedMult, setSpeedMult] = useState(1);
@@ -244,7 +270,8 @@ export default function App() {
     mode: gameMode,
     numPlayers,
     speedMult,
-  }), [gameMode, numPlayers, speedMult]);
+    godMode: godMode || practiceMode,
+  }), [gameMode, numPlayers, speedMult, godMode, practiceMode]);
 
   const handleEngineGameOver = useCallback((engineWinner: Winner, p1Score: number, p2Score: number) => {
     const earned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
@@ -252,14 +279,32 @@ export default function App() {
     setDust(newDust);
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
     fbSyncDust(playerName, newDust).catch(() => {});
-    setBest1((b: number) => Math.max(b, p1Score));
-    setBest2((b: number) => Math.max(b, p2Score));
+    setBest1((b: number) => { const nb = Math.max(b, p1Score); localStorage.setItem(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
+    setBest2((b: number) => { const nb = Math.max(b, p2Score); localStorage.setItem(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
     setShareMsg(getMessage(earned));
     setInitials(playerName || "Player");
     setIE(false);
     setPaused(false);
+    
+    // Daily objective check
+    const obj = getDailyObjective();
+    if (!obj.completed) {
+      const spd = snapshotRef.current ? speedLabel(snapshotRef.current.tick, false) : "1.0×";
+      const finalStreak = snapshotRef.current?.p1.streak ?? 0;
+      if (checkObjective(obj, snapshotRef.current?.tick ?? 0, finalStreak, p1Score, spd)) {
+        const completed = markObjectiveComplete();
+        if (completed) {
+          setDailyObjective(completed);
+          const bonusDust = newDust + completed.reward;
+          setDust(bonusDust);
+          localStorage.setItem(LS_KEYS.DUST, bonusDust.toString());
+          setTimeout(() => toast$(`🎯 Daily done! +${completed.reward} 💜`), 800);
+        }
+      }
+    }
+
     setScreen("gameover");
-  }, [numPlayers, dust, playerName]);
+  }, [numPlayers, dust, playerName, toast$]);
 
   const {
     snapshot,
@@ -279,6 +324,27 @@ export default function App() {
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
   } = useGameEngine(engineConfig, handleEngineGameOver);
 
+  const snapshotRef = useRef(snapshot);
+  useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
+
+  const resumeGame = useCallback(() => {
+    resumeEngine();
+    setPaused(false);
+  }, [resumeEngine]);
+
+  const pauseGame = useCallback(() => {
+    pauseEngine();
+    setPaused(true);
+  }, [pauseEngine]);
+
+  const closeSettings = useCallback(() => {
+    setShowSettings(false);
+    if (settingsFromPause && paused) {
+      // keep paused — user was in pause menu
+    }
+    setSettingsFromPause(false);
+  }, [settingsFromPause, paused]);
+
   // Dev Events
   useEffect(() => {
     const s = (e: CustomEvent) => devForceStage(e.detail);
@@ -294,7 +360,7 @@ export default function App() {
     };
   }, [devForceStage, devForcePattern, devForceRare]);
 
-  useEffect(() => { devSetGodMode(godMode); }, [godMode, devSetGodMode]);
+  useEffect(() => { devSetGodMode(godMode || practiceMode); }, [godMode, practiceMode, devSetGodMode]);
   useEffect(() => { devSetFreezeTime(devFreezeTime); }, [devFreezeTime, devSetFreezeTime]);
   useEffect(() => { devSetRotationSpeed(devRotationSpeed); }, [devRotationSpeed, devSetRotationSpeed]);
 
@@ -305,18 +371,18 @@ export default function App() {
     if (!devAutoPlay || !snapshot || snapshot.phase !== "playing") return;
     const dangerColor = snapshot.rareMode.active ? snapshot.rareMode.color : "purple";
     // Clamp bot speed to at most human-limit; add jitter so it doesn't feel mechanical
-    const tickMs = computeMs(snapshot.tick, false);
+    const tickMs = computeMs(snapshot.tick, 1);
     const botMs = Math.max(BOT_HUMAN_MIN_MS, tickMs * 0.85)
       + (Math.random() - 0.5) * BOT_REACTION_JITTER;
 
     const id = setTimeout(() => {
       const tapPlayer = (active: typeof snapshot.p1.active, player: 1 | 2) => {
         active
-          .filter(cell => !cell.clicked && cell.type !== dangerColor && cell.type !== "purple" && cell.type !== "hold")
+          .filter(cell => !cell.clicked && cell.type !== dangerColor)
           .forEach(cell => handleTap(player, cell.idx));
         // Handle hold cells: simulate a full hold
         active
-          .filter(cell => !cell.clicked && cell.type === "hold")
+          .filter((cell): cell is HoldCell => !cell.clicked && cell.type === "hold")
           .forEach(cell => {
             handleHoldStart(player, cell.idx);
             setTimeout(() => handleHoldEnd(player, cell.idx), (cell.holdRequired ?? 800) + 50);
@@ -343,6 +409,7 @@ export default function App() {
   });
 
   useEffect(() => { setAudioMuted(muted); }, [muted]);
+  useEffect(() => { setAudioVolume(volume); }, [volume]);
 
   // Escape key → pause/resume
   useEffect(() => {
@@ -359,6 +426,30 @@ export default function App() {
     if (theme === "light") document.documentElement.classList.add("light-theme");
     else document.documentElement.classList.remove("light-theme");
   }, [theme]);
+
+  // Apply shop theme CSS variables to document root
+  useEffect(() => {
+    const t = SHOP_THEMES.find(t => t.id === shopData.equippedTheme);
+    if (!t || t.id === "default") {
+      document.documentElement.style.removeProperty("--theme-purple");
+      document.documentElement.style.removeProperty("--theme-accent");
+      document.documentElement.style.removeProperty("--theme-bg");
+      document.documentElement.style.removeProperty("--theme-text");
+      document.documentElement.style.removeProperty("--bg");
+      document.documentElement.style.removeProperty("--purple");
+      document.documentElement.style.removeProperty("--accent");
+      document.documentElement.style.removeProperty("--text");
+      return;
+    }
+    document.documentElement.style.setProperty("--theme-purple", t.colors.purple);
+    document.documentElement.style.setProperty("--theme-accent", t.colors.accent);
+    document.documentElement.style.setProperty("--theme-bg", t.colors.bg);
+    document.documentElement.style.setProperty("--theme-text", t.colors.text);
+    document.documentElement.style.setProperty("--bg", t.colors.bg);
+    document.documentElement.style.setProperty("--purple", t.colors.purple);
+    document.documentElement.style.setProperty("--accent", t.colors.accent);
+    document.documentElement.style.setProperty("--text", t.colors.text);
+  }, [shopData.equippedTheme]);
 
   // Task 5: Natural Energy Regeneration
   const energyDataRef = useRef(energyData);
@@ -378,7 +469,7 @@ export default function App() {
         setEnergyData(newEd);
         localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
       }
-    }, 30000);
+    }, 10000);
     return () => clearInterval(id);
   }, []);
 
@@ -399,27 +490,30 @@ export default function App() {
   }, [playerName]);
 
   const startGame = useCallback(() => {
-    if (energyData.count <= 0) {
+    if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
     }
-    const newEd = { ...energyData, count: energyData.count - 1 };
-    localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-    setEnergyData(newEd);
+    if (!practiceMode) {
+      const newEd = { ...energyData, count: energyData.count - 1 };
+      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      setEnergyData(newEd);
+    }
+    if (gameMode === "evolve" && shouldShowEvolveTutorial()) {
+      setShowEvolveTutorial(true);
+      return;
+    }
     setScreen("playing");
     setPaused(false);
     startEngine();
-  }, [startEngine, energyData, toast$]);
+  }, [startEngine, energyData, practiceMode, gameMode, toast$]);
 
-  const resumeGame = useCallback(() => {
-    resumeEngine();
+  const dismissEvolveTutorial = useCallback(() => {
+    setShowEvolveTutorial(false);
+    setScreen("playing");
     setPaused(false);
-  }, [resumeEngine]);
-
-  const pauseGame = useCallback(() => {
-    pauseEngine();
-    setPaused(true);
-  }, [pauseEngine]);
+    startEngine();
+  }, [startEngine]);
 
   const goMenu = useCallback(() => {
     pauseEngine();
@@ -450,7 +544,7 @@ export default function App() {
 
   const submitScore = useCallback(async () => {
     const score = numPlayers === 1 ? snapshot?.p1.score : Math.max(snapshot?.p1.score || 0, (snapshot?.p2?.score || 0));
-    const entry = { score: score || 0, initials, date: new Date().toLocaleDateString(), mode: gameMode, badge: shopData.equippedBadge };
+    const entry = { score: score || 0, initials, mode: gameMode, badge: shopData.equippedBadge };
     setIE(true);
     try { await fbAddScoreGlobal(entry as any); } catch(_) {}
   }, [snapshot, initials, gameMode, shopData.equippedBadge, numPlayers]);
@@ -529,13 +623,18 @@ export default function App() {
         </div>
       )}
 
+      {showEvolveTutorial && <EvolveTutorial onClose={dismissEvolveTutorial} />}
+      {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
+
       {showSettings && (
         <SettingsDrawer
           colorblindMode={colorblindMode} setColorblindMode={setColorblindMode}
           theme={theme} setTheme={setTheme}
-          muted={muted} setMuted={setMuted}
+          muted={muted} setMuted={toggleMuted}
+          volume={volume} setVolume={setVolume}
+          screenShake={screenShake} setScreenShake={setScreenShake}
           isFS={isFS} toggleFS={toggleFS}
-          onClose={() => setShowSettings(false)}
+          onClose={closeSettings}
           onNameChange={() => setShowNameEntry(true)}
           playerName={playerName}
           onOpenBuildDeploy={() => setShowBuildDeploy(true)}
@@ -577,32 +676,74 @@ export default function App() {
         <div className="pause-overlay">
           <div className="pause-card">
             <div className="pause-title">⏸ PAUSED</div>
-            <div className="pause-score">
-              Score: <strong>{snapshot?.p1.score}{is2P ? ` · ${snapshot?.p2?.score}` : ""}</strong>
-              {(snapshot?.p1.streak ?? 0) >= 3 && <span className="pause-streak"> · 🔥 ×{snapshot?.p1.streak}</span>}
-            </div>
-            <div className="pause-speed-row">
-              Speed: <strong>{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</strong>
+            <div className="pause-hud-grid">
+              <div className="pause-hud-item">
+                <span className="pause-hud-label">Score</span>
+                <span className="pause-hud-value">{snapshot?.p1.score ?? 0}</span>
+              </div>
+              {is2P && (
+                <div className="pause-hud-item">
+                  <span className="pause-hud-label">P2 Score</span>
+                  <span className="pause-hud-value">{snapshot?.p2?.score ?? 0}</span>
+                </div>
+              )}
+              <div className="pause-hud-item">
+                <span className="pause-hud-label">Stage</span>
+                <span className="pause-hud-value">{(snapshot?.p1.gridStage ?? 0) + 1}</span>
+              </div>
+              <div className="pause-hud-item">
+                <span className="pause-hud-label">Streak</span>
+                <span className="pause-hud-value pause-hud-streak">{(snapshot?.p1.streak ?? 0) > 0 ? `🔥 ${snapshot?.p1.streak}` : "—"}</span>
+              </div>
+              <div className="pause-hud-item">
+                <span className="pause-hud-label">Speed</span>
+                <span className="pause-hud-value">{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</span>
+              </div>
+              {snapshot && snapshot.p1.freezeEnd > Date.now() && (
+                <div className="pause-hud-item">
+                  <span className="pause-hud-label">Freeze</span>
+                  <span className="pause-hud-value pause-hud-freeze">❄ {Math.ceil((snapshot.p1.freezeEnd - Date.now()) / 1000)}s</span>
+                </div>
+              )}
+              {snapshot && snapshot.p1.multiplierEnd > Date.now() && (
+                <div className="pause-hud-item">
+                  <span className="pause-hud-label">Multiplier</span>
+                  <span className="pause-hud-value pause-hud-mult">⚡ {Math.ceil((snapshot.p1.multiplierEnd - Date.now()) / 1000)}s</span>
+                </div>
+              )}
+              {snapshot && snapshot.p1.shieldCount > 0 && (
+                <div className="pause-hud-item">
+                  <span className="pause-hud-label">Shield</span>
+                  <span className="pause-hud-value pause-hud-shield">🛡 ×{snapshot.p1.shieldCount}</span>
+                </div>
+              )}
             </div>
             <button className="btn-play" onClick={resumeGame}>▶ RESUME</button>
             <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => {
               resumeEngine();
               setPaused(false);
-              // Restart: refund then spend so energy stays same; just restart engine
               setTimeout(() => { startEngine(); }, 50);
             }}>↺ Restart</button>
             <div className="pause-settings-row">
-              <button className="pause-setting-btn" onClick={() => setMuted(m => !m)} title="Sound">
-                {muted ? "🔇" : "🔊"}<span>{muted ? "Muted" : "Sound On"}</span>
+              <button
+                className={`pause-setting-btn${muted ? " pause-setting-btn--active-mute" : " pause-setting-btn--active-sound"}`}
+                onClick={() => setMuted(m => !m)} title="Sound">
+                {muted ? "🔇" : "🔊"}<span>{muted ? "Muted" : "Sound"}</span>
               </button>
               <button className="pause-setting-btn" onClick={toggleFS} title="Fullscreen">
-                {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : "Fullscreen"}</span>
+                {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : "Full"}</span>
               </button>
-              <button className="pause-setting-btn" onClick={() => { resumeGame(); setTimeout(() => setShowSettings(true), 100); }} title="Settings">
-                ⚙<span>Settings</span>
+              <button className="pause-setting-btn" onClick={() => { setSettingsFromPause(true); setShowSettings(true); }} title="Settings">
+                ⚙️<span>Settings</span>
               </button>
             </div>
-            <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={goMenu}>🏠 Exit to Menu</button>
+              <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => {
+              if (window.confirm("Exit to menu? Your current game will end.")) {
+                resumeEngine();
+                setPaused(false);
+                goMenu();
+              }
+            }}>🏠 Exit to Menu</button>
             <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>Esc to resume · Exiting ends your game</div>
           </div>
         </div>
@@ -618,6 +759,7 @@ export default function App() {
             {snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop" ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
           </span>
         </span>
+        {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
           <DustWidget dust={dust} />
           {isPlaying && screen === "playing"
@@ -658,6 +800,7 @@ export default function App() {
       {screen === "menu" && (
         <StartScreen
           playerName={playerName}
+          dailyObjective={dailyObjective}
           energyCount={energyData.count}
           energyLastRegen={energyData.lastRegen}
           dust={dust}
@@ -668,6 +811,8 @@ export default function App() {
           setNumPlayers={setNumPlayers}
           inputMode={inputMode}
           setInputMode={setInputMode}
+          practiceMode={practiceMode}
+          setPracticeMode={setPracticeMode}
           onPlay={startGame}
           onHowTo={() => setScreen("howto")}
           onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
@@ -767,6 +912,8 @@ export default function App() {
 
       {isPlaying && snapshot && (
         <div className="game-area">
+          <PwrBar ps={snapshot.p1} />
+          
           {screen === "gameover" && (
             <div className="go-overlay">
               <GameOver
@@ -792,6 +939,13 @@ export default function App() {
               />
             </div>
           )}
+          
+          <ShieldDrop active={pwrToastP1?.includes("Shield") ?? false} />
+          <FreezeDrop active={pwrToastP1?.includes("Freeze") ?? false} />
+          <EnergyDrop active={pwrToastP1?.includes("multiplier") ?? false} />
+          {is2P && <ShieldDrop active={pwrToastP2?.includes("Shield") ?? false} />}
+          {is2P && <FreezeDrop active={pwrToastP2?.includes("Freeze") ?? false} />}
+          {is2P && <EnergyDrop active={pwrToastP2?.includes("multiplier") ?? false} />}
 
           <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim} 
             onTap={i => { handleTap(1, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
@@ -808,7 +962,8 @@ export default function App() {
             storedShieldCharges={snapshot.p1.storedShieldCharges}
             onActivateFreeze={() => activateStoredFreeze(1)}
             onActivateShield={() => activateStoredShield(1)}
-            showStoredPwr={screen === "playing"} />
+            showStoredPwr={screen === "playing"}
+            practiceMode={practiceMode} />
           {is2P && (
             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
               onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
@@ -819,7 +974,13 @@ export default function App() {
               cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
               onPause={pauseGame} isFS={isFS}
               equippedSkin={shopData.equippedSkin} snapshot={snapshot}
-              pwrToast={pwrToastP2} />
+              pwrToast={pwrToastP2}
+              storedFreezeCharges={snapshot.p2.storedFreezeCharges}
+              storedShieldCharges={snapshot.p2.storedShieldCharges}
+              onActivateFreeze={() => activateStoredFreeze(2)}
+              onActivateShield={() => activateStoredShield(2)}
+              showStoredPwr={screen === "playing"}
+              practiceMode={practiceMode} />
           )}        </div>
       )}
 

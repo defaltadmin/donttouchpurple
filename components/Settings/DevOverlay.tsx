@@ -31,6 +31,7 @@ interface DevOverlayProps {
   onResetHeatmap:    () => void;
   gridCols:          number;
   gridRows:          number;
+  onOpenBuildDeploy?: () => void;
 }
 
 const SPARKLINE_CAP = 30;
@@ -50,11 +51,11 @@ function Sparkline({ data }: { data: number[] }) {
   );
 }
 
-function Section({ title, icon, children, defaultOpen = true, help }: { title: string; icon: string; children: React.ReactNode; defaultOpen?: boolean; help?: string }) {
+function Section({ title, icon, children, defaultOpen = true, help, onToggle }: { title: string; icon: string; children: React.ReactNode; defaultOpen?: boolean; help?: string; onToggle?: (open: boolean) => void }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="devs-section">
-      <button className="devs-section-hdr" onClick={() => setOpen(o => !o)} title={help}>
+      <button className="devs-section-hdr" onClick={() => { const next = !open; setOpen(next); onToggle?.(next); }} title={help}>
         <span>{icon} {title}</span>
         <span style={{ opacity: 0.5 }}>{open ? "▲" : "▼"}</span>
       </button>
@@ -154,9 +155,17 @@ export function DevOverlay({
   godMode, onGodModeToggle, speedMult, onSpeedMult, rotationSpeed, onRotationSpeed,
   freezeTime, onFreezeTimeToggle, dust, onDustAdd, onSpawnPowerup, gameSeed,
   autoPlay, onAutoPlayToggle, heatmap, onResetHeatmap, gridCols, gridRows,
+  onOpenBuildDeploy,
 }: DevOverlayProps) {
   const [tickMs, setTickMs] = useState<number[]>([]);
+  const [tuningOpen, setTuningOpen] = useState(false);
   const lastTickRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (tuningOpen) document.body.setAttribute("data-tuning-open", "true");
+    else document.body.removeAttribute("data-tuning-open");
+    return () => document.body.removeAttribute("data-tuning-open");
+  }, [tuningOpen]);
 
   useEffect(() => {
     const now = Date.now();
@@ -169,7 +178,7 @@ export function DevOverlay({
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 900;
 
   return (
-    <div className="devs-overlay">
+    <div className={`devs-overlay${tuningOpen ? " devs-overlay--tuning-open" : ""}`}>
       {isDesktop && (
         <div className="devs-panel devs-panel--left">
           <div className="devs-header">
@@ -324,6 +333,15 @@ export function DevOverlay({
               help="End rare mode immediately" />
           </div>
         </Section>
+
+        {onOpenBuildDeploy && (
+          <Section title="Engine Tuning" icon="⚙" defaultOpen={false} onToggle={setTuningOpen}>
+            <div className="devs-sublabel">Advanced difficulty constants</div>
+            <button className="devs-btn-full" onClick={() => { onClose(); onOpenBuildDeploy(); }}>
+              ⚙ Tune Difficulty Constants
+            </button>
+          </Section>
+        )}
 
         <div style={{ height: 16 }} />
         <div style={{ fontSize: 9, opacity: 0.2, fontFamily: "monospace", textAlign: "center" }}>

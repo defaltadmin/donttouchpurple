@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import { EVOLVE_PATTERNS } from "../config/gridPatterns";
+import { GAME } from "../config/difficulty";
 import type { GameMode, PlayerState } from "../engine/types";
 
 // ─── Hook options ─────────────────────────────────────────────────
@@ -50,6 +51,9 @@ export function useInputHandler({
   const p2StateRef = useRef(p2State);
   const modeRef    = useRef(mode);
   const npRef      = useRef(numPlayers);
+  const onTapRef       = useRef(onTap);
+  const onHoldStartRef = useRef(onHoldStart);
+  const onHoldEndRef   = useRef(onHoldEnd);
 
   useEffect(() => { p1KeysRef.current  = p1Keys;     }, [p1Keys]);
   useEffect(() => { p2KeysRef.current  = p2Keys;     }, [p2Keys]);
@@ -57,6 +61,9 @@ export function useInputHandler({
   useEffect(() => { p2StateRef.current = p2State;    }, [p2State]);
   useEffect(() => { modeRef.current    = mode;       }, [mode]);
   useEffect(() => { npRef.current      = numPlayers; }, [numPlayers]);
+  useEffect(() => { onTapRef.current       = onTap;       }, [onTap]);
+  useEffect(() => { onHoldStartRef.current = onHoldStart; }, [onHoldStart]);
+  useEffect(() => { onHoldEndRef.current   = onHoldEnd;   }, [onHoldEnd]);
 
   // ── Key → grid index resolver ──
   const resolveKey = useCallback((
@@ -83,6 +90,8 @@ export function useInputHandler({
   useEffect(() => {
     if (!enabled) return;
 
+    const holdKeyTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
       if (e.key === "Escape") { onPause(); return; }
@@ -92,32 +101,49 @@ export function useInputHandler({
         ? resolveKey(e.key, p2KeysRef.current, p2StateRef.current)
         : -1;
 
-      if (i1 !== -1) {
+      const processKey = (player: 1 | 2, idx: number) => {
+        if (idx === -1) return;
         e.preventDefault();
-        setPressP1(s => new Set([...s, i1]));
-        const existing1 = pressP1TimersRef.current.get(i1);
-        if (existing1) clearTimeout(existing1);
-        pressP1TimersRef.current.set(i1, setTimeout(() => {
-          setPressP1(s => { const n = new Set(s); n.delete(i1); return n; });
-          pressP1TimersRef.current.delete(i1);
-        }, 150));
-        onTap(1, i1);
-      } else if (i2 !== -1) {
-        e.preventDefault();
-        setPressP2(s => new Set([...s, i2]));
-        const existing2 = pressP2TimersRef.current.get(i2);
-        if (existing2) clearTimeout(existing2);
-        pressP2TimersRef.current.set(i2, setTimeout(() => {
-          setPressP2(s => { const n = new Set(s); n.delete(i2); return n; });
-          pressP2TimersRef.current.delete(i2);
-        }, 150));
-        onTap(2, i2);
-      }
+
+        const state = player === 1 ? p1StateRef.current : p2StateRef.current;
+        const cell = state?.active.find(c => c.idx === idx);
+        const isHold = cell?.type === "hold" && !(cell as any).clicked;
+
+        if (isHold) {
+          const holdKey = `${player}_${idx}`;
+          if (holdKeyTimers.has(holdKey)) clearTimeout(holdKeyTimers.get(holdKey)!);
+          onHoldStartRef.current(player, idx);
+          const holdMs = ((cell as any).holdRequired ?? 800) + 50;
+          holdKeyTimers.set(holdKey, setTimeout(() => {
+            onHoldEndRef.current(player, idx);
+            holdKeyTimers.delete(holdKey);
+          }, holdMs));
+        }
+
+        setPressP1(s => { const n = new Set(s); if (player === 1) n.add(idx); return n; });
+        setPressP2(s => { const n = new Set(s); if (player === 2) n.add(idx); return n; });
+        const timers = player === 1 ? pressP1TimersRef : pressP2TimersRef;
+        const existing = timers.current.get(idx);
+        if (existing) clearTimeout(existing);
+        timers.current.set(idx, setTimeout(() => {
+          if (player === 1) setPressP1(s => { const n = new Set(s); n.delete(idx); return n; });
+          else setPressP2(s => { const n = new Set(s); n.delete(idx); return n; });
+          timers.current.delete(idx);
+        }, GAME.KEY_PRESS_VISUAL_MS));
+
+        if (!isHold) onTapRef.current(player, idx);
+      };
+
+      if (i1 !== -1) processKey(1, i1);
+      else if (i2 !== -1) processKey(2, i2);
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enabled, onTap, onPause, resolveKey]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      holdKeyTimers.forEach(id => clearTimeout(id));
+    };
+  }, [enabled, onPause, resolveKey]);
 
   // ── Pointer event factory (returned to caller for Cell components) ──
   // Note: pointer events are wired directly in PlayerPanel JSX via onTap/onHoldStart/onHoldEnd.

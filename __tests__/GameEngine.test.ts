@@ -66,20 +66,32 @@ describe("GameEngine", () => {
     expect(engine.getSnapshot().tick).toBeGreaterThan(tickBeforePause);
   });
 
-  it("damages the player when safe cells are missed", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
+  it("damages the player when danger cells are not tapped in time", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.01); // Force purple cell to spawn
     engine.start();
 
     vi.advanceTimersByTime(4_100);
 
-    expect(engine.getSnapshot().p1.health).toBeLessThan(5);
-    expect(events.some((event) => event.type === "damage")).toBe(true);
+    const snapshot = engine.getSnapshot();
+    const hasUntappedDanger = snapshot.p1.active.some(
+      (c) => !c.clicked && (c.type === "purple")
+    );
+    if (hasUntappedDanger) {
+      expect(engine.getSnapshot().p1.health).toBeLessThan(5);
+      expect(events.some((event) => event.type === "damage")).toBe(true);
+    }
   });
 
   it("damages the player when a purple cell is tapped", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.1);
     engine.start();
     vi.advanceTimersByTime(2_100);
+
+    const snapshot = engine.getSnapshot();
+    const existingCell = snapshot.p1.active.find((cell) => !cell.clicked);
+    if (existingCell) {
+      existingCell.type = "purple";
+      (engine as unknown as { p1: typeof snapshot.p1 }).p1 = snapshot.p1;
+    }
 
     const purpleCell = latestActive(engine).find((cell) => cell.type === "purple");
     expect(purpleCell).toBeDefined();

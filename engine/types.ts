@@ -7,22 +7,38 @@ export type CellType =
   | "medpack" | "shield" | "freeze" | "multiplier"
   | "ice" | "hold";
 
-export type CellShape = "square" | "circle" | "triangle" | "mixed";
+export type CellShape = "square" | "circle" | "triangle" | "roundedTriangle" | "mixed";
 
 export type GameMode   = "classic" | "evolve";
 export type NumPlayers = 1 | 2;
 export type Winner     = "p1" | "p2" | "tie" | null;
 
 // ─── Active cell (in-flight, not yet resolved) ────────────────────
-export interface ActiveCell {
-  idx:          number;
-  type:         CellType;
-  clicked:      boolean;
-  iceCount?:    number;   // taps remaining for ice blocks
-  holdStart?:   number;   // timestamp when hold began
-  holdRequired?: number;  // ms needed to complete hold
-  _holding?:    boolean;  // internal: player is actively holding
-}
+type BaseCell = {
+  idx: number;
+  clicked: boolean;
+};
+
+export type RegularCell = BaseCell & {
+  type: "white" | "blue" | "red" | "orange" | "yellow" | "green" | "cyan" | "lime" | "teal" | "pink" | "rose" | "magenta" | "purple";
+};
+
+export type IceCell = BaseCell & {
+  type: "ice";
+  iceCount: number;
+};
+
+export type HoldCell = BaseCell & {
+  type: "hold";
+  holdRequired: number;
+  holdStart?: number;
+};
+
+export type PowerupCell = BaseCell & {
+  type: "medpack" | "shield" | "freeze" | "multiplier";
+};
+
+export type ActiveCell = RegularCell | IceCell | HoldCell | PowerupCell;
 
 // ─── Per-player live state ────────────────────────────────────────
 export interface PlayerState {
@@ -42,7 +58,7 @@ export interface PlayerState {
   patternIdx:          number;           // current EVOLVE_PATTERNS index
   storedFreezeCharges: number;
   storedShieldCharges: number;
-  pendingStageUpdate?: boolean;          // Task 2: defer stage change
+  pendingStageUpdate?: boolean;
 }
 
 // ─── Rare color mode ──────────────────────────────────────────────
@@ -65,6 +81,7 @@ export interface GameConfig {
   mode:       GameMode;
   numPlayers: NumPlayers;
   speedMult:  number;      // iMultRef equivalent
+  godMode?:   boolean;     // practice / dev invincibility
   storage?: {
     loadStoredPowerups: () => StoredPowerups;
     saveStoredPowerups: (data: StoredPowerups) => void;
@@ -82,7 +99,7 @@ export interface GameSnapshot {
   rareMode:   RareColorMode;
   spinLevel:  number;
   paused:     boolean;
-  phase:      "playing" | "paused" | "gameover";
+  phase:      "playing" | "paused" | "gameover" | "humanlimit";
   grid: {
     cols: number;
     rows: number;
@@ -104,4 +121,4 @@ export type GameEvent =
   | { type: "rareStart";   color: string; cssColor: string }
   | { type: "cellAnim";    player: 1 | 2; idx: number; anim: "pop" | "shake" }
   | { type: "gameOver";    winner: Winner }
-  | { type: "phaseChange"; phase: GameSnapshot["phase"] };
+  | { type: "phaseChange"; phase: "playing" | "paused" | "gameover" | "humanlimit" };

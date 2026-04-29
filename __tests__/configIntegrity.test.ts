@@ -8,7 +8,7 @@ import { POWERUP_TABLE, SHOP_THEMES } from "../config/powerupWeights";
 describe("config integrity", () => {
   it("keeps the expected stage and pattern counts", () => {
     expect(STAGES).toHaveLength(10);
-    expect(EVOLVE_PATTERNS).toHaveLength(25);
+    expect(EVOLVE_PATTERNS).toHaveLength(28);
     expect(RARE_COLORS).toHaveLength(7);
   });
 
@@ -42,5 +42,7 @@ describe("config integrity", () => {
     expect(SHOP_THEMES[0]?.id).toBe("default");
     expect(Object.values(LS_KEYS)).toContain("dtp-stored-pwr");
     expect(Object.values(LS_KEYS)).toContain("dtp-keys-p1");
+    expect(Object.values(LS_KEYS)).toContain("dtp-best-classic");
+    expect(Object.values(LS_KEYS)).toContain("dtp-best-evolve");
   });
 });

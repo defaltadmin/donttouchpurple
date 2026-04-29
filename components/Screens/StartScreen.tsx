@@ -78,6 +78,8 @@ export interface StartScreenProps {
   setNumPlayers:   (n: NumPlayers) => void;
   inputMode:       InputMode;
   setInputMode:    (m: InputMode) => void;
+  practiceMode:    boolean;
+  setPracticeMode: (v: boolean) => void;
   energyCount:     number;
   energyLastRegen: number;
   dust:            number;
@@ -92,6 +94,7 @@ export interface StartScreenProps {
   onSwitchPlayer:  () => void;
   dustWidget:      React.ReactNode;
   energyBar:       React.ReactNode;
+  dailyObjective?: import("../../config/dailyObjective").DailyObjective;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -99,12 +102,14 @@ export function StartScreen({
   gameMode, setGameMode,
   numPlayers, setNumPlayers,
   inputMode, setInputMode,
+  practiceMode, setPracticeMode,
   energyCount, energyLastRegen,
   dust, devMode,
   playerName,
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
   onRefillEnergy, onSwitchPlayer,
   dustWidget, energyBar,
+  dailyObjective,
 }: StartScreenProps) {
   const isKbd = inputMode === "keyboard";
 
@@ -144,6 +149,13 @@ export function StartScreen({
             options={[{ value: "touch", label: "👆 Touch" }, { value: "keyboard", label: "⌨ Keys" }]}
             value={inputMode} onChange={setInputMode} />
         </div>
+        <div className="opt-section">
+          <div className="opt-label">🎯 Practice Mode</div>
+          <PillRow<"on" | "off">
+            options={[{ value: "on", label: "∞ Unlimited" }, { value: "off", label: "⚡ Normal" }]}
+            value={practiceMode ? "on" : "off"}
+            onChange={(v) => setPracticeMode(v === "on")} />
+        </div>
       </div>
 
       {(devMode || energyCount > 0) ? (
@@ -158,6 +170,13 @@ export function StartScreen({
             title={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} 💜 dust` : ""}>
             💜 Spend {GAME.DUST_PER_ENERGY} dust to refill
           </button>
+        </div>
+      )}
+
+      {dailyObjective && (
+        <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}>
+          🎯 {dailyObjective.description} → +{dailyObjective.reward} 💜
+          {dailyObjective.completed && " ✓"}
         </div>
       )}
 

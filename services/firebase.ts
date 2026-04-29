@@ -10,7 +10,6 @@ const FIREBASE_CONFIG = {
 
 let dbInstance: any = null;
 
-// Preserve the existing production-only Firebase gating.
 const IS_PROD =
   typeof window !== "undefined" &&
   window.location.hostname === "game.mscarabia.com";
@@ -104,4 +103,47 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getApp, getApps } from "firebase/app";
+
+let appInstance: any = null;
+
+async function getAppInstance(): Promise<any> {
+  if (appInstance) return appInstance;
+  if (getApps().length) { appInstance = getApps()[0]; return appInstance; }
+  const { initializeApp } = await import("firebase/app");
+  appInstance = initializeApp(FIREBASE_CONFIG);
+  return appInstance;
+}
+
+export function getDeviceId(): string {
+  const key = "dtp-device-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+export async function fbGetStreak(): Promise<number> {
+  try {
+    if (!IS_PROD) return getLocalStreakFallback();
+    const app = await getAppInstance();
+    const func = httpsCallable(getFunctions(app), "updateStreak");
+    const result = await func({ deviceId: getDeviceId() });
+    return (result.data as any).streak;
+  } catch {
+    return getLocalStreakFallback();
+  }
+}
+
+function getLocalStreakFallback(): number {
+  try {
+    const raw = localStorage.getItem("dtp_login_streak");
+    if (!raw) return 1;
+    return JSON.parse(raw).count ?? 1;
+  } catch { return 1; }
 }

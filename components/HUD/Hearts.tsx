@@ -7,9 +7,18 @@ interface HeartsProps {
   health: number;
   anim: boolean;
   shieldCount?: number;
+  practiceMode?: boolean;
 }
 
-export function Hearts({ health, anim, shieldCount }: HeartsProps) {
+export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps) {
+  if (practiceMode) {
+    return (
+      <div className="hearts hearts--practice">
+        <span className="hearts-infinity">∞</span>
+      </div>
+    );
+  }
+
   const sc = shieldCount ?? 0;
   const actualHealth  = Math.max(0, health);
   const displayHealth = Math.min(actualHealth, MAX_HEARTS * 2);

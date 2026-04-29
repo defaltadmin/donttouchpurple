@@ -18,6 +18,22 @@ export const GAME = {
   MAX_ENERGY:       5,
   ENERGY_REGEN_MS:  15 * 60 * 1000, // 15 min
   DUST_PER_ENERGY:  50,
+  // Timing
+  HUMAN_LIMIT_TICK: 420,
+  SURVIVAL_BONUS_START_TICK: 60,
+  GAME_OVER_TICK:   600,
+  HOLD_TIMEOUT_MS:  5000,
+  KEY_PRESS_VISUAL_MS: 150,
+  TOAST_DURATION_MS: 2200,
+  PWR_TOAST_DURATION_MS: 2000,
+  HEART_ANIM_MS:    420,
+  SHAKE_ANIM_MS:    400,
+  LEVELUP_BADGE_MS: 2200,
+  RARE_SPLASH_MS:   5000,
+  GAME_OVER_DELAY_MS: 400,
+  CELL_ANIM_MS:     500,
+  SHIELD_DROP_MS:   1100,
+  TAP_BUFFER_MS:    50,
 } as const;
 
 // ─── localStorage keys ────────────────────────────────────────────
@@ -33,4 +49,6 @@ export const LS_KEYS = {
   SHOP:         "dtp-shop",
   WEEKLY_BONUS: "dtp-weekly-bonus",
   STORED_PWR:   "dtp-stored-pwr",
+  BEST_CLASSIC: "dtp-best-classic",
+  BEST_EVOLVE:  "dtp-best-evolve",
 } as const;

@@ -10,6 +10,10 @@ interface SettingsDrawerProps {
   setTheme: (theme: "dark" | "light") => void;
   muted: boolean;
   setMuted: (muted: boolean) => void;
+  volume: number;
+  setVolume: (v: number) => void;
+  screenShake: boolean;
+  setScreenShake: (v: boolean) => void;
   isFS: boolean;
   toggleFS: () => void;
   onClose: () => void;
@@ -25,6 +29,10 @@ export function SettingsDrawer({
   setTheme,
   muted,
   setMuted,
+  volume,
+  setVolume,
+  screenShake,
+  setScreenShake,
   isFS,
   toggleFS,
   onClose,
@@ -51,10 +59,34 @@ export function SettingsDrawer({
 
         <div className="opt-section">
           <div className="opt-label">🔊 Sound</div>
+          <div className="vol-row">
+            <button
+              className={`vol-mute-btn${muted ? " vol-mute-btn--muted" : ""}`}
+              onClick={() => setMuted(!muted)}
+              aria-label={muted ? "Unmute" : "Mute"}
+            >
+              {muted ? "🔇" : volume < 0.4 ? "🔈" : volume < 0.7 ? "🔉" : "🔊"}
+            </button>
+            <input
+              type="range"
+              className="vol-slider"
+              min="0"
+              max="1"
+              step="0.05"
+              value={muted ? 0 : volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              disabled={muted}
+            />
+            <span className="vol-pct">{muted ? "Muted" : `${Math.round(volume * 100)}%`}</span>
+          </div>
+        </div>
+
+        <div className="opt-section">
+          <div className="opt-label">📳 Screen Shake</div>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "🔊 On" }, { value: "off", label: "🔇 Off" }]}
-            value={muted ? "off" : "on"}
-            onChange={(value) => setMuted(value === "off")}
+            options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+            value={screenShake ? "on" : "off"}
+            onChange={(v) => setScreenShake(v === "on")}
           />
         </div>
 
@@ -91,22 +123,6 @@ export function SettingsDrawer({
               onClick={() => { onClose(); setTimeout(onNameChange, 150); }}
             >
               ✏️ Change Name
-            </button>
-          </div>
-        )}
-
-        {onOpenBuildDeploy && (
-          <div className="opt-section">
-            <div className="opt-label">🔧 Balance & Deploy</div>
-            <button
-              className="btn-ghost"
-              style={{ width: "100%", textAlign: "center" }}
-              onClick={() => {
-                onClose();
-                setTimeout(onOpenBuildDeploy!, 150);
-              }}
-            >
-              ⚙ Tune Difficulty Constants
             </button>
           </div>
         )}

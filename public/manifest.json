@@ -1,0 +1,19 @@
+{
+  "name": "Don't Touch the Purple",
+  "short_name": "DTP",
+  "description": "Tap fast. Avoid purple. Survive.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0820",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"]
+}

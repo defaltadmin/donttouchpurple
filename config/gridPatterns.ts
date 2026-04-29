@@ -69,6 +69,12 @@ export const EVOLVE_PATTERNS: EvolvePattern[] = [
   // Mixed
   { cols:3, rows:4, mask:[0,1,2,5,8,9,10,11,7], minStage:2 },
   { cols:3, rows:4, mask:[0,2,3,5,6,8,9,11], minStage:2 },
+  // Checkerboard 3×3 (alternating cells)
+  { cols:3, rows:3, mask:[0,2,4,6,8], minStage:1 },
+  // Snake through 4×3
+  { cols:4, rows:3, mask:[0,1,2,3,7,6,5,4,8,9,10,11].slice(0,8), minStage:3 },
+  // Diagonal strip in 4×4
+  { cols:4, rows:4, mask:[0,1,4,5,6,9,10,11,14,15], minStage:3 },
 ];
 
 // ─── Rare color mode table ────────────────────────────────────────

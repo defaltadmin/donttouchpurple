@@ -7,27 +7,43 @@ import type {
   GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
 } from "./types";
 
+// ─── Seeded PRNG (mulberry32) ─────────────────────────────────────
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return function () {
+    s += 0x6d2b79f5;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // ─── Safe cell palette ────────────────────────────────────────────
 const SAFE: CellType[] = [
   "white","blue","red","orange","yellow",
   "green","cyan","lime","teal","pink","rose","magenta",
 ];
 
+const TEMP_CELLS: CellType[] = new Array(25).fill("inactive");
+
 // ─── Pure helpers ─────────────────────────────────────────────────
-function randCell(tick = 0, isClassic = false): CellType {
+function randCell(rng: () => number, tick = 0, isClassic = false): CellType {
   const purpleChance = isClassic
     ? Math.min(0.42, 0.22 + Math.floor(tick / 20) * 0.02)
     : 0.22;
-  if (Math.random() < purpleChance) return "purple";
-  return SAFE[Math.floor(Math.random() * SAFE.length)];
+  if (rng() < purpleChance) return "purple";
+  return SAFE[Math.floor(rng() * SAFE.length)];
 }
 
 function pickCellShape(tick: number): CellShape {
-  const cycle = Math.floor(tick / 8) % 5;
+  const cycle = Math.floor(tick / 6) % 8;
   if (cycle === 0) return "square";
-  if (cycle === 1) return "circle";
-  if (cycle === 2) return "square";
-  if (cycle === 3) return "triangle";
+  if (cycle === 1) return "triangle";
+  if (cycle === 2) return "circle";
+  if (cycle === 3) return "roundedTriangle";
+  if (cycle === 4) return "mixed";
+  if (cycle === 5) return "triangle";
+  if (cycle === 6) return "square";
   return "mixed";
 }
 
@@ -35,26 +51,28 @@ function activeToCellsP(
   active: ActiveCell[],
   pattern: { cols: number; rows: number; mask: number[] | null }
 ): CellType[] {
+  for (let i = 0; i < 25; i++) TEMP_CELLS[i] = "inactive";
   const { cols, rows, mask } = pattern;
   const gridTotal = cols * rows;
-  const cells: CellType[] = Array(25).fill("inactive");
   if (mask) {
     const maskSet = new Set(mask);
     for (let i = 0; i < gridTotal; i++) {
-      if (!maskSet.has(i)) cells[i] = "void" as CellType;
+      if (!maskSet.has(i)) TEMP_CELLS[i] = "void" as CellType;
     }
   }
-  active.forEach(c => { if (!c.clicked) cells[c.idx] = c.type; });
-  return cells;
+  active.forEach(c => { if (!c.clicked) TEMP_CELLS[c.idx] = c.type; });
+  return TEMP_CELLS.slice();
 }
 
 function spawnActive(
+  rng: () => number,
   stage: number,
   health: number,
   patternOverride?: { cols: number; rows: number; mask: number[] | null },
   isEvolve?: boolean,
   rareColor?: string,
-  tick = 0
+  tick = 0,
+  godMode = false
 ): ActiveCell[] {
   const pat = patternOverride ?? STAGES[Math.min(stage, STAGES.length - 1)];
   const { mask } = pat;
@@ -64,11 +82,11 @@ function spawnActive(
 
   const minCount = Math.min(2 + Math.floor(stage * 0.4), validCount - 1);
   const maxCount = Math.min(2 + Math.floor(stage * 0.6), Math.min(validCount - 1, 5));
-  const count = Math.max(1, minCount + Math.floor(Math.random() * (maxCount - minCount + 1)));
+  const count = Math.max(1, minCount + Math.floor(rng() * (maxCount - minCount + 1)));
 
   const pool = [...validSlots];
   for (let i = 0; i < count; i++) {
-    const j = i + Math.floor(Math.random() * (pool.length - i));
+    const j = i + Math.floor(rng() * (pool.length - i));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   const idxs = pool.slice(0, count);
@@ -76,12 +94,13 @@ function spawnActive(
   let powerup: CellType | null = null;
   const powerupEligible = isEvolve ? stage >= 2 : true;
   if (powerupEligible) {
-    const table = POWERUP_TABLE.map(p =>
+    let table = POWERUP_TABLE.map(p =>
       p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
     );
+    if (godMode) table = table.filter(p => p.type !== "medpack");
     const totalWeight = table.reduce((s, p) => s + p.weight, 0);
     const effectiveTotal = isEvolve ? totalWeight : totalWeight * 0.4;
-    const roll = Math.random() * 100;
+    const roll = rng() * 100;
     if (roll < effectiveTotal) {
       let cursor = 0;
       for (const p of table) {
@@ -93,26 +112,26 @@ function spawnActive(
 
   let evolveSpecial: CellType | null = null;
   if (isEvolve && stage >= 3) {
-    const r = Math.random();
+    const r = rng();
     if (r < 0.10) evolveSpecial = "ice";
     else if (r < 0.17) evolveSpecial = "hold";
   }
 
   return idxs.map((idx, i) => {
-    if (i === 0 && powerup) return { idx, clicked: false, type: powerup };
+    if (i === 0 && powerup) return { idx, clicked: false, type: powerup } as any;
     if (i === 0 && evolveSpecial === "ice") {
-      return { idx, clicked: false, type: "ice" as CellType, iceCount: 2 + Math.floor(Math.random() * 3) };
+      return { idx, clicked: false, type: "ice", iceCount: 2 + Math.floor(rng() * 3) };
     }
     if (i === 0 && evolveSpecial === "hold") {
-      return { idx, clicked: false, type: "hold" as CellType, holdRequired: 700 + Math.random() * 500 };
+      return { idx, clicked: false, type: "hold", holdRequired: 700 + rng() * 500 };
     }
-    const baseType = randCell(tick, !isEvolve);
-    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor as CellType };
-    return { idx, clicked: false, type: baseType };
+    const baseType = randCell(rng, tick, !isEvolve);
+    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor as any };
+    return { idx, clicked: false, type: baseType } as any;
   });
 }
 
-function pickPattern(stage: number, lastIdx: number, score: number): number {
+function pickPattern(rng: () => number, stage: number, lastIdx: number, score: number): number {
   const valid = EVOLVE_PATTERNS
     .map((p, i) => ({ p, i }))
     .filter(({ p }) => p.minStage <= stage)
@@ -125,7 +144,7 @@ function pickPattern(stage: number, lastIdx: number, score: number): number {
     });
   if (valid.length <= 1) return valid[0]?.i ?? 0;
   const filtered = valid.filter(({ i }) => i !== lastIdx);
-  const pick = filtered[Math.floor(Math.random() * filtered.length)];
+  const pick = filtered[Math.floor(rng() * filtered.length)];
   return pick?.i ?? valid[0].i;
 }
 
@@ -148,69 +167,101 @@ function makePS(config: GameConfig): PlayerState {
 
 // ─── GameEngine class ─────────────────────────────────────────────
 export class GameEngine {
-  // Loop
+  private rafId: number | null = null;
   private tickTimer: ReturnType<typeof setTimeout> | null = null;
   private tickCount  = 0;
   private evolveTick = 0;
-  private iMult      = 1;          // speed multiplier (equiv. iMultRef)
+  private iMult      = 1;
   private paused     = false;
   private phase: GameSnapshot["phase"] = "playing";
+  private holdTimers = new Map<string, { timer: NodeJS.Timeout, cell: ActiveCell, player: 1 | 2 }>();
 
-  // Players
+  private rng: () => number = () => Math.random();
   private p1: PlayerState;
   private p2: PlayerState;
-
-  // Evolve state
   private cellShape: CellShape    = "square";
   private rareMode: RareColorMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
   private spinLevel  = 0;
   private gameSeed   = makeGameSeed();
-
-  // Dev runtime overrides
+  private tapBuffer: Record<1 | 2, { idx: number; ts: number } | null> = { 1: null, 2: null };
+  private static readonly TAP_BUFFER_MS = GAME.TAP_BUFFER_MS;
   private devGodMode     = false;
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
 
-  // Event system
   private listeners: Set<(e: GameEvent) => void> = new Set();
 
   constructor(private config: GameConfig) {
     this.iMult = config.speedMult;
+    this.devGodMode = config.godMode ?? false;
     this.p1 = makePS(config);
     this.p2 = makePS(config);
   }
 
-  // ── Lifecycle ────────────────────────────────────────────────────
-
   start(): void {
-    // Reset all state
+    this.stop();
     this.tickCount  = 0;
     this.evolveTick = 0;
     this.iMult      = this.config.speedMult;
+    this.devGodMode = this.config.godMode ?? false;
     this.paused     = false;
     this.phase      = "playing";
     this.cellShape  = "square";
     this.spinLevel  = 0;
     this.gameSeed   = makeGameSeed();
+    this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
     this.p1 = makePS(this.config);
     this.p2 = makePS(this.config);
+    this.tapBuffer  = { 1: null, 2: null };
 
     this.emit({ type: "phaseChange", phase: "playing" });
     this.emitSnapshot();
     this.scheduleTick();
+    this.startSnapshotRaf();
   }
 
   stop(): void {
-    if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
+    if (this.tickTimer !== null) {
+      clearTimeout(this.tickTimer);
+      this.tickTimer = null;
+    }
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+
+  private startSnapshotRaf(): void {
+    const loop = () => {
+      if (this.rafId === null) return;
+      this.emitSnapshot();
+      if (this.phase !== "gameover") {
+        this.rafId = requestAnimationFrame(loop);
+      }
+    };
+    this.rafId = requestAnimationFrame(loop);
+  }
+
+  private scheduleTick(): void {
+    if (this.phase !== "playing") return;
+    const now = Date.now();
+    const frozen = this.p1.freezeEnd > now || (this.config.numPlayers === 2 && this.p2.freezeEnd > now);
+    const tickForCalc = this.devFreezeTime ? 0 : this.tickCount;
+    const ms = computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
+    this.tickTimer = setTimeout(() => {
+      if (this.phase !== "playing") return;
+      this.processTick();
+      this.scheduleTick();
+    }, ms);
   }
 
   pause(): void {
     if (this.phase !== "playing") return;
-    this.stop();
     this.paused = true;
     this.phase  = "paused";
+    if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
     this.emit({ type: "phaseChange", phase: "paused" });
     this.emitSnapshot();
   }
@@ -219,16 +270,15 @@ export class GameEngine {
     if (this.phase !== "paused") return;
     this.paused = false;
     this.phase  = "playing";
-    this.emit({ type: "phaseChange", phase: "playing" });
     this.scheduleTick();
+    this.emit({ type: "phaseChange", phase: "playing" });
+    this.emitSnapshot();
   }
 
   destroy(): void {
     this.stop();
     this.listeners.clear();
   }
-
-  // ── Event system ─────────────────────────────────────────────────
 
   subscribe(fn: (e: GameEvent) => void): () => void {
     this.listeners.add(fn);
@@ -240,42 +290,24 @@ export class GameEngine {
   }
 
   private emitSnapshot(): void {
-    this.emit({
-      type: "tick",
-      snapshot: this.getSnapshot(),
-    });
+    this.emit({ type: "tick", snapshot: this.getSnapshot() });
   }
 
-  // ── Tick loop ────────────────────────────────────────────────────
-
-  private scheduleTick(): void {
-    if (this.paused || this.phase !== "playing") return;
+  private _currentTickMs(): number {
     const now = Date.now();
-    const frozen = this.p1.freezeEnd > now ||
-      (this.config.numPlayers === 2 && this.p2.freezeEnd > now);
-    // devFreezeTime: pass a huge iMult override to lock difficulty at tick 0 baseline
+    const frozen = this.p1.freezeEnd > now || (this.config.numPlayers === 2 && this.p2.freezeEnd > now);
     const tickForCalc = this.devFreezeTime ? 0 : this.tickCount;
-    const ms = computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
-    this.tickTimer = setTimeout(() => {
-      this.processTick();
-      this.scheduleTick();
-    }, ms);
+    return computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
   }
 
   private processTick(): void {
     if (this.phase !== "playing") return;
-    const now  = Date.now();
     const mode = this.config.mode;
-
+    this._flushTapBuffer(1);
+    if (this.config.numPlayers === 2) this._flushTapBuffer(2);
     this.evolveTick += 1;
-    const eTick = this.evolveTick;
+    if (mode === "evolve") this.cellShape = pickCellShape(this.evolveTick);
 
-    // ── Cell shape (evolve only) ──
-    if (mode === "evolve") {
-      this.cellShape = pickCellShape(eTick);
-    }
-
-    // ── Rare color mode (evolve only) ──
     if (mode === "evolve") {
       if (this.rareMode.active) {
         this.rareMode.turnsLeft -= 1;
@@ -285,277 +317,176 @@ export class GameEngine {
         }
       } else {
         const s1 = this.p1.score;
-        if (s1 >= 50 && s1 % 50 < 4 && Math.random() < 0.35) {
-          const pick = RARE_COLORS[Math.floor(Math.random() * RARE_COLORS.length)];
-          this.rareMode = {
-            active: true, color: pick.color, cssColor: pick.cssColor,
-            turnsLeft: 5 + Math.floor(Math.random() * 4),
-          };
+        if (s1 >= 50 && s1 % 50 < 4 && this.rng() < 0.35) {
+          const pick = RARE_COLORS[Math.floor(this.rng() * RARE_COLORS.length)];
+          this.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(this.rng() * 4) };
           this.emit({ type: "rareStart", color: pick.color, cssColor: pick.cssColor });
           this.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
         }
       }
     }
 
-    // ── Per-player tick ──
-    const players: Array<{ ref: PlayerState; pi: 0 | 1 }> = [
-      { ref: this.p1, pi: 0 },
-      { ref: this.p2, pi: 1 },
-    ];
-
+    const players: Array<{ ref: PlayerState; pi: 0 | 1 }> = [{ ref: this.p1, pi: 0 }, { ref: this.p2, pi: 1 }];
     for (const { ref, pi } of players) {
       if (!ref.alive || (pi === 1 && this.config.numPlayers === 1)) continue;
-
-      // ── Stable Stages Update (Task 2) ──
-      // If a stage update was pending, apply it now between rounds
       if ((ref as any).pendingStageUpdate) {
-        (ref as any).pendingStageUpdate = false;
-        ref.gridStage += 1;
-        ref.stageProgress = 0;
+        (ref as any).pendingStageUpdate = false; ref.gridStage += 1; ref.stageProgress = 0;
         this.spinLevel += 1;
         this.emit({ type: "sound",   name: "levelup" });
         this.emit({ type: "levelUp", player: (pi + 1) as 1 | 2, stage: ref.gridStage });
       }
-
       const curStage = ref.gridStage;
       const patIdx   = ref.patternIdx;
-      const pat = mode === "evolve"
-        ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0])
-        : { cols: 3, rows: 3, mask: null as number[] | null };
-
+      const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
       if (!pat || pat.cols === 0) { console.error("[DTP-002]"); continue; }
-
-      const validSlots = new Set(
-        pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)
-      );
+      const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
       const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
       const player = (pi + 1) as 1 | 2;
 
-      // Damage for missed safe cells
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold"].includes(c.type);
-        const isBeingHeld = (c as any)._holding === true;
-        if (c.type !== dangerColor && c.type !== "purple" && !isPwr && !isBeingHeld) {
+        if (c.type === dangerColor && !isPwr) {
           const dmg = mode === "evolve" ? 0.5 : 1;
-          if (this.devGodMode) {
-            // god mode: no damage
-          } else if (ref.shieldCount > 0) {
-            ref.shieldCount -= 1;
-            ref.shield = ref.shieldCount > 0;
-          } else {
-            ref.health = Math.max(0, ref.health - dmg);
-            ref.shield = false;
-            this.emit({ type: "damage", player });
-            this.emit({ type: "shake",  player });
-            if (ref.health <= 0) {
-              ref.alive = false;
-              const other = this.config.numPlayers === 2
-                ? (pi === 0 ? this.p2.alive : this.p1.alive)
-                : false;
-              this.triggerGameOver(
-                this.config.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie"
-              );
+          if (!this.devGodMode) {
+            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
+            else {
+              ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
+              this.emit({ type: "damage", player }); this.emit({ type: "shake",  player });
+              if (ref.health <= 0) {
+                ref.alive = false;
+                const other = this.config.numPlayers === 2 ? (pi === 0 ? this.p2.alive : this.p1.alive) : false;
+                this.triggerGameOver(this.config.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
+              }
             }
           }
           ref.streak = 0;
         }
       });
-
       if (!ref.alive) continue;
-
-      // Don't advance grid if hold/ice unfinished
-      const hasUnfinishedSpecial = ref.active.some(
-        c => !c.clicked && (c.type === "hold" || c.type === "ice")
-      );
-      if (hasUnfinishedSpecial) {
-        ref.cells = activeToCellsP(ref.active, pat);
-        continue;
-      }
-
-      // Spawn new grid
-      const nextPatIdx = mode === "evolve"
-        ? pickPattern(curStage, patIdx, ref.score)
-        : 0;
+      if (ref.active.some(c => !c.clicked && (c.type === "hold" || c.type === "ice"))) { ref.cells = activeToCellsP(ref.active, pat); continue; }
+      const nextPatIdx = mode === "evolve" ? pickPattern(this.rng, curStage, patIdx, ref.score) : 0;
       ref.patternIdx = nextPatIdx;
-      const nextPat = mode === "evolve"
-        ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0])
-        : { cols: 3, rows: 3, mask: null as number[] | null };
-
+      const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
       const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
-      const spawnStage = mode === "evolve"
-        ? curStage
-        : Math.min(Math.floor(this.tickCount / 12), 7);
-
-      const newActive = spawnActive(spawnStage, ref.health, nextPat, mode === "evolve", rareColor, this.tickCount);
-      
-      // Apply dev-forced powerup
+      const spawnStage = mode === "evolve" ? curStage : Math.min(Math.floor(this.tickCount / 12), 7);
+      const newActive = spawnActive(this.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, this.tickCount, this.devGodMode);
       if (this.devForcedPwr && newActive.length > 0) {
-        const forcedType = this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr;
-        newActive[0] = { ...newActive[0], type: forcedType as CellType };
-        if (pi === (this.config.numPlayers === 1 ? 0 : 1)) { // Consume after last player spawn
-          this.devForcedPwr = null;
-        }
+        newActive[0] = { ...newActive[0], type: (this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr) as any };
+        if (pi === (this.config.numPlayers === 1 ? 0 : 1)) this.devForcedPwr = null;
       }
-
       ref.active = newActive;
       ref.cells  = activeToCellsP(newActive, nextPat);
-      if (newActive.length === 0) console.warn("[DTP-010]");
+      // Trigger powerup drop animation on newly spawned powerups
+      for (const c of newActive) {
+        if (["medpack", "shield", "freeze", "multiplier"].includes(c.type)) {
+          ref.anim[c.idx] = "pwr-drop";
+          setTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") delete ref.anim[c.idx]; }, 600);
+        }
+      }
     }
-
     this.tickCount += 1;
-
-    // Survival bonus
-    if (this.tickCount > 60 && this.tickCount % 20 === 0) {
-      if (this.p1.alive) this.p1.score += 2;
-      if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += 2;
-      this.emit({ type: "toast", message: "🔥 Survival +2!" });
+    if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
+    if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
+      const bonus = this.tickCount > 200 ? 5 : this.tickCount > 120 ? 3 : 2;
+      if (this.p1.alive) this.p1.score += bonus;
+      if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += bonus;
+      this.emit({ type: "toast", message: `🔥 Survival +${bonus}!` });
     }
-
     this.emit({ type: "sound", name: "tick" });
-    this.emitSnapshot();
   }
-
-  // ── Input handling ────────────────────────────────────────────────
 
   handleTap(player: 1 | 2, idx: number): void {
     if (this.phase !== "playing") return;
     const ref = player === 1 ? this.p1 : this.p2;
-    if (!ref || !ref.alive) { console.warn("[DTP-004]"); return; }
+    if (!ref || !ref.alive) return;
+    this.tapBuffer[player] = { idx, ts: Date.now() };
+    this._flushTapBuffer(player);
+  }
 
+  private _flushTapBuffer(player: 1 | 2): void {
+    const entry = this.tapBuffer[player];
+    if (!entry || Date.now() - entry.ts > GameEngine.TAP_BUFFER_MS) { this.tapBuffer[player] = null; return; }
+    const ref = player === 1 ? this.p1 : this.p2;
+    const cell = ref.active.find(c => c.idx === entry.idx);
+    if (!cell || cell.clicked) return;
+    this.tapBuffer[player] = null;
+    this._processTap(player, entry.idx);
+  }
+
+  private _processTap(player: 1 | 2, idx: number): void {
+    const ref = player === 1 ? this.p1 : this.p2;
     const cell = ref.active.find(c => c.idx === idx);
     if (!cell || cell.clicked) return;
+    const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+    if (!(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)).includes(idx)) return;
+    const danger = this.rareMode.active ? this.rareMode.color : "purple";
 
-    const mode = this.config.mode;
-    const isEvolve = mode === "evolve";
-    const patIdx = ref.patternIdx;
-    const pat = isEvolve
-      ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0])
-      : { cols: 3, rows: 3, mask: null as number[] | null };
-    const validSlots = pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i);
-    if (!validSlots.includes(idx)) return;
-
-    const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
-
-    // ── Ice block ──
     if (cell.type === "ice") {
-      const remaining = (cell.iceCount ?? 1) - 1;
-      this.triggerCellAnim(player, idx, remaining <= 0 ? "pop" : "shake");
-      this.emit({ type: "sound",    name: remaining <= 0 ? "ok" : "tick" });
-      if (remaining <= 0) {
+      const rem = (cell.iceCount ?? 1) - 1;
+      this.triggerCellAnim(player, idx, rem <= 0 ? "pop" : "shake");
+      this.emit({ type: "sound", name: rem <= 0 ? "ok" : "tick" });
+      if (rem <= 0) {
         cell.clicked = true;
         const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
         ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
         this.checkStageProgress(player);
-        // Fast-advance if grid cleared
-        const allDone = ref.active.every(c => c.clicked || c.type === "void");
-        if (allDone) {
-          ref.cells = activeToCellsP(ref.active, pat);
-          this.emitSnapshot();
-          this.stop();
-          this.tickTimer = setTimeout(() => {
-            this.processTick();
-            this.scheduleTick();
-          }, 180);
-          return;
-        }
-      } else {
-        cell.iceCount = remaining;
-      }
+        if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
+      } else cell.iceCount = rem;
       ref.cells = activeToCellsP(ref.active, pat);
       this.emitSnapshot();
       return;
     }
-
-    // ── Hold block (tap ignored — needs hold) ──
     if (cell.type === "hold") return;
-
-    const dmg = isEvolve ? 0.5 : 1;
-
-    // ── Danger color ──
-    if (cell.type === dangerColor || (cell.type === "purple" && dangerColor !== "purple")) {
+    const dmg = this.config.mode === "evolve" ? 0.5 : 1;
+    if (cell.type === danger) {
       cell.clicked = true;
-      if (this.devGodMode) {
-        this.emit({ type: "sound",    name: "ok" });
-        this.triggerCellAnim(player, idx, "pop");
-      } else if (ref.shieldCount > 0) {
-        ref.shieldCount -= 1;
-        ref.shield = ref.shieldCount > 0;
-        this.emit({ type: "sound",    name: "ok" });
-        this.triggerCellAnim(player, idx, "pop");
-      } else {
-        ref.health = Math.max(0, ref.health - dmg);
-        ref.shield = false;
-        ref.streak = 0;
-        this.emit({ type: "sound",  name: "bad" });
-        this.triggerCellAnim(player, idx, "shake");
-        this.emit({ type: "damage", player });
-        this.emit({ type: "shake",  player });
-        if (ref.health <= 0) {
-          ref.alive = false;
-          const other = this.config.numPlayers === 2
-            ? (player === 1 ? this.p2.alive : this.p1.alive)
-            : false;
-          this.triggerGameOver(
-            this.config.numPlayers === 1 ? null : other ? (player === 1 ? "p2" : "p1") : "tie"
-          );
+      if (!this.devGodMode) {
+        if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+        else {
+          ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
+          this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
+          this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
+          if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
         }
-      }
-
-    // ── Powerup ──
+      } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
     } else if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
-      cell.clicked = true;
-      this.emit({ type: "sound",    name: "powerup" });
-      this.triggerCellAnim(player, idx, "pop");
-      if (cell.type === "medpack")    ref.health += 1;
-      if (cell.type === "shield")  { ref.shieldCount += 1; ref.shield = true; }
-      if (cell.type === "freeze")    ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
+      cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
+      if (cell.type === "medpack") ref.health += 1;
+      if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; }
+      if (cell.type === "freeze") ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
-      
       if (cell.type === "shield") {
         this.emit({ type: "pwrToast", message: `🛡 Shield ×${ref.shieldCount}!`, player });
+      } else if (cell.type === "medpack") {
+        this.emit({ type: "toast", message: "♥ +1 Heart!" });
+      } else if (cell.type === "multiplier") {
+        this.emit({ type: "pwrToast", message: "⚡ multiplier ×2!", player });
       } else {
-        const toastMsg =
-          cell.type === "medpack"    ? "♥ +1 Heart!" :
-          cell.type === "freeze"     ? "❄ Freeze activated!" :
-                                       "⚡ 2× Points!";
-        this.emit({ type: "toast", message: toastMsg });
+        this.emit({ type: "pwrToast", message: "❄ Freeze activated!", player });
       }
-
-    // ── Safe color ──
     } else {
-      cell.clicked = true;
-      this.emit({ type: "sound",    name: "ok" });
-      this.triggerCellAnim(player, idx, "pop");
+      cell.clicked = true; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop");
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
+      if ([5, 10, 25, 50].includes(ref.streak)) this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` });
+      if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "❤️ Last heart!" });
       this.checkStageProgress(player);
     }
-
     ref.cells = activeToCellsP(ref.active, pat);
     this.emitSnapshot();
   }
 
   private checkStageProgress(player: 1 | 2): void {
     const ref = player === 1 ? this.p1 : this.p2;
-    if (
-      this.config.mode === "evolve" &&
-      ref.stageProgress >= GAME.STAGE_TAPS_NEEDED &&
-      ref.gridStage < STAGES.length - 1
-    ) {
-      // Mark as pending stage update (Task 2: Stable Stages)
-      (ref as any).pendingStageUpdate = true;
-    }
+    if (this.config.mode === "evolve" && ref.stageProgress >= GAME.STAGE_TAPS_NEEDED && ref.gridStage < STAGES.length - 1) (ref as any).pendingStageUpdate = true;
   }
 
   private triggerCellAnim(player: 1 | 2, idx: number, anim: "pop" | "shake"): void {
     const ref = player === 1 ? this.p1 : this.p2;
     ref.anim[idx] = anim;
     this.emit({ type: "cellAnim", player, idx, anim });
-    // Clear anim state after 500ms so it can re-trigger
-    setTimeout(() => {
-      if (ref.anim[idx] === anim) delete ref.anim[idx];
-    }, 500);
+    setTimeout(() => { if (ref.anim[idx] === anim) delete ref.anim[idx]; }, GAME.CELL_ANIM_MS);
   }
 
   handleHoldStart(player: 1 | 2, idx: number): void {
@@ -563,9 +494,19 @@ export class GameEngine {
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive) return;
     const cell = ref.active.find(c => c.idx === idx && c.type === "hold" && !c.clicked);
-    if (!cell) return;
-    cell.holdStart = Date.now();
-    (cell as any)._holding = true;
+    if (!cell || cell.type !== "hold") return;
+    (cell as any).holdStart = Date.now();
+    const key = `${player}_${idx}`;
+    if (this.holdTimers.has(key)) clearTimeout(this.holdTimers.get(key)!.timer);
+    const timer = setTimeout(() => {
+      const entry = this.holdTimers.get(key);
+      if (!entry || entry.cell.clicked) return;
+      (entry.cell as any).holdStart = undefined;
+      this.triggerCellAnim(entry.player, entry.cell.idx, "shake");
+      this.emitSnapshot();
+      this.holdTimers.delete(key);
+    }, GAME.HOLD_TIMEOUT_MS);
+    this.holdTimers.set(key, { timer, cell, player });
     this.emitSnapshot();
   }
 
@@ -574,57 +515,31 @@ export class GameEngine {
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive) return;
     const cell = ref.active.find(c => c.idx === idx && c.type === "hold" && !c.clicked);
-    if (!cell || !cell.holdStart || !cell.holdRequired) return;
-
-    const mode = this.config.mode;
-    const pat = mode === "evolve"
-      ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0])
-      : { cols: 3, rows: 3, mask: null as number[] | null };
-
-    const elapsed = Date.now() - cell.holdStart;
-    if (elapsed >= cell.holdRequired) {
-      cell.clicked = true;
-      (cell as any)._holding = false;
-      this.triggerCellAnim(player, idx, "pop");
-      this.emit({ type: "sound",    name: "powerup" });
+    if (!cell || cell.type !== "hold") return;
+    const key = `${player}_${idx}`;
+    const entry = this.holdTimers.get(key);
+    if (entry) { clearTimeout(entry.timer); this.holdTimers.delete(key); }
+    const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+    const elapsed = Date.now() - ((cell as any).holdStart ?? Date.now());
+    if (elapsed >= (cell as any).holdRequired) {
+      cell.clicked = true; this.triggerCellAnim(player, idx, "pop");
+      this.emit({ type: "sound", name: "powerup" });
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult * 2; ref.streak += 1; ref.stageProgress += 1;
       this.checkStageProgress(player);
       this.emit({ type: "toast", message: "💪 Hold! +2" });
-      const allDone = ref.active.every(c => c.clicked || c.type === "void");
-      if (allDone) {
-        ref.cells = activeToCellsP(ref.active, pat);
-        this.emitSnapshot();
-        this.stop();
-        this.tickTimer = setTimeout(() => {
-          this.processTick();
-          this.scheduleTick();
-        }, 180);
-        return;
-      }
-    } else {
-      cell.holdStart = undefined;
-      (cell as any)._holding = false;
-      this.triggerCellAnim(player, idx, "shake");
-    }
-
+      if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
+    } else { (cell as any).holdStart = undefined; this.triggerCellAnim(player, idx, "shake"); }
     ref.cells = activeToCellsP(ref.active, pat);
     this.emitSnapshot();
   }
-
-  // ── Stored powerup activation (from HUD buttons) ──────────────────
 
   activateStoredFreeze(player: 1 | 2): void {
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive || ref.storedFreezeCharges <= 0) return;
     ref.storedFreezeCharges -= 1;
     ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
-    this.config.storage?.saveStoredPowerups({
-      freeze: ref.storedFreezeCharges,
-      shield: ref.storedShieldCharges,
-      mult: 0, // values are synced from PS
-      heart: 0
-    });
+    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: 0, heart: 0 });
     this.emit({ type: "toast", message: "❄ Freeze activated!" });
     this.emitSnapshot();
   }
@@ -635,49 +550,33 @@ export class GameEngine {
     ref.storedShieldCharges -= 1;
     ref.shieldCount += 1;
     ref.shield = true;
-    this.config.storage?.saveStoredPowerups({
-      freeze: ref.storedFreezeCharges,
-      shield: ref.storedShieldCharges,
-      mult: 0,
-      heart: 0
-    });
+    this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: 0, heart: 0 });
     this.emit({ type: "toast", message: `🛡 Shield ×${ref.shieldCount}!` });
     this.emitSnapshot();
   }
 
-  // ── Dev helpers ───────────────────────────────────────────────────
-
   devForceStage(stage: number): void {
-    const validPatterns = EVOLVE_PATTERNS
-      .map((p, i) => ({ p, i }))
-      .filter(({ p }) => p.minStage <= stage);
-    const pick = validPatterns[Math.floor(Math.random() * validPatterns.length)];
-    this.p1.gridStage = stage; this.p1.stageProgress = 0;
-    this.p1.patternIdx = pick?.i ?? 0;
-    this.p2.gridStage = stage; this.p2.stageProgress = 0;
-    this.p2.patternIdx = pick?.i ?? 0;
+    const validPatterns = EVOLVE_PATTERNS.map((p, i) => ({ p, i })).filter(({ p }) => p.minStage <= stage);
+    const pick = validPatterns[Math.floor(this.rng() * validPatterns.length)];
+    this.p1.gridStage = stage; this.p1.stageProgress = 0; this.p1.patternIdx = pick?.i ?? 0;
+    this.p2.gridStage = stage; this.p2.stageProgress = 0; this.p2.patternIdx = pick?.i ?? 0;
     this.emitSnapshot();
   }
 
   devForcePattern(idx: number): void {
-    this.p1.patternIdx = idx;
-    this.p2.patternIdx = idx;
+    this.p1.patternIdx = idx; this.p2.patternIdx = idx;
     const pat = EVOLVE_PATTERNS[idx] ?? EVOLVE_PATTERNS[0];
     const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
-    this.p1.active = spawnActive(this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount);
-    this.p1.cells  = activeToCellsP(this.p1.active, pat);
-    this.p2.active = spawnActive(this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount);
+    this.p1.active = spawnActive(this.rng, this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
+
+    this.p2.active = spawnActive(this.rng, this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
     this.p2.cells  = activeToCellsP(this.p2.active, pat);
     this.emitSnapshot();
   }
 
   devForceRare(r: { color: string; cssColor: string } | null): void {
-    if (!r) {
-      this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
-    } else {
-      this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10 };
-      this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor });
-    }
+    if (!r) this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10 }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); }
     this.emitSnapshot();
   }
 
@@ -687,52 +586,31 @@ export class GameEngine {
   devSpawnPowerup(type: "shield" | "freeze" | "heart"): void { this.devForcedPwr = type; }
   getDevRotationSpeed(): number { return this.devRotationSpeed; }
 
-  // ── Snapshot read (for React to poll if needed) ───────────────────
-
   getSnapshot(): GameSnapshot {
-    const pat = this.config.mode === "evolve"
-      ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0])
-      : { cols: 3, rows: 3, mask: null as number[] | null };
-
+    const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+    const cloneActive = (active: ActiveCell[]): ActiveCell[] => active.map(c => ({ ...c }));
     return {
       tick:       this.tickCount,
       evolveTick: this.evolveTick,
       gameSeed:   this.gameSeed,
-      p1:         { ...this.p1 },
-      p2:         { ...this.p2 },
+      p1:         { ...this.p1, active: cloneActive(this.p1.active), anim: { ...this.p1.anim } },
+      p2:         { ...this.p2, active: cloneActive(this.p2.active), anim: { ...this.p2.anim } },
       cellShape:  this.cellShape,
       rareMode:   { ...this.rareMode },
       spinLevel:  this.spinLevel,
       paused:     this.paused,
       phase:      this.phase,
-      grid: {
-        cols: pat.cols,
-        rows: pat.rows,
-        mask: pat.mask ? [...pat.mask] : null
-      },
-      spinCfg: (this.config.mode === "evolve" && this.spinLevel >= 3)
-        ? ((): typeof cfg => { const cfg = getSpinConfig(this.spinLevel, this.gameSeed); return { ...cfg, duration: cfg.duration * this.devRotationSpeed }; })()
-        : null,
+      grid: { cols: pat.cols, rows: pat.rows, mask: pat.mask ? [...pat.mask] : null },
+      spinCfg: (this.config.mode === "evolve" && this.spinLevel >= 3) ? ((): typeof cfg => { const cfg = getSpinConfig(this.spinLevel, this.gameSeed); return { ...cfg, duration: cfg.duration * this.devRotationSpeed }; })() : null,
       devRotationSpeed: this.devRotationSpeed,
     };
   }
 
-  getSpinConfig(level: number): { duration: number; direction: 1 | -1 } {
-    return getSpinConfig(level, this.gameSeed);
-  }
-
-  // ── Private: game over ────────────────────────────────────────────
+  getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
 
   private triggerGameOver(winner: Winner): void {
-    this.stop();
-    this.phase = "gameover";
-    // Persist remaining stored charges
-    this.config.storage?.saveStoredPowerups({
-      freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0),
-      shield: Math.max(0, this.p1.storedShieldCharges ?? 0),
-      mult: 0,
-      heart: 0
-    });
+    this.stop(); this.phase = "gameover";
+    this.config.storage?.saveStoredPowerups({ freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0), shield: Math.max(0, this.p1.storedShieldCharges ?? 0), mult: 0, heart: 0 });
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver",    winner });
   }
