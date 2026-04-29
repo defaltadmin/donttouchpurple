@@ -1,86 +1,93 @@
 # Don't Touch Purple — Changelog
 
-## v5.1.0 — 2026-04-29
+## Game Overview
+
+**Don't Touch Purple** is a fast-paced reaction game built with React + TypeScript, featuring:
+- **Classic Mode**: Avoid purple cells as they appear on a 3×3 grid
+- **Evolve Mode**: Progressive difficulty with pattern unlocks, rare color modes, and special cells (ice, hold, powerups)
+- **Duo Mode**: Two-player local multiplayer on a shared screen
+
+**Tech Stack**: React 18, Vite, Firebase (Firestore + Functions), TypeScript, Vitest
+
+**Folder Structure**:
+```
+deploy-ready/
+├── engine/          # GameEngine.ts, DifficultyScaler.ts, types.ts
+├── components/
+│   ├── HUD/        # Hearts, PlayerPanel, PwrBar, EnergyBar, DustWidget
+│   ├── Screens/    # StartScreen, GameOver, HowToPlay, EvolveTutorial, WhatsNew
+│   ├── Settings/    # SettingsDrawer, DevOverlay, KeyBinder
+│   ├── Animations/  # ShieldDrop, FreezeDrop, EnergyDrop
+│   └── Shop/        # ShopPanel
+├── hooks/           # useGameEngine.ts, useInputHandler.ts
+├── config/          # difficulty.ts, gridPatterns.ts, keybindings.ts, powerupWeights.ts
+├── services/        # firebase.ts (Firebase integration)
+├── functions/       # Firebase Cloud Functions (updateStreak)
+├── __tests__/       # GameEngine.test.ts, DifficultyScaler.test.ts, configIntegrity.test.ts
+└── public/          # manifest.json, sw.js (PWA support)
+```
+
+**Key Features**:
+- Seeded PRNG (mulberry32) for deterministic gameplay
+- RequestAnimationFrame loop for smooth UI updates
+- Powerups: Medpack, Shield, Freeze, Multiplier
+- Energy system with natural regeneration
+- Daily objectives with dust rewards
+- Global leaderboard (Firebase Firestore)
+- Shop with themes, badges, and skins
+- Keyboard + touch input support
+- Colorblind filters (deuteranopia, protanopia, tritanopia, monochrome)
+- PWA support with service worker
+
+## v5.1.1 — 2026-04-30
 
 ### Bug Fixes
 
-- **Pause menu settings no longer unpauses game**
-  - Added `settingsFromPause` state; when Settings is opened from Pause, closing it keeps the game paused
-  - `App.tsx` line ~342
+- **High score logic corrected**
+  - `handleEngineGameOver` now checks `gameMode` to update the correct best score (Classic vs Evolve)
+  - Previously, p1Score always updated Classic best and p2Score updated Evolve best regardless of actual mode played
+  - `App.tsx` lines 276-286
 
-- **Themes apply instantly after equipping from shop**
-  - Added `useEffect` to apply shop theme CSS variables to `document.documentElement` on equip
-  - `App.tsx`
+- **Double powerup consumption fixed**
+  - Solo mode now initializes p2 with `numPlayers: 1` to prevent double consumption of stored powerups
+  - `makePS()` was being called for both players even in solo mode, consuming 2 charges instead of 1
+  - `engine/GameEngine.ts` lines 215-217
 
-- **Practice mode no longer loses health (keys + duo mode)**
-  - `GameEngine` accepts `godMode` from config; practice mode initializes with `godMode: true`
-  - `engine/GameEngine.ts` — `makePS()` and engine config; `App.tsx` config setup
+- **Snapshot redundancy removed**
+  - Removed shallow clone `{ ...event.snapshot }` in `useGameEngine.ts` hook
+  - Engine's `getSnapshot()` already performs deep cloning of active cells
+  - `hooks/useGameEngine.ts` line 193
 
-- **Keyboard mode key badge covers cell colors**
-  - Key badge (`.kbadge`) made smaller, semi-transparent white with `backdrop-filter: blur(4px)`, positioned top-right
-  - `styles/game.css` ~line 1203
+- **Stealth mode cleanup**
+  - Removed `DevFab` component and its imports completely
+  - Component definition removed from `DevOverlay.tsx`
+  - Import removed from `App.tsx`
+  - Reduces bundle size and maintains stealth requirement
 
-- **Powerup status bar clipping**
-  - `.pwr-bar` z-index raised to 20, padding adjusted
-  - `styles/game.css` ~line 266
+- **Firebase timezone bugs fixed**
+  - `updateStreak` Cloud Function now uses ISO date strings instead of `toDateString()` for reliable timezone comparison
+  - `fbCheckWeeklyBonus` in `services/firebase.ts` uses `toISOString().split("T")[0]` for date comparison
+  - `functions/src/index.ts` and `services/firebase.ts`
 
-- **Rare color mode — tapping wrong color caused damage**
-  - Fixed `_processTap` — was `if (cell.type === danger || (cell.type === "purple" && danger !== "purple"))`, now `if (cell.type === danger)` — only the active danger color causes damage on tap
-  - `engine/GameEngine.ts` line 435
+- **Firestore indexes added**
+  - Created `firestore.indexes.json` with composite index for leaderboard queries (`score DESC`, `ts DESC`)
+  - Deleted duplicate `(firestore.indexes.json)` file with insecure rules
+  - Required for `fbFetchTop20Global` query to work
 
-- **Rare color mode — safe cells were incorrectly marked as dangerous on timeout**
-  - Fixed tick damage check — was `if ((c.type !== dangerColor && c.type !== "purple") && !isPwr)` (inverted logic), now `if (c.type === dangerColor && !isPwr)` — only the danger color cell causes timeout damage
-  - `engine/GameEngine.ts` line 349
+- **Firebase security rules tightened**
+  - `lb_global` now allows `date` (string) and optional `badge` fields to match actual code usage
+  - Max score raised to 100,000 for Evolve mode
+  - `dust_wallet` now has bounds: `name.size() <= 20` and `dust < 1,000,000`
+  - Deleted insecure `(firestore.rules)` duplicate with wide-open `allow read, write: if true`
+  - `firestore.rules`
 
-- **God mode blocked medpack powerups even when eligible**
-  - In `spawnActive`, god mode filters out `medpack` from the powerup table so no hearts spawn when invincible
-  - `engine/GameEngine.ts` line 97
+- **Version sync**
+  - `package.json` updated to 5.1.0 to match CHANGELOG.md
+  - Previously was stuck at 5.0.0
 
-- **Practice mode hearts replaced with ∞ infinity symbol**
-  - `Hearts.tsx` renders pulsing ∞ icon when practice mode detected
+### Deployment Prep
 
-### New Features
-
-- **Sound slider chime**
-  - `playVolumeChime()` plays a pleasant sine wave chime when volume is adjusted
-  - `hooks/useGameEngine.ts` — new function; `App.tsx` — called in `setVolume` callback
-
-- **Triangle shape spawn rate doubled**
-  - Now appears in 2 of 8 cycles instead of 1 of 6
-  - `engine/GameEngine.ts` — `randCell` / `pickCellShape` logic
-
-- **Tutorial fully visual with navigation**
-  - `EvolveTutorial.tsx` rewritten with grid previews, shape demos, color stages, powerup icons, hazard examples
-  - Back/forward buttons and clickable dot navigation
-  - `styles/game.css` — tutorial-specific styles added
-
-### Visual Improvements
-
-- **Powerup drop animations**
-  - New `pwrDrop` keyframe: scale overshoot (1.3x), brightness flash (2→1), smooth settle
-  - Applied to medpack/shield/freeze/multiplier cells on spawn via `pwr-drop` animation class
-  - `styles/game.css` lines 991-1000; `engine/GameEngine.ts` lines 378-384
-
-- **Score UI redesign**
-  - Reduced pulsating glow intensity: scale 1.18→1.12, brightness 1.4→1.2, duration 0.2s→0.25s
-  - Refined gradient (dark theme: `#f5f5f5 → #e879f9 → #c026d3 → #a21caf`; light theme: `#1a0a2e → #7c3aed → #a855f7 → #c026d3`)
-  - Added `drop-shadow` for depth
-  - `styles/game.css` lines 642-646, 62-65, 1949-1957
-
-- **Pause menu HUD redesign**
-  - Replaced single-line score display with 2-column grid showing:
-    - Score / P2 Score
-    - Stage number
-    - Streak count (with 🔥)
-    - Speed multiplier
-    - Active powerup timers (Freeze ❄ / Multiplier ⚡ / Shield 🛡) with color-coded labels
-  - `App.tsx` lines 675-748; `styles/game.css` lines 485-514 (new `.pause-hud-*` classes)
-
-### Test Updates
-
-- Updated "damages the player when safe cells are missed" test to correctly verify danger cell timeout damage behavior
-  - `__tests__/GameEngine.test.ts`
-
-### File Cleanup
-
-- Moved obsolete/garbage files to `junk/` directory
+- **Firebase hosting config**
+  - `firebase.json` updated with proper hosting config (`dist/` folder, ignore patterns)
+  - Removed parentheses from rule/index file paths
+  - Added `.firebase/`, `.agents/`, `.continue/`, `.gemini/`, `.trae/`, `.windsurf/` to `.gitignore`
