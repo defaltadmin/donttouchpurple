@@ -28,3 +28,8 @@ FILES NEEDED*/
 .vscode/
 .claude/
 .idea/
+.agents/
+.continue/
+.gemini/
+.trae/
+.windsurf/
