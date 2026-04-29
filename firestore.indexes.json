@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroupId": "lb_global",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "score", "order": "DESCENDING" },
+        { "fieldPath": "ts", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

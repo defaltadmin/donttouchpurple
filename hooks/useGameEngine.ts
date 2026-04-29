@@ -190,7 +190,7 @@ export function useGameEngine(
 
       switch (event.type) {
         case "tick":
-          if (mountedRef.current) setSnapshot({ ...event.snapshot });
+          if (mountedRef.current) setSnapshot(event.snapshot);
           break;
         case "sound": playSound(event.name); break;
         case "toast": toast$(event.message); break;

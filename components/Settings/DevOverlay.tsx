@@ -384,12 +384,3 @@ export function DevUnlockModal({ onUnlock, onClose }: { onUnlock: () => void; on
     </div>
   );
 }
-
-export function DevFab({ isDevMode, onClick }: { isDevMode: boolean; onClick: () => void }) {
-  return (
-    <button className={"devs-fab" + (isDevMode ? " devs-fab--on" : "")} onClick={onClick}
-      title={isDevMode ? "Close Dev Mode" : "Open Dev Mode"}>
-      🔧
-    </button>
-  );
-}

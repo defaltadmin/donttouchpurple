@@ -213,7 +213,8 @@ export class GameEngine {
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
     this.p1 = makePS(this.config);
-    this.p2 = makePS(this.config);
+    if (this.config.numPlayers === 2) this.p2 = makePS(this.config);
+    else this.p2 = makePS({ ...this.config, storage: undefined });
     this.tapBuffer  = { 1: null, 2: null };
 
     this.emit({ type: "phaseChange", phase: "playing" });

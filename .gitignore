@@ -33,3 +33,11 @@ FILES NEEDED*/
 .gemini/
 .trae/
 .windsurf/
+
+# IDE and agent configs
+.firebase/
+.agents/
+.continue/
+.gemini/
+.trae/
+.windsurf/

@@ -36,7 +36,7 @@ import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
 import { KeyBinder } from "./components/Settings/KeyBinder";
 import { ShopPanel } from "./components/Shop/ShopPanel";
 import { LeaderboardPanel } from "./components/Leaderboard/LeaderboardPanel";
-import { DevOverlay, DevUnlockModal, DevFab } from "./components/Settings/DevOverlay";
+import { DevOverlay, DevUnlockModal } from "./components/Settings/DevOverlay";
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 
 // Daily Objective
@@ -279,8 +279,12 @@ export default function App() {
     setDust(newDust);
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
     fbSyncDust(playerName, newDust).catch(() => {});
-    setBest1((b: number) => { const nb = Math.max(b, p1Score); localStorage.setItem(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
-    setBest2((b: number) => { const nb = Math.max(b, p2Score); localStorage.setItem(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
+    const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
+    if (gameMode === "classic") {
+      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
+    } else {
+      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
+    }
     setShareMsg(getMessage(earned));
     setInitials(playerName || "Player");
     setIE(false);

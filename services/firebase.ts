@@ -92,9 +92,7 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
     const { collection, query, orderBy, limit, getDocs } = await import(
       "firebase/firestore"
     );
-    const oneWeekAgo = new Date(
-      Date.now() - 7 * 24 * 60 * 60 * 1000,
-    ).toLocaleDateString();
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const q = query(collection(db, "lb_global"), orderBy("score", "desc"), limit(50));
     const snap = await getDocs(q);
     const entries = snap.docs.map((doc: any) => doc.data());
