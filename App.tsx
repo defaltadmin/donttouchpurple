@@ -216,6 +216,14 @@ export default function App() {
   const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
   const [screen, setScreen]          = useState<GameScreen>("menu");
+  const [pendingReplaySeed, setPendingReplaySeed] = useState<string | null>(
+    () => localStorage.getItem("pendingReplaySeed")
+  );
+
+  const clearReplaySeed = useCallback(() => {
+    localStorage.removeItem("pendingReplaySeed");
+    setPendingReplaySeed(null);
+  }, []);
   const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
   const [initials, setInitials]      = useState("");
   const [initialsEntered, setIE]     = useState(false);
@@ -511,8 +519,12 @@ export default function App() {
     }
     setScreen("playing");
     setPaused(false);
-    startEngine();
-  }, [startEngine, energyData, practiceMode, gameMode, toast$]);
+    const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
+    startEngine(forceSeed);
+    if (forceSeed !== undefined) {
+      clearReplaySeed();
+    }
+  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed]);
 
   const dismissEvolveTutorial = useCallback(() => {
     setShowEvolveTutorial(false);
@@ -826,24 +838,11 @@ export default function App() {
           onShop={() => setScreen("shop")}
           onKeybind={() => setScreen("keybind")}
           onRefillEnergy={refillEnergy}
-          onSwitchPlayer={() => setShowNameEntry(true)}
+          onSwitchPlayer={switchPlayer}
           dustWidget={<DustWidget dust={dust} />}
-          energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={refillEnergy} onRefillFull={() => {
-            const needed = GAME.MAX_ENERGY - energyData.count;
-            if (needed <= 0) { toast$("⚡ Energy already full!"); return; }
-            const cost = needed * GAME.DUST_PER_ENERGY;
-            if (dust >= cost) {
-              const newDust = dust - cost;
-              const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
-              setDust(newDust);
-              localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-              setEnergyData(newEd);
-              localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-              toast$("⚡ Energy fully refilled!");
-            } else {
-              toast$("💜 Not enough dust!");
-            }
-          }} dust={dust} />}
+          energyBar={<EnergyBar count={energyData.count} />}
+          pendingReplaySeed={pendingReplaySeed}
+          onClearReplaySeed={clearReplaySeed}
         />
       )}
 

@@ -95,6 +95,8 @@ export interface StartScreenProps {
   dustWidget:      React.ReactNode;
   energyBar:       React.ReactNode;
   dailyObjective?: import("../../config/dailyObjective").DailyObjective;
+  pendingReplaySeed?: string | null;
+  onClearReplaySeed?: () => void;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -110,11 +112,18 @@ export function StartScreen({
   onRefillEnergy, onSwitchPlayer,
   dustWidget, energyBar,
   dailyObjective,
+  pendingReplaySeed, onClearReplaySeed,
 }: StartScreenProps) {
   const isKbd = inputMode === "keyboard";
 
   return (
     <div className="menu-card screen-slide">
+      {pendingReplaySeed && (
+        <div className="replay-banner">
+          <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
+          <button className="btn-ghost btn-sm" onClick={onClearReplaySeed}>Clear</button>
+        </div>
+      )}
       {/* Top row: player pill + energy pips */}
       <div className="menu-top-row">
         <button className="player-pill" onClick={onSwitchPlayer}>

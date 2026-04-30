@@ -202,7 +202,7 @@ export class GameEngine {
     // This avoids redundant storage reads and potential confusion with bonusHearts/hasMult
   }
 
-  start(): void {
+  start(forceSeed?: number): void {
     this.stop();
     this.tickCount  = 0;
     this.evolveTick = 0;
@@ -212,7 +212,7 @@ export class GameEngine {
     this.phase      = "playing";
     this.cellShape  = "square";
     this.spinLevel  = 0;
-    this.gameSeed   = makeGameSeed();
+    this.gameSeed   = forceSeed ?? makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
     // Load stored once, compute deductions, call saveStoredPowerups once for mult deduction if hasMult, once for heart reset if bonusHearts

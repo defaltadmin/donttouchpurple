@@ -186,6 +186,10 @@ export function GameOver({
       <div className="go-btns">
         <button className="btn-primary" onClick={onPlay}>▶ Again</button>
         <button className="btn-ghost" onClick={() => setShowShare(true)}>📤 Share</button>
+        <button className="btn-ghost" onClick={() => {
+          localStorage.setItem("pendingReplaySeed", gameSeed.toString());
+          onPlay();
+        }}>▶ Replay Seed</button>
         <button className="btn-ghost" onClick={onLeaderboard}>🏆 Board</button>
         <button className="btn-ghost" onClick={onMenu}>🏠 Menu</button>
       </div>

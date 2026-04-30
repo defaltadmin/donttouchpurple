@@ -277,12 +277,12 @@ export function useGameEngine(
     };
   }, [config.mode, config.numPlayers, config.speedMult]);
 
-  const start = useCallback(() => {
+  const start = useCallback((forceSeed?: number) => {
     setWinner(null);
     setLastGameScore(null);
     setRareSplash(null);
     setLevelUpBadge(null);
-    engineRef.current?.start();
+    engineRef.current?.start(forceSeed);
   }, []);
 
   const pause  = useCallback(() => engineRef.current?.pause(),  []);
