@@ -155,3 +155,53 @@ deploy-ready/
   - `configIntegrity.test.ts`: 5 tests
   - `GameEngine.test.ts`: 8 tests
   - `engine/GameEngine.test.ts`: 3 tests
+
+### UI Improvements
+
+- **Hearts capped at 7 (5 base + 2 bonus)**
+  - `components/HUD/Hearts.tsx` now limits display to MAX_HEARTS + 2
+  - Row 2 only renders up to 2 bonus hearts
+
+- **Shop powerups locked in Classic mode**
+  - Added 🔒 lock icon and "Powerups only work in Evolve mode" message
+  - `components/Shop/ShopPanel.tsx` now accepts `gameMode` prop
+  - `App.tsx` passes `mode` to ShopPanel
+  - Prevents confusion from buying unusable powerups
+
+### Deployment
+
+- **Firebase configuration**
+  - API key restricted to `game.mscarabia.com` in Firebase Console
+  - Firestore rules deployed with client-side write support for Spark plan
+  - Hosting deployed to https://dont-touch-purple.web.app
+  - Code pushed to https://github.com/defaltadmin/donttouchpurple.git
+
+### Future Features (Planned)
+
+1. **Bot Assist Mode ("Dust Guard")**
+   - Hold button to auto-tap missed non-danger cells
+   - Costs 10 dust/second while held
+   - Reaction delay: 200ms - (dustSpent * 0.5ms), floor at 80ms
+   - Error rate: 0% + 2% per grid stage
+   - UI: Pill button in PlayerPanel (Evolve mode only), requires 50 dust minimum
+
+2. **Seed Replay**
+   - "▶ Replay Seed" button on GameOver share card
+   - Stores seed in localStorage as `pendingReplaySeed`
+   - StartScreen banner: "Replay seed: XXXXXXXX — [Play] [Clear]"
+   - GameEngine.start() accepts optional `forceSeed?: number`
+   - Settings drawer: "Custom Seed" text input with Play button
+
+3. **Animated Backgrounds (Wallpapers)**
+   - Canvas-based animations (no video/GIF)
+   - Unlockable via shop: 300-600 dust each
+   - Designs: void-tunnel, star-warp, grid-pulse, plasma, particle-web
+   - Each ~50 lines of JS, zero storage, 60fps
+   - Future: AI-generated WebM videos for cinematic backgrounds
+
+4. **Triangular Grid Shapes (v6.0)**
+   - Octagon/Pentagon/Triangle cell shapes
+   - Requires new GridRenderer component with CSS clip-path or SVG
+   - Cell orientation (up/down) needed for triangles
+   - Hit detection logic changes required
+   - Engine stays same — just adds orientation to cell type
