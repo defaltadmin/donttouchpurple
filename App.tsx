@@ -1002,6 +1002,8 @@ export default function App() {
             onActivateFreeze={() => activateStoredFreeze(1)}
             onActivateShield={() => activateStoredShield(1)}
             showStoredPwr={screen === "playing"}
+            onStartBot={startBot} onStopBot={stopBot}
+            isBotActive={isBotActive()} dust={dust}
             practiceMode={practiceMode} />
           {is2P && (
             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 

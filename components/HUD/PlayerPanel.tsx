@@ -49,6 +49,10 @@ export interface PlayerPanelProps {
   onActivateFreeze?: () => void;
   onActivateShield?: () => void;
   showStoredPwr?: boolean;
+  onStartBot?:   () => void;
+  onStopBot?:    () => void;
+  isBotActive?:  boolean;
+  dust?:         number;
 }
 
 // ─── PlayerPanel ──────────────────────────────────────────────────
@@ -67,6 +71,10 @@ export function PlayerPanel({
   onActivateShield,
   showStoredPwr = false,
   practiceMode = false,
+  onStartBot,
+  onStopBot,
+  isBotActive = false,
+  dust = 0,
 }: PlayerPanelProps) {
   const now = Date.now();
   const { cols, rows, mask } = snapshot?.grid ?? { 
@@ -163,6 +171,22 @@ export function PlayerPanel({
           </div>
         </div>
       </div>
+      {mode === "evolve" && !practiceMode && (
+        <div className="bot-assist-container">
+          <button
+            className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}`}
+            onMouseDown={onStartBot}
+            onMouseUp={onStopBot}
+            onMouseLeave={onStopBot}
+            onTouchStart={onStartBot}
+            onTouchEnd={onStopBot}
+            disabled={dust < 50}
+            title={dust < 50 ? `Need 50 💜 dust (have ${dust})` : "Hold to activate bot assist — 10 💜/sec"}
+          >
+            🤖 {isBotActive ? "Assisting..." : "Hold to Assist"} · 10💜/s
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -194,6 +194,9 @@ export class GameEngine {
   private devRotationSpeed = 1;
 
   private listeners: Set<(e: GameEvent) => void> = new Set();
+  private botActive      = false;
+  private botIntervalRef: ReturnType<typeof setInterval> | null = null;
+  private dustSpentTotal = 0; // Track total dust spent on bot
 
   constructor(private config: GameConfig) {
     this.iMult = config.speedMult;
@@ -642,5 +645,47 @@ export class GameEngine {
     });
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver",    winner });
+  }
+
+  startBot(): void {
+    if (this.botActive || this.config.mode !== "evolve") return;
+    this.botActive = true;
+    this.dustSpentTotal = 0;
+    this.botIntervalRef = setInterval(() => {
+      if (!this.botActive || this.phase !== "playing") return;
+      const now = Date.now();
+      // Calculate reaction delay: 200ms - (dustSpentTotal * 0.5ms), floor at 80ms
+      const delay = Math.max(80, 200 - this.dustSpentTotal * 0.5);
+      // Get player 1 active cells that haven't been tapped
+      const active = this.p1.active;
+      active.forEach(cell => {
+        if (cell.clicked || cell.type === "purple" || cell.type === "ice" || cell.type === "hold") return;
+        // Check if we should make a mistake (error rate = stage * 2%)
+        const errorRate = Math.min(0.18, this.p1.gridStage * 0.02);
+        if (Math.random() < errorRate) return; // Bot makes a mistake, skips this cell
+        // Simulate tap after delay
+        setTimeout(() => {
+          if (this.botActive && this.phase === "playing") {
+            this.handleTap(1, cell.idx);
+          }
+        }, delay);
+      });
+      // Consume 10 dust per second (interval is 1000ms)
+      this.dustSpentTotal += 10;
+      // Emit dust consumption event
+      this.emit({ type: "dustConsumed", amount: 10 });
+    }, 1000);
+  }
+
+  stopBot(): void {
+    this.botActive = false;
+    if (this.botIntervalRef) {
+      clearInterval(this.botIntervalRef);
+      this.botIntervalRef = null;
+    }
+  }
+
+  isBotActive(): boolean {
+    return this.botActive;
   }
 }

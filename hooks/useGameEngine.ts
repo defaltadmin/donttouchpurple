@@ -285,6 +285,10 @@ export function useGameEngine(
     engineRef.current?.start(forceSeed);
   }, []);
 
+  const startBot = useCallback(() => engineRef.current?.startBot(), []);
+  const stopBot  = useCallback(() => engineRef.current?.stopBot(), []);
+  const isBotActive = useCallback(() => engineRef.current?.isBotActive() ?? false, []);
+
   const pause  = useCallback(() => engineRef.current?.pause(),  []);
   const resume = useCallback(() => engineRef.current?.resume(), []);
   const handleTap = useCallback((player: 1 | 2, idx: number) => engineRef.current?.handleTap(player, idx), []);
@@ -305,5 +309,6 @@ export function useGameEngine(
     start, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
+    startBot, stopBot, isBotActive,
   };
 }
