@@ -85,3 +85,21 @@ export const SHOP_SKINS: ShopSkin[] = [
   { id:"gold",    name:"Gold Rush", icon:"🟨", cost:500, desc:"Premium gold shimmer",      preview:"linear-gradient(145deg,#fde68a,#d97706)" },
   { id:"ice",     name:"Frozen",    icon:"🧊", cost:400, desc:"Frosty ice texture cells",  preview:"linear-gradient(145deg,#e0f2fe,#7dd3fc)" },
 ];
+
+// ─── Shop items — backgrounds (animated) ──────────────────
+export interface ShopBackground {
+  id:      string;
+  name:    string;
+  icon:    string;
+  cost:    number;
+  desc:    string;
+  component: string; // Component name to render
+}
+
+export const SHOP_BACKGROUNDS: ShopBackground[] = [
+  { id:"void-tunnel", name:"Void Tunnel",   icon:"🌀", cost:300, desc:"Perspective rings shrinking to center", component:"VoidTunnel" },
+  { id:"star-warp",   name:"Star Warp",      icon:"⭐", cost:350, desc:"White dots accelerating outward",  component:"StarWarp" },
+  { id:"grid-pulse",  name:"Grid Pulse",     icon:"🏁", cost:400, desc:"Animated perspective grid floor", component:"GridPulse" },
+  { id:"plasma",      name:"Plasma",          icon:"🌈", cost:500, desc:"Sine-wave color field shifting",  component:"Plasma" },
+  { id:"particle-web", name:"Particle Web",    icon:"🕸️", cost:600, desc:"Connected dots drifting, purple",  component:"ParticleWeb" },
+];

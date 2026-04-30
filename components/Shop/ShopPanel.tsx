@@ -30,6 +30,17 @@ interface ShopPanelProps {
   persistDust: (dust: number) => void;
 }
 
+interface ShopData {
+  unlockedThemes: string[];
+  equippedTheme: string;
+  unlockedBadges: string[];
+  equippedBadge: string;
+  unlockedSkins: string[];
+  equippedSkin: string;
+  unlockedBackgrounds: string[];
+  equippedBackground: string;
+}
+
 export function ShopPanel({
   dust,
   onDustChange,
@@ -43,7 +54,7 @@ export function ShopPanel({
   persistDust,
 }: ShopPanelProps) {
   const [shopData, setShopData] = useState(() => loadShopData());
-  const [tab, setTab] = useState<"themes" | "badges" | "powerups" | "skins">("themes");
+  const [tab, setTab] = useState<"themes" | "badges" | "powerups" | "skins" | "backgrounds">("themes");
   const [buyAnim, setBuyAnim] = useState<string | null>(null);
 
   const spend = (cost: number): boolean => {
@@ -102,6 +113,20 @@ export function ShopPanel({
     saveShopData(updated);
   };
 
+  const equipBackground = (bgId: string) => {
+    const updated = { ...shopData, equippedBackground: bgId };
+    setShopData(updated);
+    saveShopData(updated);
+  };
+
+  const buyBackground = (bgId: string, cost: number) => {
+    if (!spend(cost)) return;
+    const updated = { ...shopData, unlockedBackgrounds: [...shopData.unlockedBackgrounds, bgId] };
+    setShopData(updated);
+    saveShopData(updated);
+    triggerBuyAnim(bgId);
+  };
+
   const buyPowerup = (itemId: string, cost: number) => {
     if (!spend(cost)) return;
     const stored = loadStoredPowerups();
@@ -131,6 +156,7 @@ export function ShopPanel({
         <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => setTab("badges")}>🏅 Badges</button>
         <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => setTab("skins")}>✨ Skins</button>
         <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => setTab("powerups")}>⚡ Powers</button>
+        <button className={`shop-tab${tab === "backgrounds" ? " shop-tab--on" : ""}`} onClick={() => setTab("backgrounds")}>🌌 BG</button>
       </div>
 
       {tab === "themes" && (
@@ -266,6 +292,36 @@ export function ShopPanel({
                 )}
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {tab === "backgrounds" && (
+        <>
+          <div className="shop-hint">Animated backgrounds for gameplay</div>
+          <div className="shop-grid">
+            {SHOP_BACKGROUNDS.map((bg) => {
+              const owned = shopData.unlockedBackgrounds.includes(bg.id);
+              const equipped = shopData.equippedBackground === bg.id;
+              return (
+                <div key={bg.id} className={`shop-item${equipped ? " shop-item--equipped" : ""}${buyAnim === bg.id ? " shop-item--bought" : ""}`}>
+                  <div className="shop-swatch" style={{ background: "rgba(128,0,255,0.1)", fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {bg.icon}
+                  </div>
+                  <div className="shop-name">{bg.name}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{bg.desc}</div>
+                  {owned ? (
+                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipBackground(bg.id)}>
+                      {equipped ? "✓ On" : "Equip"}
+                    </button>
+                  ) : (
+                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= bg.cost ? 1 : 0.4 }} onClick={() => buyBackground(bg.id, bg.cost)} disabled={dust < bg.cost}>
+                      💜 {bg.cost}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
