@@ -92,39 +92,32 @@ function spawnActive(
   const idxs = pool.slice(0, count);
 
   let powerup: CellType | null = null;
-    const powerupEligible = isEvolve ? stage >= 2 : true;
-    const totalWeight = (() => {
-      if (!powerupEligible) return 0;
-      let table = POWERUP_TABLE.map(p =>
-        p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
-      );
-      if (godMode) table = table.filter(p => p.type !== "medpack");
-      return table.reduce((s, p) => s + p.weight, 0);
-    })();
-    const effectiveTotal = powerupEligible ? totalWeight : totalWeight * 0.4;
-    if (powerupEligible) {
-      let table = POWERUP_TABLE.map(p =>
-        p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
-      );
-      if (godMode) table = table.filter(p => p.type !== "medpack");
-      const roll = rng();
-      if (roll < effectiveTotal / 100) {
-        let cursor = 0;
-        for (const p of table) {
-          cursor += p.weight;
-          if (roll < cursor / totalWeight) { powerup = p.type as CellType; break; }
-        }
+  const powerupEligible = isEvolve ? stage >= 2 : true;
+  if (powerupEligible) {
+    let table = POWERUP_TABLE.map(p =>
+      p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
+    );
+    if (godMode) table = table.filter(p => p.type !== "medpack");
+    const totalWeight = table.reduce((s, p) => s + p.weight, 0);
+    const effectiveTotal = isEvolve ? totalWeight : totalWeight * 0.4;
+    const roll = rng() * 100;
+    if (roll < effectiveTotal) {
+      let cursor = 0;
+      for (const p of table) {
+        cursor += p.weight;
+        if (roll < cursor) { powerup = p.type as CellType; break; }
       }
     }
+  }
 
-    let evolveSpecial: CellType | null = null;
-    if (isEvolve && stage >= 3) {
-      const r = rng();
-      if (r < 0.10) evolveSpecial = "ice";
-      else if (r < 0.17) evolveSpecial = "hold";
-    }
+  let evolveSpecial: CellType | null = null;
+  if (isEvolve && stage >= 3) {
+    const r = rng();
+    if (r < 0.10) evolveSpecial = "ice";
+    else if (r < 0.17) evolveSpecial = "hold";
+  }
 
-    return idxs.map((idx, i) => {
+  return idxs.map((idx, i) => {
     if (i === 0 && powerup) return { idx, clicked: false, type: powerup } as any;
     if (i === 0 && evolveSpecial === "ice") {
       return { idx, clicked: false, type: "ice", iceCount: 2 + Math.floor(rng() * 3) };
@@ -198,8 +191,9 @@ export class GameEngine {
   constructor(private config: GameConfig) {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
-    // Don't call makePS here — start() will do it properly
-    // This avoids redundant storage reads and potential confusion with bonusHearts/hasMult
+    const stored = config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
+    this.p1 = makePS(stored.heart > 0 ? stored.heart : 0, (config.mode === "evolve" && (stored.mult ?? 0) > 0), stored);
+    this.p2 = makePS(stored.heart > 0 ? stored.heart : 0, (config.mode === "evolve" && (stored.mult ?? 0) > 0), stored);
   }
 
   start(): void {
@@ -215,7 +209,7 @@ export class GameEngine {
     this.gameSeed   = makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
-    // Load stored once, compute deductions, call saveStoredPowerups once for mult deduction if hasMult, once for heart reset if bonusHearts
+    // Load stored once, compute deductions, call saveStoredPowerups once each
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     const bonusHearts = (this.config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
     const hasMult = (this.config.mode === "evolve" && (stored.mult ?? 0) > 0);
@@ -224,7 +218,7 @@ export class GameEngine {
     this.p1 = makePS(bonusHearts, hasMult, stored);
     this.p2 = makePS(bonusHearts, hasMult, stored);
     this.tapBuffer  = { 1: null, 2: null };
-    this.dirty = true;
+
     this.emit({ type: "phaseChange", phase: "playing" });
     this.emitSnapshot();
     this.scheduleTick();
@@ -633,13 +627,7 @@ export class GameEngine {
 
   private triggerGameOver(winner: Winner): void {
     this.stop(); this.phase = "gameover";
-    const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
-    this.config.storage?.saveStoredPowerups({
-      freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0),
-      shield: Math.max(0, this.p1.storedShieldCharges ?? 0),
-      mult: cur.mult,
-      heart: cur.heart,
-    });
+    this.config.storage?.saveStoredPowerups({ freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0), shield: Math.max(0, this.p1.storedShieldCharges ?? 0), mult: 0, heart: 0 });
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver",    winner });
   }

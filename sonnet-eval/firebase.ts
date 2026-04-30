@@ -100,9 +100,9 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
       limit(50)
     );
     const snap = await getDocs(q);
-    // Server-side where() already filters by date, no client filter needed
     const entries = snap.docs.map((doc: any) => doc.data());
-    return entries.slice(0, 3).some((entry: any) => entry.initials === name) ? 500 : 0;
+    const weekly = entries.filter((entry: any) => entry.date >= oneWeekAgo);
+    return weekly.slice(0, 3).some((entry: any) => entry.initials === name) ? 500 : 0;
   } catch {
     return 0;
   }
