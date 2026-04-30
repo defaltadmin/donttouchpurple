@@ -213,6 +213,7 @@ export default function App() {
   const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
+  const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
   const [screen, setScreen]          = useState<GameScreen>("menu");
   const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
@@ -286,6 +287,7 @@ export default function App() {
       setBest2((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
     }
     setShareMsg(getMessage(earned));
+    setGameSeedState(snapshotRef.current?.gameSeed ?? 0);
     setInitials(playerName || "Player");
     setIE(false);
     setPaused(false);
@@ -929,7 +931,7 @@ export default function App() {
                 mode={gameMode}
                 is2P={numPlayers === 2}
                 shareMsg={shareMsg}
-                gameSeed={snapshot.gameSeed || 0}
+                gameSeed={gameSeedState || 0}
                 tick={snapshot.tick}
                 p1={snapshot.p1}
                 initialsEntered={initialsEntered}
