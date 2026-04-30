@@ -31,13 +31,6 @@ import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
 import { EvolveTutorial, shouldShowEvolveTutorial } from "./components/Screens/EvolveTutorial";
 import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
 
-// Components - Backgrounds
-import { VoidTunnel } from "./components/Backgrounds/VoidTunnel";
-import { StarWarp } from "./components/Backgrounds/StarWarp";
-import { GridPulse } from "./components/Backgrounds/GridPulse";
-import { Plasma } from "./components/Backgrounds/Plasma";
-import { ParticleWeb } from "./components/Backgrounds/ParticleWeb";
-
 // Components - Settings & Shop
 import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -139,22 +132,8 @@ function loadShopData() {
         unlockedBadges: data.unlockedBadges || data.ownedBadges || [],
         equippedBadge:  data.equippedBadge || "",
         unlockedSkins:  data.unlockedSkins || data.ownedSkins || ["default"],
-        equippedSkin:   data.equippedSkin || "default",
-        unlockedBackgrounds: data.unlockedBackgrounds || ["void-tunnel"],
-        equippedBackground: data.equippedBackground || "void-tunnel"
+        equippedSkin:   data.equippedSkin || "default"
       };
-    }
-  } catch {}
-  return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default",
-    unlockedBackgrounds: ["void-tunnel"], equippedBackground: "void-tunnel" };
-}
-
-type ShopData = {
-  unlockedThemes: string[]; equippedTheme: string;
-  unlockedBadges: string[]; equippedBadge: string;
-  unlockedSkins: string[]; equippedSkin: string;
-  unlockedBackgrounds: string[]; equippedBackground: string;
-};
     }
   } catch {}
   return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default" };
@@ -249,12 +228,6 @@ export default function App() {
   const [initials, setInitials]      = useState("");
   const [initialsEntered, setIE]     = useState(false);
   const [theme, setTheme]            = useState<"dark"|"light">("dark");
-  const [equippedBackground, setEquippedBackground] = useState<string>(() => {
-    try {
-      const d = JSON.parse(localStorage.getItem(LS_KEYS.SHOP) || "{}");
-      return d.equippedBackground || "void-tunnel";
-    } catch { return "void-tunnel"; }
-  });
   const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
   const [showSettings, setShowSettings]     = useState(false);
   const [settingsFromPause, setSettingsFromPause] = useState(false);
@@ -649,12 +622,6 @@ export default function App() {
       <div className="orb orb-2" />
       <div className="orb orb-3" />
 
-      {equippedBackground === "void-tunnel" && <VoidTunnel active={isPlaying} />}
-      {equippedBackground === "star-warp" && <StarWarp active={isPlaying} />}
-      {equippedBackground === "grid-pulse" && <GridPulse active={isPlaying} />}
-      {equippedBackground === "plasma" && <Plasma active={isPlaying} />}
-      {equippedBackground === "particle-web" && <ParticleWeb active={isPlaying} />}
-
       <ColorblindFilters />
 
       {(engineToast || toast) && <div className="toast">{engineToast || toast}</div>}
@@ -1002,8 +969,6 @@ export default function App() {
             onActivateFreeze={() => activateStoredFreeze(1)}
             onActivateShield={() => activateStoredShield(1)}
             showStoredPwr={screen === "playing"}
-            onStartBot={startBot} onStopBot={stopBot}
-            isBotActive={isBotActive()} dust={dust}
             practiceMode={practiceMode} />
           {is2P && (
             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
