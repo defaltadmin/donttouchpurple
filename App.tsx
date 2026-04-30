@@ -793,11 +793,12 @@ export default function App() {
           onDustChange={d => { setDust(d); setShopDataState(loadShopData()); }}
           onClose={() => setScreen("menu")}
           devMode={devMode}
+          gameMode={mode}
           loadShopData={loadShopData}
           saveShopData={saveShopData}
           loadStoredPowerups={loadStoredPwr}
           saveStoredPowerups={saveStoredPwr}
-          persistDust={(d) => { localStorage.setItem(LS_KEYS.DUST, d.toString()); }}
+          persistDust={persistDust}
         />
       )}
 

@@ -22,6 +22,7 @@ interface ShopPanelProps {
   onDustChange: (dust: number) => void;
   onClose: () => void;
   devMode?: boolean;
+  gameMode?: "classic" | "evolve" | "duo";
   loadShopData: () => ShopData;
   saveShopData: (data: ShopData) => void;
   loadStoredPowerups: () => StoredPowerups;
@@ -34,6 +35,7 @@ export function ShopPanel({
   onDustChange,
   onClose: _onClose,
   devMode,
+  gameMode = "evolve",
   loadShopData,
   saveShopData,
   loadStoredPowerups,
@@ -231,6 +233,11 @@ export function ShopPanel({
       {tab === "powerups" && (
         <>
           <div className="shop-hint">Charges carry into your next game.</div>
+          {gameMode !== "evolve" && (
+            <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", padding: "8px 16px" }}>
+              🔒 Powerups only work in Evolve mode
+            </div>
+          )}
           {(stored.freeze > 0 || stored.shield > 0 || stored.mult > 0 || stored.heart > 0) ? (
             <div className="shop-inventory">
               <span className="shop-inv-lbl">Ready:</span>
@@ -242,15 +249,21 @@ export function ShopPanel({
           ) : null}
           <div className="shop-grid">
             {SHOP_POWERUPS.map((powerup) => (
-              <div key={powerup.id} className={`shop-item${buyAnim === powerup.id ? " shop-item--bought" : ""}`}>
+              <div key={powerup.id} className={`shop-item${buyAnim === powerup.id ? " shop-item--bought" : ""}${gameMode !== "evolve" ? " shop-item--locked" : ""}`}>
                 <div className="shop-swatch" style={{ background: "rgba(192,38,211,0.1)", fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {powerup.icon}
                 </div>
                 <div className="shop-name">{powerup.name}</div>
                 <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{powerup.desc}</div>
-                <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= powerup.cost ? 1 : 0.4 }} onClick={() => buyPowerup(powerup.id, powerup.cost)} disabled={dust < powerup.cost}>
-                  💜 {powerup.cost}
-                </button>
+                {gameMode === "evolve" ? (
+                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= powerup.cost ? 1 : 0.4 }} onClick={() => buyPowerup(powerup.id, powerup.cost)} disabled={dust < powerup.cost}>
+                    💜 {powerup.cost}
+                  </button>
+                ) : (
+                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: 0.4 }} disabled>
+                    🔒 Locked
+                  </button>
+                )}
               </div>
             ))}
           </div>
