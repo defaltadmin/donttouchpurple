@@ -79,15 +79,10 @@ export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
 export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
   if (!db) return;
-  try {
-    const { getApp } = await import("firebase/app");
-    const { getFunctions, httpsCallable } = await import("firebase/functions");
-    const functions = getFunctions(getApp());
-    const syncDust = httpsCallable(functions, "syncDustWallet");
-    await syncDust({ deviceId: name, dust });
-  } catch (e) {
-    console.warn("[DTP-Firebase] syncDust failed:", e);
-  }
+  const { doc, setDoc, serverTimestamp } = await import(
+    "firebase/firestore"
+  );
+  await setDoc(doc(db, "dust_wallet", name), { name, dust, ts: serverTimestamp() });
 }
 
 export async function fbCheckWeeklyBonus(name: string): Promise<number> {

@@ -16,7 +16,13 @@ service cloud.firestore {
     }
     match /dust_wallet/{docId} {
       allow read: if true;
-      allow write: if false; // Only Cloud Function can write
+      allow create: if request.resource.data.ts == request.time
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.dust is number
+        && request.resource.data.dust >= 0
+        && request.resource.data.dust < 1000000;
     }
   }
 }

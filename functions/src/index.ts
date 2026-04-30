@@ -42,17 +42,3 @@ export const updateStreak = functions.https.onCall(async (data, context) => {
   await streakRef.set({ count: 1, lastLogin: now });
   return { streak: 1 };
 });
-
-export const syncDustWallet = functions.https.onCall(async (data, context) => {
-  const deviceId: string | undefined = data?.deviceId;
-  const dust: number | undefined = data?.dust;
-  if (!deviceId) throw new functions.https.HttpsError("invalid-argument", "deviceId required");
-  if (typeof dust !== "number" || dust < 0 || dust >= 1000000) {
-    throw new functions.https.HttpsError("invalid-argument", "invalid dust value");
-  }
-
-  const docRef = admin.firestore().collection("dust_wallet").doc(deviceId);
-  const now = admin.firestore.Timestamp.now();
-  await docRef.set({ name: deviceId, dust, ts: now }, { merge: true });
-  return { success: true };
-});
