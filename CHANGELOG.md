@@ -176,32 +176,91 @@ deploy-ready/
   - Hosting deployed to https://dont-touch-purple.web.app
   - Code pushed to https://github.com/defaltadmin/donttouchpurple.git
 
-### Future Features (Planned)
+### v5.2.0 — 2026-04-30
 
-1. **Bot Assist Mode ("Dust Guard")**
-   - Hold button to auto-tap missed non-danger cells
-   - Costs 10 dust/second while held
-   - Reaction delay: 200ms - (dustSpent * 0.5ms), floor at 80ms
-   - Error rate: 0% + 2% per grid stage
-   - UI: Pill button in PlayerPanel (Evolve mode only), requires 50 dust minimum
+### New Features
 
-2. **Seed Replay**
-   - "▶ Replay Seed" button on GameOver share card
-   - Stores seed in localStorage as `pendingReplaySeed`
-   - StartScreen banner: "Replay seed: XXXXXXXX — [Play] [Clear]"
-   - GameEngine.start() accepts optional `forceSeed?: number`
-   - Settings drawer: "Custom Seed" text input with Play button
+1. **Seed Replay Feature**
+   - **GameOver.tsx**: Added "▶ Replay Seed" button that saves seed to `localStorage.pendingReplaySeed` and starts game immediately
+   - **StartScreen.tsx**: Added banner showing "Replay Seed: XXXXXXXX" with Play/Clear buttons
+   - **App.tsx**: Added `pendingReplaySeed` state, `clearReplaySeed` handler, passes props to StartScreen and GameOver
+   - **useGameEngine.ts**: Updated `start` function to accept `forceSeed?: number`
+   - **GameEngine.ts**: Updated `start(forceSeed?)` to use provided seed or generate new one via `makeGameSeed()`
+   - **How it works**: Click "Replay Seed" on GameOver → saves seed → StartScreen shows banner → Play uses saved seed → Clear removes it
 
-3. **Animated Backgrounds (Wallpapers)**
-   - Canvas-based animations (no video/GIF)
-   - Unlockable via shop: 300-600 dust each
-   - Designs: void-tunnel, star-warp, grid-pulse, plasma, particle-web
-   - Each ~50 lines of JS, zero storage, 60fps
-   - Future: AI-generated WebM videos for cinematic backgrounds
+2. **Animated Backgrounds (Canvas Wallpapers)**
+   - **5 Canvas components** created in `components/Backgrounds/`:
+     - `VoidTunnel.tsx` — Perspective rings shrinking to center (purple hue), ~50 lines
+     - `StarWarp.tsx` — White dots accelerating outward from center, ~50 lines
+     - `GridPulse.tsx` — CSS animated perspective grid floor with pulse effect
+     - `Plasma.tsx` — Sine-wave color field shifting slowly, ~50 lines
+     - `ParticleWeb.tsx` — Connected dots drifting with purple accents, ~50 lines
+   - **Shop integration** (`config/powerupWeights.ts`):
+     - Added `SHOP_BACKGROUNDS` array with 5 items (300-600 dust each)
+     - Each has `id`, `name`, `icon`, `cost`, `desc`, `component` fields
+   - **ShopPanel.tsx**: Added "🌌 BG" tab with buy/equip functionality
+   - **App.tsx**: Added `equippedBackground` state, renders active background component during gameplay
+   - **Performance**: All canvases run at 60fps, zero storage, pointer-events: none, z-index: -1
 
-4. **Triangular Grid Shapes (v6.0)**
-   - Octagon/Pentagon/Triangle cell shapes
-   - Requires new GridRenderer component with CSS clip-path or SVG
-   - Cell orientation (up/down) needed for triangles
-   - Hit detection logic changes required
-   - Engine stays same — just adds orientation to cell type
+3. **Bot Assist Mode ("Dust Guard")**
+   - **GameEngine.ts**: Added bot state and logic:
+     - `botActive`, `botIntervalRef`, `dustSpentTotal` state variables
+     - `startBot()`: Starts interval that auto-taps missed non-danger cells every 1s
+     - `stopBot()`: Clears interval
+     - `isBotActive()`: Returns bot status
+     - **Reaction delay**: `200ms - (dustSpent * 0.5ms)`, floor at 80ms
+     - **Error rate**: `stage * 2%` (max 18% at stage 9)
+     - Consumes 10 dust/second while active
+     - Emits `dustConsumed` events
+   - **useGameEngine.ts**: Exposed `startBot`, `stopBot`, `isBotActive` methods
+   - **PlayerPanel.tsx**: Added Bot Assist button:
+     - Shows only in Evolve mode, not in practice mode
+     - "🤖 Hold to Assist · 10💜/s" pill button at bottom center
+     - Disabled if dust < 50
+     - Hold to activate, release to stop
+     - Glows when active
+   - **App.tsx**: Passed `onStartBot`, `onStopBot`, `isBotActive()`, `dust` to PlayerPanel
+
+### UI Improvements
+
+- **Hearts capped at 7 (5 base + 2 bonus)**
+  - `components/HUD/Hearts.tsx` now limits display to MAX_HEARTS + 2
+  - Row 2 only renders up to 2 bonus hearts
+
+- **Shop powerups locked in Classic mode**
+  - Added 🔒 lock icon and "Powerups only work in Evolve mode" message
+  - `components/Shop/ShopPanel.tsx` now accepts `gameMode` prop
+  - `App.tsx` passes `mode` to ShopPanel
+  - Prevents confusion from buying unusable powerups
+
+### Bug Fixes
+
+- **Share screen seed preservation fixed**
+  - Added `gameSeedState` to capture seed at game over time
+  - `handleEngineGameOver` now saves `snapshotRef.current?.gameSeed` to state
+  - GameOver component uses `gameSeedState` instead of `snapshot.gameSeed`
+  - Prevents seed from being 0/undefined when GameOver renders
+
+- **All 25 tests passing**
+  - `DifficultyScaler.test.ts`: 9 tests
+  - `configIntegrity.test.ts`: 5 tests
+  - `GameEngine.test.ts`: 8 tests
+  - `engine/GameEngine.test.ts`: 3 tests
+
+### Deployment
+
+- **Firebase configuration**
+  - API key restricted to `game.mscarabia.com` in Firebase Console
+  - Firestore rules deployed with client-side write support for Spark plan
+  - Hosting deployed to https://dont-touch-purple.web.app
+  - Code pushed to https://github.com/defaltadmin/donttouchpurple.git
+  - Commits: `6b9b6e4`, `3291a8e`, `315e33f`, `f3a45ee`, `30b06ab`, `aabea90`, `723eda4`, `5a51fcf`
+
+## v5.1.1 — 2026-04-30
+
+### Bug Fixes
+
+- **High score logic corrected**
+  - `handleEngineGameOver` now checks `gameMode` to update the correct best score (Classic vs Evolve)
+  - Previously, p1Score always updated Classic best and p2Score updated Evolve best regardless of actual mode played
+  - `App.tsx` lines 276-286
