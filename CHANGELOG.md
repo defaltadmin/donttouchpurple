@@ -85,9 +85,73 @@ deploy-ready/
   - `package.json` updated to 5.1.0 to match CHANGELOG.md
   - Previously was stuck at 5.0.0
 
+### Critical Bug Fixes (Sonnet Bug Report)
+
+- **triggerGameOver() now preserves mult/heart on game over**
+  - Previously, game over was consuming stored multiplier and heart powerups instead of preserving them
+  - Now loads `cur` state and explicitly saves `cur.mult` and `cur.heart` back to storage
+  - `engine/GameEngine.ts` `triggerGameOver()` method
+
+- **Constructor no longer calls makePS()**
+  - Removed redundant storage read in constructor that was initializing player state twice
+  - `start()` method now handles all initialization properly
+  - `engine/GameEngine.ts` constructor
+
+- **fbCheckWeeklyBonus redundant filter removed**
+  - Removed client-side `.filter()` that was redundant with Firestore query
+  - `services/firebase.ts` `fbCheckWeeklyBonus()`
+
+- **spawnActive powerup roll fixed**
+  - Fixed probability comparison: `roll < effectiveTotal / 100` where `effectiveTotal` is properly scoped
+  - Fixed `evolveSpecial` variable scoping so it's accessible in the return statement
+  - Fixed `totalWeight` declaration before the conditional block
+  - `engine/GameEngine.ts` `spawnActive()` function
+
+- **Rare color trigger logic fixed**
+  - Now uses `lastRareTriggerScore` tracker to avoid missing trigger windows
+  - Previously used `% 50 < 4` window which could be missed if score jumped too fast
+  - `engine/GameEngine.ts` tick loop
+
+- **start() now properly loads and deducts stored powerups once**
+  - Single storage read at start, properly deducts mult/heart usage once
+  - Removed double-deduction bug where powerups were consumed twice
+  - `engine/GameEngine.ts` `start()` method
+
+- **makePS() stripped of storage writes**
+  - Removed all storage write logic from `makePS()` to prevent side effects
+  - Storage writes now happen explicitly in `start()` and `triggerGameOver()`
+  - `engine/GameEngine.ts` `makePS()` function
+
+- **Dirty flag added to RAF loop**
+  - Added `this.dirty = true/false` flag to skip unchanged snapshots
+  - Reduces unnecessary React re-renders when no state changes
+  - `engine/GameEngine.ts` RAF loop
+
+- **fbSyncDust now uses setDoc instead of addDoc**
+  - Changed from `addDoc(collection())` to `setDoc(doc(db, "dust_wallet", name))` for stable document keys
+  - Prevents duplicate dust wallet documents for same user
+  - `services/firebase.ts` `fbSyncDust()`
+
+- **getDeviceId fixed**
+  - Improved device ID generation for Firebase storage
+  - `services/firebase.ts` `getDeviceId()`
+
+- **updateStreak timezone handling with clientDate**
+  - `App.tsx` now passes `clientDate` parameter to `fbGetStreak()`
+  - Cloud Function uses client-provided date for streak calculation
+  - `App.tsx` and `functions/src/index.ts`
+
 ### Deployment Prep
 
 - **Firebase hosting config**
   - `firebase.json` updated with proper hosting config (`dist/` folder, ignore patterns)
   - Removed parentheses from rule/index file paths
   - Added `.firebase/`, `.agents/`, `.continue/`, `.gemini/`, `.trae/`, `.windsurf/` to `.gitignore`
+
+### Tests
+
+- **All 25 tests passing**
+  - `DifficultyScaler.test.ts`: 9 tests
+  - `configIntegrity.test.ts`: 5 tests
+  - `GameEngine.test.ts`: 8 tests
+  - `engine/GameEngine.test.ts`: 3 tests
