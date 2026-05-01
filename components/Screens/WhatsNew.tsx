@@ -1,6 +1,6 @@
 import React from "react";
 
-const VERSION = "2.5.0";
+const VERSION = "5.3.1";
 const LS_KEY = "dtp_last_version";
 
 interface WhatsNewProps {
@@ -8,13 +8,14 @@ interface WhatsNewProps {
 }
 
 const CHANGES = [
-  { emoji: "🎨", text: "Keyboard mode cells now have vibrant colors + bigger key labels" },
-  { emoji: "⚡", text: "Powerup bars redesigned with darker colors and draining animation" },
-  { emoji: "🔊", text: "Volume slider added — adjust sound from 0-100%" },
-  { emoji: "📳", text: "Screen shake toggle in settings" },
-  { emoji: "∞", text: "Practice Mode — unlimited energy, no damage" },
-  { emoji: "🧬", text: "New player tutorial for Evolve mode" },
-  { emoji: "🎯", text: "Shareable game seeds — challenge friends with your exact game" },
+  { emoji: "🎮", text: "Correct game logic: tap safe colors to score, tap purple to lose health" },
+  { emoji: "🎉", text: "New Best! badge on game over when you beat your personal best" },
+  { emoji: "💔", text: "Streak lost toast when you break a streak of 5+" },
+  { emoji: "⚠️", text: "Rare mode turns-left indicator in the power bar" },
+  { emoji: "🛡", text: "Shield, Freeze, and Energy drop animations now properly reset" },
+  { emoji: "⚡", text: "Full energy refill button now works correctly" },
+  { emoji: "🤖", text: "Bot assist feature in Evolve mode" },
+  { emoji: "🌌", text: "Animated backgrounds: Void Tunnel, Star Warp, Grid Pulse" },
 ];
 
 export function WhatsNew({ onClose }: WhatsNewProps) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtp-v2-5-0';
+const CACHE_NAME = 'dtp-v5-2-4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -24,12 +24,23 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((r) => r || fetch(e.request).then((response) => {
+      if (!response || !response.ok) return response;
       return caches.open(CACHE_NAME).then((cache) => {
         cache.put(e.request, response.clone());
         return response;
       });
-    })).catch(() => caches.match('/index.html'))
+    }))
   );
 });

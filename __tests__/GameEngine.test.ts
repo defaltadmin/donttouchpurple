@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GameEngine } from "../engine/GameEngine";
-import type { ActiveCell, GameConfig, GameEvent, Winner } from "../engine/types";
+import type { ActiveCell, GameConfig, GameEvent, Winner, HoldCell, IceCell } from "../engine/types";
 
 function makeConfig(overrides: Partial<GameConfig> = {}): GameConfig {
   return {
@@ -66,20 +66,15 @@ describe("GameEngine", () => {
     expect(engine.getSnapshot().tick).toBeGreaterThan(tickBeforePause);
   });
 
-  it("damages the player when danger cells are not tapped in time", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.01); // Force purple cell to spawn
+  it("damages the player when safe cells are not tapped in time", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // Force safe (non-purple) cells
     engine.start();
 
     vi.advanceTimersByTime(4_100);
 
-    const snapshot = engine.getSnapshot();
-    const hasUntappedDanger = snapshot.p1.active.some(
-      (c) => !c.clicked && (c.type === "purple")
-    );
-    if (hasUntappedDanger) {
-      expect(engine.getSnapshot().p1.health).toBeLessThan(5);
-      expect(events.some((event) => event.type === "damage")).toBe(true);
-    }
+    // With safe cells expiring untapped, health should have dropped
+    expect(engine.getSnapshot().p1.health).toBeLessThan(5);
+    expect(events.some((event) => event.type === "damage")).toBe(true);
   });
 
   it("damages the player when a purple cell is tapped", () => {
@@ -174,5 +169,155 @@ describe("GameEngine", () => {
     vi.advanceTimersByTime(5_000);
 
     expect(events).toHaveLength(eventCount);
+  });
+
+  describe("Critical Path Logic", () => {
+    it("prevents hold soft-lock with a 5s safety timer", () => {
+      engine.start();
+      
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000 }];
+      (engine as any).p1 = snapshot.p1;
+
+      engine.handleHoldStart(1, 0);
+      const holdCell = engine.getSnapshot().p1.active[0] as HoldCell;
+      expect(holdCell.holdStart).toBeDefined();
+
+      vi.advanceTimersByTime(5001);
+      expect((engine.getSnapshot().p1.active[0] as HoldCell).holdStart).toBeUndefined();
+    });
+
+    it("decrements and removes ice cells on multiple taps", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "ice", iceCount: 2 }];
+      (engine as any).p1 = snapshot.p1;
+      
+      // _processTap is private, but engine.handleTap calls it
+      engine.handleTap(1, 0);
+      expect((engine.getSnapshot().p1.active[0] as IceCell).iceCount).toBe(1);
+      expect(engine.getSnapshot().p1.active[0].clicked).toBe(false);
+      
+      engine.handleTap(1, 0);
+      expect(engine.getSnapshot().p1.active[0].clicked).toBe(true);
+    });
+
+    it("absorbs damage with a shield when tapping danger color", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.health = 3;
+      snapshot.p1.shieldCount = 1;
+      snapshot.p1.shield = true;
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "purple" }];
+      (engine as any).p1 = snapshot.p1;
+
+      // Tapping the danger color should consume the shield instead of dealing damage
+      engine.handleTap(1, 0);
+
+      expect(engine.getSnapshot().p1.shield).toBe(false);
+      expect(engine.getSnapshot().p1.shieldCount).toBe(0);
+      expect(engine.getSnapshot().p1.health).toBe(3); // health unchanged
+    });
+  });
+
+  describe("Powerups and Special States", () => {
+    it("handles medpack powerup", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.health = 2;
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "medpack" }];
+      (engine as any).p1 = snapshot.p1;
+      
+      engine.handleTap(1, 0);
+      expect(engine.getSnapshot().p1.health).toBe(3);
+    });
+
+    it("handles freeze powerup", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "freeze" }];
+      (engine as any).p1 = snapshot.p1;
+      
+      const now = Date.now();
+      engine.handleTap(1, 0);
+      expect(engine.getSnapshot().p1.freezeEnd).toBeGreaterThan(now);
+    });
+
+    it("handles multiplier powerup", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "multiplier" }];
+      (engine as any).p1 = snapshot.p1;
+      
+      const now = Date.now();
+      engine.handleTap(1, 0);
+      expect(engine.getSnapshot().p1.multiplierEnd).toBeGreaterThan(now);
+    });
+
+    it("handles streak toasts", () => {
+      engine.start();
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.streak = 4;
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "white" }];
+      (engine as any).p1 = snapshot.p1;
+      
+      engine.handleTap(1, 0);
+      expect(events.some(e => e.type === "toast" && e.message?.includes("5 Streak"))).toBe(true);
+    });
+
+    it("handles rare mode transitions", () => {
+      // Switch to evolve mode for rare colors
+      engine = new GameEngine(makeConfig({ mode: "evolve" }));
+      engine.subscribe(e => events.push(e));
+      engine.start();
+      
+      // Force rare mode
+      (engine as any).rareMode = { active: true, color: "gold", cssColor: "#ffd700", turnsLeft: 1 };
+      
+      // Advance timers to trigger processTick
+      vi.advanceTimersByTime(2100); 
+      
+      expect(engine.getSnapshot().rareMode.active).toBe(false);
+      expect(events.some(e => e.type === "toast" && e.message === "🟣 Back to Purple!")).toBe(true);
+    });
+  });
+
+  describe("Bot and Assistance", () => {
+    it("manages bot state in evolve mode", () => {
+      engine = new GameEngine(makeConfig({ mode: "evolve" }));
+      engine.start();
+      
+      const snapshot = engine.getSnapshot();
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "white" }];
+      (engine as any).p1 = snapshot.p1;
+
+      engine.startBot();
+      expect(engine.isBotActive()).toBe(true);
+      
+      // Advance to trigger interval
+      vi.advanceTimersByTime(1100);
+      // Advance to trigger setTimeout reaction
+      vi.advanceTimersByTime(500);
+      
+      expect(engine.getSnapshot().p1.active[0].clicked).toBe(true);
+
+      engine.stopBot();
+      expect(engine.isBotActive()).toBe(false);
+    });
+
+    it("allows forcing rare mode via dev tools", () => {
+      engine.start();
+      (engine as any).devForceRare(true);
+      expect(engine.getSnapshot().rareMode.active).toBe(true);
+      
+      (engine as any).devForceRare(false);
+      expect(engine.getSnapshot().rareMode.active).toBe(false);
+    });
+
+    it("manages bot assist state", () => {
+      expect(engine.getBotAssistActive()[1]).toBe(false);
+      engine.setBotAssist(1, true);
+      expect(engine.getBotAssistActive()[1]).toBe(true);
+    });
   });
 });

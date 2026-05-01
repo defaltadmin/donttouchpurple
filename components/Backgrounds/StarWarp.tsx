@@ -1,60 +1,36 @@
 import { useEffect, useRef } from "react";
 
-interface Star { x: number; y: number; vx: number; vy: number; size: number }
-
-export function StarWarp({ active }: { active: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const starsRef = useRef<Star[]>([]);
-
+export function StarWarp({ speed = 1 }: { speed?: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (!active) return;
-    const canvas = canvasRef.current!;
+    const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    starsRef.current = Array.from({ length: 100 }, () => ({
-      x: (Math.random() - 0.5) * canvas.width,
-      y: (Math.random() - 0.5) * canvas.height,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-      size: Math.random() * 2 + 0.5,
+    let raf: number;
+    const STARS = 200;
+    const stars = Array.from({ length: STARS }, () => ({
+      x: (Math.random() - 0.5) * 2,
+      y: (Math.random() - 0.5) * 2,
+      z: Math.random(),
     }));
-
     const draw = () => {
-      ctx.fillStyle = "rgba(13, 8, 32, 0.15)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      starsRef.current.forEach(s => {
-        s.x += s.vx;
-        s.y += s.vy;
-        s.vx *= 1.02;
-        s.vy *= 1.02;
-
-        if (Math.abs(s.x) > cx) s.x = -s.x;
-        if (Math.abs(s.y) > cy) s.y = -s.y;
-
-        ctx.fillStyle = "white";
-        ctx.fillRect(cx + s.x, cy + s.y, s.size, s.size);
-      });
-      rafRef.current = requestAnimationFrame(draw);
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      ctx.fillStyle = "rgba(0,0,0,0)"; ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      for (const s of stars) {
+        s.z -= 0.004 * speed;
+        if (s.z <= 0) { s.x = (Math.random() - 0.5) * 2; s.y = (Math.random() - 0.5) * 2; s.z = 1; }
+        const sx = (s.x / s.z) * cx + cx;
+        const sy = (s.y / s.z) * cy + cy;
+        const r = Math.max(0.4, (1 - s.z) * 2.5);
+        const alpha = 1 - s.z;
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fillStyle = s.z < 0.3 ? `rgba(192,38,211,${alpha})` : `rgba(255,255,255,${alpha})`;
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
     };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
-    };
-  }, [active]);
-
-  if (!active) return null;
-  return <canvas ref={canvasRef} style={{ position: "fixed", top: 0, left: 0, zIndex: -1, pointerEvents: "none" }} />;
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [speed]);
+  return <canvas ref={ref} style={{ position: "fixed", inset: 0, zIndex: -1, pointerEvents: "none" }} />;
 }

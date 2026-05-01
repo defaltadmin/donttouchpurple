@@ -88,18 +88,17 @@ export const SHOP_SKINS: ShopSkin[] = [
 
 // ─── Shop items — backgrounds (animated) ──────────────────
 export interface ShopBackground {
-  id:      string;
-  name:    string;
-  icon:    string;
-  cost:    number;
-  desc:    string;
-  component: string; // Component name to render
+  id: string;
+  name: string;
+  icon: string;
+  cost: number;
+  desc: string;
+  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "none";
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
-  { id:"void-tunnel", name:"Void Tunnel",   icon:"🌀", cost:300, desc:"Perspective rings shrinking to center", component:"VoidTunnel" },
-  { id:"star-warp",   name:"Star Warp",      icon:"⭐", cost:350, desc:"White dots accelerating outward",  component:"StarWarp" },
-  { id:"grid-pulse",  name:"Grid Pulse",     icon:"🏁", cost:400, desc:"Animated perspective grid floor", component:"GridPulse" },
-  { id:"plasma",      name:"Plasma",          icon:"🌈", cost:500, desc:"Sine-wave color field shifting",  component:"Plasma" },
-  { id:"particle-web", name:"Particle Web",    icon:"🕸️", cost:600, desc:"Connected dots drifting, purple",  component:"ParticleWeb" },
+  { id: "default",     name: "Default",      icon: "🌑", cost: 0,   desc: "Static dark void",            component: "none" },
+  { id: "void-tunnel", name: "Void Tunnel",   icon: "🌀", cost: 400, desc: "Purple rings into infinity",  component: "VoidTunnel" },
+  { id: "star-warp",   name: "Star Warp",     icon: "✨", cost: 350, desc: "Warp speed through the stars", component: "StarWarp" },
+  { id: "grid-pulse",  name: "Grid Pulse",    icon: "⬛", cost: 300, desc: "Neon grid floor receding",    component: "GridPulse" },
 ];

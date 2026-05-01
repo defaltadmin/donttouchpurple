@@ -1,17 +1,21 @@
 {
   "name": "dont-touch-purple",
   "private": true,
-  "version": "5.1.0",
+  "version": "5.2.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "build": "tsc && vite build",
+    "check:bundle": "node scripts/check-bundle-size.mjs",
     "deploy": "pnpm build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath htdocs.zip -Force\"",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^10.51.0",
+    "@sentry/tracing": "^7.120.4",
     "firebase": "^12.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -22,6 +26,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "1.6.1",
     "jsdom": "^29.0.2",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",

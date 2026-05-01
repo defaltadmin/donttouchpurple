@@ -3,7 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /lb_global/{docId} {
       allow read: if true;
-      allow create: if request.resource.data.ts == request.time
+      allow create: if request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts'])
+        && request.resource.data.ts == request.time
         && request.resource.data.score is number
         && request.resource.data.score > 0
         && request.resource.data.score < 100000
@@ -12,11 +13,24 @@ service cloud.firestore {
         && request.resource.data.initials.size() <= 8
         && request.resource.data.mode in ['classic', 'evolve']
         && request.resource.data.date is string
-        && (!('badge' in request.resource.data) || request.resource.data.badge is string);
+        && request.resource.data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && (!('badge' in request.resource.data) || (request.resource.data.badge is string && request.resource.data.badge.size() <= 24));
     }
     match /dust_wallet/{docId} {
       allow read: if true;
-      allow create: if request.resource.data.ts == request.time
+      allow create: if request.resource.data.keys().hasOnly(['name', 'dust', 'ts'])
+        && request.resource.data.ts == request.time
+        && request.resource.data.name == docId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.dust is number
+        && request.resource.data.dust >= 0
+        && request.resource.data.dust < 1000000;
+      allow update: if request.resource.data.keys().hasOnly(['name', 'dust', 'ts'])
+        && request.resource.data.ts == request.time
+        && request.resource.data.name == docId
+        && request.resource.data.name == resource.data.name
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 20

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import type { PlayerState } from "../../engine/types";
 
-interface PwrBarProps { ps: PlayerState }
+interface PwrBarProps { ps: PlayerState; rareMode?: import('../../engine/types').RareColorMode }
 
-export function PwrBar({ ps }: PwrBarProps) {
+export function PwrBar({ ps, rareMode }: PwrBarProps) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 200);
@@ -14,10 +14,19 @@ export function PwrBar({ ps }: PwrBarProps) {
   const multLeft   = Math.max(0, ps.multiplierEnd - now);
   const freezeTotal = 15000, multTotal = 24000;
 
-  if (freezeLeft <= 0 && multLeft <= 0 && ps.shieldCount <= 0) return null;
+  if (freezeLeft <= 0 && multLeft <= 0 && ps.shieldCount <= 0 && !rareMode?.active) return null;
 
   return (
     <div className="pwr-bar">
+      {rareMode?.active && (
+        <div className="pwr-pill pwr-pill--rare">
+          <div className="pwr-progress" style={{ width: `${(rareMode.turnsLeft / 9) * 100}%` }} />
+          <div className="pwr-center">
+            <span className="pwr-icon">⚠️</span>
+            <span className="pwr-count" style={{ color: rareMode.cssColor }}>{rareMode.turnsLeft}</span>
+          </div>
+        </div>
+      )}
       {freezeLeft > 0 && (
         <div className="pwr-pill pwr-pill--freeze">
           <div className="pwr-progress" style={{ width: `${(freezeLeft / freezeTotal) * 100}%` }} />

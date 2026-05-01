@@ -30,7 +30,13 @@ function dailySeed(dateStr: string): number {
 function loadCompletedDates(): string[] {
   try {
     const raw = localStorage.getItem('dtp-daily-completed');
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const all: string[] = JSON.parse(raw);
+    // Keep only the last 7 days to prevent unbounded growth
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return all.filter(d => d >= cutoffStr);
   } catch {
     return [];
   }

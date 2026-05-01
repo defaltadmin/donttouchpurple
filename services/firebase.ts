@@ -1,18 +1,22 @@
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDGUxT4nhAPYsxzmOAESKsFgkd4jhUif4o",
-  authDomain: "dont-touch-purple.firebaseapp.com",
-  projectId: "dont-touch-purple",
-  storageBucket: "dont-touch-purple.firebasestorage.app",
-  messagingSenderId: "46782482111",
-  appId: "1:46782482111:web:a47a1b9afc5feba4eaa80a",
-  measurementId: "G-QVXYQ7C2WN",
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 let dbInstance: any = null;
 
 const IS_PROD =
   typeof window !== "undefined" &&
-  window.location.hostname === "game.mscarabia.com";
+  (window.location.hostname === "game.mscarabia.com" || 
+   window.location.hostname === "dont-touch-purple.web.app" ||
+   window.location.hostname === "dont-touch-purple.firebaseapp.com" ||
+   window.location.hostname === "localhost" ||
+   window.location.hostname === "127.0.0.1");
 
 export interface GlobalScoreEntry {
   score: number;
@@ -30,6 +34,22 @@ export interface GlobalLeaderboardEntry {
   badge?: string;
 }
 
+export function todayISODate(now = new Date()): string {
+  return now.toISOString().split("T")[0];
+}
+
+export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreEntry {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(entry.date) ? entry.date : todayISODate();
+  const safe: GlobalScoreEntry = {
+    score: Math.max(0, Math.min(99999, Math.floor(entry.score))),
+    initials: entry.initials.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8) || "Player",
+    date,
+    mode: entry.mode === "evolve" ? "evolve" : "classic",
+  };
+  if (entry.badge) safe.badge = entry.badge.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24);
+  return safe;
+}
+
 export async function getDB(): Promise<any> {
   if (!IS_PROD) return null;
   if (dbInstance) return dbInstance;
@@ -41,6 +61,11 @@ export async function getDB(): Promise<any> {
     return dbInstance;
   } catch (error) {
     console.warn("[DTP-Firebase] init failed:", error);
+    // Try to report to Sentry if available
+    try {
+      const Sentry = await import("@sentry/react");
+      Sentry.captureException(error, { tags: { component: "firebase-init" } });
+    } catch {}
     return null;
   }
 }
@@ -53,7 +78,23 @@ export async function fbAddScoreGlobal(
   const { collection, addDoc, serverTimestamp } = await import(
     "firebase/firestore"
   );
-  await addDoc(collection(db, "lb_global"), { ...entry, ts: serverTimestamp() });
+  await addDoc(collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: serverTimestamp() });
+}
+
+export async function fbLogEvent(name: string, params: Record<string, string | number | boolean | null | undefined> = {}): Promise<void> {
+  if (!IS_PROD || typeof window === "undefined") return;
+  try {
+    const app = await getAppInstance();
+    const analyticsMod = await import("firebase/analytics");
+    if (!(await analyticsMod.isSupported())) return;
+    const analytics = analyticsMod.getAnalytics(app);
+    const safeParams = Object.fromEntries(
+      Object.entries(params)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key.slice(0, 40), typeof value === "string" ? value.slice(0, 100) : value])
+    );
+    analyticsMod.logEvent(analytics, name.slice(0, 40), safeParams);
+  } catch {}
 }
 
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
@@ -78,11 +119,16 @@ export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
 
 export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
-  if (!db) return;
+  const safeName = name.trim().slice(0, 20);
+  if (!db || !safeName) return;
   const { doc, setDoc, serverTimestamp } = await import(
     "firebase/firestore"
   );
-  await setDoc(doc(db, "dust_wallet", name), { name, dust, ts: serverTimestamp() });
+  await setDoc(doc(db, "dust_wallet", safeName), {
+    name: safeName,
+    dust: Math.max(0, Math.min(999999, Math.floor(dust))),
+    ts: serverTimestamp(),
+  });
 }
 
 export async function fbCheckWeeklyBonus(name: string): Promise<number> {
@@ -108,15 +154,12 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
   }
 }
 
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { getApp, getApps } from "firebase/app";
-
 let appInstance: any = null;
 
 async function getAppInstance(): Promise<any> {
   if (appInstance) return appInstance;
+  const { getApps, initializeApp } = await import("firebase/app");
   if (getApps().length) { appInstance = getApps()[0]; return appInstance; }
-  const { initializeApp } = await import("firebase/app");
   appInstance = initializeApp(FIREBASE_CONFIG);
   return appInstance;
 }
@@ -139,8 +182,9 @@ export async function fbGetStreak(opts?: { clientDate?: string }): Promise<numbe
   try {
     if (!IS_PROD) return getLocalStreakFallback();
     const app = await getAppInstance();
+    const { getFunctions, httpsCallable } = await import("firebase/functions");
     const func = httpsCallable(getFunctions(app), "updateStreak");
-    const result = await func({ clientDate: opts?.clientDate });
+    const result = await func({ clientDate: opts?.clientDate, deviceId: getDeviceId() });
     return (result.data as any).streak;
   } catch {
     return getLocalStreakFallback();

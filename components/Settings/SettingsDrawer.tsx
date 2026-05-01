@@ -10,16 +10,23 @@ interface SettingsDrawerProps {
   setTheme: (theme: "dark" | "light") => void;
   muted: boolean;
   setMuted: (muted: boolean) => void;
+  haptics: boolean;
+  setHaptics: (enabled: boolean) => void;
   volume: number;
   setVolume: (v: number) => void;
   screenShake: boolean;
   setScreenShake: (v: boolean) => void;
+  reducedMotion: boolean;
+  setReducedMotion: (v: boolean) => void;
   isFS: boolean;
   toggleFS: () => void;
   onClose: () => void;
   onNameChange?: () => void;
   playerName?: string;
   onOpenBuildDeploy?: () => void;
+  customSeed?: string;
+  onCustomSeedChange?: (v: string) => void;
+  onPlayWithSeed?: () => void;
 }
 
 export function SettingsDrawer({
@@ -29,16 +36,23 @@ export function SettingsDrawer({
   setTheme,
   muted,
   setMuted,
+  haptics,
+  setHaptics,
   volume,
   setVolume,
   screenShake,
   setScreenShake,
+  reducedMotion,
+  setReducedMotion,
   isFS,
   toggleFS,
   onClose,
   onNameChange,
   playerName,
   onOpenBuildDeploy,
+  customSeed,
+  onCustomSeedChange,
+  onPlayWithSeed,
 }: SettingsDrawerProps) {
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -91,6 +105,24 @@ export function SettingsDrawer({
         </div>
 
         <div className="opt-section">
+          <div className="opt-label">📳 Haptics</div>
+          <PillRow<"on" | "off">
+            options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+            value={haptics ? "on" : "off"}
+            onChange={(v) => setHaptics(v === "on")}
+          />
+        </div>
+
+        <div className="opt-section">
+          <div className="opt-label">◌ Reduced Motion</div>
+          <PillRow<"on" | "off">
+            options={[{ value: "off", label: "Arcade" }, { value: "on", label: "Calm" }]}
+            value={reducedMotion ? "on" : "off"}
+            onChange={(v) => setReducedMotion(v === "on")}
+          />
+        </div>
+
+        <div className="opt-section">
           <div className="opt-label">⊞ Display</div>
           <PillRow<"window" | "full">
             options={[{ value: "window", label: "⊟ Window" }, { value: "full", label: "⊞ Fullscreen" }]}
@@ -124,6 +156,27 @@ export function SettingsDrawer({
             >
               ✏️ Change Name
             </button>
+          </div>
+        )}
+
+        {onPlayWithSeed && (
+          <div className="opt-section">
+            <div className="opt-label">🎲 Replay Seed</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                className="name-input"
+                style={{ flex: 1, minWidth: 0 }}
+                placeholder="Enter seed number..."
+                value={customSeed ?? ""}
+                onChange={e => onCustomSeedChange?.(e.target.value.replace(/\D/g, ""))}
+                maxLength={12}
+              />
+              <button
+                className="btn-primary btn-sm"
+                disabled={!customSeed}
+                onClick={onPlayWithSeed}
+              >▶</button>
+            </div>
           </div>
         )}
       </div>

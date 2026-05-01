@@ -11,8 +11,13 @@ export function EnergyDrop({ active, onComplete }: EnergyDropProps) {
   useEffect(() => {
     if (active) {
       setVisible(true);
+      const timeout = setTimeout(() => {
+        setVisible(false);
+        onComplete?.();
+      }, 1100);
+      return () => clearTimeout(timeout);
     }
-  }, [active]);
+  }, [active, onComplete]);
 
   if (!visible) return null;
 

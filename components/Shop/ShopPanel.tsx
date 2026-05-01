@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES } from "../../config/powerupWeights";
+import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS } from "../../config/powerupWeights";
 
 interface ShopData {
   unlockedThemes: string[];

@@ -86,6 +86,12 @@ export interface GameConfig {
     loadStoredPowerups: () => StoredPowerups;
     saveStoredPowerups: (data: StoredPowerups) => void;
   };
+  botAssist?: {
+    enabled: boolean;
+    getDust: () => number;
+    spendDust: (amount: number) => void;
+    getAccuracy: () => number;  // 0.0–1.0
+  };
 }
 
 // ─── Full engine snapshot emitted to React ────────────────────────
@@ -121,4 +127,6 @@ export type GameEvent =
   | { type: "rareStart";   color: string; cssColor: string }
   | { type: "cellAnim";    player: 1 | 2; idx: number; anim: "pop" | "shake" }
   | { type: "gameOver";    winner: Winner }
-  | { type: "phaseChange"; phase: "playing" | "paused" | "gameover" | "humanlimit" };
+  | { type: "phaseChange"; phase: "playing" | "paused" | "gameover" | "humanlimit" }
+  | { type: "dustConsumed"; amount: number }
+  | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number };

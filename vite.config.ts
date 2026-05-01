@@ -10,5 +10,18 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './test/setup.ts',
     clearMocks: true,
+    coverage: {
+      exclude: [
+        'junk/**',
+        'sonnet-eval/**',
+        'dist/**',
+        'functions/**',
+        'public/**',
+        '**/*.test.ts',
+        '**/*.d.ts',
+        'test/**',
+        'vite.config.ts',
+      ],
+    },
   },
 })

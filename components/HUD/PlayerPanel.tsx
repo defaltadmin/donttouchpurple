@@ -52,6 +52,8 @@ export interface PlayerPanelProps {
   onStartBot?:   () => void;
   onStopBot?:    () => void;
   isBotActive?:  boolean;
+  onToggleBotAssist?: () => void;
+  showBotAssist?: boolean;
   dust?:         number;
 }
 
@@ -74,6 +76,8 @@ export function PlayerPanel({
   onStartBot,
   onStopBot,
   isBotActive = false,
+  onToggleBotAssist,
+  showBotAssist = false,
   dust = 0,
 }: PlayerPanelProps) {
   const now = Date.now();
@@ -171,19 +175,14 @@ export function PlayerPanel({
           </div>
         </div>
       </div>
-      {mode === "evolve" && !practiceMode && (
-        <div className="bot-assist-container">
+      {mode === "evolve" && !practiceMode && onToggleBotAssist && (
+        <div className="bot-assist-row">
           <button
-            className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}`}
-            onMouseDown={onStartBot}
-            onMouseUp={onStopBot}
-            onMouseLeave={onStopBot}
-            onTouchStart={onStartBot}
-            onTouchEnd={onStopBot}
-            disabled={dust < 50}
-            title={dust < 50 ? `Need 50 💜 dust (have ${dust})` : "Hold to activate bot assist — 10 💜/sec"}
+            className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-assist-btn--disabled" : ""}`}
+            onClick={() => { if ((dust ?? 0) >= 30) onToggleBotAssist(); }}
+            title={(dust ?? 0) < 30 ? "Need 30+ dust to activate" : isBotActive ? "Bot ON — click to deactivate" : "Activate bot assist"}
           >
-            🤖 {isBotActive ? "Assisting..." : "Hold to Assist"} · 10💜/s
+            🤖 {isBotActive ? `ON · 3💜/tap` : `OFF`}
           </button>
         </div>
       )}

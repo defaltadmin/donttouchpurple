@@ -57,6 +57,7 @@ function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: Ga
   const copySeed = () => {
     try {
       navigator.clipboard?.writeText(gameSeed.toString());
+      localStorage.setItem("pendingReplaySeed", gameSeed.toString());
       setCopiedSeed(true);
       setTimeout(() => setCopiedSeed(false), 2000);
     } catch {}
@@ -71,7 +72,9 @@ function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: Ga
         <div className="share-seed-row">
           <span className="share-seed-label">Seed:</span>
           <span className="share-seed-val">{gameSeed}</span>
-          <button className="share-seed-copy" onClick={copySeed} title="Copy seed">{copiedSeed ? "✓" : "📋"}</button>
+          <button className="share-seed-copy" onClick={copySeed} title="Copy seed & queue replay">
+            {copiedSeed ? "✓ Queued!" : "▶ Replay"}
+          </button>
         </div>
         <div className="share-invite">Think you can beat that? 👀</div>
         <div className="share-url">{url}</div>
@@ -97,6 +100,7 @@ export interface GameOverProps {
   p1Score:        number;
   p2Score:        number;
   best:           number;
+  prevBest:       number;
   winner:         Winner;
   mode:           GameMode;
   is2P:           boolean;
@@ -117,12 +121,13 @@ export interface GameOverProps {
 
 // ─── GameOver ─────────────────────────────────────────────────────
 export function GameOver({
-  p1Score, p2Score, best, winner, mode, is2P,
+  p1Score, p2Score, best, prevBest, winner, mode, is2P,
   shareMsg, gameSeed, tick, p1,
   initialsEntered, initials, onInitialsChange, onSubmitScore,
   onPlay, onLeaderboard, onMenu, spinLevel,
   isHumanLimit,
 }: GameOverProps) {
+  const isNewBest = !is2P && p1Score > 0 && p1Score > prevBest;
   const [showShare, setShowShare] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
 
@@ -165,6 +170,7 @@ export function GameOver({
       ) : (
         <>
           {isHumanLimit && <div className="go-humanlimit">HUMAN LIMIT</div>}
+          {isNewBest && <div className="go-newbest">🎉 New Best!</div>}
           <div className="go-num go-num--anim">{displayScore}</div>
           <div className="go-best">Best: {best}</div>
           {p1.streak >= 5 && <div className="go-streak">🔥 {p1.streak} streak</div>}

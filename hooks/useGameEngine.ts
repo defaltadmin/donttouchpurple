@@ -24,8 +24,10 @@ let _actx: AudioContext | null = null;
 let _masterGain: GainNode | null = null;
 let _muted = false;
 let _volume = 0.7;
+let _haptics = true;
 
 export function setAudioMuted(muted: boolean): void { _muted = muted; }
+export function setHapticsEnabled(enabled: boolean): void { _haptics = enabled; }
 export function setAudioVolume(v: number): void {
   _volume = Math.max(0, Math.min(1, v));
   if (_masterGain) _masterGain.gain.setValueAtTime(_volume, _masterGain.context.currentTime);
@@ -59,14 +61,14 @@ function getACtx(): AudioContext {
 }
 
 function playSound(type: "ok" | "bad" | "tick" | "powerup" | "levelup"): void {
-  if (_muted) return;
   try {
-    if (navigator.vibrate) {
+    if (_haptics && navigator.vibrate) {
       if (type === "bad") navigator.vibrate(50);
       else if (type === "powerup" || type === "levelup") navigator.vibrate([30, 20, 30]);
       else navigator.vibrate(15);
     }
   } catch {}
+  if (_muted) return;
   try {
     const ctx = getACtx();
     const o = ctx.createOscillator();
@@ -111,7 +113,7 @@ export interface UseGameEngineReturn {
   levelUpBadge: string | null;
   rareSplash:  { color: string; cssColor: string } | null;
   winner:      Winner;
-  start:       () => void;
+  start:       (forceSeed?: number) => void;
   pause:       () => void;
   resume:      () => void;
   handleTap:        (player: 1 | 2, idx: number) => void;
@@ -126,13 +128,23 @@ export interface UseGameEngineReturn {
   devSetFreezeTime:(v: boolean) => void;
   devSetRotationSpeed: (v: number) => void;
   devSpawnPowerup: (type: "shield" | "freeze" | "heart") => void;
+  startBot: () => void;
+  stopBot: () => void;
+  isBotActive: () => boolean;
+  setBotAssist: (player: 1 | 2, enabled: boolean) => void;
+  botAssistActive: { 1: boolean; 2: boolean };
   lastGameScore: number | null;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────
 export function useGameEngine(
   config: GameConfig,
-  onGameOver: (winner: Winner, p1Score: number, p2Score: number) => void
+  onGameOver: (winner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => void,
+  dustCallbacks?: {
+    getDust: () => number;
+    spendDust: (amount: number) => void;
+    getAccuracy: () => number;
+  }
 ): UseGameEngineReturn {
   const engineRef  = useRef<GameEngine | null>(null);
   const mountedRef = useRef(true);
@@ -155,6 +167,7 @@ export function useGameEngine(
   const [rareSplash,  setRareSplash]  = useState<{ color: string; cssColor: string } | null>(null);
   const [winner,      setWinner]      = useState<Winner>(null);
   const [lastGameScore, setLastGameScore] = useState<number | null>(null);
+  const [botAssistActive, setBotAssistActiveState] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
 
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,7 +193,15 @@ export function useGameEngine(
     mountedRef.current = true;
     const engineConfig: GameConfig = {
       ...config,
-      storage: { loadStoredPowerups: loadStoredPwr, saveStoredPowerups: saveStoredPwr }
+      storage: { loadStoredPowerups: loadStoredPwr, saveStoredPowerups: saveStoredPwr },
+      ...(dustCallbacks ? {
+        botAssist: {
+          enabled: false,
+          getDust: dustCallbacks.getDust,
+          spendDust: dustCallbacks.spendDust,
+          getAccuracy: dustCallbacks.getAccuracy,
+        }
+      } : {})
     };
     const engine = new GameEngine(engineConfig);
     engineRef.current = engine;
@@ -239,13 +260,18 @@ export function useGameEngine(
           break;
         case "gameOver":
           const snap = engine.getSnapshot();
+          const seedAtGameOver = snap.gameSeed;
           if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
           gameOverTimerRef.current = setTimeout(() => {
             if (!mountedRef.current) return;
             setWinner(event.winner);
             setLastGameScore(config.numPlayers === 1 ? snap.p1.score : Math.max(snap.p1.score, snap.p2.score));
-            onGameOverRef.current(event.winner, snap.p1.score, snap.p2.score);
+            onGameOverRef.current(event.winner, snap.p1.score, snap.p2.score, seedAtGameOver);
           }, GAME.GAME_OVER_DELAY_MS);
+          break;
+        case "botTap":
+          // dust spend is already done in engine, just trigger re-render via dustCallbacks
+          if (dustCallbacks) dustCallbacks.spendDust(0);
           break;
       }
     });
@@ -289,6 +315,11 @@ export function useGameEngine(
   const stopBot  = useCallback(() => engineRef.current?.stopBot(), []);
   const isBotActive = useCallback(() => engineRef.current?.isBotActive() ?? false, []);
 
+  const setBotAssist = useCallback((player: 1 | 2, enabled: boolean) => {
+    engineRef.current?.setBotAssist(player, enabled);
+    setBotAssistActiveState(prev => ({ ...prev, [player]: enabled }));
+  }, []);
+
   const pause  = useCallback(() => engineRef.current?.pause(),  []);
   const resume = useCallback(() => engineRef.current?.resume(), []);
   const handleTap = useCallback((player: 1 | 2, idx: number) => engineRef.current?.handleTap(player, idx), []);
@@ -309,6 +340,6 @@ export function useGameEngine(
     start, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
-    startBot, stopBot, isBotActive,
+    startBot, stopBot, isBotActive, setBotAssist, botAssistActive,
   };
 }

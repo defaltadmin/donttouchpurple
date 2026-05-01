@@ -1,50 +1,29 @@
 import { useEffect, useRef } from "react";
 
-export function VoidTunnel({ active }: { active: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-
+export function VoidTunnel({ speed = 1 }: { speed?: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (!active) return;
-    const canvas = canvasRef.current!;
+    const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-    let tick = 0;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
+    let raf: number; let t = 0;
     const draw = () => {
-      ctx.fillStyle = "#0d0820";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2;
-      const t = tick * 0.02;
-
-      for (let i = 0; i < 20; i++) {
-        const r = 50 + i * 25 + (tick * 2) % 50;
-        const hue = (280 + i * 5) % 360;
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      for (let i = 0; i < 12; i++) {
+        const phase = ((t * speed * 0.015) + i / 12) % 1;
+        const r = phase * Math.max(canvas.width, canvas.height) * 0.75;
+        const alpha = (1 - phase) * 0.35;
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsla(${hue}, 70%, 40%, ${1 - i / 20})`;
-        ctx.lineWidth = 2;
+        ctx.ellipse(cx, cy, r, r * 0.6, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(192, 38, 211, ${alpha})`;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
-      tick++;
-      rafRef.current = requestAnimationFrame(draw);
+      t++; raf = requestAnimationFrame(draw);
     };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
-    };
-  }, [active]);
-
-  if (!active) return null;
-  return <canvas ref={canvasRef} style={{ position: "fixed", top: 0, left: 0, zIndex: -1, pointerEvents: "none" }} />;
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [speed]);
+  return <canvas ref={ref} style={{ position: "fixed", inset: 0, zIndex: -1, pointerEvents: "none" }} />;
 }

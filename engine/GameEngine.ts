@@ -1,22 +1,11 @@
 import { DIFFICULTY, GAME, LS_KEYS } from "../config/difficulty";
 import { STAGES, EVOLVE_PATTERNS, RARE_COLORS } from "../config/gridPatterns";
 import { POWERUP_TABLE } from "../config/powerupWeights";
-import { computeMs, makeGameSeed, getSpinConfig } from "./DifficultyScaler";
+import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
 import type {
   ActiveCell, CellType, CellShape, GameConfig, GameEvent,
   GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
 } from "./types";
-
-// ─── Seeded PRNG (mulberry32) ─────────────────────────────────────
-function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
-  return function () {
-    s += 0x6d2b79f5;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // ─── Safe cell palette ────────────────────────────────────────────
 const SAFE: CellType[] = [
@@ -180,8 +169,8 @@ export class GameEngine {
   private dirty      = true;
 
   private rng: () => number = () => Math.random();
-  private p1: PlayerState;
-  private p2: PlayerState;
+  private p1!: PlayerState;
+  private p2!: PlayerState;
   private cellShape: CellShape    = "square";
   private rareMode: RareColorMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
   private spinLevel  = 0;
@@ -192,6 +181,7 @@ export class GameEngine {
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
+  private botAssistActive: { 1: boolean; 2: boolean } = { 1: false, 2: false };
 
   private listeners: Set<(e: GameEvent) => void> = new Set();
   private botActive      = false;
@@ -364,13 +354,14 @@ export class GameEngine {
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold"].includes(c.type);
-        if (c.type === dangerColor && !isPwr) {
+        // Damage for missing a SAFE cell (not the danger color, not a powerup/special)
+        if (c.type !== dangerColor && !isPwr) {
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!this.devGodMode) {
             if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
             else {
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
-              this.emit({ type: "damage", player }); this.emit({ type: "shake",  player });
+              this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
               if (ref.health <= 0) {
                 ref.alive = false;
                 const other = this.config.numPlayers === 2 ? (pi === 0 ? this.p2.alive : this.p1.alive) : false;
@@ -378,8 +369,10 @@ export class GameEngine {
               }
             }
           }
+          if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
           ref.streak = 0;
         }
+        // Danger color cells that weren't tapped just disappear — no penalty
       });
       if (!ref.alive) continue;
       if (ref.active.some(c => !c.clicked && (c.type === "hold" || c.type === "ice"))) { ref.cells = activeToCellsP(ref.active, pat); continue; }
@@ -403,6 +396,51 @@ export class GameEngine {
         }
       }
     }
+
+    // ─── Bot Assist ────────────────────────────────────────────
+    const botCfg = this.config.botAssist;
+    if (botCfg) {
+      const botPlayers: Array<{ ref: PlayerState; player: 1 | 2 }> = [
+        { ref: this.p1, player: 1 },
+        ...(this.config.numPlayers === 2 ? [{ ref: this.p2, player: 2 as const }] : []),
+      ];
+      for (const { ref, player } of botPlayers) {
+        if (!this.botAssistActive[player] || !ref.alive) continue;
+        const dust = botCfg.getDust();
+        if (dust < 30) { this.botAssistActive[player] = false; this.emit({ type: "toast", message: "🤖 Bot off — low dust!" }); continue; }
+        const accuracy = botCfg.getAccuracy();
+        const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
+        const missedCells = ref.active.filter(c =>
+          !c.clicked &&
+          c.type !== dangerColor &&
+          (c.type as string) !== "void" &&
+          c.type !== "hold" &&
+          c.type !== "ice"
+        );
+        for (const cell of missedCells) {
+          if (Math.random() > accuracy) continue; // accuracy miss
+          const costPerTap = 3;
+          const currentDust = botCfg.getDust();
+          if (currentDust < costPerTap) break;
+          botCfg.spendDust(costPerTap);
+          this.emit({ type: "botTap", player, idx: cell.idx, dustCost: costPerTap });
+          // Simulate the tap directly
+          cell.clicked = true;
+          const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
+          ref.score += mult;
+          ref.streak += 1;
+          ref.stageProgress += 1;
+          this.checkStageProgress(player);
+        }
+        if (missedCells.length > 0) {
+          const pat = this.config.mode === "evolve"
+            ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0])
+            : { cols: 3, rows: 3, mask: null as number[] | null };
+          ref.cells = activeToCellsP(ref.active, pat);
+        }
+      }
+    }
+
     this.tickCount += 1;
     if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
     if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
@@ -464,6 +502,7 @@ export class GameEngine {
       if (!this.devGodMode) {
         if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
         else {
+          if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
           ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
           this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
           this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
@@ -472,7 +511,7 @@ export class GameEngine {
       } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
     } else if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
       cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
-      if (cell.type === "medpack") ref.health += 1;
+      if (cell.type === "medpack") ref.health = Math.min(GAME.MAX_HEARTS, ref.health + 1);
       if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; }
       if (cell.type === "freeze") ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
@@ -653,26 +692,21 @@ export class GameEngine {
     this.dustSpentTotal = 0;
     this.botIntervalRef = setInterval(() => {
       if (!this.botActive || this.phase !== "playing") return;
-      const now = Date.now();
       // Calculate reaction delay: 200ms - (dustSpentTotal * 0.5ms), floor at 80ms
       const delay = Math.max(80, 200 - this.dustSpentTotal * 0.5);
-      // Get player 1 active cells that haven't been tapped
       const active = this.p1.active;
       active.forEach(cell => {
         if (cell.clicked || cell.type === "purple" || cell.type === "ice" || cell.type === "hold") return;
-        // Check if we should make a mistake (error rate = stage * 2%)
+        // Use seeded RNG for deterministic error rate
         const errorRate = Math.min(0.18, this.p1.gridStage * 0.02);
-        if (Math.random() < errorRate) return; // Bot makes a mistake, skips this cell
-        // Simulate tap after delay
+        if (this.rng() < errorRate) return;
         setTimeout(() => {
           if (this.botActive && this.phase === "playing") {
             this.handleTap(1, cell.idx);
           }
         }, delay);
       });
-      // Consume 10 dust per second (interval is 1000ms)
       this.dustSpentTotal += 10;
-      // Emit dust consumption event
       this.emit({ type: "dustConsumed", amount: 10 });
     }, 1000);
   }
@@ -687,5 +721,13 @@ export class GameEngine {
 
   isBotActive(): boolean {
     return this.botActive;
+  }
+
+  setBotAssist(player: 1 | 2, enabled: boolean): void {
+    this.botAssistActive[player] = enabled;
+  }
+
+  getBotAssistActive(): { 1: boolean; 2: boolean } {
+    return { ...this.botAssistActive };
   }
 }
