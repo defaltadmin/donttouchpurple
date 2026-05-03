@@ -379,6 +379,8 @@ destroy(): void {
 
       // K5: emit cellShuffle event
       this.emit({ type: "cellShuffle", player, fromIdx, toIdx });
+      // M1: play sound on shuffle
+      this.emit({ type: "sound", name: "shuffle" });
     }
 
     if (moved.length > 0) {
@@ -430,6 +432,7 @@ destroy(): void {
           const pick = RARE_COLORS[Math.floor(this.rng() * RARE_COLORS.length)];
           this.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(this.rng() * 4), shape: pick.shape, emoji: pick.emoji };
           this.emit({ type: "rareStart", color: pick.color, cssColor: pick.cssColor });
+          this.emit({ type: "sound", name: "rareStart" }); // M2
           this.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
         }
       }
@@ -762,7 +765,7 @@ destroy(): void {
 
   devForceRare(r: { color: string; cssColor: string } | null): void {
     if (!r) this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
-    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10, shape: (r as any).shape ?? "circle", emoji: (r as any).emoji ?? "" }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); }
+    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10, shape: (r as any).shape ?? "circle", emoji: (r as any).emoji ?? "" }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); this.emit({ type: "sound", name: "rareStart" }); }
     this.emitSnapshot();
   }
 

@@ -126,7 +126,7 @@ export type GameEvent =
   | { type: "damage";      player: 1 | 2 }
   | { type: "shake";       player: 1 | 2 }
   | { type: "levelUp";     player: 1 | 2; stage: number }
-  | { type: "sound";       name: "ok" | "bad" | "tick" | "powerup" | "levelup" }
+  | { type: "sound";       name: "ok" | "bad" | "tick" | "powerup" | "levelup" | "shuffle" | "rareStart" | "claim" }
   | { type: "toast";       message: string }
   | { type: "pwrToast";    message: string; player: 1 | 2 } // Task 1: Inline pwr toast
   | { type: "rareStart";   color: string; cssColor: string }

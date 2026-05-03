@@ -18,6 +18,8 @@ interface LeaderboardPanelProps {
   // F6: personal best for pinned row
   personalBest?: number;
   playerName?: string;
+  // P1: callback when scores are fetched (for top-10 achievement check)
+  onScoresFetched?: (entries: { score: number; initials: string }[]) => void;
 }
 
 export function LeaderboardPanel({
@@ -28,6 +30,7 @@ export function LeaderboardPanel({
   evolveStorageKey,
   personalBest,
   playerName,
+  onScoresFetched,
 }: LeaderboardPanelProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,8 @@ export function LeaderboardPanel({
       // F6: cap at top 10
       setEntries(global.slice(0, 10));
       setIsGlobal(true);
+      // P1: notify parent with fetched entries (for top-10 achievement check)
+      if (onScoresFetched) onScoresFetched(global);
     } catch (err) {
       console.warn("[DTP-LB] Firebase fetch failed, using local fallback:", err);
       try {

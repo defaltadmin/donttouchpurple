@@ -287,7 +287,7 @@ body.damage-pulse::after {
 /* ── Toast ── */
 .toast {
   position: fixed;
-  top: calc(90px + 3cm);   /* moved up by 2 cm */
+  top: max(calc(90px + 3cm), calc(90px + env(safe-area-inset-top)));
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
@@ -458,11 +458,11 @@ body.damage-pulse::after {
   50% { opacity: 0.7; }
 }
 
-/* ── Fullscreen floating controls ── */
-.fs-controls {
-  position: fixed; top: 10px; right: 10px; z-index: 600;
-  display: flex; gap: 6px; flex-direction: column;
-}
+  /* ── Fullscreen floating controls ── */
+  .fs-controls {
+    position: fixed; top: max(10px, calc(10px + env(safe-area-inset-top))); right: 10px; z-index: 600;
+    display: flex; gap: 6px; flex-direction: column;
+  }
 
 /* ── Fullscreen pull-down tab — tap to restore header ── */
 .fs-pulldown {
@@ -513,6 +513,7 @@ body.damage-pulse::after {
   position: fixed; inset: 0; z-index: 800;
   background: rgba(5,2,18,0.85); backdrop-filter: blur(14px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
   animation: fadeIn 0.25s ease;
 }
 .pause-card {
@@ -769,7 +770,7 @@ body.damage-pulse::after {
 /* ── Cells ── */
 .cell {
   width: var(--cell); height: var(--cell); border-radius: var(--r);
-  border: none; cursor: pointer; position: relative; overflow: hidden;
+  border: none; cursor: pointer; position: relative; overflow: visible;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.08s cubic-bezier(0.4,0,0.2,1), box-shadow 0.1s;
   -webkit-tap-highlight-color: transparent;
@@ -1218,8 +1219,8 @@ text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
   background: rgba(163,230,53,0.1); border-color: rgba(163,230,53,0.3);
 }
 
-/* ── Privacy banner — bottom fixed ── */
-.privacy-banner { position:fixed; bottom:0; left:0; right:0; z-index:600; background:rgba(13,8,32,0.92); backdrop-filter:blur(12px); border-top:1px solid rgba(192,38,211,0.2); padding:10px 16px; display:flex; align-items:center; justify-content:center; gap:6px; font-family:var(--font-ui); font-size:12px; color:var(--muted); text-align:center; animation:slideUpBanner 0.35s ease, fadeOutBanner 0.5s 5.5s ease forwards; }
+ /* ── Privacy banner — bottom fixed ── */
+  .privacy-banner { position:fixed; bottom:0; left:0; right:0; z-index:600; background:rgba(13,8,32,0.92); backdrop-filter:blur(12px); border-top:1px solid rgba(192,38,211,0.2); padding:10px 16px; padding-bottom: max(10px, calc(10px + env(safe-area-inset-bottom))); display:flex; align-items:center; justify-content:center; gap:6px; font-family:var(--font-ui); font-size:12px; color:var(--muted); text-align:center; animation:slideUpBanner 0.35s ease, fadeOutBanner 0.5s 5.5s ease forwards; }
 @keyframes slideUpBanner { from { transform:translateY(100%); opacity:0; } }
 @keyframes fadeOutBanner { to { opacity:0; pointer-events:none; } }
 @keyframes slideUp { from { transform:translateY(100%); } }
