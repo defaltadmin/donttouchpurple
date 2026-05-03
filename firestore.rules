@@ -1,42 +1,61 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function validScore() {
+      let s = request.resource.data.score;
+      return s is int && s >= 0 && s <= 99999;
+    }
+
+    function validInitials() {
+      let ini = request.resource.data.initials;
+      return ini is string && ini.size() >= 1 && ini.size() <= 8;
+    }
+
+    function validBadge() {
+      return !('badge' in request.resource.data) ||
+             (request.resource.data.badge is string && request.resource.data.badge.size() <= 24);
+    }
+
+    function validDate() {
+      let d = request.resource.data.date;
+      return d is string && d.size() == 10 && d.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
     match /lb_global/{docId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts'])
-        && request.resource.data.ts == request.time
-        && request.resource.data.score is number
-        && request.resource.data.score > 0
-        && request.resource.data.score < 100000
-        && request.resource.data.initials is string
-        && request.resource.data.initials.size() > 0
-        && request.resource.data.initials.size() <= 8
-        && request.resource.data.mode in ['classic', 'evolve']
-        && request.resource.data.date is string
-        && request.resource.data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
-        && (!('badge' in request.resource.data) || (request.resource.data.badge is string && request.resource.data.badge.size() <= 24));
+      allow create: if
+        validScore() &&
+        validInitials() &&
+        validBadge() &&
+        validDate() &&
+        request.resource.data.mode in ['classic', 'evolve'] &&
+        // score-per-tick guard: if tick present, ratio must be sane
+        (!('tick' in request.resource.data) ||
+          (request.resource.data.tick is int &&
+           request.resource.data.tick >= 0 &&
+           request.resource.data.score <= request.resource.data.tick * 3 + 50)) &&
+        request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick']) &&
+        request.resource.data.ts == request.time;
+      allow update, delete: if false;
     }
+
     match /dust_wallet/{docId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['name', 'dust', 'ts'])
-        && request.resource.data.ts == request.time
-        && request.resource.data.name == docId
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.dust is number
-        && request.resource.data.dust >= 0
-        && request.resource.data.dust < 1000000;
-      allow update: if request.resource.data.keys().hasOnly(['name', 'dust', 'ts'])
-        && request.resource.data.ts == request.time
-        && request.resource.data.name == docId
-        && request.resource.data.name == resource.data.name
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.dust is number
-        && request.resource.data.dust >= 0
-        && request.resource.data.dust < 1000000;
+      allow create, update: if
+        request.resource.data.keys().hasOnly(['name', 'dust', 'ts']) &&
+        request.resource.data.ts == request.time &&
+        request.resource.data.name == docId &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 20 &&
+        request.resource.data.dust is int &&
+        request.resource.data.dust >= 0 &&
+        request.resource.data.dust < 1000000;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

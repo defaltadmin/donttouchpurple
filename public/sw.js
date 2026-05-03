@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtp-v5-2-4';
+const CACHE_NAME = 'dtp-v__SW_VERSION__';
 const ASSETS = [
   '/',
   '/index.html',

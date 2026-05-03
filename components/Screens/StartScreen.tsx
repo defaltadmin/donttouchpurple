@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
+import { getObjectiveStreak } from "../../config/dailyObjective";
 
 // ─── Types local to menu ──────────────────────────────────────────
 type InputMode = "touch" | "keyboard";
@@ -92,6 +93,8 @@ export interface StartScreenProps {
   onKeybind:       () => void;
   onRefillEnergy:  () => void;
   onSwitchPlayer:  () => void;
+  onOpenRewardsHub: () => void;
+  rewardsBadgeCount?: number;
   dustWidget:      React.ReactNode;
   energyBar:       React.ReactNode;
   dailyObjective?: import("../../config/dailyObjective").DailyObjective;
@@ -109,7 +112,7 @@ export function StartScreen({
   dust, devMode,
   playerName,
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
-  onRefillEnergy, onSwitchPlayer,
+  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
   dustWidget, energyBar,
   dailyObjective,
   pendingReplaySeed, onClearReplaySeed,
@@ -137,6 +140,9 @@ export function StartScreen({
       <div className="menu-header">
         <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
         <p className="menu-sub">⚡ Tap fast. Avoid purple. Survive.</p>
+        {dailyObjective?.completed && (
+          <div className="obj-streak-badge">🔥 {getObjectiveStreak()} day streak</div>
+        )}
       </div>
 
       <div className="opt-grid">
@@ -193,6 +199,12 @@ export function StartScreen({
         <button className="btn-link" onClick={onHowTo}>❓ How to Play</button>
         <button className="btn-link" onClick={onLeaderboard}>🏆 Leaderboard</button>
         <button className="btn-link" onClick={onShop}>🛒 Shop</button>
+        <button className="rewards-hub-btn" onClick={onOpenRewardsHub}>
+          🎁
+          {(rewardsBadgeCount ?? 0) > 0 && (
+            <span className="rewards-hub-badge">{rewardsBadgeCount}</span>
+          )}
+        </button>
         {isKbd && <button className="btn-link" onClick={onKeybind}>⌨ Keys</button>}
       </div>
     </div>

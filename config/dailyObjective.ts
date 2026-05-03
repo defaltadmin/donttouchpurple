@@ -83,7 +83,29 @@ export function markObjectiveComplete(): DailyObjective | null {
   completedDates.push(today);
   localStorage.setItem('dtp-daily-completed', JSON.stringify(completedDates));
 
+  incrementObjectiveStreak();
+
   const objective = getDailyObjective(today);
   objective.completed = true;
   return objective;
+}
+
+export function getObjectiveStreak(): number {
+  try {
+    const raw = localStorage.getItem('dtp-obj-streak');
+    if (!raw) return 0;
+    const { count, lastDate } = JSON.parse(raw);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    if (lastDate === today || lastDate === yStr) return count ?? 0;
+    return 0;
+  } catch { return 0; }
+}
+
+export function incrementObjectiveStreak(): void {
+  const today = new Date().toISOString().slice(0, 10);
+  const current = getObjectiveStreak();
+  localStorage.setItem('dtp-obj-streak', JSON.stringify({ count: current + 1, lastDate: today }));
 }

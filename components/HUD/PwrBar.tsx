@@ -22,8 +22,9 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
         <div className="pwr-pill pwr-pill--rare">
           <div className="pwr-progress" style={{ width: `${(rareMode.turnsLeft / 9) * 100}%` }} />
           <div className="pwr-center">
-            <span className="pwr-icon">⚠️</span>
+            <span className="pwr-icon">{rareMode.emoji || "⚠️"}</span>
             <span className="pwr-count" style={{ color: rareMode.cssColor }}>{rareMode.turnsLeft}</span>
+            <span className="pwr-rare-shape" style={{ color: rareMode.cssColor }}>{rareMode.shape}</span>
           </div>
         </div>
       )}

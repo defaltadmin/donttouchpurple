@@ -1,6 +1,8 @@
 import React from "react";
 
-const VERSION = "5.3.1";
+// Injected at build time via vite.config.ts define
+declare const __APP_VERSION__: string;
+const WHATS_NEW_VERSION = __APP_VERSION__;
 const LS_KEY = "dtp_last_version";
 
 interface WhatsNewProps {
@@ -19,12 +21,20 @@ const CHANGES = [
 ];
 
 export function WhatsNew({ onClose }: WhatsNewProps) {
+  const isNewVersion = (() => {
+    try {
+      const last = localStorage.getItem(LS_KEY);
+      return last !== WHATS_NEW_VERSION;
+    } catch { return false; }
+  })();
+
   return (
     <div className="whatsnew-overlay" onClick={onClose}>
       <div className="whatsnew-card" onClick={(e) => e.stopPropagation()}>
         <div className="whatsnew-header">
           <h2 className="whatsnew-title">What's New</h2>
-          <span className="whatsnew-version">v{VERSION}</span>
+          <span className="whatsnew-version">v{WHATS_NEW_VERSION}</span>
+          {isNewVersion && <span className="whatsnew-badge">New!</span>}
           <button className="whatsnew-close" onClick={onClose}>✕</button>
         </div>
         <div className="whatsnew-list">
@@ -44,12 +54,12 @@ export function WhatsNew({ onClose }: WhatsNewProps) {
 export function shouldShowWhatsNew(): boolean {
   try {
     const last = localStorage.getItem(LS_KEY);
-    return last !== VERSION;
+    return last !== WHATS_NEW_VERSION;
   } catch {
     return true;
   }
 }
 
 export function markWhatsNewSeen(): void {
-  try { localStorage.setItem(LS_KEY, VERSION); } catch {}
+  try { localStorage.setItem(LS_KEY, WHATS_NEW_VERSION); } catch {}
 }

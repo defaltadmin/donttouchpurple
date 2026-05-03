@@ -1,4 +1,5 @@
 import React from "react";
+import { useState, useEffect, useRef } from "react";
 import type { GameMode, Winner } from "../../engine/types";
 
 // ─── End-screen messages ──────────────────────────────────────────
@@ -20,15 +21,11 @@ export function getMessage(score: number): string {
 }
 
 // ─── Share card ───────────────────────────────────────────────────
-import { useState, useEffect, useRef } from "react";
-
 function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: GameMode; gameSeed: number; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
-  const [copiedSeed, setCopiedSeed] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Cleanup copied timer on unmount
   useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
+
   const url        = "https://game.mscarabia.com";
   const modeLabel  = mode === "classic" ? "Classic" : "Evolve";
   const shareText  = `🎮 I scored ${score} in Don't Touch the Purple — ${modeLabel} Mode!\nSeed: ${gameSeed}\nCan you beat me? 👇\n${url}`;
@@ -54,28 +51,12 @@ function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: Ga
     } else { tryFallback(); }
   };
 
-  const copySeed = () => {
-    try {
-      navigator.clipboard?.writeText(gameSeed.toString());
-      localStorage.setItem("pendingReplaySeed", gameSeed.toString());
-      setCopiedSeed(true);
-      setTimeout(() => setCopiedSeed(false), 2000);
-    } catch {}
-  };
-
   return (
     <div className="share-card">
       <div className="share-inner">
         <div className="share-logo">Don't Touch the <span style={{ color: "#c026d3" }}>Purple</span></div>
         <div className="share-score">{score}</div>
         <div className="share-mode">{modeLabel} Mode</div>
-        <div className="share-seed-row">
-          <span className="share-seed-label">Seed:</span>
-          <span className="share-seed-val">{gameSeed}</span>
-          <button className="share-seed-copy" onClick={copySeed} title="Copy seed & queue replay">
-            {copiedSeed ? "✓ Queued!" : "▶ Replay"}
-          </button>
-        </div>
         <div className="share-invite">Think you can beat that? 👀</div>
         <div className="share-url">{url}</div>
       </div>
@@ -95,39 +76,33 @@ function ShareCard({ score, mode, gameSeed, onClose }: { score: number; mode: Ga
   );
 }
 
-// ─── Props ────────────────────────────────────────────────────────
+// ─── Props (F1: removed initials/submit props; F2: removed recap/prevBest props) ─
 export interface GameOverProps {
-  p1Score:        number;
-  p2Score:        number;
-  best:           number;
-  prevBest:       number;
-  winner:         Winner;
-  mode:           GameMode;
-  is2P:           boolean;
-  shareMsg:       string;
-  gameSeed:       number;
-  tick:           number;
-  p1:             { gridStage: number; patternIdx: number; health: number; streak: number; alive: boolean; spinLevel?: number };
-  initialsEntered: boolean;
-  initials:       string;
-  onInitialsChange: (v: string) => void;
-  onSubmitScore:  () => void;
-  onPlay:         () => void;
-  onLeaderboard:  () => void;
-  onMenu:         () => void;
-  spinLevel:      number;
-  isHumanLimit?:  boolean;
+  p1Score:       number;
+  p2Score:       number;
+  best:          number;
+  winner:        Winner;
+  mode:          GameMode;
+  is2P:          boolean;
+  shareMsg:      string;
+  gameSeed:      number;
+  tick:          number;
+  p1:            { gridStage: number; patternIdx: number; health: number; streak: number; alive: boolean };
+  onPlay:        () => void;
+  onLeaderboard: () => void;
+  onMenu:        () => void;
+  spinLevel:     number;
+  isHumanLimit?: boolean;
+  dustEarned?:   number;  // F3: inline with score
 }
 
 // ─── GameOver ─────────────────────────────────────────────────────
 export function GameOver({
-  p1Score, p2Score, best, prevBest, winner, mode, is2P,
+  p1Score, p2Score, best, winner, mode, is2P,
   shareMsg, gameSeed, tick, p1,
-  initialsEntered, initials, onInitialsChange, onSubmitScore,
   onPlay, onLeaderboard, onMenu, spinLevel,
-  isHumanLimit,
+  isHumanLimit, dustEarned,
 }: GameOverProps) {
-  const isNewBest = !is2P && p1Score > 0 && p1Score > prevBest;
   const [showShare, setShowShare] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
 
@@ -140,7 +115,6 @@ export function GameOver({
       if (!start) start = ts;
       const elapsed = ts - start;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplayScore(Math.round(eased * p1Score));
       if (progress < 1) requestAnimationFrame(step);
@@ -153,9 +127,15 @@ export function GameOver({
     return <ShareCard score={p1Score} mode={mode} gameSeed={gameSeed} onClose={() => setShowShare(false)} />;
   }
 
+  // Bug report href (F3: small corner icon)
+  const bugHref = `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
+    `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.href}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
+  )}`;
+
   return (
     <>
       <div className="go-eyebrow">{is2P ? "ROUND OVER" : "GAME OVER"}</div>
+
       {is2P ? (
         <>
           <div className="go-winner">
@@ -170,41 +150,28 @@ export function GameOver({
       ) : (
         <>
           {isHumanLimit && <div className="go-humanlimit">HUMAN LIMIT</div>}
-          {isNewBest && <div className="go-newbest">🎉 New Best!</div>}
-          <div className="go-num go-num--anim">{displayScore}</div>
-          <div className="go-best">Best: {best}</div>
-          {p1.streak >= 5 && <div className="go-streak">🔥 {p1.streak} streak</div>}
+          {/* F3: score large, dust inline */}
+          <div className="go-score-row">
+            <div className="go-num go-num--anim">{displayScore}</div>
+            {(dustEarned ?? 0) > 0 && (
+              <div className="go-dust-inline">+{dustEarned} 💜</div>
+            )}
+          </div>
           <div className="go-msg">"{shareMsg}"</div>
-          {p1Score > 0 && <div className={`go-dust-earned${isHumanLimit ? " go-dust-earned--hl" : ""}`}>
-            +{p1Score} 💜 dust earned!
-          </div>}
-          {!initialsEntered ? (
-            <div className="go-lb-form">
-              <input className="go-input" maxLength={8} placeholder="Your name"
-                value={initials}
-                onChange={e => onInitialsChange(e.target.value.replace(/[^a-zA-Z0-9_ ]/g, "").slice(0, 8))}
-                onKeyDown={e => e.key === "Enter" && onSubmitScore()} />
-              <button className="btn-primary btn-sm" onClick={onSubmitScore}>Save</button>
-            </div>
-          ) : <div className="go-lb-saved">✓ Saved!</div>}
         </>
       )}
+
+      {/* F3: Again + Menu only; Share kept; Board kept */}
       <div className="go-btns">
         <button className="btn-primary" onClick={onPlay}>▶ Again</button>
         <button className="btn-ghost" onClick={() => setShowShare(true)}>📤 Share</button>
-        <button className="btn-ghost" onClick={() => {
-          localStorage.setItem("pendingReplaySeed", gameSeed.toString());
-          onPlay();
-        }}>▶ Replay Seed</button>
         <button className="btn-ghost" onClick={onLeaderboard}>🏆 Board</button>
         <button className="btn-ghost" onClick={onMenu}>🏠 Menu</button>
       </div>
-      <a className="go-bug-btn"
-        href={`mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
-          `GAME STATE\n-----------\nScore: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nGrid Stage: ${p1.gridStage}\nPattern Idx: ${p1.patternIdx}\nHealth: ${p1.health}\nSpin Level: ${spinLevel}\nStreak: ${p1.streak}\nAlive: ${p1.alive}\n\nDEVICE\n------\nUA: ${navigator.userAgent}\nURL: ${window.location.href}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\nBUG DESCRIPTION\n---------------\n(describe what happened)\n`
-        )}`}
-        target="_blank" rel="noopener">
-        🐛 Report a Bug
+
+      {/* F3: small bug report icon in corner */}
+      <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener" title="Report a bug">
+        🐛
       </a>
     </>
   );

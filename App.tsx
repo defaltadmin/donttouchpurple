@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import "./styles/game.css";
 
 import * as Sentry from "@sentry/react";
@@ -28,8 +28,29 @@ import { StartScreen } from "./components/Screens/StartScreen";
 import { HowToPlay } from "./components/Screens/HowToPlay";
 import { GameOver, getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
-import { EvolveTutorial, shouldShowEvolveTutorial } from "./components/Screens/EvolveTutorial";
+import EvolveTutorial from "./components/Screens/EvolveTutorial";
 import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
+import LoginStreakPopup, { getStreakReward } from "./components/Screens/LoginStreakPopup";
+import DailyChallengesPopup, { type DailyChallenge } from "./components/Screens/DailyChallengesPopup";
+import { RewardsHub, countUnclaimedRewards, type WeeklyTask } from "./components/Screens/RewardsHub";
+import { getObjectiveStreak } from "./config/dailyObjective";
+
+// Components - Backgrounds (lazy loaded)
+const VoidTunnel = lazy(() => import("./components/Backgrounds/VoidTunnel"));
+const StarWarp   = lazy(() => import("./components/Backgrounds/StarWarp"));
+const GridPulse  = lazy(() => import("./components/Backgrounds/GridPulse"));
+const PurpleRain = lazy(() => import("./components/Backgrounds/PurpleRain"));
+const PurpleCascade = lazy(() => import("./components/Backgrounds/PurpleCascade"));
+const BlockOrbit    = lazy(() => import("./components/Backgrounds/BlockOrbit"));
+const DataStream    = lazy(() => import("./components/Backgrounds/DataStream"));
+const CellBreath    = lazy(() => import("./components/Backgrounds/CellBreath"));
+const WarpGate      = lazy(() => import("./components/Backgrounds/WarpGate"));
+
+// Daily Objective
+import { getDailyObjective, markObjectiveComplete, checkObjective, type DailyObjective } from "./config/dailyObjective";
+
+// Services (lazy loaded - see getFirebase() below)
+import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
 
 // Components - Settings & Shop
 import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
@@ -38,32 +59,26 @@ import { ShopPanel } from "./components/Shop/ShopPanel";
 import { LeaderboardPanel } from "./components/Leaderboard/LeaderboardPanel";
 import { DevOverlay, DevUnlockModal } from "./components/Settings/DevOverlay";
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
-
-// Components - Backgrounds
-import { VoidTunnel } from "./components/Backgrounds/VoidTunnel";
-import { StarWarp } from "./components/Backgrounds/StarWarp";
-import { GridPulse } from "./components/Backgrounds/GridPulse";
-import { PurpleRain } from "./components/Backgrounds/PurpleRain";
-
-// Daily Objective
-import { getDailyObjective, markObjectiveComplete, checkObjective, type DailyObjective } from "./config/dailyObjective";
-
-// Services
-import {
-  fbAddScoreGlobal,
-  fbCheckWeeklyBonus,
-  fbFetchTop20Global,
-  fbSyncDust,
-  fbGetStreak,
-  fbLogEvent,
-} from "./services/firebase";
-
-// Types
 type GameMode        = "classic" | "evolve";
 type InputMode       = "touch" | "keyboard";
 type GameScreen    = "menu" | "howto" | "leaderboard" | "keybind" | "playing" | "gameover" | "shop";
 type NumPlayers      = 1 | 2;
 type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
+
+// ─── Safe Sentry wrapper (deferred load + ad-blocker safe) ───
+const safeSentry = {
+  addBreadcrumb: (...args: Parameters<typeof Sentry.addBreadcrumb>) => { try { Sentry.addBreadcrumb(...args); } catch {} },
+  captureException: (...args: Parameters<typeof Sentry.captureException>) => { try { Sentry.captureException(...args); } catch {} },
+  setTags: (...args: Parameters<typeof Sentry.setTags>) => { try { Sentry.setTags(...args); } catch {} },
+  setContext: (...args: Parameters<typeof Sentry.setContext>) => { try { Sentry.setContext(...args); } catch {} },
+};
+
+// ─── Lazy-loaded Firebase ────────────────────────────────────────
+let _firebase: typeof import('./services/firebase') | null = null;
+async function getFirebase() {
+  if (!_firebase) _firebase = await import('./services/firebase');
+  return _firebase;
+}
 
 // --- Error Boundary ---
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -88,6 +103,9 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     return this.props.children;
   }
 }
+
+// --- Background Control ---
+import { useBackgroundController } from './hooks/useBackground';
 
 // --- Helper: Colorblind Filters ---
 function ColorblindFilters() {
@@ -117,7 +135,7 @@ function NameChangeForm({ current, onSubmit, onDevTrigger }: { current: string; 
         onChange={handleChange}
         onKeyDown={(e) => { if (e.key === "Enter" && sanitize(val)) onSubmit(sanitize(val)); }}
         maxLength={8}
-        autoFocus
+        autoFocus={!('ontouchstart' in window)}
         style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
         placeholder="Your name..."
       />
@@ -170,6 +188,9 @@ function saveShopData(d: ShopData) {
   try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch {}
 }
 
+// --- Tutorial ---
+import { MAX_TUTORIAL_GAMES } from './config/tutorial';
+
 // --- App Component ---
 export default function App() {
   const [appReady, setAppReady] = useState(false);
@@ -182,6 +203,7 @@ export default function App() {
   const [dust, setDust] = useState(() => parseInt(localStorage.getItem(LS_KEYS.DUST) || "0"));
   const dustRef = useRef(dust);
   useEffect(() => { dustRef.current = dust; }, [dust]);
+  const scoreSubmittedRef = useRef(false);
 
   const [energyData, setEnergyData] = useState(() => {
     try {
@@ -193,21 +215,37 @@ export default function App() {
 
   const [shopData, setShopDataState] = useState(() => loadShopData());
 
-  // Daily login streak (Phase 3 seed)
-  const [loginStreak, setLoginStreak] = useState<{ count: number }>({ count: 1 });
-
   useEffect(() => {
-    fbGetStreak({ clientDate: new Date().toISOString().split("T")[0] }).then(streak => {
-      setLoginStreak({ count: streak });
+    getFirebase().then(fb =>
+      fb.fbGetStreak({ clientDate: new Date().toISOString().split("T")[0] })
+    ).then(streak => {
+      setLoginStreakCount(streak);
       localStorage.setItem("dtp_login_streak", JSON.stringify({
         count: streak,
         lastDate: new Date().toDateString()
       }));
     });
-  }, []);
+  }, [getFirebase]);
 
   useEffect(() => {
     if (shouldShowWhatsNew()) setShowWhatsNew(true);
+  }, []);
+
+  // Login streak check — show popup if not claimed today
+  useEffect(() => {
+    const LOGIN_CLAIMED_KEY = 'dtp-login-claimed';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastClaimed = localStorage.getItem(LOGIN_CLAIMED_KEY);
+    if (lastClaimed !== todayStr) {
+      const streak = getObjectiveStreak(); // reuse existing function
+      const reward = getStreakReward(streak);
+      setLoginStreakCount(streak);
+      setLoginStreakReward(reward);
+      setShowRewardsHub(true);
+    }
+
+    // Build daily challenges from seeded pool
+    setDailyChallenges(buildDailyChallenges(todayStr));
   }, []);
 
   const [gameMode, setGameMode]      = useState<GameMode>("classic");
@@ -283,9 +321,23 @@ export default function App() {
   const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
   const [showSettings, setShowSettings]     = useState(false);
   const [settingsFromPause, setSettingsFromPause] = useState(false);
-  const [showEvolveTutorial, setShowEvolveTutorial] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [gamesPlayed, setGamesPlayed] = useState(() =>
+    parseInt(localStorage.getItem('dtp-games-played') || '0', 10)
+  );
+  const EVOLVE_TUTORIAL_SEEN_KEY = 'dtp-evolve-tutorial-seen';
+  const [evolveTutorialSeen, setEvolveTutorialSeen] = useState(() =>
+    Boolean(localStorage.getItem(EVOLVE_TUTORIAL_SEEN_KEY))
+  );
   const [showPrivacy, setShowPrivacy]       = useState(() => !localStorage.getItem(LS_KEYS.PRIVACY_OK));
+  const [showLoginStreak, setShowLoginStreak]         = useState(false);
+  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
+  const [loginStreakCount, setLoginStreakCount]        = useState(1);
+  const [loginStreakReward, setLoginStreakReward]      = useState(50);
+  const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
+  const [showRewardsHub, setShowRewardsHub]           = useState(false);
+  const [weeklyTasks, setWeeklyTasks]                 = useState<WeeklyTask[]>([]);
   const [best1, setBest1]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
   const [best2, setBest2]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
   const [prevBest, setPrevBest]     = useState(0);
@@ -294,11 +346,20 @@ export default function App() {
   const [showDevUnlock, setShowDevUnlock] = useState(false);
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
-  const [devRotationSpeed, setDevRotationSpeed] = useState(1);
+   const [devRotationSpeed, setDevRotationSpeed] = useState(1);
   const [devAutoPlay, setDevAutoPlay] = useState(false);
   const [devHeatmap, setDevHeatmap]   = useState<Record<number, number>>({});
-  const [showBuildDeploy, setShowBuildDeploy] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showBuildDeploy, setShowBuildDeploy] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showEnergyPopup, setShowEnergyPopup] = useState(false);
+  const peakStreakRef = useRef(0);
+  const dustAtStartRef = useRef(dust);
+  const pbFlashedRef = useRef(false);
+
+  const saveShopDataState = useCallback((data: ShopData) => {
+    saveShopData(data);
+    setShopDataState(data);
+  }, []);
 
   const persistDust = useCallback((d: number) => {
     try { localStorage.setItem(LS_KEYS.DUST, d.toString()); } catch {}
@@ -309,15 +370,16 @@ export default function App() {
     setShowNameEntry(true);
   }, []);
 
-  const getLifetimeDustSpent = () => {
+  const getLifetimeDustSpent = useCallback(() => {
     try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch { return 0; }
-  };
-  const getBotAccuracy = () => {
+  }, []);
+
+  const getBotAccuracy = useCallback(() => {
     const spent = getLifetimeDustSpent();
     if (spent >= 2000) return 0.95;
     if (spent >= 500) return 0.90;
     return 0.85;
-  };
+  }, [getLifetimeDustSpent]);
 
   const spendDust = useCallback((amount: number) => {
     if (amount === 0) return;  // re-render trigger only
@@ -363,18 +425,25 @@ export default function App() {
     getDust: () => dustRef.current,
     spendDust,
     getAccuracy: getBotAccuracy,
-  }), [spendDust]);
+  }), [spendDust, getBotAccuracy]);
 
   const engineConfig: EngineGameConfig = React.useMemo(() => ({
     mode: gameMode,
     numPlayers,
     speedMult,
+    inputMode: inputMode === "keyboard" ? "keys" as const : "touch" as const,
     godMode: godMode || practiceMode,
-  }), [gameMode, numPlayers, speedMult, godMode, practiceMode]);
+  }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
 
   const handleEngineGameOver = useCallback((engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
     Sentry.addBreadcrumb({
       category: "game",
+      message: "game_over",
+      level: "info",
+      data: { gameMode, numPlayers, p1Score, p2Score, winner: engineWinner, seed: gameSeed },
+    });
+    safeSentry.addBreadcrumb({
+      category: "economy",
       message: "game_over",
       level: "info",
       data: { gameMode, numPlayers, p1Score, p2Score, winner: engineWinner, seed: gameSeed },
@@ -391,7 +460,17 @@ export default function App() {
     const newDust = dust + earned;
     setDust(newDust);
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-    fbSyncDust(playerName, newDust).catch(() => {});
+    getFirebase().then(fb => {
+      fb.fbSyncDust(playerName, newDust).catch(() => {});
+      fb.fbLogEvent("game_over", {
+        mode: gameMode,
+        players: numPlayers,
+        p1_score: p1Score,
+        p2_score: p2Score,
+        winner: engineWinner ?? "solo",
+        seed: gameSeed ?? 0,
+      });
+    });
     setPrevBest(gameMode === "classic" ? best1 : best2);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
     if (gameMode === "classic") {
@@ -404,8 +483,23 @@ export default function App() {
     setInitials(playerName || "Player");
     setIE(false);
     setPaused(false);
-    
-    // Daily objective check
+
+    // F1: auto-submit score to leaderboard (no name input required)
+    const autoEntry = {
+      score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
+      initials: playerName || "Player",
+      mode: gameMode,
+      badge: shopData.equippedBadge,
+      date: new Date().toISOString().split("T")[0],
+    };
+    if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
+      scoreSubmittedRef.current = true;
+      getFirebase().then(fb => fb.fbAddScoreGlobal(autoEntry)).catch(() => {});
+    }
+
+    // Update daily challenge progress
+    updateChallengeProgress(p1Score, snapshotRef.current?.tick ?? 0);
+
     const obj = getDailyObjective();
     if (!obj.completed) {
       const spd = snapshotRef.current ? speedLabel(snapshotRef.current.tick, false) : "1.0×";
@@ -417,13 +511,28 @@ export default function App() {
           const bonusDust = newDust + completed.reward;
           setDust(bonusDust);
           localStorage.setItem(LS_KEYS.DUST, bonusDust.toString());
-          setTimeout(() => toast$(`🎯 Daily done! +${completed.reward} 💜`), 800);
+          setTimeout(() => {
+            setToast(`🎯 Daily Complete! +${completed.reward} 💜`);
+            if (toastRef.current) clearTimeout(toastRef.current);
+            toastRef.current = setTimeout(() => setToast(null), 3500);
+            safeSentry.addBreadcrumb({
+              category: "economy",
+              message: "daily_complete",
+              level: "info",
+              data: { reward: completed.reward, objective: obj.type },
+            });
+            getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type }));
+          }, 800);
         }
       }
     }
-
     setScreen("gameover");
-  }, [numPlayers, dust, playerName, toast$]);
+  }, [numPlayers, dust, playerName, toast$, best1, best2, gameMode]);
+
+  const handleDamage = useCallback(() => {
+    document.body.classList.add('damage-pulse');
+    setTimeout(() => document.body.classList.remove('damage-pulse'), 350);
+  }, []);
 
   const {
     snapshot,
@@ -432,7 +541,7 @@ export default function App() {
     toast: engineToast, 
     pwrToastP1, pwrToastP2,
     levelUpBadge, 
-    rareSplash,
+    rareSplash, 
     winner: engineWinner,
     start: startEngine,
     pause: pauseEngine,
@@ -441,8 +550,27 @@ export default function App() {
     activateStoredFreeze, activateStoredShield,
     devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
+    startBot, stopBot, isBotActive,
     setBotAssist, botAssistActive,
-  } = useGameEngine(engineConfig, handleEngineGameOver, dustCallbacks);
+    lastGameScore,
+  } = useGameEngine(engineConfig, handleEngineGameOver, dustCallbacks, handleDamage);
+
+  // Compute whether backgrounds should animate
+  const shouldAnimateBackground = !reducedMotion;
+
+  // Background component mapping
+  const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<any> }>>(() => ({
+    'default': { component: PurpleRain },
+    'void-tunnel': { component: VoidTunnel },
+    'star-warp': { component: StarWarp },
+    'grid-pulse': { component: GridPulse },
+    'purple-cascade': { component: PurpleCascade },
+    'block-orbit': { component: BlockOrbit },
+    'data-stream': { component: DataStream },
+    'cell-breath': { component: CellBreath },
+    'warp-gate': { component: WarpGate },
+  }), []);
+  const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 
   const snapshotRef = useRef(snapshot);
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
@@ -580,6 +708,16 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [screen, paused, snapshot?.phase, pauseGame, resumeGame, botAssistActive, setBotAssist]);
 
+  // Personal best delta flash
+  useEffect(() => {
+    if (!snapshot || snapshot.phase !== "playing") return;
+    const currentBest = gameMode === "classic" ? best1 : best2;
+    if (snapshot.p1.score > currentBest && snapshot.p1.score > 0 && !pbFlashedRef.current) {
+      pbFlashedRef.current = true;
+      setToast("🎉 New Best!");
+    }
+  }, [snapshot, gameMode, best1, best2]);
+
   useEffect(() => {
     if (theme === "light") document.documentElement.classList.add("light-theme");
     else document.documentElement.classList.remove("light-theme");
@@ -652,17 +790,19 @@ export default function App() {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
     }
+    if (gameMode === "evolve" && !evolveTutorialSeen) {
+      setShowTutorial(true);
+      return;
+    }
     if (!practiceMode) {
       const newEd = { ...energyData, count: energyData.count - 1 };
       localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
       setEnergyData(newEd);
     }
-    if (gameMode === "evolve" && shouldShowEvolveTutorial()) {
-      setShowEvolveTutorial(true);
-      return;
-    }
     setScreen("playing");
     setPaused(false);
+    dustAtStartRef.current = dust;
+    pbFlashedRef.current = false;
     const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
     Sentry.addBreadcrumb({
       category: "game",
@@ -670,25 +810,58 @@ export default function App() {
       level: "info",
       data: { gameMode, numPlayers, inputMode, practiceMode, forceSeed },
     });
-    fbLogEvent("game_start", {
+    getFirebase().then(fb => fb.fbLogEvent("game_start", {
       mode: gameMode,
       players: numPlayers,
       input: inputMode,
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
-    });
+    }));
     startEngine(forceSeed);
     if (forceSeed !== undefined) {
       clearReplaySeed();
     }
-  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed]);
+  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, dust, numPlayers, inputMode]);
 
-  const dismissEvolveTutorial = useCallback(() => {
-    setShowEvolveTutorial(false);
+  // Tutorial close handler
+  const handleTutorialClose = () => {
+    setShowTutorial(false);
+    const next = gamesPlayed + 1;
+    localStorage.setItem('dtp-games-played', String(next));
+    setGamesPlayed(next);
+    // Mark Evolve tutorial as seen (only once)
+    if (gameMode === "evolve") {
+      localStorage.setItem(EVOLVE_TUTORIAL_SEEN_KEY, '1');
+      setEvolveTutorialSeen(true);
+    }
+    if (!practiceMode && energyData.count <= 0) {
+      toast$("⚡ No energy! Wait or refill with 💜 dust.");
+      return;
+    }
+    if (!practiceMode) {
+      const newEd = { ...energyData, count: energyData.count - 1 };
+      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      setEnergyData(newEd);
+    }
     setScreen("playing");
     setPaused(false);
-    startEngine();
-  }, [startEngine]);
+    dustAtStartRef.current = dust;
+    pbFlashedRef.current = false;
+    const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
+    safeSentry.addBreadcrumb({ category: "tutorial", message: "tutorial_completed", level: "info", data: { game: next } });
+    getFirebase().then(fb => fb.fbLogEvent("game_start", {
+      mode: gameMode,
+      players: numPlayers,
+      input: inputMode,
+      practice: practiceMode,
+      replay_seed: forceSeed ?? 0,
+      tutorial_completed: true,
+    }));
+    startEngine(forceSeed);
+    if (forceSeed !== undefined) {
+      clearReplaySeed();
+    }
+  };
 
   const goMenu = useCallback(() => {
     pauseEngine();
@@ -697,7 +870,145 @@ export default function App() {
     setInitials(playerName || "Player");
     setIE(false);
     setShareMsg("");
+    // Clear snapshot so rare badge and other game-specific UI don't persist on menu
+    snapshotRef.current = null as any;
   }, [pauseEngine, playerName]);
+
+  // --- Daily Rewards handlers (Phase C) ---
+  const handleLoginStreakClaim = () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('dtp-login-claimed', todayStr);
+    const newDust = dust + loginStreakReward;
+    persistDust(newDust);
+    setDust(newDust);
+    setShowLoginStreak(false);
+  };
+
+  const handleChallengeClaim = (challengeId: string, reward: number) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const CHALLENGES_KEY = `dtp-challenges-${todayStr}`;
+    const claimed: string[] = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
+    claimed.push(challengeId);
+    localStorage.setItem(CHALLENGES_KEY, JSON.stringify(claimed));
+    const newDust = dust + reward;
+    persistDust(newDust);
+    setDust(newDust);
+    setDailyChallenges(buildDailyChallenges(todayStr));
+  };
+
+  // Build daily challenges from date string
+  function buildDailyChallenges(dateStr: string): DailyChallenge[] {
+    const CHALLENGES_KEY = `dtp-challenges-${dateStr}`;
+    const PROGRESS_KEY   = `dtp-challenge-progress-${dateStr}`;
+
+    const pool = [
+      { id:'play3',    description:'Play 3 games',         reward:30,  target:3  },
+      { id:'score50',  description:'Score 50+ in one game', reward:40,  target:50 },
+      { id:'streak5',  description:'Reach a 5-tap streak', reward:35,  target:5  },
+      { id:'survive60',description:'Survive 60 ticks',      reward:45,  target:60 },
+      { id:'dustspend',description:'Spend 20 dust in shop', reward:25,  target:20 },
+    ];
+
+    // Pick 3 deterministically by date
+    const seed = dateStr.split('').reduce((h,c)=>h*31+c.charCodeAt(0)|0, 0);
+    const picked = [
+      pool[Math.abs(seed) % pool.length],
+      pool[Math.abs(seed * 7) % pool.length],
+      pool[Math.abs(seed * 13) % pool.length],
+    ].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i).slice(0,3);
+
+    // Load progress and claimed state
+    let progress: Record<string,number> = {};
+    let claimedIds: string[] = [];
+    try {
+      progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}');
+      claimedIds = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
+    } catch {}
+
+    return picked.map(c => ({
+      ...c,
+      progress: progress[c.id] ?? 0,
+      claimed: claimedIds.includes(c.id),
+      completed: (progress[c.id] ?? 0) >= c.target,
+    }));
+  }
+
+  function buildWeeklyTasks(): WeeklyTask[] {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    const weekKey = weekStart.toISOString().slice(0, 10);
+    const WEEKLY_PROGRESS_KEY = `dtp-weekly-progress-${weekKey}`;
+    const WEEKLY_CLAIMED_KEY  = `dtp-weekly-claimed-${weekKey}`;
+    let progress: Record<string, number> = {};
+    let claimedIds: string[] = [];
+    try {
+      progress   = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY) ?? '{}');
+      claimedIds = JSON.parse(localStorage.getItem(WEEKLY_CLAIMED_KEY) ?? '[]');
+    } catch {}
+    const tasks = [
+      { id: 'top10',    description: 'Reach top 10 leaderboard this week', reward: 200, target: 1 },
+      { id: 'bothmode', description: 'Play both Classic and Evolve mode',   reward: 100, target: 2 },
+      { id: 'play10',   description: 'Complete 10 rounds',                  reward: 80,  target: 10 },
+      { id: 'score100', description: 'Reach score 100 in one game',         reward: 150, target: 1 },
+    ];
+    return tasks.map(t => ({
+      ...t,
+      progress: progress[t.id] ?? 0,
+      completed: (progress[t.id] ?? 0) >= t.target,
+      claimed: claimedIds.includes(t.id),
+    }));
+  }
+
+  const handleClaimWeekly = (taskId: string, reward: number) => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    const weekKey = weekStart.toISOString().slice(0, 10);
+    const WEEKLY_CLAIMED_KEY = `dtp-weekly-claimed-${weekKey}`;
+    const claimed: string[] = JSON.parse(localStorage.getItem(WEEKLY_CLAIMED_KEY) ?? '[]');
+    claimed.push(taskId);
+    localStorage.setItem(WEEKLY_CLAIMED_KEY, JSON.stringify(claimed));
+    const safeReward = isNaN(reward) ? 0 : reward;
+    const newDust = dust + safeReward;
+    persistDust(newDust);
+    setDust(newDust);
+    setWeeklyTasks(buildWeeklyTasks());
+  };
+
+  // Update challenge progress from game over
+  const updateChallengeProgress = (p1Score: number, finalTick: number) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
+    let progress: Record<string,number> = {};
+    try { progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}'); } catch {}
+
+    progress['play3'] = (progress['play3'] ?? 0) + 1;
+    if (p1Score >= 50) progress['score50'] = p1Score;
+    if (finalTick >= 60) progress['survive60'] = finalTick;
+    if (peakStreakRef.current >= 5) progress['streak5'] = peakStreakRef.current;
+
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    setDailyChallenges(buildDailyChallenges(todayStr));
+
+    // Weekly task progress
+    const now2 = new Date();
+    const weekStart2 = new Date(now2);
+    weekStart2.setDate(now2.getDate() - now2.getDay());
+    const weekKey2 = weekStart2.toISOString().slice(0, 10);
+    const WEEKLY_PROGRESS_KEY2 = `dtp-weekly-progress-${weekKey2}`;
+    let weeklyProgress: Record<string, number> = {};
+    try { weeklyProgress = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY2) ?? '{}'); } catch {}
+    weeklyProgress['play10'] = (weeklyProgress['play10'] ?? 0) + 1;
+    if (p1Score >= 100) weeklyProgress['score100'] = (weeklyProgress['score100'] ?? 0) + 1;
+    const modesKey = `dtp-weekly-modes-${weekKey2}`;
+    const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
+    modesPlayed.add(gameMode);
+    localStorage.setItem(modesKey, JSON.stringify([...modesPlayed]));
+    weeklyProgress['bothmode'] = modesPlayed.size;
+    localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
+    setWeeklyTasks(buildWeeklyTasks());
+  };
 
   const refillEnergy = useCallback(() => {
     if (energyData.count >= GAME.MAX_ENERGY) {
@@ -720,7 +1031,23 @@ export default function App() {
   }, [dust, energyData, toast$]);
 
   const submitScore = useCallback(async () => {
-    const score = numPlayers === 1 ? snapshot?.p1.score : Math.max(snapshot?.p1.score || 0, (snapshot?.p2?.score || 0));
+    const score = numPlayers === 1
+      ? snapshot?.p1.score
+      : Math.max(snapshot?.p1.score || 0, snapshot?.p2?.score || 0);
+    const tick = snapshot?.tick ?? 0;
+
+    // Sanity: reject physically impossible scores
+    const MAX_SCORE_PER_TICK = 20;
+    if (score && tick > 0 && score / tick > MAX_SCORE_PER_TICK) {
+      console.warn('[DTP] Score rejected: exceeds max score/tick ratio', { score, tick });
+      safeSentry.captureException(new Error('Suspicious score submission'), {
+        tags: { component: 'leaderboard-submit', type: 'suspicious' },
+        extra: { score, tick, ratio: score / tick },
+      });
+      toast$("⚠️ Score validation failed.");
+      return;
+    }
+
     const entry = {
       score: score || 0,
       initials,
@@ -730,16 +1057,17 @@ export default function App() {
     };
     setIE(true);
     try {
-      await fbAddScoreGlobal(entry);
-      Sentry.addBreadcrumb({ category: "leaderboard", message: "score_submit", level: "info", data: entry });
-      fbLogEvent("score_submit", { mode: entry.mode, score: entry.score, has_badge: Boolean(entry.badge) });
+      const fb = await getFirebase();
+      await fb.fbAddScoreGlobal(entry);
+      safeSentry.addBreadcrumb({ category: "leaderboard", message: "score_submit", level: "info", data: entry });
+      fb.fbLogEvent("score_submit", { mode: entry.mode, score: entry.score, has_badge: Boolean(entry.badge) });
     } catch(error) {
-      Sentry.captureException(error, {
+      safeSentry.captureException(error, {
         tags: { component: "leaderboard-submit" },
         extra: { entry },
       });
     }
-  }, [snapshot, initials, gameMode, shopData.equippedBadge, numPlayers]);
+  }, [snapshot, initials, gameMode, shopData.equippedBadge, numPlayers, toast$]);
 
   const toggleFS = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -753,6 +1081,8 @@ export default function App() {
   const is2P = numPlayers === 2;
   const cbFilter = getCBFilterStyle(colorblindMode);
   const cbActive = colorblindMode !== "none";
+  const loginClaimedToday = localStorage.getItem('dtp-login-claimed') === new Date().toISOString().slice(0, 10);
+  const rewardsBadgeCount = countUnclaimedRewards(loginClaimedToday, dailyChallenges, weeklyTasks);
 
   const equippedTheme = SHOP_THEMES.find(t => t.id === shopData.equippedTheme) || SHOP_THEMES[0];
   const themeVars = {
@@ -791,18 +1121,22 @@ export default function App() {
     <div className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
-      <div className="bg-pulse" style={snapshot?.rareMode.active ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
+      <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
 
       <ColorblindFilters />
-
-      {/* PurpleRain is the free default background */}
-      {!reducedMotion && (shopData.equippedBackground === "default" || !shopData.equippedBackground) && <PurpleRain />}
-      {!reducedMotion && shopData.equippedBackground === "void-tunnel" && <VoidTunnel />}
-      {!reducedMotion && shopData.equippedBackground === "star-warp" && <StarWarp />}
-      {!reducedMotion && shopData.equippedBackground === "grid-pulse" && <GridPulse />}
+      
+      {/* Background Layer - Controlled by pause/visibility/reducedMotion */}
+      {shouldAnimateBackground && equippedBackground?.component && (
+        <Suspense fallback={null}>
+          <equippedBackground.component 
+            key={`bg-${shopData.equippedBackground || 'default'}`}
+            reducedMotion={reducedMotion} 
+          />
+        </Suspense>
+      )}
 
       {(engineToast || toast) && <div className="toast">{engineToast || toast}</div>}
 
@@ -821,7 +1155,20 @@ export default function App() {
         </div>
       )}
 
-      {showEvolveTutorial && <EvolveTutorial onClose={dismissEvolveTutorial} />}
+      {screen === "playing" && snapshot?.rareMode.active && (
+        <div
+          className="rare-grid-ring"
+          style={{ "--rare-color": snapshot.rareMode.cssColor } as React.CSSProperties}
+        >
+          <div className="rare-pip-row">
+            {Array.from({ length: snapshot.rareMode.turnsLeft }).map((_, i) => (
+              <span key={i} className="rare-pip" style={{ background: snapshot!.rareMode.cssColor }} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showTutorial && <EvolveTutorial isOpen={showTutorial} onClose={handleTutorialClose} />}
       {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
 
       {showSettings && (
@@ -979,7 +1326,7 @@ export default function App() {
         </span>
         {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
-          <DustWidget dust={dust} />
+          <div className="dust-counter"><DustWidget dust={dust} /></div>
           {isPlaying && screen === "playing"
             ? <button className="btn-icon btn-icon--pause" onClick={pauseGame} title="Pause">⏸</button>
             : <button className="btn-icon" onClick={() => setShowSettings(s => !s)} title="Settings">⚙</button>
@@ -998,6 +1345,8 @@ export default function App() {
           fetchGlobalScores={fbFetchTop20Global}
           classicStorageKey={LS_KEYS.LB_CLASSIC}
           evolveStorageKey={LS_KEYS.LB_EVOLVE}
+          personalBest={lbMode === "classic" ? best1 : best2}
+          playerName={playerName}
         />
       )}
       {screen === "howto" && <HowToPlay onClose={() => setScreen("menu")} />}
@@ -1009,7 +1358,7 @@ export default function App() {
           devMode={devMode}
            gameMode={gameMode}
           loadShopData={loadShopData}
-          saveShopData={saveShopData}
+          saveShopData={saveShopDataState}
           loadStoredPowerups={loadStoredPwr}
           saveStoredPowerups={saveStoredPwr}
           persistDust={persistDust}
@@ -1039,18 +1388,20 @@ export default function App() {
           onKeybind={() => setScreen("keybind")}
           onRefillEnergy={refillEnergy}
           onSwitchPlayer={switchPlayer}
+          onOpenRewardsHub={() => setShowRewardsHub(true)}
+          rewardsBadgeCount={rewardsBadgeCount}
           dustWidget={<DustWidget dust={dust} />}
-           energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={refillEnergy} onRefillFull={() => {
-            const needed = GAME.MAX_ENERGY - energyData.count;
-            if (needed <= 0) return;
-            const cost = needed * GAME.DUST_PER_ENERGY;
-            if (dust < cost) { toast$("💜 Not enough dust!"); return; }
-            const newDust = dust - cost;
-            const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
-            setDust(newDust); localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-            setEnergyData(newEd); localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-            toast$("⚡ Energy full!");
-          }} dust={dust} />}
+          energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={refillEnergy} onRefillFull={() => {
+             const needed = GAME.MAX_ENERGY - energyData.count;
+             if (needed <= 0) return;
+             const cost = needed * GAME.DUST_PER_ENERGY;
+             if (dust < cost) { toast$("💜 Not enough dust!"); return; }
+             const newDust = dust - cost;
+             const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
+             setDust(newDust); localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+             setEnergyData(newEd); localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+             toast$("⚡ Energy full!");
+           }} onEnergyIconClick={() => setShowEnergyPopup(true)} dust={dust} />}
           pendingReplaySeed={pendingReplaySeed}
           onClearReplaySeed={clearReplaySeed}
         />
@@ -1065,7 +1416,7 @@ export default function App() {
           tick={snapshot?.tick || 0}
           gameMode={gameMode}
           numPlayers={numPlayers}
-          rareMode={snapshot?.rareMode || { active: false, color: "purple", cssColor: "#c026d3", turnsLeft: 0 }}
+          rareMode={snapshot?.rareMode || { active: false, color: "purple", cssColor: "#c026d3", turnsLeft: 0, shape: "circle", emoji: "" }}
           cellShape={snapshot?.cellShape || "square"}
           paused={paused}
           screen={screen}
@@ -1095,8 +1446,8 @@ export default function App() {
         />
       )}
 
-      {!is2P && isPlaying && snapshot && (
-        <div className="hud">
+      {isPlaying && snapshot && (
+         <div className="hud">
           <div className="hud-card hud-card--score">
             <div className="hud-lbl">Score</div>
             <div className="hud-score-row">
@@ -1120,14 +1471,14 @@ export default function App() {
         </div>
       )}
 
-      {isPlaying && snapshot && (
-        <div className="spd-wrap">
+       {isPlaying && snapshot && (
+         <div className="spd-wrap">
           <div className="spd-track"><div className="spd-fill" style={{width: speedPct(snapshot.tick) + "%"}} /></div>
         </div>
       )}
 
-      {isPlaying && snapshot && (
-        <div className="game-area">
+       {isPlaying && snapshot && (
+         <div className="game-area">
           <PwrBar ps={snapshot.p1} rareMode={snapshot.rareMode} />
           
           {screen === "gameover" && (
@@ -1136,7 +1487,6 @@ export default function App() {
                 p1Score={snapshot.p1.score}
                 p2Score={snapshot.p2?.score || 0}
                 best={gameMode === "classic" ? best1 : best2}
-                prevBest={prevBest}
                 winner={engineWinner}
                 mode={gameMode}
                 is2P={numPlayers === 2}
@@ -1144,25 +1494,22 @@ export default function App() {
                 gameSeed={gameSeedState || 0}
                 tick={snapshot.tick}
                 p1={snapshot.p1}
-                initialsEntered={initialsEntered}
-                initials={initials}
-                onInitialsChange={setInitials}
-                onSubmitScore={submitScore}
                 onPlay={startGame}
                 onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
                 onMenu={goMenu}
                 spinLevel={snapshot.spinLevel}
                 isHumanLimit={snapshot.phase === "humanlimit"}
+                dustEarned={isNaN(dust - dustAtStartRef.current) ? 0 : dust - dustAtStartRef.current}
               />
             </div>
           )}
           
           <ShieldDrop active={pwrToastP1?.includes("Shield") ?? false} />
           <FreezeDrop active={pwrToastP1?.includes("Freeze") ?? false} />
-          <EnergyDrop active={pwrToastP1?.includes("multiplier") ?? false} />
+          <EnergyDrop active={pwrToastP1?.includes("⚡") ?? false} />
           {is2P && <ShieldDrop active={pwrToastP2?.includes("Shield") ?? false} />}
           {is2P && <FreezeDrop active={pwrToastP2?.includes("Freeze") ?? false} />}
-          {is2P && <EnergyDrop active={pwrToastP2?.includes("multiplier") ?? false} />}
+          {is2P && <EnergyDrop active={pwrToastP2?.includes("⚡") ?? false} />}
 
           <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim}
             onTap={i => { handleTap(1, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
@@ -1185,9 +1532,9 @@ export default function App() {
             showBotAssist={screen === "playing" && !is2P}
             isBotActive={botAssistActive[1]}
             dust={dust} />
-          {is2P && (
-            <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim} 
-              onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
+           {is2P && (
+             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
+               onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
               onHoldStart={i => handleHoldStart(2,i)} onHoldEnd={i => handleHoldEnd(2,i)}
               keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={new Set(pressP2)}
               label="P2" heartAnim={heartAnimP2} mode={gameMode}
@@ -1211,13 +1558,74 @@ export default function App() {
 
       {screen === "menu" && (
         <footer className="credit">
-          {loginStreak.count >= 2 && (
-            <span className="daily-streak-badge">🗓 Day {loginStreak.count} streak</span>
+          {loginStreakCount >= 2 && (
+            <span className="daily-streak-badge">🗓 Day {loginStreakCount} streak</span>
           )}
           <span>By Mohammed Ahmed Siddiqui · <a href="https://mscarabia.com" target="_blank" rel="noopener noreferrer" className="credit-link">mscarabia.com</a></span>
           <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="credit-link" style={{marginLeft:6}}>Privacy</a>
         </footer>
       )}
+
+      {showRewardsHub && (
+        <RewardsHub
+          loginStreak={loginStreakCount}
+          loginReward={loginStreakReward}
+          loginClaimedToday={loginClaimedToday}
+          onClaimLogin={() => {
+            handleLoginStreakClaim();
+          }}
+          dailyChallenges={dailyChallenges}
+          onClaimChallenge={handleChallengeClaim}
+          weeklyTasks={weeklyTasks}
+          onClaimWeekly={handleClaimWeekly}
+          onClose={() => setShowRewardsHub(false)}
+        />
+      )}
+
+      {showEnergyPopup && (
+        <div className="modal-overlay" onClick={() => setShowEnergyPopup(false)}>
+          <div className="modal-panel energy-popup" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">⚡ Energy</span>
+              <button className="btn-icon" onClick={() => setShowEnergyPopup(false)}>✕</button>
+            </div>
+            <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+              <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-score)" }}>
+                {energyData.count} / {GAME.MAX_ENERGY}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.55, fontFamily: "var(--font-ui)", marginTop: 4 }}>
+                Refills 1 every {Math.round(GAME.ENERGY_REGEN_MS / 60000)} min
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button className="btn-ghost" style={{ width: "100%" }}
+                disabled={energyData.count >= GAME.MAX_ENERGY || dust < GAME.DUST_PER_ENERGY}
+                onClick={() => { refillEnergy(); }}>
+                Refill 1 game — {GAME.DUST_PER_ENERGY} 💜
+              </button>
+              <button className="btn-primary" style={{ width: "100%" }}
+                disabled={energyData.count >= GAME.MAX_ENERGY || dust < (GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY}
+                onClick={() => {
+                  const needed = GAME.MAX_ENERGY - energyData.count;
+                  if (needed <= 0) return;
+                  const cost = needed * GAME.DUST_PER_ENERGY;
+                  if (dust < cost) { toast$("💜 Not enough dust!"); return; }
+                  const newDust = dust - cost;
+                  const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
+                  setDust(newDust); localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+                  setEnergyData(newEd); localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+                  toast$("⚡ Energy full!");
+                  setShowEnergyPopup(false);
+                }}>
+                Refill to Full — {(GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY} 💜
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
+

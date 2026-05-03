@@ -20,6 +20,11 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
         <div className="how-mode"><b>⊞ Classic</b> — Fixed 3×3 grid, pure speed challenge</div>
         <div className="how-mode"><b>∞ Evolve Mode</b> — Grid grows from 2×2 to 5×5 as you improve</div>
       </div>
+      <div className="how-modes">
+        <div className="how-mode"><b>Keyboard Shortcuts</b></div>
+        <div className="how-row"><span className="how-icon"><kbd>Esc</kbd></span><div>Pause / Resume game</div></div>
+        <div className="how-row"><span className="how-icon"><kbd>B</kbd></span><div>Toggle Bot Assist (Evolve mode)</div></div>
+      </div>
       <p className="how-tip">⚡ Miss a safe cell = lose a heart · Tap purple = lose a heart · Survive = glory</p>
     </div>
   );

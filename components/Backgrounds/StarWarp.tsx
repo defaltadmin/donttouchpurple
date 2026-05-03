@@ -1,36 +1,108 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from 'react';
 
-export function StarWarp({ speed = 1 }: { speed?: number }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+type Shape = 'square' | 'circle' | 'triangle' | 'diamond';
+const SHAPES: Shape[] = ['square', 'circle', 'triangle', 'diamond'];
+const COLORS = ['#c026d3', '#a21caf', '#7c3aed', '#9333ea', '#db2777', '#e879f9'];
+
+interface WarpShape {
+  x: number; y: number;       // start (near center)
+  angle: number;
+  speed: number;
+  dist: number;               // current distance from center
+  maxDist: number;
+  size: number;
+  shape: Shape;
+  color: string;
+  opacity: number;
+}
+
+function makeWarpShape(w: number, h: number): WarpShape {
+  const angle = Math.random() * Math.PI * 2;
+  return {
+    x: w / 2, y: h / 2,
+    angle,
+    speed: 1.5 + Math.random() * 2.5,
+    dist: Math.random() * 40,
+    maxDist: Math.max(w, h) * 0.7,
+    size: 6 + Math.random() * 12,
+    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    opacity: 0.6 + Math.random() * 0.4,
+  };
+}
+
+function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, x: number, y: number, size: number, angle: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  if (shape === 'square') {
+    ctx.rect(-size / 2, -size / 2, size, size);
+  } else if (shape === 'circle') {
+    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+  } else if (shape === 'triangle') {
+    ctx.moveTo(0, -size / 2);
+    ctx.lineTo(size / 2, size / 2);
+    ctx.lineTo(-size / 2, size / 2);
+    ctx.closePath();
+  } else {
+    ctx.moveTo(0, -size / 2);
+    ctx.lineTo(size / 2, 0);
+    ctx.lineTo(0, size / 2);
+    ctx.lineTo(-size / 2, 0);
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.restore();
+}
+
+export default function StarWarp() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    const canvas = ref.current; if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const COUNT = 60;
+    const shapes: WarpShape[] = Array.from({ length: COUNT }, () =>
+      makeWarpShape(canvas.width, canvas.height)
+    );
+
     let raf: number;
-    const STARS = 200;
-    const stars = Array.from({ length: STARS }, () => ({
-      x: (Math.random() - 0.5) * 2,
-      y: (Math.random() - 0.5) * 2,
-      z: Math.random(),
-    }));
     const draw = () => {
-      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-      ctx.fillStyle = "rgba(0,0,0,0)"; ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const cx = canvas.width / 2, cy = canvas.height / 2;
-      for (const s of stars) {
-        s.z -= 0.004 * speed;
-        if (s.z <= 0) { s.x = (Math.random() - 0.5) * 2; s.y = (Math.random() - 0.5) * 2; s.z = 1; }
-        const sx = (s.x / s.z) * cx + cx;
-        const sy = (s.y / s.z) * cy + cy;
-        const r = Math.max(0.4, (1 - s.z) * 2.5);
-        const alpha = 1 - s.z;
-        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fillStyle = s.z < 0.3 ? `rgba(192,38,211,${alpha})` : `rgba(255,255,255,${alpha})`;
-        ctx.fill();
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const s of shapes) {
+        s.dist += s.speed * (1 + s.dist / 80); // accelerate as it moves out
+        if (s.dist > s.maxDist) { Object.assign(s, makeWarpShape(w, h)); continue; }
+
+        const x = w / 2 + Math.cos(s.angle) * s.dist;
+        const y = h / 2 + Math.sin(s.angle) * s.dist;
+        const progress = s.dist / s.maxDist;
+
+        ctx.globalAlpha = s.opacity * (0.2 + progress * 0.8);
+        ctx.fillStyle = s.color;
+        drawShape(ctx, s.shape, x, y, s.size * (0.4 + progress * 0.6), s.angle + progress * Math.PI);
       }
+
+      ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, [speed]);
-  return <canvas ref={ref} style={{ position: "fixed", inset: 0, zIndex: -1, pointerEvents: "none" }} />;
+    draw();
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  return (
+    <canvas ref={canvasRef}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
+               pointerEvents: 'none', zIndex: -1, opacity: 0.5 }} />
+  );
 }

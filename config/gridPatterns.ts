@@ -82,14 +82,35 @@ export interface RareColorDef {
   color:    string;
   cssColor: string;
   bg:       string;
+  shape:    import('../engine/types').CellShape;
+  emoji:    string;
 }
 
 export const RARE_COLORS: RareColorDef[] = [
-  { color: "red",    cssColor: "#ef4444", bg: "radial-gradient(circle at 20% 20%, #4a1010 0%, #1a0404 55%)" },
-  { color: "blue",   cssColor: "#3b82f6", bg: "radial-gradient(circle at 20% 20%, #0f1a4a 0%, #04071a 55%)" },
-  { color: "green",  cssColor: "#22c55e", bg: "radial-gradient(circle at 20% 20%, #0a3018 0%, #041a0a 55%)" },
-  { color: "orange", cssColor: "#f97316", bg: "radial-gradient(circle at 20% 20%, #4a2010 0%, #1a0a04 55%)" },
-  { color: "cyan",   cssColor: "#06b6d4", bg: "radial-gradient(circle at 20% 20%, #083040 0%, #020e14 55%)" },
-  { color: "pink",   cssColor: "#ec4899", bg: "radial-gradient(circle at 20% 20%, #4a1030 0%, #1a0410 55%)" },
-  { color: "yellow", cssColor: "#eab308", bg: "radial-gradient(circle at 20% 20%, #3a3010 0%, #141004 55%)" },
+  { color: "red",    cssColor: "#ef4444", bg: "radial-gradient(circle at 20% 20%, #4a1010 0%, #1a0404 55%)",  shape: "triangle",       emoji: "🔺" },
+  { color: "blue",   cssColor: "#3b82f6", bg: "radial-gradient(circle at 20% 20%, #0f1a4a 0%, #04071a 55%)",  shape: "square",         emoji: "🔷" },
+  { color: "green",  cssColor: "#22c55e", bg: "radial-gradient(circle at 20% 20%, #0a3018 0%, #041a0a 55%)",  shape: "roundedTriangle", emoji: "🟩" },
+  { color: "orange", cssColor: "#f97316", bg: "radial-gradient(circle at 20% 20%, #4a2010 0%, #1a0a04 55%)",  shape: "diamond",        emoji: "🔶" },
+  { color: "cyan",   cssColor: "#06b6d4", bg: "radial-gradient(circle at 20% 20%, #083040 0%, #020e14 55%)",  shape: "circle",         emoji: "🔵" },
+  { color: "pink",   cssColor: "#ec4899", bg: "radial-gradient(circle at 20% 20%, #4a1030 0%, #1a0410 55%)",  shape: "circle",         emoji: "🌸" },
+  { color: "yellow", cssColor: "#eab308", bg: "radial-gradient(circle at 20% 20%, #3a3010 0%, #141004 55%)",  shape: "diamond",        emoji: "⭐" },
 ];
+
+// ─── Rare Mode Config (for shape/emoji lookup by color name) ───────────
+import type { CellShape } from '../engine/types';
+
+export const RARE_MODE_CONFIGS: Record<string, { color: string; shape: CellShape; emoji: string }> = {
+  red:    { color: '#ef4444', shape: 'triangle',        emoji: '🔺' },
+  gold:   { color: '#fbbf24', shape: 'diamond',        emoji: '⭐' },
+  cyan:   { color: '#22d3ee', shape: 'square',         emoji: '■' },
+  lime:   { color: '#a3e635', shape: 'roundedTriangle', emoji: '🟩' },
+  pink:   { color: '#f472b6', shape: 'circle',         emoji: '🌸' },
+  purple: { color: '#c026d3', shape: 'circle',         emoji: '🟣' },
+};
+
+export const getRareModeConfig = (colorKey: string = 'purple') => {
+  const key = String(colorKey).toLowerCase().trim();
+  return RARE_MODE_CONFIGS[key] || 
+         RARE_MODE_CONFIGS.purple || 
+         { color: '#c026d3', shape: 'circle' as const, emoji: '🟣' };
+};

@@ -54,7 +54,15 @@ export function ShopPanel({
   persistDust,
 }: ShopPanelProps) {
   const [shopData, setShopData] = useState(() => loadShopData());
-  const [tab, setTab] = useState<"themes" | "badges" | "powerups" | "skins" | "backgrounds">("themes");
+  const [tab, setTab] = useState<"backgrounds" | "themes" | "badges" | "skins" | "powerups">(() => {
+    try {
+      const saved = localStorage.getItem("dtp-shop-tab");
+      if (saved === "backgrounds" || saved === "themes" || saved === "badges" || saved === "skins" || saved === "powerups") {
+        return saved;
+      }
+    } catch {}
+    return "backgrounds";
+  });
   const [buyAnim, setBuyAnim] = useState<string | null>(null);
 
   const spend = (cost: number): boolean => {
@@ -152,11 +160,11 @@ export function ShopPanel({
       </div>
 
       <div className="shop-tabs">
-        <button className={`shop-tab${tab === "themes" ? " shop-tab--on" : ""}`} onClick={() => setTab("themes")}>🎨 Themes</button>
-        <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => setTab("badges")}>🏅 Badges</button>
-        <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => setTab("skins")}>✨ Skins</button>
-        <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => setTab("powerups")}>⚡ Powers</button>
-        <button className={`shop-tab${tab === "backgrounds" ? " shop-tab--on" : ""}`} onClick={() => setTab("backgrounds")}>🌌 BG</button>
+        <button className={`shop-tab${tab === "backgrounds" ? " shop-tab--on" : ""}`} onClick={() => { setTab("backgrounds"); localStorage.setItem("dtp-shop-tab", "backgrounds"); }}>🌌 BG</button>
+        <button className={`shop-tab${tab === "themes" ? " shop-tab--on" : ""}`} onClick={() => { setTab("themes"); localStorage.setItem("dtp-shop-tab", "themes"); }}>🎨 Themes</button>
+        <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => { setTab("badges"); localStorage.setItem("dtp-shop-tab", "badges"); }}>🏅 Badges</button>
+        <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => { setTab("skins"); localStorage.setItem("dtp-shop-tab", "skins"); }}>✨ Skins</button>
+        <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => { setTab("powerups"); localStorage.setItem("dtp-shop-tab", "powerups"); }}>⚡ Powers</button>
       </div>
 
       {tab === "themes" && (

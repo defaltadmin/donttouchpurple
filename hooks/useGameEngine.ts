@@ -144,7 +144,8 @@ export function useGameEngine(
     getDust: () => number;
     spendDust: (amount: number) => void;
     getAccuracy: () => number;
-  }
+  },
+  onDamage?: () => void,
 ): UseGameEngineReturn {
   const engineRef  = useRef<GameEngine | null>(null);
   const mountedRef = useRef(true);
@@ -179,6 +180,8 @@ export function useGameEngine(
   const shake1TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shake2TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameOverTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const peakStreakRef     = useRef(0);
+  const dustAtStartRef    = useRef(0);
 
   const toast$ = useCallback((msg: string) => {
     if (!mountedRef.current) return;
@@ -212,6 +215,11 @@ export function useGameEngine(
       switch (event.type) {
         case "tick":
           if (mountedRef.current) setSnapshot(event.snapshot);
+          // Track peak streak for recap
+          const snap = event.snapshot;
+          if (snap && snap.p1.streak > (peakStreakRef.current ?? 0)) {
+            peakStreakRef.current = snap.p1.streak;
+          }
           break;
         case "sound": playSound(event.name); break;
         case "toast": toast$(event.message); break;
@@ -226,17 +234,18 @@ export function useGameEngine(
             pwrToastP2TimerRef.current = setTimeout(() => { if (mountedRef.current) setPwrToastP2(null); }, GAME.PWR_TOAST_DURATION_MS);
           }
           break;
-        case "damage":
-          if (event.player === 1) {
-            setHA1(true);
-            if (ha1TimerRef.current) clearTimeout(ha1TimerRef.current);
-            ha1TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA1(false); }, GAME.HEART_ANIM_MS);
-          } else {
-            setHA2(true);
-            if (ha2TimerRef.current) clearTimeout(ha2TimerRef.current);
-            ha2TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA2(false); }, GAME.HEART_ANIM_MS);
-          }
-          break;
+      case "damage":
+        if (event.player === 1) {
+          setHA1(true);
+          if (ha1TimerRef.current) clearTimeout(ha1TimerRef.current);
+          ha1TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA1(false); }, GAME.HEART_ANIM_MS);
+        } else {
+          setHA2(true);
+          if (ha2TimerRef.current) clearTimeout(ha2TimerRef.current);
+          ha2TimerRef.current = setTimeout(() => { if (mountedRef.current) setHA2(false); }, GAME.HEART_ANIM_MS);
+        }
+        onDamage?.();
+        break;
         case "shake":
           if (event.player === 1) {
             setShake1(true);
@@ -259,14 +268,14 @@ export function useGameEngine(
           rareSplashTimerRef.current = setTimeout(() => { if (mountedRef.current) setRareSplash(null); }, GAME.RARE_SPLASH_MS);
           break;
         case "gameOver":
-          const snap = engine.getSnapshot();
-          const seedAtGameOver = snap.gameSeed;
+          const snap2 = engine.getSnapshot();
+          const seedAtGameOver = snap2.gameSeed;
           if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
           gameOverTimerRef.current = setTimeout(() => {
             if (!mountedRef.current) return;
             setWinner(event.winner);
-            setLastGameScore(config.numPlayers === 1 ? snap.p1.score : Math.max(snap.p1.score, snap.p2.score));
-            onGameOverRef.current(event.winner, snap.p1.score, snap.p2.score, seedAtGameOver);
+            setLastGameScore(config.numPlayers === 1 ? snap2.p1.score : Math.max(snap2.p1.score, snap2.p2?.score ?? 0));
+            onGameOverRef.current(event.winner, snap2.p1.score, snap2.p2?.score ?? 0, seedAtGameOver);
           }, GAME.GAME_OVER_DELAY_MS);
           break;
         case "botTap":

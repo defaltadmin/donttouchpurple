@@ -1,5 +1,5 @@
 import { DIFFICULTY, GAME, LS_KEYS } from "../config/difficulty";
-import { STAGES, EVOLVE_PATTERNS, RARE_COLORS } from "../config/gridPatterns";
+import { STAGES, EVOLVE_PATTERNS, RARE_COLORS, getRareModeConfig } from "../config/gridPatterns";
 import { POWERUP_TABLE } from "../config/powerupWeights";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
 import type {
@@ -60,6 +60,7 @@ function spawnActive(
   patternOverride?: { cols: number; rows: number; mask: number[] | null },
   isEvolve?: boolean,
   rareColor?: string,
+  rareShape?: CellShape,
   tick = 0,
   godMode = false
 ): ActiveCell[] {
@@ -81,27 +82,20 @@ function spawnActive(
   const idxs = pool.slice(0, count);
 
   let powerup: CellType | null = null;
-    const powerupEligible = isEvolve ? stage >= 2 : true;
-    const totalWeight = (() => {
-      if (!powerupEligible) return 0;
-      let table = POWERUP_TABLE.map(p =>
-        p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
-      );
-      if (godMode) table = table.filter(p => p.type !== "medpack");
-      return table.reduce((s, p) => s + p.weight, 0);
-    })();
+const powerupEligible = isEvolve ? stage >= 2 : true;
+    let table = POWERUP_TABLE.map(p =>
+      p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
+    );
+    if (godMode) table = table.filter(p => p.type !== "medpack");
+    const totalWeight = table.reduce((s, p) => s + p.weight, 0);
     const effectiveTotal = powerupEligible ? totalWeight : totalWeight * 0.4;
-    if (powerupEligible) {
-      let table = POWERUP_TABLE.map(p =>
-        p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
-      );
-      if (godMode) table = table.filter(p => p.type !== "medpack");
-      const roll = rng();
-      if (roll < effectiveTotal / 100) {
+    if (powerupEligible && totalWeight > 0) {
+      const roll = rng() * 100;
+      if (roll < effectiveTotal) {
         let cursor = 0;
         for (const p of table) {
           cursor += p.weight;
-          if (roll < cursor / totalWeight) { powerup = p.type as CellType; break; }
+          if (roll < cursor) { powerup = p.type as CellType; break; }
         }
       }
     }
@@ -122,7 +116,7 @@ function spawnActive(
       return { idx, clicked: false, type: "hold", holdRequired: 700 + rng() * 500 };
     }
     const baseType = randCell(rng, tick, !isEvolve);
-    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor as any };
+    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor as any, shape: rareShape };
     return { idx, clicked: false, type: baseType } as any;
   });
 }
@@ -172,7 +166,7 @@ export class GameEngine {
   private p1!: PlayerState;
   private p2!: PlayerState;
   private cellShape: CellShape    = "square";
-  private rareMode: RareColorMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+  private rareMode: RareColorMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
   private spinLevel  = 0;
   private gameSeed   = makeGameSeed();
   private tapBuffer: Record<1 | 2, { idx: number; ts: number } | null> = { 1: null, 2: null };
@@ -207,7 +201,7 @@ export class GameEngine {
     this.spinLevel  = 0;
     this.gameSeed   = forceSeed ?? makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
-    this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+    this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
     // Load stored once, compute deductions, call saveStoredPowerups once for mult deduction if hasMult, once for heart reset if bonusHearts
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     const bonusHearts = (this.config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
@@ -282,7 +276,12 @@ export class GameEngine {
     this.emitSnapshot();
   }
 
-  destroy(): void {
+destroy(): void {
+    // Clear all hold timers to prevent memory leaks
+    this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
+    this.holdTimers.clear();
+    // Clear any pending taps
+    this.tapBuffer = { 1: null, 2: null };
     this.stop();
     this.listeners.clear();
   }
@@ -320,14 +319,23 @@ export class GameEngine {
       if (this.rareMode.active) {
         this.rareMode.turnsLeft -= 1;
         if (this.rareMode.turnsLeft <= 0) {
-          this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
+          this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
           this.emit({ type: "toast", message: "🟣 Back to Purple!" });
         }
       } else {
         const s1 = this.p1.score;
+        // Pre-warn one score-window before rare mode activates
+        const RARE_TRIGGER_INTERVAL = 50;
+        const RARE_PRE_WARN_THRESHOLD = 3;
+        if (
+          s1 > 0 &&
+          (s1 % RARE_TRIGGER_INTERVAL) === (RARE_TRIGGER_INTERVAL - RARE_PRE_WARN_THRESHOLD)
+        ) {
+          this.emit({ type: "toast", message: "⚠️ Danger color changing soon!" });
+        }
         if (s1 >= 50 && s1 % 50 < 4 && this.rng() < 0.35) {
           const pick = RARE_COLORS[Math.floor(this.rng() * RARE_COLORS.length)];
-          this.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(this.rng() * 4) };
+          this.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(this.rng() * 4), shape: pick.shape, emoji: pick.emoji };
           this.emit({ type: "rareStart", color: pick.color, cssColor: pick.cssColor });
           this.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
         }
@@ -339,7 +347,10 @@ export class GameEngine {
       if (!ref.alive || (pi === 1 && this.config.numPlayers === 1)) continue;
       if ((ref as any).pendingStageUpdate) {
         (ref as any).pendingStageUpdate = false; ref.gridStage += 1; ref.stageProgress = 0;
-        this.spinLevel += 1;
+        // Only increment spinLevel if not in keys mode (rotation locked for keyboard input)
+        if (this.config.inputMode !== 'keys') {
+          this.spinLevel += 1;
+        }
         this.emit({ type: "sound",   name: "levelup" });
         this.emit({ type: "levelUp", player: (pi + 1) as 1 | 2, stage: ref.gridStage });
       }
@@ -380,8 +391,9 @@ export class GameEngine {
       ref.patternIdx = nextPatIdx;
       const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
       const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
+      const rareShape = this.rareMode.active ? this.rareMode.shape : undefined;
       const spawnStage = mode === "evolve" ? curStage : Math.min(Math.floor(this.tickCount / 12), 7);
-      const newActive = spawnActive(this.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, this.tickCount, this.devGodMode);
+      const newActive = spawnActive(this.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, rareShape, this.tickCount, this.devGodMode);
       if (this.devForcedPwr && newActive.length > 0) {
         newActive[0] = { ...newActive[0], type: (this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr) as any };
         if (pi === (this.config.numPlayers === 1 ? 0 : 1)) this.devForcedPwr = null;
@@ -418,7 +430,7 @@ export class GameEngine {
           c.type !== "ice"
         );
         for (const cell of missedCells) {
-          if (Math.random() > accuracy) continue; // accuracy miss
+          if (this.rng() > accuracy) continue; // accuracy miss (use seeded rng)
           const costPerTap = 3;
           const currentDust = botCfg.getDust();
           if (currentDust < costPerTap) break;
@@ -631,17 +643,18 @@ export class GameEngine {
     this.p1.patternIdx = idx; this.p2.patternIdx = idx;
     const pat = EVOLVE_PATTERNS[idx] ?? EVOLVE_PATTERNS[0];
     const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
-    this.p1.active = spawnActive(this.rng, this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
+    const rareShape = this.rareMode.active ? this.rareMode.shape : undefined;
+    this.p1.active = spawnActive(this.rng, this.p1.gridStage, this.p1.health, pat, this.config.mode === "evolve", rareColor, rareShape, this.tickCount, this.devGodMode);
     this.p1.cells = activeToCellsP(this.p1.active, pat);
 
-    this.p2.active = spawnActive(this.rng, this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, this.tickCount, this.devGodMode);
+    this.p2.active = spawnActive(this.rng, this.p2.gridStage, this.p2.health, pat, this.config.mode === "evolve", rareColor, rareShape, this.tickCount, this.devGodMode);
     this.p2.cells  = activeToCellsP(this.p2.active, pat);
     this.emitSnapshot();
   }
 
   devForceRare(r: { color: string; cssColor: string } | null): void {
-    if (!r) this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0 };
-    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10 }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); }
+    if (!r) this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
+    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10, shape: (r as any).shape ?? "circle", emoji: (r as any).emoji ?? "" }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); }
     this.emitSnapshot();
   }
 
@@ -673,7 +686,12 @@ export class GameEngine {
 
   getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
 
-  private triggerGameOver(winner: Winner): void {
+private triggerGameOver(winner: Winner): void {
+    // Clear pending taps and hold timers
+    this.tapBuffer = { 1: null, 2: null };
+    this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
+    this.holdTimers.clear();
+    
     this.stop(); this.phase = "gameover";
     const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     this.config.storage?.saveStoredPowerups({
@@ -692,16 +710,37 @@ export class GameEngine {
     this.dustSpentTotal = 0;
     this.botIntervalRef = setInterval(() => {
       if (!this.botActive || this.phase !== "playing") return;
+      if (typeof document !== "undefined" && document.hidden) return;
       // Calculate reaction delay: 200ms - (dustSpentTotal * 0.5ms), floor at 80ms
       const delay = Math.max(80, 200 - this.dustSpentTotal * 0.5);
       const active = this.p1.active;
+      const rareColorNow = this.rareMode.active ? this.rareMode.color : "purple";
       active.forEach(cell => {
-        if (cell.clicked || cell.type === "purple" || cell.type === "ice" || cell.type === "hold") return;
+        if (cell.clicked || cell.type === rareColorNow || cell.type === "hold") return;
+        // H2: tap ice cells (engine handles multi-tap internally via iceCount)
         // Use seeded RNG for deterministic error rate
         const errorRate = Math.min(0.18, this.p1.gridStage * 0.02);
         if (this.rng() < errorRate) return;
         setTimeout(() => {
           if (this.botActive && this.phase === "playing") {
+            // H3: handle hold cells — send holdStart then holdEnd after holdRequired ms
+            if (cell.type === "hold") {
+              const holdCell = cell as any;
+              if (holdCell.holdStart !== undefined) return; // already holding
+              this.handleHoldStart(1, cell.idx);
+              const required = (holdCell.holdRequired ?? 800);
+              setTimeout(() => {
+                if (this.botActive && this.phase === "playing") {
+                  this.handleHoldEnd(1, cell.idx);
+                }
+              }, required + 50);
+              this.dustSpentTotal += 10;
+              this.emit({ type: "dustConsumed", amount: 10 });
+              return;
+            }
+            // H5: show pop animation same as human tap
+            this.triggerCellAnim(1, cell.idx, "pop");
+            this.emit({ type: "sound", name: "ok" });
             this.handleTap(1, cell.idx);
           }
         }, delay);
@@ -725,6 +764,9 @@ export class GameEngine {
 
   setBotAssist(player: 1 | 2, enabled: boolean): void {
     this.botAssistActive[player] = enabled;
+    if (player === 1) {
+      if (enabled) this.startBot(); else this.stopBot();
+    }
   }
 
   getBotAssistActive(): { 1: boolean; 2: boolean } {

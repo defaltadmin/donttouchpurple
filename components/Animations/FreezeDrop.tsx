@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { GAME } from "../../config/difficulty";
 
 interface FreezeDropProps {
   active: boolean;
@@ -9,15 +10,11 @@ export function FreezeDrop({ active, onComplete }: FreezeDropProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (active) {
-      setVisible(true);
-      const timeout = setTimeout(() => {
-        setVisible(false);
-        onComplete?.();
-      }, 1100);
-      return () => clearTimeout(timeout);
-    }
-  }, [active, onComplete]);
+    if (!active) return;
+    setVisible(true);
+    const timer = setTimeout(() => setVisible(false), 1100);
+    return () => clearTimeout(timer);
+  }, [active]);
 
   if (!visible) return null;
 

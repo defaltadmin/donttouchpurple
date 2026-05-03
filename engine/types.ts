@@ -7,7 +7,7 @@ export type CellType =
   | "medpack" | "shield" | "freeze" | "multiplier"
   | "ice" | "hold";
 
-export type CellShape = "square" | "circle" | "triangle" | "roundedTriangle" | "mixed";
+export type CellShape = "square" | "circle" | "triangle" | "roundedTriangle" | "mixed" | "diamond";
 
 export type GameMode   = "classic" | "evolve";
 export type NumPlayers = 1 | 2;
@@ -17,6 +17,7 @@ export type Winner     = "p1" | "p2" | "tie" | null;
 type BaseCell = {
   idx: number;
   clicked: boolean;
+  shape?: CellShape;
 };
 
 export type RegularCell = BaseCell & {
@@ -67,6 +68,8 @@ export interface RareColorMode {
   color:    string;
   cssColor: string;
   turnsLeft: number;
+  shape:    CellShape;  // shape used for colorblind distinction
+  emoji:    string;     // emoji shown in colorblind mode
 }
 
 export interface StoredPowerups {
@@ -81,6 +84,7 @@ export interface GameConfig {
   mode:       GameMode;
   numPlayers: NumPlayers;
   speedMult:  number;      // iMultRef equivalent
+  inputMode?: 'touch' | 'keys';  // default 'touch'
   godMode?:   boolean;     // practice / dev invincibility
   storage?: {
     loadStoredPowerups: () => StoredPowerups;

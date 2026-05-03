@@ -1,5 +1,5 @@
 import React from "react";
-import { Cell } from "../Cell";
+import Cell from "../Cell";
 import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
 import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot } from "../../engine/types";
@@ -143,32 +143,28 @@ export function PlayerPanel({
             {Array.from({ length: gridTotal }, (_, i) => {
             const isVoid = maskSet && !maskSet.has(i);
             if (isVoid) return <div key={i} className="cell-void" />;
-            const type       = ps.cells[i] ?? "inactive";
-            const activeCell = ps.active.find(c => c.idx === i);
-            const shape: CellShape = cellShape === "mixed"
-              ? (["square", "circle", "triangle"] as CellShape[])[i % 3]
-              : cellShape;
-            const row2   = Math.floor(i / cols);
-            const col2   = i % cols;
-            const keyIdx = row2 * 4 + col2;
+
+            const type = ps.cells[i] ?? "inactive";
+            const activeCell = ps.active.find(c => c.idx === i) || {
+              idx: i,
+              clicked: true,
+              type: type as any,
+              shape: undefined as any
+            };
+
+            const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
+
             return (
-              <Cell key={i}
-                type={type}
-                animState={anim[i] || null}
-                keyLabel={keyLabels[keyIdx] || ""}
-                showKey={showKeys}
-                pressing={pressing.has(i)}
-                onTap={() => onTap(i)}
-                onHoldStart={() => onHoldStart(i)}
-                onHoldEnd={() => onHoldEnd(i)}
-                colorblind={colorblind}
-                cellShape={mode === "evolve" ? shape : "square"}
-                counterSpinDur={counterSpinDur}
-                iceCount={(activeCell as any)?.iceCount}
-                holdRequired={(activeCell as any)?.holdRequired}
-                holdStart={(activeCell as any)?.holdStart}
-                cellIdx={i}
-                skin={equippedSkin}
+              <Cell 
+                key={i}
+                cell={activeCell}
+                onTap={(idx: number) => onTap(idx)}
+                onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
+                onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
+                colorblindMode={colorblind ? 'colorblind' : ''}
+                showKeyLabel={showKeys}
+                keyLabel={keyLabels[keyIdx] || ''}
+                isPressing={pressing.has(i)}
               />
             );
           })}

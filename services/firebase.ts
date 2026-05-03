@@ -61,7 +61,6 @@ export async function getDB(): Promise<any> {
     return dbInstance;
   } catch (error) {
     console.warn("[DTP-Firebase] init failed:", error);
-    // Try to report to Sentry if available
     try {
       const Sentry = await import("@sentry/react");
       Sentry.captureException(error, { tags: { component: "firebase-init" } });
@@ -70,14 +69,30 @@ export async function getDB(): Promise<any> {
   }
 }
 
+// Lazy Firebase firestore module cache — deduplicates dynamic imports
+let _fbModules: {
+  collection: any; addDoc: any; serverTimestamp: any;
+  query: any; orderBy: any; limit: any; getDocs: any;
+  doc: any; setDoc: any; where: any;
+} | null = null;
+
+async function getFbModules() {
+  if (_fbModules) return _fbModules;
+  const m = await import("firebase/firestore");
+  _fbModules = {
+    collection: m.collection, addDoc: m.addDoc, serverTimestamp: m.serverTimestamp,
+    query: m.query, orderBy: m.orderBy, limit: m.limit, getDocs: m.getDocs,
+    doc: m.doc, setDoc: m.setDoc, where: m.where,
+  };
+  return _fbModules;
+}
+
 export async function fbAddScoreGlobal(
   entry: GlobalScoreEntry,
 ): Promise<void> {
   const db = await getDB();
   if (!db) return;
-  const { collection, addDoc, serverTimestamp } = await import(
-    "firebase/firestore"
-  );
+  const { collection, addDoc, serverTimestamp } = await getFbModules();
   await addDoc(collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: serverTimestamp() });
 }
 
@@ -100,9 +115,7 @@ export async function fbLogEvent(name: string, params: Record<string, string | n
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
   const db = await getDB();
   if (!db) throw new Error("no db");
-  const { collection, query, orderBy, limit, getDocs } = await import(
-    "firebase/firestore"
-  );
+  const { collection, query, orderBy, limit, getDocs } = await getFbModules();
   const q = query(collection(db, "lb_global"), orderBy("score", "desc"), limit(20));
   const snap = await getDocs(q);
   return snap.docs.map((doc: any) => {
@@ -121,9 +134,7 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
   const safeName = name.trim().slice(0, 20);
   if (!db || !safeName) return;
-  const { doc, setDoc, serverTimestamp } = await import(
-    "firebase/firestore"
-  );
+  const { doc, setDoc, serverTimestamp } = await getFbModules();
   await setDoc(doc(db, "dust_wallet", safeName), {
     name: safeName,
     dust: Math.max(0, Math.min(999999, Math.floor(dust))),
@@ -135,9 +146,7 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
   const db = await getDB();
   if (!db) return 0;
   try {
-    const { collection, query, where, orderBy, limit, getDocs } = await import(
-      "firebase/firestore"
-    );
+    const { collection, query, where, orderBy, limit, getDocs } = await getFbModules();
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const q = query(
       collection(db, "lb_global"),

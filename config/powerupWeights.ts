@@ -23,9 +23,11 @@ export const SHOP_THEMES: ShopTheme[] = [
   { id:"default",  name:"Default",  cost:0,    colors:{bg:"#0d0820",purple:"#c026d3",accent:"#f0abfc",text:"#f0eaff"} },
   { id:"neon",     name:"Neon",     cost:400,  colors:{bg:"#001a1a",purple:"#00ffe0",accent:"#00ffa0",text:"#e0fff8"} },
   { id:"midnight", name:"Midnight", cost:300,  colors:{bg:"#060614",purple:"#818cf8",accent:"#c7d2fe",text:"#e0e7ff"} },
-  { id:"pastel",   name:"Pastel",   cost:350,  colors:{bg:"#fdf0ff",purple:"#c084fc",accent:"#f9a8d4",text:"#3b0764"} },
-  { id:"blood",    name:"Blood",    cost:450,  colors:{bg:"#0f0000",purple:"#ef4444",accent:"#fca5a5",text:"#fff0f0"} },
-  { id:"ocean",    name:"Ocean",    cost:375,  colors:{bg:"#000c1a",purple:"#0ea5e9",accent:"#7dd3fc",text:"#e0f7ff"} },
+  { id:"pastel",   name:"Pastel",   cost:150,  colors:{bg:"#f5e6ff",purple:"#c026d3",accent:"#f9a8d4",text:"#2d0a4e",textMuted:"rgba(45,10,78,0.65)"} },
+  { id:"toxic",    name:"Toxic",    cost:200,  colors:{bg:"#021a0a",purple:"#22c55e",accent:"#4ade80",text:"#d1fae5",textMuted:"rgba(209,250,229,0.6)"} },
+  { id:"inferno",  name:"Inferno",  cost:250,  colors:{bg:"#1a0500",purple:"#ef4444",accent:"#fca5a5",text:"#fee2e2",textMuted:"rgba(254,226,226,0.6)"} },
+  { id:"ocean",    name:"Ocean",    cost:200,  colors:{bg:"#020d1a",purple:"#0ea5e9",accent:"#7dd3fc",text:"#e0f2fe",textMuted:"rgba(224,242,254,0.6)"} },
+  { id:"gold",     name:"Gold Rush",cost:300,  colors:{bg:"#1a1200",purple:"#f59e0b",accent:"#fbbf24",text:"#fef3c7",textMuted:"rgba(254,243,199,0.6)"} },
 ];
 
 // ─── Shop items — badges ──────────────────────────────────────────
@@ -97,8 +99,13 @@ export interface ShopBackground {
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
-  { id: "default",     name: "Default",      icon: "🌑", cost: 0,   desc: "Static dark void",            component: "none" },
-  { id: "void-tunnel", name: "Void Tunnel",   icon: "🌀", cost: 400, desc: "Purple rings into infinity",  component: "VoidTunnel" },
-  { id: "star-warp",   name: "Star Warp",     icon: "✨", cost: 350, desc: "Warp speed through the stars", component: "StarWarp" },
-  { id: "grid-pulse",  name: "Grid Pulse",    icon: "⬛", cost: 300, desc: "Neon grid floor receding",    component: "GridPulse" },
+  { id: "default",        name: "Default",          icon: "🌑", cost: 0,   desc: "Static dark void",                  component: "none" },
+  { id: "void-tunnel",    name: "Void Tunnel",       icon: "🌀", cost: 400, desc: "Thick purple shapes spiral inward", component: "VoidTunnel" },
+  { id: "star-warp",      name: "Star Warp",         icon: "✨", cost: 350, desc: "DTP shapes accelerating outward",   component: "StarWarp" },
+  { id: "grid-pulse",     name: "Grid Pulse",        icon: "⬛", cost: 300, desc: "5×5 grid of cells breathing",     component: "GridPulse" },
+  { id: "purple-cascade", name: "Purple Cascade",    icon: "🟣", cost: 200, desc: "Columns of purple shapes falling", component: "PurpleCascade" },
+  { id: "block-orbit",    name: "Block Orbit",       icon: "🌀", cost: 350, desc: "Shapes orbiting in concentric rings", component: "BlockOrbit" },
+  { id: "data-stream",    name: "Data Stream",       icon: "📊", cost: 300, desc: "Matrix-style colored block streams", component: "DataStream" },
+  { id: "cell-breath",    name: "Cell Breath",       icon: "🫁", cost: 250, desc: "A 5×5 grid breathing in waves", component: "CellBreath" },
+  { id: "warp-gate",      name: "Warp Gate",         icon: "⭕", cost: 400, desc: "Concentric rings expanding outward", component: "WarpGate" },
 ];
