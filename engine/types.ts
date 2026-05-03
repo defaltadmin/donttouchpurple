@@ -60,6 +60,7 @@ export interface PlayerState {
   storedFreezeCharges: number;
   storedShieldCharges: number;
   pendingStageUpdate?: boolean;
+  slideAnim?: Record<number, { fromIdx: number; startMs: number }>; // K3: cell shuffle slide
 }
 
 // ─── Rare color mode ──────────────────────────────────────────────
@@ -133,4 +134,5 @@ export type GameEvent =
   | { type: "gameOver";    winner: Winner }
   | { type: "phaseChange"; phase: "playing" | "paused" | "gameover" | "humanlimit" }
   | { type: "dustConsumed"; amount: number }
-  | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number };
+   | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number }
+   | { type: "cellShuffle"; player: 1 | 2; fromIdx: number; toIdx: number }; // K5

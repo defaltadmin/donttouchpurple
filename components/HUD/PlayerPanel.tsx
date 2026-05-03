@@ -105,6 +105,37 @@ export function PlayerPanel({
 
   const cellVar = getDynamicCellVar(cols, rows, is2P, mode);
 
+  // K5: Slide animation helper
+  function getSlideStyle(
+    idx: number,
+    fromIdx: number,
+    cols: number,
+    startMs: number,
+    durationMs: number,
+  ): React.CSSProperties {
+    const elapsed = Date.now() - startMs;
+    const progress = Math.min(1, elapsed / durationMs);
+    // Eased progress (ease-out quad)
+    const eased = 1 - Math.pow(1 - progress, 2);
+
+    const fromRow = Math.floor(fromIdx / cols);
+    const fromCol = fromIdx % cols;
+    const toRow   = Math.floor(idx / cols);
+    const toCol   = idx % cols;
+    const dRow    = fromRow - toRow;
+    const dCol    = fromCol - toCol;
+
+    // Offset in cell units — CSS will interpret via percentage
+    const tx = dCol * (1 - eased) * 100;
+    const ty = dRow * (1 - eased) * 100;
+
+    return {
+      transform: `translate(${tx}%, ${ty}%)`,
+      transition: `transform ${durationMs}ms ease-out`,
+      zIndex: 5,
+    };
+  }
+
   return (
     <div className={`ppanel${!ps.alive ? " ppanel--dead" : ""}`}>
       {label && (
@@ -165,9 +196,16 @@ export function PlayerPanel({
                     />
                   );
                 }
+                // K5: Apply slide animation if cell was shuffled
+                const slideInfo = ps.slideAnim?.[activeCell.idx];
+                const slideStyle = slideInfo
+                  ? getSlideStyle(activeCell.idx, slideInfo.fromIdx, cols, slideInfo.startMs, 200)
+                  : {};
+                const slideClass = slideInfo ? "cell--sliding" : "";
+
                 return (
+                  <div key={i} className={slideClass} style={slideStyle}>
                   <Cell 
-                    key={i}
                     cell={activeCell}
                     onTap={(idx: number) => onTap(idx)}
                     onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
@@ -177,6 +215,7 @@ export function PlayerPanel({
                     keyLabel={keyLabels[keyIdx] || ''}
                     isPressing={pressing.has(i)}
                   />
+                  </div>
                 );
               })()
             );

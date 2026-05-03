@@ -180,7 +180,10 @@ export class GameEngine {
   private listeners: Set<(e: GameEvent) => void> = new Set();
   private botActive      = false;
   private botIntervalRef: ReturnType<typeof setInterval> | null = null;
-  private dustSpentTotal = 0; // Track total dust spent on bot
+  private dustSpentTotal = 0;
+  // K1: cell shuffle state
+  private nextShuffleTick: number = 0;
+  private readonly SHUFFLE_DURATION_MS = 200; // K3: slide animation duration
 
   constructor(private config: GameConfig) {
     this.iMult = config.speedMult;
@@ -201,7 +204,8 @@ export class GameEngine {
     this.spinLevel  = 0;
     this.gameSeed   = forceSeed ?? makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
-    this.rareMode   = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
+    this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
+    this.nextShuffleTick = 40 + Math.floor(Math.random() * 20); // K2: first shuffle at tick 40-60
     // Load stored once, compute deductions, call saveStoredPowerups once for mult deduction if hasMult, once for heart reset if bonusHearts
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     const bonusHearts = (this.config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
@@ -305,6 +309,94 @@ destroy(): void {
     const frozen = this.p1.freezeEnd > now || (this.config.numPlayers === 2 && this.p2.freezeEnd > now);
     const tickForCalc = this.devFreezeTime ? 0 : this.tickCount;
     return computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
+  }
+
+  // K1-K4: Cell shuffle — 1-2 cells slide to adjacent empty positions
+  private tryShuffleCells(ref: PlayerState, pat: { cols: number; rows: number; mask: number[] | null }, player: 1 | 2): void {
+    // K2: only Evolve, stage 3+
+    if (this.config.mode !== "evolve" || ref.gridStage < 3) return;
+    if (this.tickCount < this.nextShuffleTick) return;
+
+    // Schedule next shuffle: 40-60 ticks from now
+    this.nextShuffleTick = this.tickCount + 40 + Math.floor(this.rng() * 20);
+
+    const { cols, rows, mask } = pat;
+    const total = cols * rows;
+    const validSlots = new Set<number>(mask ?? Array.from({ length: total }, (_, i) => i));
+
+    // Find occupied (non-clicked, non-void) and empty valid slots
+    const occupied = new Set<number>(ref.active.filter(c => !c.clicked).map(c => c.idx));
+    const empty = [...validSlots].filter(i => !occupied.has(i));
+    if (empty.length === 0) return;
+
+    // Pick 1-2 cells to shuffle (K1)
+    const shuffleCount = 1 + (this.rng() < 0.35 ? 1 : 0);
+    const candidates = ref.active.filter(c =>
+      !c.clicked &&
+      validSlots.has(c.idx) &&
+      c.type !== "hold" &&   // K4: don't shuffle hold — holdStart would be invalid
+      c.type !== "ice"       // K4: don't shuffle ice — iceCount mid-tap confusing
+    );
+
+    if (candidates.length === 0) return;
+
+    const moved: number[] = [];
+    for (let i = 0; i < Math.min(shuffleCount, candidates.length); i++) {
+      if (empty.length === 0) break;
+
+      // Pick random candidate not already moved
+      const cIdx = Math.floor(this.rng() * candidates.length);
+      const cell  = candidates[cIdx];
+      if (moved.includes(cell.idx)) continue;
+
+      // Pick random adjacent empty slot (prefer adjacency for visual clarity)
+      const adjacent = this.getAdjacentSlots(cell.idx, cols, rows, validSlots)
+        .filter(s => !occupied.has(s) && !moved.includes(s));
+      const targetPool = adjacent.length > 0 ? adjacent : empty.filter(s => !moved.includes(s));
+      if (targetPool.length === 0) continue;
+
+      const toIdx = targetPool[Math.floor(this.rng() * targetPool.length)];
+
+      // K4: retain type and all other properties, only move idx
+      const fromIdx = cell.idx;
+      cell.idx = toIdx;
+      occupied.delete(fromIdx);
+      occupied.add(toIdx);
+      const emptyI = empty.indexOf(toIdx);
+      if (emptyI !== -1) empty.splice(emptyI, 1);
+      empty.push(fromIdx);
+      moved.push(toIdx);
+
+      // K3: record slide animation on PlayerState
+      if (!ref.slideAnim) ref.slideAnim = {};
+      ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now() };
+
+      // Auto-clear slide anim after duration
+      setTimeout(() => {
+        if (ref.slideAnim) delete ref.slideAnim[toIdx];
+        this.dirty = true;
+      }, this.SHUFFLE_DURATION_MS + 50);
+
+      // K5: emit cellShuffle event
+      this.emit({ type: "cellShuffle", player, fromIdx, toIdx });
+    }
+
+    if (moved.length > 0) {
+      ref.cells = activeToCellsP(ref.active, pat);
+      this.dirty = true;
+    }
+  }
+
+  // Helper: get valid adjacent slot indices (4-directional)
+  private getAdjacentSlots(idx: number, cols: number, rows: number, validSlots: Set<number>): number[] {
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+    const adj: number[] = [];
+    if (row > 0)        { const n = idx - cols; if (validSlots.has(n)) adj.push(n); }
+    if (row < rows - 1) { const n = idx + cols; if (validSlots.has(n)) adj.push(n); }
+    if (col > 0)        { const n = idx - 1;    if (validSlots.has(n)) adj.push(n); }
+    if (col < cols - 1) { const n = idx + 1;    if (validSlots.has(n)) adj.push(n); }
+    return adj;
   }
 
   private processTick(): void {
@@ -450,6 +542,16 @@ destroy(): void {
             : { cols: 3, rows: 3, mask: null as number[] | null };
           ref.cells = activeToCellsP(ref.active, pat);
         }
+      }
+    }
+
+    // K1: Cell shuffle — only for p1 in single player (or both in 2P)
+    if (this.config.mode === "evolve") {
+      const shufflePat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
+      if (this.p1.alive) this.tryShuffleCells(this.p1, shufflePat, 1);
+      if (this.config.numPlayers === 2 && this.p2.alive) {
+        const p2Pat = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
+        this.tryShuffleCells(this.p2, p2Pat, 2);
       }
     }
 

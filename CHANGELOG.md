@@ -54,13 +54,13 @@
 - **J6**: All new canvas components use position:fixed + 100vw × 100vh
 - **J7**: AmbientFlow uses 3 shape types (square, diamond, triangle) — no single shape dominates
 
-### Phase K — Grid Slide Mechanic (Rare Activity)
+### Phase K — Grid Slide Mechanic ✅ DONE
 
-- **K1**: New rare grid event: "Cell Shuffle" — during gameplay, 1–2 individual cells in the grid slide to an adjacent empty position (not the whole grid rotating, just single cells relocating)
-- **K2**: Cell Shuffle only occurs in Evolve mode at stage 3+, triggered randomly ~every 40–60 ticks
-- **K3**: Sliding cell shows a smooth CSS transition moving from old position to new position (~200ms)
-- **K4**: Shuffled cell retains its type and timer — only position changes
-- **K5**: Added to `types.ts` as a new event type: `{ type: "cellShuffle"; player: 1|2; fromIdx: number; toIdx: number }`
+- **K1**: tryShuffleCells() method — 1-2 cells slide to adjacent empty slot per trigger
+- **K2**: Only fires in Evolve mode at gridStage >= 3, every 40-60 ticks (nextShuffleTick)
+- **K3**: slideAnim Record<idx, {fromIdx, startMs}> on PlayerState drives CSS translate transition (200ms ease-out)
+- **K4**: Hold and ice cells excluded from shuffle (mid-tap state integrity)
+- **K5**: cellShuffle event added to GameEvent union in types.ts; emitted on each shuffle
 
 ---
 
