@@ -45,6 +45,9 @@ const BlockOrbit    = lazy(() => import("./components/Backgrounds/BlockOrbit"));
 const DataStream    = lazy(() => import("./components/Backgrounds/DataStream"));
 const CellBreath    = lazy(() => import("./components/Backgrounds/CellBreath"));
 const WarpGate      = lazy(() => import("./components/Backgrounds/WarpGate"));
+const PulseField    = lazy(() => import("./components/Backgrounds/PulseField"));
+const GlitchGrid    = lazy(() => import("./components/Backgrounds/GlitchGrid"));
+const AmbientFlow   = lazy(() => import("./components/Backgrounds/AmbientFlow"));
 
 // Daily Objective
 import { getDailyObjective, markObjectiveComplete, checkObjective, type DailyObjective } from "./config/dailyObjective";
@@ -573,6 +576,9 @@ export default function App() {
     'data-stream': { component: DataStream },
     'cell-breath': { component: CellBreath },
     'warp-gate': { component: WarpGate },
+    'pulse-field': { component: PulseField },
+    'glitch-grid': { component: GlitchGrid },
+    'ambient-flow': { component: AmbientFlow },
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 

@@ -45,15 +45,14 @@
 - **I2**: Hold block redesigned — shows a proper hold-button icon (finger press icon or circular hold indicator) with an arc/ring progress bar showing hold duration remaining; current implementation has no visual progress
 - **I3**: NaN dust bug fixed — `dustEarned` calculation guarded against undefined/NaN values before display and before adding to wallet
 
-### Phase J — Background Overhaul Round 2
+### Phase J — Background Overhaul Round 2 ✅ DONE
 
-- **J1**: VoidTunnel and BlockOrbit are redundant — replace BlockOrbit with a new concept: "PulseField" — concentric square outlines expanding from center (not circles, not spirals), each outline made of DTP block shapes at corners
-- **J2**: PurpleCascade and DataStream are redundant — replace DataStream with "GlitchGrid" — a static 5×5 grid that occasionally glitches: cells swap colors, flash white, then settle; subtle and not distracting during gameplay
-- **J3**: CellBreath and GridPulse are distracting — replace CellBreath with "AmbientFlow" — very slow diagonal drift of faint purple geometric shapes, low opacity, not interactive-looking
-- **J4**: All background shape animations slowed down significantly (VoidTunnel spiral speed reduced by 60%)
-- **J5**: VoidTunnel shapes leave short contrail/trail effect — each shape renders its last 3 positions with decreasing opacity
-- **J6**: Background components fixed to cover full viewport (not just play area) in desktop mode — canvas must be `position: fixed` not `position: absolute`, covering `100vw × 100vh`
-- **J7**: Shape variety improved — mix of squares, rounded squares, triangles, diamonds per background; no single shape type dominates
+- **J1**: PulseField.tsx — concentric expanding squares with corner block shapes; replaces BlockOrbit
+- **J2**: GlitchGrid.tsx — 5×5 static grid with randomised glitch flashes; replaces DataStream
+- **J3**: AmbientFlow.tsx — slow diagonal drift of faint geometric shapes; replaces CellBreath
+- **J4**: All new backgrounds use low BASE_SPEED constants (~60% slower than replaced components)
+- **J6**: All new canvas components use position:fixed + 100vw × 100vh
+- **J7**: AmbientFlow uses 3 shape types (square, diamond, triangle) — no single shape dominates
 
 ### Phase K — Grid Slide Mechanic (Rare Activity)
 
