@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { DailyChallenge } from "./DailyChallengesPopup";
+import { playSoundEffect } from "../../hooks/useGameEngine";
 
 // ─── Types ────────────────────────────────────────────────
 export interface WeeklyTask {
@@ -148,7 +149,7 @@ function CheckinTab({ streak, reward, claimed, onClaim }: {
         <button
           className="btn-primary"
           disabled={claimed}
-          onClick={onClaim}
+          onClick={() => { onClaim(); playSoundEffect("claim"); }}
         >
           {claimed ? "✓ Claimed" : "Claim"}
         </button>
@@ -176,7 +177,7 @@ function DailyTab({ challenges, onClaim }: {
           target={c.target}
           completed={c.completed}
           claimed={c.claimed}
-          onClaim={() => onClaim(c.id, c.reward)}
+          onClaim={() => { onClaim(c.id, c.reward); playSoundEffect("claim"); }}
         />
       ))}
     </div>
@@ -202,7 +203,7 @@ function WeeklyTab({ tasks, onClaim }: {
           target={t.target}
           completed={t.completed}
           claimed={t.claimed}
-          onClaim={() => onClaim(t.id, t.reward)}
+          onClaim={() => { onClaim(t.id, t.reward); playSoundEffect("claim"); }}
         />
       ))}
     </div>
