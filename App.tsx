@@ -54,6 +54,7 @@ import { getDailyObjective, markObjectiveComplete, checkObjective, type DailyObj
 
 // Services (lazy loaded - see getFirebase() below)
 import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
+import { safeGetJSON, safeSet } from "./utils/storage";
 
 // Components - Settings & Shop
 import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
@@ -203,7 +204,17 @@ export default function App() {
 
   // Persistence State
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
-  const [dust, setDust] = useState(() => parseInt(localStorage.getItem(LS_KEYS.DUST) || "0"));
+  const [dust, setDust] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.DUST);
+      const parsed = parseInt(raw ?? "0", 10);
+      if (isNaN(parsed) || !isFinite(parsed) || parsed < 0 || parsed > 9_999_999) {
+        localStorage.setItem(LS_KEYS.DUST, "0");
+        return 0;
+      }
+      return parsed;
+    } catch { return 0; }
+  });
   const dustRef = useRef(dust);
   useEffect(() => { dustRef.current = dust; }, [dust]);
   const scoreSubmittedRef = useRef(false);
@@ -969,6 +980,25 @@ export default function App() {
       claimed: claimedIds.includes(t.id),
     }));
   }
+
+  // L7: Auto-check top-10 leaderboard achievement
+  const checkTop10Achievement = useCallback((entries: { score: number; initials: string }[]) => {
+    const inTop10 = entries
+      .slice(0, 10)
+      .some(e => e.initials === playerName && e.score >= (lbMode === "classic" ? best1 : best2));
+    if (!inTop10) return;
+    const now2 = new Date();
+    const weekStart2 = new Date(now2);
+    weekStart2.setDate(now2.getDate() - now2.getDay());
+    const weekKey2 = weekStart2.toISOString().slice(0, 10);
+    const WPK = `dtp-weekly-progress-${weekKey2}`;
+    let wp: Record<string, number> = safeGetJSON(WPK, {});
+    if ((wp['top10'] ?? 0) < 1) {
+      wp['top10'] = 1;
+      safeSet(WPK, JSON.stringify(wp));
+      setWeeklyTasks(buildWeeklyTasks());
+    }
+  }, [playerName, lbMode, best1, best2, buildWeeklyTasks]);
 
   const handleClaimWeekly = (taskId: string, reward: number) => {
     const now = new Date();

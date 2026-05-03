@@ -400,6 +400,7 @@ destroy(): void {
   }
 
   private processTick(): void {
+    try {
     if (this.phase !== "playing") return;
     const mode = this.config.mode;
     this._flushTapBuffer(1);
@@ -565,6 +566,11 @@ destroy(): void {
     }
     this.dirty = true;
     this.emit({ type: "sound", name: "tick" });
+    } catch (err) {
+      console.error("[GameEngine] processTick crashed:", err);
+      this.emit({ type: "toast", message: "⚠️ Engine error — game ended" });
+      this.triggerGameOver();
+    }
   }
 
   handleTap(player: 1 | 2, idx: number): void {
@@ -807,7 +813,8 @@ private triggerGameOver(winner: Winner): void {
   }
 
   startBot(): void {
-    if (this.botActive || this.config.mode !== "evolve") return;
+    if (this.config.mode !== "evolve") return;
+    if (this.botIntervalRef) { clearInterval(this.botIntervalRef); this.botIntervalRef = null; }
     this.botActive = true;
     this.dustSpentTotal = 0;
     this.botIntervalRef = setInterval(() => {

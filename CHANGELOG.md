@@ -135,14 +135,17 @@
 - K4: Hold and ice cells excluded from shuffle (mid-tap state integrity)
 - K5: cellShuffle event added to GameEvent union in types.ts; emitted on each shuffle
 
-### Phase L — Stability, Security & Resilience (pending)
+### Phase L — Stability, Security & Resilience ✅ DONE (new)
 - L1: safeGet/safeSet/safeGetJSON utility — hardens all localStorage access against private mode throws
 - L2: scoreSubmittedRef — prevents duplicate Firestore score writes per session
 - L3: processTick wrapped in try/catch — engine crash triggers graceful game over instead of silent freeze
 - L4: startBot() double-start guard — clears existing botIntervalId before creating new interval
-- L5: Dust init integrity check — clamps to 0 if NaN / negative / >9M on load
+- L5: Dust init integrity check — clamps to 0 if NaN / negative / > 9M on load
 - L6: CSP meta tag in index.html — restricts script/connect sources to self + Firebase
 - L7: checkTop10Achievement() — auto-marks weekly top-10 task when leaderboard fetch confirms it
+
+### v5.5.0 complete ✅
+All phases E–L implemented. Phase L stability additions included.
 
 ---
 
