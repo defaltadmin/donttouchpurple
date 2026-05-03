@@ -155,17 +155,30 @@ export function PlayerPanel({
             const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
             return (
-              <Cell 
-                key={i}
-                cell={activeCell}
-                onTap={(idx: number) => onTap(idx)}
-                onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
-                onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
-                colorblindMode={colorblind ? 'colorblind' : ''}
-                showKeyLabel={showKeys}
-                keyLabel={keyLabels[keyIdx] || ''}
-                isPressing={pressing.has(i)}
-              />
+              (() => {
+                if (activeCell.type === "hold") {
+                  return (
+                    <HoldCellDisplay
+                      key={i}
+                      holdRequired={(activeCell as any).holdRequired ?? 800}
+                      holdStart={(activeCell as any).holdStart}
+                    />
+                  );
+                }
+                return (
+                  <Cell 
+                    key={i}
+                    cell={activeCell}
+                    onTap={(idx: number) => onTap(idx)}
+                    onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
+                    onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
+                    colorblindMode={colorblind ? 'colorblind' : ''}
+                    showKeyLabel={showKeys}
+                    keyLabel={keyLabels[keyIdx] || ''}
+                    isPressing={pressing.has(i)}
+                  />
+                );
+              })()
             );
           })}
           </div>
@@ -182,6 +195,40 @@ export function PlayerPanel({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Hold Cell Display (I2) ───────────────────────────────
+function HoldCellDisplay({ holdRequired, holdStart }: { holdRequired: number; holdStart?: number }) {
+  const [pct, setPct] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (holdStart === undefined) { setPct(0); return; }
+    const animate = () => {
+      const elapsed = Date.now() - holdStart;
+      const p = Math.min(1, elapsed / holdRequired);
+      setPct(p);
+      if (p < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [holdStart, holdRequired]);
+
+  // conic-gradient arc - fills clockwise from top
+  const deg = Math.round(pct * 360);
+  return (
+    <div className="hold-cell">
+      <div
+        className="hold-arc"
+        style={{
+          background: `conic-gradient(var(--accent) ${deg}deg, rgba(255,255,255,0.12) ${deg}deg)`,
+        }}
+      />
+      <div className="hold-icon">
+         {holdStart !== undefined ? "??" : "??"}
+      </div>
     </div>
   );
 }

@@ -456,9 +456,12 @@ export default function App() {
       winner: engineWinner ?? "solo",
       seed: gameSeed ?? 0,
     });
-    const earned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
-    const newDust = dust + earned;
+    const rawEarned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
+    const earned = isNaN(rawEarned) || !isFinite(rawEarned) ? 0 : rawEarned;
+    const baseDust = isNaN(dustRef.current) ? 0 : dustRef.current;
+    const newDust = baseDust + earned;
     setDust(newDust);
+    dustRef.current = newDust;
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
     getFirebase().then(fb => {
       fb.fbSyncDust(playerName, newDust).catch(() => {});
@@ -508,7 +511,8 @@ export default function App() {
         const completed = markObjectiveComplete();
         if (completed) {
           setDailyObjective(completed);
-          const bonusDust = newDust + completed.reward;
+          const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
+          const bonusDust = (isNaN(newDust) ? 0 : newDust) + safeReward;
           setDust(bonusDust);
           localStorage.setItem(LS_KEYS.DUST, bonusDust.toString());
           setTimeout(() => {

@@ -39,7 +39,7 @@
 - **H4**: Bot never taps rare color cell during rare mode (same as G3 — implement once, reference both)
 - **H5**: Bot tap animation: instead of cells silently disappearing, show the circular ripple/pop animation (same as human tap) when bot taps a cell
 
-### Phase I — Cell Tap Animation + Hold Block
+### Phase I — Cell Tap Animation + Hold Block ✅ DONE
 
 - **I1**: Circular ripple animation on cell tap — originates from tap point, expands to cell edges; applies to both human taps and bot taps
 - **I2**: Hold block redesigned — shows a proper hold-button icon (finger press icon or circular hold indicator) with an arc/ring progress bar showing hold duration remaining; current implementation has no visual progress
