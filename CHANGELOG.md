@@ -115,12 +115,12 @@
 - H4: Same fix as G3 — rareColorNow guard in startBot
 - H5: Bot tap triggers pop animation + ok sound
 
-### Phase I — Cell Tap Animation + Hold Block (pending)
+### Phase I — Cell Tap Animation + Hold Block ✅ DONE
 - I1: Circular ripple ::after animation on .cell--pop (CSS-only, 380ms ease-out)
 - I2: Hold block redesigned — conic-gradient arc ring + finger icon via HoldCellDisplay component
 - I3: NaN guards on earned/newDust/bonusDust in handleEngineGameOver; dustRef as source of truth
 
-### Phase J — Background Overhaul Round 2 (pending)
+### Phase J — Background Overhaul Round 2 ✅ DONE
 - J1: PulseField.tsx — concentric expanding squares with corner block shapes; replaces BlockOrbit
 - J2: GlitchGrid.tsx — 5×5 static grid with randomised glitch flashes; replaces DataStream
 - J3: AmbientFlow.tsx — slow diagonal drift of faint geometric shapes; replaces CellBreath
@@ -128,24 +128,12 @@
 - J6: All new canvas components use position:fixed + 100vw × 100vh
 - J7: AmbientFlow uses 3 shape types (square, diamond, triangle)
 
-### Phase K — Grid Slide Mechanic (pending)
+### Phase K — Grid Slide Mechanic ✅ DONE
 - K1: tryShuffleCells() method — 1-2 cells slide to adjacent empty slot per trigger
 - K2: Only fires in Evolve mode at gridStage >= 3, every 40-60 ticks (nextShuffleTick)
 - K3: slideAnim Record<idx, {fromIdx, startMs}> on PlayerState drives CSS translate transition (200ms ease-out)
 - K4: Hold and ice cells excluded from shuffle (mid-tap state integrity)
 - K5: cellShuffle event added to GameEvent union in types.ts; emitted on each shuffle
-
-### Phase L — Stability, Security & Resilience ✅ DONE (new)
-- L1: safeGet/safeSet/safeGetJSON utility — hardens all localStorage access against private mode throws
-- L2: scoreSubmittedRef — prevents duplicate Firestore score writes per session
-- L3: processTick wrapped in try/catch — engine crash triggers graceful game over instead of silent freeze
-- L4: startBot() double-start guard — clears existing botIntervalId before creating new interval
-- L5: Dust init integrity check — clamps to 0 if NaN / negative / > 9M on load
-- L6: CSP meta tag in index.html — restricts script/connect sources to self + Firebase
-- L7: checkTop10Achievement() — auto-marks weekly top-10 task when leaderboard fetch confirms it
-
-### v5.5.0 complete ✅
-All phases E–L implemented. Phase L stability additions included.
 
 ---
 
@@ -1229,3 +1217,26 @@ deploy-ready/
   - `handleEngineGameOver` now checks `gameMode` to update the correct best score (Classic vs Evolve)
   - Previously, p1Score always updated Classic best and p2Score updated Evolve best regardless of actual mode played
   - `App.tsx` lines 276-286
+
+
+## v5.5.0 — 2026-05-04
+
+### Phase M — Sound System Expansion ✅ DONE
+- M1: shuffle sound (descending sine sweep 600→200Hz) added to playSound() in useGameEngine.ts
+- M2: areStart sound (rising triangle arp 440→660→990Hz) added; emitted alongside rareStart event in GameEngine.ts
+- M3: claim sound (two-note chord 880→1100Hz + 1320→1760Hz) added; playSoundEffect() exported for RewardsHub dust claim
+- types.ts: Expanded sound event name union to include "shuffle" | "rareStart" | "claim"
+
+### Phase N — PWA Manifest & Safe-Area Fixes ✅ DONE
+- N1-N3: manifest.json updated with PNG icon entries (192x192, 512x512, maskable 512x512)
+- N3/N4: Safe-area insets added to .toast, .fs-controls, .pause-overlay, .privacy-banner in game.css
+- N2: index.html has CSP meta tag + apple-mobile-web-app-capable (done in Phase L6)
+
+### Phase O — Firestore Rules Hardening ✅ DONE
+- O1: Score cap confirmed at 9999 (firestore.rules line 7)
+- O4: Rate-limit documented — 	s == request.time guard prevents timestamp spoofing
+
+### Phase P — Leaderboard & Cell Fixes ✅ DONE
+- P1: onScoresFetched prop added to LeaderboardPanel.tsx; wired to checkTop10Achievement in App.tsx
+- P2: .cell { overflow: hidden } → overflow: visible in game.css (ripple + slide animations)
+- P3: Set serialization already correct (JSON.stringify/parse) — no change needed
