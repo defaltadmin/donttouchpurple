@@ -65,7 +65,7 @@ export default function StarWarp() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener('resize', resize);
 
@@ -102,7 +102,6 @@ export default function StarWarp() {
 
   return (
     <canvas ref={canvasRef}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-               pointerEvents: 'none', zIndex: -1, opacity: 0.5 }} />
+      className="background-canvas" style={{ opacity: 0.5 }} />
   );
 }

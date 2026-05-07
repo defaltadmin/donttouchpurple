@@ -1,64 +1,54 @@
-import { useRef, useEffect, useCallback } from "react";
+// MatrixRain — columns of falling game symbols in green. No purple.
+import { useRef, useEffect } from "react";
 
-const GRID = 5;
-const GLITCH_INTERVAL = 3200; // ms between glitches
-const GLITCH_DURATION = 400;  // ms the glitch lasts
+const SYMBOLS = "■□◆◇▲△▼▽●○★☆✦✧";
 
-export function GlitchGrid() {
+export default function GlitchGrid() {
   const cvs = useRef<HTMLCanvasElement>(null);
-  const nextGlitch = useRef(Date.now() + GLITCH_INTERVAL * Math.random());
-  const glitchEnd = useRef(0);
-  const cells = useRef<{ color: string; x: number; y: number; w: number; h: number }[]>([]);
-
-  const initCells = useCallback((W: number, H: number) => {
-    const pad = 60;
-    const gw = W - pad * 2, gh = H - pad * 2;
-    const cw = gw / GRID, ch = gh / GRID;
-    cells.current = [];
-    for (let r = 0; r < GRID; r++)
-      for (let c = 0; c < GRID; c++)
-        cells.current.push({
-          color: `hsl(${260 + Math.random() * 60}, 70%, ${35 + Math.random() * 25}%)`,
-          x: pad + c * cw, y: pad + r * ch, w: cw - 2, h: ch - 2,
-        });
-  }, []);
-
-  const draw = useCallback(() => {
-    const c = cvs.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
-    const W = c.width = window.innerWidth, H = c.height = window.innerHeight;
-    const now = Date.now();
-
-    if (now > nextGlitch.current && now > glitchEnd.current) {
-      glitchEnd.current = now + GLITCH_DURATION;
-      nextGlitch.current = now + GLITCH_INTERVAL + Math.random() * 2000;
-      // randomize colors
-      cells.current.forEach(cl => {
-        cl.color = `hsl(${260 + Math.random() * 60}, 70%, ${35 + Math.random() * 25}%)`;
-      });
-    }
-
-    ctx.fillStyle = "rgba(13,13,26,0.22)";
-    ctx.fillRect(0, 0, W, H);
-
-    const isGlitching = now < glitchEnd.current;
-    cells.current.forEach(cl => {
-      ctx.fillStyle = isGlitching && Math.random() > 0.6
-        ? `rgba(255,255,255,${0.3 + Math.random() * 0.4})`
-        : cl.color;
-      ctx.fillRect(cl.x, cl.y, cl.w, cl.h);
-      ctx.strokeStyle = "rgba(192,38,211,0.25)";
-      ctx.strokeRect(cl.x, cl.y, cl.w, cl.h);
-    });
-  }, []);
-
   useEffect(() => {
-    initCells(window.innerWidth, window.innerHeight);
-    let id: number;
-    const loop = () => { draw(); id = requestAnimationFrame(loop); };
-    loop();
-    return () => cancelAnimationFrame(id);
-  }, [draw, initCells]);
+    const c = cvs.current; if (!c) return;
+    const ctx = c.getContext("2d")!;
+    const FONT_SIZE = 16;
 
-  return <canvas ref={cvs} style={{ position: "fixed", width: "100vw", height: "100vh", zIndex: 0, pointerEvents: "none" }} />;
+    interface Col { x: number; y: number; speed: number; chars: string[]; }
+    let cols: Col[] = [];
+
+    const buildCols = () => {
+      const colCount = Math.floor(c.width / FONT_SIZE);
+      cols = Array.from({ length: colCount }, (_, i) => ({
+        x: i * FONT_SIZE,
+        y: -Math.random() * c.height,
+        speed: 0.8 + Math.random() * 1.6,
+        chars: Array.from({ length: 20 }, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]),
+      }));
+    };
+
+    const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; buildCols(); };
+    resize(); window.addEventListener("resize", resize);
+
+    let raf: number;
+    const draw = () => {
+      ctx.fillStyle = "rgba(13,13,26,0.15)";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.font = `${FONT_SIZE}px monospace`;
+      for (const col of cols) {
+        col.chars.forEach((ch, i) => {
+          const cy = col.y - i * FONT_SIZE;
+          if (cy < -FONT_SIZE || cy > c.height) return;
+          const brightness = 1 - i / col.chars.length;
+          ctx.fillStyle = i === 0
+            ? `rgba(200,255,200,${brightness * 0.9})`
+            : `rgba(0,${Math.floor(180 * brightness + 40)},${Math.floor(60 * brightness)},${brightness * 0.7})`;
+          if (Math.random() < 0.02) col.chars[i] = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+          ctx.fillText(ch, col.x, cy);
+        });
+        col.y += col.speed;
+        if (col.y - col.chars.length * FONT_SIZE > c.height) col.y = -Math.random() * c.height * 0.5;
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={cvs} className="background-canvas" />;
 }

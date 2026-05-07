@@ -11,6 +11,7 @@ interface LoginStreakPopupProps {
 // Dust reward per streak day (caps at day 7)
 export function getStreakReward(streak: number): number {
   const rewards = [50, 75, 100, 125, 150, 200, 300];
+  if (!streak || streak < 1) return rewards[0];
   return rewards[Math.min(streak - 1, rewards.length - 1)];
 }
 

@@ -66,8 +66,8 @@ export default function VoidTunnel() {
     if (!ctx) return;
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
     resize();
     window.addEventListener('resize', resize);
@@ -115,8 +115,7 @@ export default function VoidTunnel() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-               pointerEvents: 'none', zIndex: -1, opacity: 0.45 }}
+      className="background-canvas" style={{ opacity: 0.45 }}
     />
   );
 }

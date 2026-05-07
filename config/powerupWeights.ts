@@ -16,7 +16,7 @@ export interface ShopTheme {
   id:     string;
   name:   string;
   cost:   number;
-  colors: { bg: string; purple: string; accent: string; text: string };
+  colors: { bg: string; purple: string; accent: string; text: string; textMuted?: string };
 }
 
 export const SHOP_THEMES: ShopTheme[] = [
@@ -95,7 +95,7 @@ export interface ShopBackground {
   icon: string;
   cost: number;
   desc: string;
-  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "none";
+  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "none";
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
@@ -104,8 +104,8 @@ export const SHOP_BACKGROUNDS: ShopBackground[] = [
   { id: "star-warp",      name: "Star Warp",         icon: "✨", cost: 350, desc: "DTP shapes accelerating outward",   component: "StarWarp" },
   { id: "grid-pulse",     name: "Grid Pulse",        icon: "⬛", cost: 300, desc: "5×5 grid of cells breathing",     component: "GridPulse" },
   { id: "purple-cascade", name: "Purple Cascade",    icon: "🟣", cost: 200, desc: "Columns of purple shapes falling", component: "PurpleCascade" },
-  { id: "block-orbit",    name: "Block Orbit",       icon: "🌀", cost: 350, desc: "Shapes orbiting in concentric rings", component: "BlockOrbit" },
-  { id: "data-stream",    name: "Data Stream",       icon: "📊", cost: 300, desc: "Matrix-style colored block streams", component: "DataStream" },
-  { id: "cell-breath",    name: "Cell Breath",       icon: "🫁", cost: 250, desc: "A 5×5 grid breathing in waves", component: "CellBreath" },
-  { id: "warp-gate",      name: "Warp Gate",         icon: "⭕", cost: 400, desc: "Concentric rings expanding outward", component: "WarpGate" },
+  { id: "block-orbit",    name: "Lightning",          icon: "🌀", cost: 350, desc: "Electric bolts tear through the dark", component: "BlockOrbit" },
+  { id: "data-stream",    name: "Matrix Rain",       icon: "📊", cost: 300, desc: "Game symbols cascade in green", component: "DataStream" },
+  { id: "cell-breath",    name: "Neon Pulse",        icon: "🫁", cost: 250, desc: "Cyan scanlines sweep the dark", component: "CellBreath" },
+  { id: "warp-gate",      name: "Hex Grid",          icon: "⭕", cost: 400, desc: "Honeycomb pulses in shifting color", component: "WarpGate" },
 ];

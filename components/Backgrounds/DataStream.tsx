@@ -10,22 +10,24 @@ export default function DataStream() {
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
-    const resize = () => { c.width=c.offsetWidth; c.height=c.offsetHeight; };
-    resize(); window.addEventListener('resize',resize);
-
     const cols: Column[] = [];
-    for (let x=0; x<c.width; x+=CELL+GAP) {
-      const len = 3+Math.floor(Math.random()*6);
-      cols.push({
-        x,
-        cells: Array.from({length:len},(_,i)=>({
-          y: -i*(CELL+GAP)-Math.random()*c.height,
-          color: COLORS[Math.floor(Math.random()*COLORS.length)],
-          opacity: (len-i)/len,
-        })),
-        speed: 1+Math.random()*1.5,
-      });
-    }
+    const buildCols = () => {
+      cols.length = 0;
+      for (let x=0; x<c.width; x+=CELL+GAP) {
+        const len = 3+Math.floor(Math.random()*6);
+        cols.push({
+          x,
+          cells: Array.from({length:len},(_,i)=>({
+            y: -i*(CELL+GAP)-Math.random()*c.height,
+            color: COLORS[Math.floor(Math.random()*COLORS.length)],
+            opacity: (len-i)/len,
+          })),
+          speed: 1+Math.random()*1.5,
+        });
+      }
+    };
+    const resize = () => { c.width=window.innerWidth; c.height=window.innerHeight; buildCols(); };
+    resize(); window.addEventListener('resize',resize);
 
     let raf: number;
     const draw = () => {
@@ -44,5 +46,5 @@ export default function DataStream() {
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
   }, []);
-  return <canvas ref={ref} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:-1,opacity:0.45}} />;
+  return <canvas ref={ref} className="background-canvas" style={{opacity:0.45}} />;
 }

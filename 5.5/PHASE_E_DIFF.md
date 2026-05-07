@@ -1,4 +1,4 @@
-# Phase E — App.tsx diff instructions (apply manually or via Gemini CLI)
+# Phase E — App.tsx diff instructions 
 
 ## 1. Add import near other screen imports (after DailyChallengesPopup import)
 

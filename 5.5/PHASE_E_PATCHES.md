@@ -1,4 +1,4 @@
-# Phase E — Rewards Hub — Gemini CLI Patch Blocks
+# Phase E — Rewards Hub —  Patch Blocks
 # Apply each block in order. Run `.\node_modules\.bin\vite.cmd build` after all blocks applied.
 
 ## FILE: src/components/Screens/RewardsHub.tsx

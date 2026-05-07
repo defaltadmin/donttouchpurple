@@ -1,42 +1,78 @@
-import React, { useEffect, useRef } from 'react';
+// HexGrid — honeycomb of hexes that pulse to random accent colors. No purple.
+import { useRef, useEffect } from "react";
 
-const RING_COLORS = ['#c026d3','#7c3aed','#db2777','#9333ea','#a21caf'];
+const ACCENT = ["#3b82f6","#06b6d4","#f97316","#22c55e","#eab308","#ec4899"];
 
 export default function WarpGate() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
-    const ctx = c.getContext('2d')!;
-    const resize = () => { c.width=c.offsetWidth; c.height=c.offsetHeight; };
-    resize(); window.addEventListener('resize',resize);
+    const ctx = c.getContext("2d")!;
 
-    const RING_COUNT = 7;
-    const rings = Array.from({length:RING_COUNT},(_,i)=>({
-      r: (i/RING_COUNT)*Math.max(c.width,c.height)*0.6,
-      color: RING_COLORS[i%RING_COLORS.length],
-    }));
-    const SPEED = 1.2;
-    const MAX_R = Math.max(c.width,c.height)*0.75;
+    interface Hex { cx: number; cy: number; color: string; alpha: number; targetAlpha: number; nextPulse: number; }
+    let hexes: Hex[] = [];
+    const R = 32;
+
+    const buildHexes = (W: number, H: number) => {
+      hexes = [];
+      const hw = R * 2; const hh = Math.sqrt(3) * R;
+      for (let row = -1; row < H / hh + 2; row++) {
+        for (let col = -1; col < W / (hw * 0.75) + 2; col++) {
+          hexes.push({
+            cx: col * hw * 0.75,
+            cy: row * hh + (col % 2 === 0 ? 0 : hh / 2),
+            color: ACCENT[Math.floor(Math.random() * ACCENT.length)],
+            alpha: 0.03 + Math.random() * 0.06,
+            targetAlpha: 0.03 + Math.random() * 0.06,
+            nextPulse: Date.now() + Math.random() * 4000,
+          });
+        }
+      }
+    };
+
+    const resize = () => {
+      c.width = window.innerWidth; c.height = window.innerHeight;
+      buildHexes(c.width, c.height);
+    };
+    resize(); window.addEventListener("resize", resize);
+
+    function drawHex(cx: number, cy: number, r: number) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 3) * i - Math.PI / 6;
+        i === 0 ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+                : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      }
+      ctx.closePath();
+    }
+
     let raf: number;
-
     const draw = () => {
-      const w=c.width, h=c.height;
-      ctx.clearRect(0,0,w,h);
-      for (const ring of rings) {
-        ring.r += SPEED;
-        if (ring.r > MAX_R) ring.r = 0;
-        const progress = ring.r/MAX_R;
-        ctx.globalAlpha = (1-progress)*0.5;
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 3*(1-progress*0.6);
-        ctx.beginPath();
-        ctx.arc(w/2,h/2,ring.r,0,Math.PI*2);
+      ctx.fillStyle = "rgba(13,13,26,0.12)";
+      ctx.fillRect(0, 0, c.width, c.height);
+      const now = Date.now();
+      for (const h of hexes) {
+        if (now > h.nextPulse) {
+          h.color = ACCENT[Math.floor(Math.random() * ACCENT.length)];
+          h.targetAlpha = 0.12 + Math.random() * 0.22;
+          h.nextPulse = now + 1500 + Math.random() * 5000;
+        }
+        h.alpha += (h.targetAlpha - h.alpha) * 0.04;
+        if (Math.abs(h.alpha - h.targetAlpha) < 0.001) h.targetAlpha = 0.03 + Math.random() * 0.05;
+        drawHex(h.cx, h.cy, R - 2);
+        ctx.globalAlpha = h.alpha;
+        ctx.fillStyle = h.color;
+        ctx.fill();
+        ctx.globalAlpha = 0.15;
+        ctx.strokeStyle = h.color;
+        ctx.lineWidth = 0.5;
         ctx.stroke();
       }
-      ctx.globalAlpha=1; raf=requestAnimationFrame(draw);
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
-  return <canvas ref={ref} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:-1,opacity:0.6}} />;
+  return <canvas ref={ref} className="background-canvas" />;
 }

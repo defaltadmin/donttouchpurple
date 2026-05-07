@@ -25,7 +25,7 @@ export default function PurpleCascade() {
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
-    const resize = () => { c.width=c.offsetWidth; c.height=c.offsetHeight; };
+    const resize = () => { c.width=window.innerWidth; c.height=window.innerHeight; };
     resize(); window.addEventListener('resize', resize);
     const drops: Drop[] = Array.from({length:70}, ()=>makeDrop(c.width, c.height));
     let raf: number;
@@ -42,5 +42,5 @@ export default function PurpleCascade() {
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
   }, []);
-  return <canvas ref={ref} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:-1,opacity:0.45}} />;
+  return <canvas ref={ref} className="background-canvas" style={{opacity:0.45}} />;
 }

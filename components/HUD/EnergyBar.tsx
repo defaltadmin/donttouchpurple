@@ -6,6 +6,7 @@ interface EnergyBarProps {
   energyLastRegen: number;
   onRefill: () => void;
   onRefillFull: () => void;
+  onEnergyIconClick?: () => void;
   dust: number;
 }
 
@@ -14,6 +15,7 @@ export function EnergyBar({
   energyLastRegen,
   onRefill,
   onRefillFull,
+  onEnergyIconClick,
   dust,
 }: EnergyBarProps) {
   const [now, setNow] = useState(Date.now());
@@ -31,12 +33,17 @@ export function EnergyBar({
 
   return (
     <div className="energy-bar-wrap">
-      <div className="energy-pips">
+      <div className="energy-pips" onClick={onEnergyIconClick} style={{ cursor: onEnergyIconClick ? "pointer" : "default" }}>
         {Array.from({ length: GAME.MAX_ENERGY }, (_, i) => (
           <span
             key={i}
             className={`energy-pip${i < energy ? " energy-pip--full" : " energy-pip--empty-click"}`}
-            onClick={() => i >= energy && dust >= GAME.DUST_PER_ENERGY && onRefill()}
+            onClick={(e) => {
+              if (i >= energy && dust >= GAME.DUST_PER_ENERGY) {
+                e.stopPropagation();
+                onRefill();
+              }
+            }}
             title={i >= energy && dust >= GAME.DUST_PER_ENERGY ? `Refill this pip — 💜${GAME.DUST_PER_ENERGY}` : undefined}
           >
             ⚡
