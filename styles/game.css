@@ -21,6 +21,9 @@
   --panel-blur: 18px;
   --font-game: 'Fredoka One', 'Nunito', system-ui, sans-serif;
   --font-ui: 'Nunito', system-ui, sans-serif;
+  --motion-scale: 1;
+  --particles-enabled: 1;
+  --focus-ring: 2px solid var(--theme-accent, #9d4edd);
 }
 
 .light-theme {
@@ -3208,4 +3211,204 @@ body { background-color: var(--bg); }
   .gpanel { border-width: 1px; }
   .hud-card { border-width: 1px; }
   .menu-card { border-width: 1px; }
+}
+
+/* ── Pause Overlay (alternate) ── */
+.dtp-pause-overlay {
+  position: fixed; inset: 0; background: rgba(8, 8, 20, 0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dtp-pause-card {
+  background: var(--theme-bg, #121220); border: 1px solid var(--theme-border, #2a2a40);
+  padding: 2rem; border-radius: 16px; text-align: center; max-width: 320px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6); transform: scale(calc(1 - (1 - var(--motion-scale, 1)) * 0.95));
+}
+.dtp-pause-hint { opacity: 0.6; font-size: 0.85rem; margin: 0.5rem 0 1.5rem; }
+.dtp-pause-actions { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.dtp-btn {
+  padding: 0.75rem 1.5rem; border: none; border-radius: 10px; font-weight: 600;
+  cursor: pointer; transition: transform 0.15s ease, box-shadow 0.2s ease, opacity calc(0.15s * var(--motion-scale));
+}
+.dtp-btn:hover { transform: translateY(-2px); }
+.dtp-btn-primary { background: var(--theme-primary, #8a2be2); color: #fff; box-shadow: 0 4px 12px rgba(138,43,226,0.3); }
+.dtp-btn-secondary { background: transparent; border: 1px solid var(--theme-border, #2a2a40); color: var(--theme-text, #e0e0e0); }
+.dtp-btn:active { transform: translateY(0); }
+
+.keyboard-nav-active *:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── FPS Monitor ── */
+.dtp-fps-monitor {
+  position: fixed; top: 8px; right: 8px;
+  background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px;
+  border-radius: 6px; font-family: monospace; font-size: 12px;
+  z-index: 10000; pointer-events: none; backdrop-filter: blur(2px);
+}
+.dtp-fps-good { color: #4ade80; }
+.dtp-fps-med { color: #fbbf24; }
+.dtp-fps-low { color: #ef4444; }
+
+/* Touch feedback */
+.game-grid-cell:active, .dtp-btn:active {
+  transform: scale(0.96);
+  filter: brightness(0.9);
+  transition: transform 0.05s ease, filter 0.05s ease;
+}
+
+/* ── A11y utilities ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── Crash boundary ── */
+.dtp-crash-boundary {
+  position: fixed; inset: 0; background: rgba(10,10,20,0.95); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 99999; padding: 2rem; text-align: center;
+}
+.dtp-crash-msg { max-width: 500px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+.dtp-crash-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.dtp-btn-tertiary { background: transparent; color: var(--theme-text, #ccc); border: 1px dashed var(--theme-border, #444); }
+
+/* Skip Link (A11y Best Practice) */
+.skip-link {
+  position: absolute; top: -40px; left: 0; background: var(--theme-primary, #8a2be2);
+  color: #fff; padding: 8px 12px; z-index: 10001; transition: top 0.2s;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Settings Modal (Batch 4) ── */
+.dtp-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(5,5,15,0.85); z-index: 10000;
+  display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.dtp-modal {
+  background: var(--theme-bg, #121220); border: 1px solid var(--theme-border, #2a2a40);
+  padding: 1.5rem; border-radius: 12px; width: 90%; max-width: 360px; color: #e0e0e0;
+}
+.dtp-setting-row { display: flex; justify-content: space-between; align-items: center; margin: 1rem 0; }
+.dtp-toggle {
+  padding: 0.4rem 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
+  transition: background 0.2s;
+}
+.dtp-toggle.on { background: var(--theme-primary, #8a2be2); color: #fff; }
+.dtp-toggle.off { background: #333; color: #aaa; }
+input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px; }
+
+/* ─── Locale Selector ────────────────────────────── */
+.dtp-locale-wrapper { position: relative; display: inline-flex; align-items: center; }
+.dtp-locale-btn { background: transparent; border: 1px solid var(--theme-border, #333); color: var(--theme-text, #ccc); padding: 0.3rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; line-height: 1; white-space: nowrap; }
+.dtp-locale-btn:hover { background: rgba(255,255,255,0.05); }
+.dtp-locale-list { position: absolute; top: 110%; left: 0; background: var(--theme-bg, #121220); border: 1px solid var(--theme-border, #333); border-radius: 8px; list-style: none; padding: 0.4rem 0; z-index: 10001; min-width: 120px; }
+.dtp-locale-list button { display: block; width: 100%; padding: 0.4rem 0.8rem; background: none; border: none; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.8rem; }
+.dtp-locale-list button:hover { background: rgba(255,255,255,0.05); }
+
+/* ─── Gamepad Badge ──────────────────────────────── */
+.dtp-gamepad-badge { position: fixed; bottom: 12px; left: 12px; background: rgba(0,0,0,0.6); color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; pointer-events: none; z-index: 9999; }
+
+/* ─── High-Contrast Mode ─────────────────────────── */
+@media (prefers-contrast: high) {
+  :root { --focus-ring: 3px solid #fff; --theme-border: #fff; }
+  .dtp-btn { border: 2px solid currentColor !important; }
+  .game-grid-cell { border: 1px solid rgba(255,255,255,0.5); }
+}
+
+/* ─── Skeleton Loader ────────────────────────────── */
+.dtp-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px; min-height: 100px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.dtp-loading-placeholder { display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--theme-text-muted, #888); }
+
+/* Focus restoration on route/modal close */
+*:focus:focus-visible { outline-offset: 3px; }
+
+/* ─── Achievement Toasts ─────────────────────────── */
+.dtp-toast-stack { position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.dtp-toast-achievement { display: flex; align-items: center; gap: 12px; background: rgba(15,15,30,0.92); border-left: 3px solid #fbbf24; padding: 12px 16px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); animation: slideIn 0.4s ease-out forwards, fadeOut 0.5s 3s ease-in forwards; }
+.dtp-toast-icon { font-size: 1.5rem; }
+.dtp-toast-content { display: flex; flex-direction: column; color: #fff; }
+.dtp-toast-content strong { font-size: 0.95rem; }
+.dtp-toast-content small { opacity: 0.7; font-size: 0.75rem; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
+
+.dtp-daily-badge { position: fixed; bottom: 12px; right: 12px; background: #065f46; color: #a7f3d0; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; z-index: 9999; animation: pulse 2s infinite; }
+
+/* ─── Share Modal ──────────────────────────────── */
+.dtp-share-modal {
+  background: var(--theme-bg, #121220); border: 1px solid var(--theme-border, #2a2a40);
+  padding: 1.5rem; border-radius: 12px; max-width: 420px; text-align: center; color: #e0e0e0;
+}
+.dtp-share-preview { max-width: 100%; border-radius: 8px; margin: 1rem 0; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.dtp-share-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.dtp-icon-btn {
+  background: transparent; border: 1px solid transparent; font-size: 1.2rem; padding: 0.3rem; cursor: pointer; border-radius: 4px; transition: background 0.15s;
+}
+.dtp-icon-btn:hover { background: rgba(255,255,255,0.05); }
+
+/* ─── Safe Area & Touch Optimization ──────────── */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+.dtp-btn { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+
+/* ─── Rotation Prompt ─────────────────────────── */
+.dtp-rotate-overlay {
+  position: fixed; inset: 0; background: #000; z-index: 999999;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+.dtp-rotate-card { text-align: center; color: #fff; padding: 2rem; }
+.dtp-rotate-icon { font-size: 4rem; display: block; margin-bottom: 1rem; animation: swing 2s infinite ease-in-out; }
+@keyframes swing { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+
+/* ─── GPU Containment ─────────────────────────── */
+.game-grid-cell, .dtp-btn, .dtp-panel {
+  contain: layout style paint;
+  will-change: transform, opacity;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ─── Dev Overlay (lightweight) ────────────────── */
+.dtp-dev-overlay {
+  position: fixed; bottom: 60px; left: 10px; background: rgba(0,0,0,0.85); color: #0f0;
+  padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; z-index: 10002;
+  border: 1px solid #0f0; max-width: 220px;
+}
+.dtp-dev-grid { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.dtp-dev-btn { background: #333; color: #fff; border: 1px solid #555; padding: 4px 8px; cursor: pointer; font-size: 11px; border-radius: 4px; }
+.dtp-dev-btn:hover { background: #555; }
+
+/* ─── Print Fallback ──────────────────────────── */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .game-root, .dtp-btn, .dtp-hud, .dtp-overlay { display: none !important; }
+  .dtp-share-modal, .dtp-score-preview { display: block !important; position: static !important; }
+  @page { margin: 0; }
+}
+
+/* ─── Final Safe-Area & Notch Polish ──────────── */
+@media (display-mode: standalone) {
+  .game-root { padding-top: var(--safe-top, 0); padding-bottom: var(--safe-bottom, 0); }
+}
+
+/* ─── Reduced Data Preference ─────────────────── */
+@media (prefers-reduced-data: reduce) {
+  .particle-layer, .bg-animated, .dtp-toast-achievement { display: none !important; }
 }

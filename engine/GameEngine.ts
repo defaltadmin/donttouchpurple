@@ -3,6 +3,21 @@ import { STAGES, EVOLVE_PATTERNS, RARE_COLORS, getRareModeConfig } from "../conf
 import { POWERUP_TABLE } from "../config/powerupWeights";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
 import { logError } from "../utils/devLog";
+import { InputBuffer } from "../utils/input-smoothing";
+import { haptics } from "../utils/haptics";
+import { sessionManager } from "../utils/session";
+import { scoreSync } from "../utils/score-sync";
+import { audioEngine } from "../utils/audio";
+import { analytics } from "../utils/analytics";
+import { gamepadManager } from "../utils/gamepad";
+import { configManager } from "../utils/game-config";
+import { errorTracker } from "../utils/error-tracker";
+import { DynamicDifficulty } from "../utils/dda";
+import { achievementSystem } from "../utils/achievements";
+import { DailyChallenge } from "../utils/seed-challenge";
+import { perfMonitor } from "../utils/perf-monitor";
+import { scoreCardGen } from "../utils/score-card";
+import { privacyManager } from "../utils/privacy";
 import type {
   ActiveCell, CellType, CellShape, GameConfig, GameEvent,
   GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
@@ -180,6 +195,13 @@ export class GameEngine {
   private botAssistActive: { 1: boolean; 2: boolean } = { 1: false, 2: false };
 
   private listeners: Set<(e: GameEvent) => void> = new Set();
+  private _pauseListeners: Array<() => void> = [];
+  private _resumeListeners: Array<() => void> = [];
+  private inputBuffer = new InputBuffer();
+  private _sessionAutoSaveInterval: ReturnType<typeof setInterval> | null = null;
+  private fpsHistory: number[] = [];
+  private autoLowQuality = false;
+  private lowQualityThreshold = 40;
   private botActive      = false;
   private botIntervalRef: ReturnType<typeof setInterval> | null = null;
   private dustSpentTotal = 0;
@@ -190,13 +212,65 @@ export class GameEngine {
   private bossEvent: BossEvent | null = null;
   private nextBossTriggerScore = 500;
   private activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null = null;
+  private _settingsUnsub: (() => void) | null = null;
+  private _gamepadUnsub: (() => void) | null = null;
+  private _lastFocusedCell = '0';
+  private _config = configManager.get();
+  private dda = new DynamicDifficulty(1200);
+  private daily = new DailyChallenge();
+  private _lastTapTime = 0;
+  private _sessionStartTime = performance.now();
 
   constructor(private config: GameConfig) {
+    perfMonitor.observe();
+    this._sessionStartTime = performance.now();
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
-    // Don't call makePS here — start() will do it properly
-    // This avoids redundant storage reads and potential confusion with bonusHearts/hasMult
+    achievementSystem.load();
+    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '💥', unlocked: false });
+    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '🛡️', unlocked: false });
+    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '📅', unlocked: false });
+    audioEngine.init();
+    import('../utils/settings').then(m => {
+      this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
+    });
+    gamepadManager.init();
+    this._gamepadUnsub = gamepadManager.on((btn, state) => {
+      if (state !== 'press') return;
+      if (btn === 'a' || btn === 'dpad_up') this.handleTap(1, parseInt(this._lastFocusedCell) || 0);
+      if (btn === 'start') this.paused ? this.resume() : this.pause();
+    });
   }
+
+  private _applySettings(s: { reducedMotion?: boolean }) {
+    // Bridge settings to engine behavior if needed
+  }
+
+  setConfig(cfg: typeof this._config) { this._config = cfg; }
+
+  handleError(err: Error, phase: string) {
+    errorTracker.capture(err, { phase, tick: this.tickCount, p1Score: this.p1?.score, p2Score: this.p2?.score });
+    if (this.phase === "playing") {
+      this.pause();
+    }
+  }
+
+  getDDASpawnRate() { return this.dda.spawnRate; }
+  isDailyComplete() { return this.daily.isTodayComplete(); }
+
+  async generateScoreCard(score: number): Promise<string> {
+    return scoreCardGen.generate({
+      score,
+      hearts: this.p1?.health ?? 0,
+      time: Math.round(this.tickCount / 2),
+      rank: score > 5000 ? 'S' : score > 3000 ? 'A' : score > 1000 ? 'B' : 'C',
+      seed: this.daily.getSeed() || 'casual'
+    });
+  }
+
+  isTelemetryAllowed() { return privacyManager.getConsent(); }
+  exportUserData() { return privacyManager.getAllData(); }
+  wipeUserData(keepSettings: boolean) { privacyManager.deleteAll(keepSettings); }
 
   start(forceSeed?: number): void {
     this.stop();
@@ -229,6 +303,7 @@ export class GameEngine {
     this.emitSnapshot();
     this.scheduleTick();
     this.startSnapshotRaf();
+    analytics.track('game_start', { mode: this.config.mode, seed: this.gameSeed });
   }
 
   stop(): void {
@@ -242,9 +317,19 @@ export class GameEngine {
     }
   }
 
+  private lastFrameTime = 0;
+
   private startSnapshotRaf(): void {
-    const loop = () => {
+    this.lastFrameTime = performance.now();
+    const loop = (timestamp: number) => {
       if (this.rafId === null) return;
+      if (this.lastFrameTime > 0) {
+        const frameTime = timestamp - this.lastFrameTime;
+        if (this.phase === "playing") {
+          this.updatePerformanceMetrics(frameTime);
+        }
+      }
+      this.lastFrameTime = timestamp;
       if (this.dirty && this.phase !== "gameover") {
         this.dirty = false;
         this.emitSnapshot();
@@ -275,6 +360,7 @@ export class GameEngine {
     this.phase  = "paused";
     if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
     this.dirty = true;
+    this._pauseListeners.forEach(fn => fn());
     this.emit({ type: "phaseChange", phase: "paused" });
     this.emitSnapshot();
   }
@@ -285,15 +371,19 @@ export class GameEngine {
     this.phase  = "playing";
     this.scheduleTick();
     this.dirty = true;
+    this._resumeListeners.forEach(fn => fn());
     this.emit({ type: "phaseChange", phase: "playing" });
     this.emitSnapshot();
   }
 
+  onPause(cb: () => void): void { this._pauseListeners.push(cb); }
+  onResume(cb: () => void): void { this._resumeListeners.push(cb); }
+
 destroy(): void {
-    // Clear all hold timers to prevent memory leaks
+    this._settingsUnsub?.();
+    this._gamepadUnsub?.();
     this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
     this.holdTimers.clear();
-    // Clear any pending taps
     this.tapBuffer = { 1: null, 2: null };
     this.stop();
     this.listeners.clear();
@@ -640,6 +730,7 @@ destroy(): void {
     this.emit({ type: "sound", name: "tick" });
     } catch (err) {
       logError("[GameEngine] processTick crashed:", err);
+      errorTracker.capture(err instanceof Error ? err : new Error(String(err)), { phase: 'processTick', tick: this.tickCount });
       this.emit({ type: "toast", message: "⚠️ Engine error — game ended" });
       this.triggerGameOver(null);
     }
@@ -647,6 +738,9 @@ destroy(): void {
 
   handleTap(player: 1 | 2, idx: number): void {
     if (this.phase !== "playing") return;
+    const cellId = `p${player}-${idx}`;
+    if (!this.inputBuffer.register(cellId)) return;
+    haptics.tap();
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref || !ref.alive) return;
     this.tapBuffer[player] = { idx, ts: Date.now() };
@@ -740,6 +834,12 @@ destroy(): void {
       if ([5, 10, 25, 50].includes(ref.streak)) this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` });
       if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "❤️ Last heart!" });
       this.checkStageProgress(player);
+      const now = performance.now();
+      const reaction = this._lastTapTime ? now - this._lastTapTime : 0;
+      this._lastTapTime = now;
+      if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
+      achievementSystem.check('first_blood', () => true);
+      achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
     }
     ref.cells = activeToCellsP(ref.active, pat);
     this.dirty = true;
@@ -861,6 +961,51 @@ destroy(): void {
   devSpawnPowerup(type: "shield" | "freeze" | "heart"): void { this.devForcedPwr = type; }
   getDevRotationSpeed(): number { return this.devRotationSpeed; }
 
+  updatePerformanceMetrics(frameTime: number): void {
+    const fps = 1000 / Math.max(frameTime, 1);
+    this.fpsHistory.push(fps);
+    if (this.fpsHistory.length > 60) this.fpsHistory.shift();
+    const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
+    if (!this.autoLowQuality && avgFps < this.lowQualityThreshold) {
+      this.autoLowQuality = true;
+      document.documentElement.style.setProperty('--particles-enabled', '0');
+      document.documentElement.style.setProperty('--motion-scale', '0.5');
+      this.emit({ type: "qualityDowngrade", reason: "fps-drop", avgFps } as any);
+    } else if (this.autoLowQuality && avgFps > 50) {
+      this.autoLowQuality = false;
+      document.documentElement.style.setProperty('--particles-enabled', '1');
+      document.documentElement.style.setProperty('--motion-scale', '1');
+      this.emit({ type: "qualityUpgrade", avgFps } as any);
+    }
+  }
+
+  getAutoLowQuality(): boolean { return this.autoLowQuality; }
+
+  startSessionPersistence(): void {
+    if (this._sessionAutoSaveInterval) return;
+    this._sessionAutoSaveInterval = setInterval(() => {
+      if (this.phase === "playing" && !this.paused && this.p1.alive) {
+        sessionManager.save({
+          hearts: this.p1.health,
+          score: this.p1.score,
+          timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
+          isPaused: this.paused
+        }, { theme: (this as any)._currentThemeId, difficulty: this.config.mode });
+      }
+    }, 5000);
+  }
+
+  stopSessionPersistence(): void {
+    if (this._sessionAutoSaveInterval) {
+      clearInterval(this._sessionAutoSaveInterval);
+      this._sessionAutoSaveInterval = null;
+    }
+  }
+
+  submitScoreToLeaderboard(score: number): void {
+    scoreSync.queue(score);
+  }
+
   getSnapshot(): GameSnapshot {
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const cloneActive = (active: ActiveCell[]): ActiveCell[] => active.map(c => ({ ...c }));
@@ -977,6 +1122,12 @@ private triggerGameOver(winner: Winner): void {
     });
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver", winner });
+    analytics.track('game_over', { score: this.p1.score, mode: this.config.mode, winner });
+    this.dda.reset(this._config.grid.spawnRateMs);
+    if (!this.daily.isTodayComplete()) {
+      this.daily.markComplete(this.p1.score, this.tickCount);
+      achievementSystem.unlock('daily_master');
+    }
   }
 
   startBot(): void {

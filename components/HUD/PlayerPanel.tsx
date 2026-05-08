@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import Cell from "../Cell";
 import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
@@ -59,7 +59,7 @@ export interface PlayerPanelProps {
 }
 
 // ─── PlayerPanel ──────────────────────────────────────────────────
-export function PlayerPanel({
+export const PlayerPanel = memo(function PlayerPanel({
   ps, anim, onTap, onHoldStart, onHoldEnd,
   keyLabels, showKeys, pressing,
   label, heartAnim, mode,
@@ -251,7 +251,7 @@ export function PlayerPanel({
       )}
     </div>
   );
-}
+});
 
 // ─── Hold Cell Display (I2) ───────────────────────────────
 function HoldCellDisplay({

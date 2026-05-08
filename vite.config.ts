@@ -2,6 +2,8 @@
 import { defineConfig, splitVendorChunkPlugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync, writeFileSync } from 'fs'
+import { visualizer } from 'rollup-plugin-visualizer'
+import compression from 'vite-plugin-compression'
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
@@ -10,6 +12,9 @@ export default defineConfig({
   plugins: [
     react(),
     splitVendorChunkPlugin(),
+    compression({ algorithm: 'brotliCompress', threshold: 10240 }),
+    compression({ algorithm: 'gzip' }),
+    visualizer({ open: false, filename: 'dist/stats.html' }),
     {
       name: 'sw-version-inject',
       writeBundle() {
@@ -30,26 +35,38 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   build: {
-    // Minify with esbuild (default) — ensure it runs
-    minify: 'esbuild',
-    // Raise chunk warning threshold (Sentry is legitimately large)
+    target: 'es2020',
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: { compress: { drop_console: true, drop_debugger: true } },
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        // Manual chunk splitting — keeps game engine + React in fast-loading chunks
-        // Sentry loads lazily so it won't block FCP
         manualChunks(id) {
           if (id.includes('@sentry')) return 'sentry';
           if (id.includes('firebase')) return 'firebase';
           if (id.includes('gameanalytics')) return 'analytics';
-          if (id.includes('node_modules')) return 'vendor';
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'react-vendor';
+            if (id.includes('lucide') || id.includes('icon')) return 'ui-icons';
+            return 'vendor';
+          }
+          if (id.includes('engine/') || id.includes('utils/')) return 'game-core';
+          if (id.includes('components/') || id.includes('hooks/')) return 'app-ui';
         },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
-    // Enable CSS code splitting
     cssCodeSplit: true,
-    // Sourcemaps only in dev
-    sourcemap: false,
+  },
+  server: {
+    headers: {
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'X-Frame-Options': 'DENY',
+    }
   },
   test: {
     environment: 'jsdom',
@@ -70,4 +87,3 @@ export default defineConfig({
     },
   },
 })
-

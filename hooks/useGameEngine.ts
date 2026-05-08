@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GameEngine } from "../engine/GameEngine";
+import { sessionManager } from "../utils/session";
+import { scoreSync } from "../utils/score-sync";
+import { logger } from "../utils/logger";
 import type { GameConfig, GameEvent, GameSnapshot, Winner, StoredPowerups } from "../engine/types";
 import { LS_KEYS, GAME } from "../config/difficulty";
 
@@ -169,6 +172,9 @@ export interface UseGameEngineReturn {
   setBotAssist: (player: 1 | 2, enabled: boolean) => void;
   botAssistActive: { 1: boolean; 2: boolean };
   lastGameScore: number | null;
+  getAutoLowQuality: () => boolean;
+  submitScoreToLeaderboard: (score: number) => void;
+  restoreSession: () => boolean;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────
@@ -338,6 +344,8 @@ export function useGameEngine(
 
     return () => {
       mountedRef.current = false;
+      engine.stopSessionPersistence();
+      sessionManager.clear();
       unsub();
       engine.destroy();
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
@@ -354,14 +362,6 @@ export function useGameEngine(
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
     };
   }, [config.mode, config.numPlayers, config.speedMult]);
-
-  const start = useCallback((forceSeed?: number) => {
-    setWinner(null);
-    setLastGameScore(null);
-    setRareSplash(null);
-    setLevelUpBadge(null);
-    engineRef.current?.start(forceSeed);
-  }, []);
 
   const startBot = useCallback(() => engineRef.current?.startBot(), []);
   const stopBot  = useCallback(() => engineRef.current?.stopBot(), []);
@@ -386,12 +386,36 @@ export function useGameEngine(
   const devSetFreezeTime= useCallback((v: boolean) => engineRef.current?.devSetFreezeTime(v), []);
   const devSetRotationSpeed = useCallback((v: number) => engineRef.current?.devSetRotationSpeed(v), []);
   const devSpawnPowerup = useCallback((type: "shield" | "freeze" | "heart") => engineRef.current?.devSpawnPowerup(type), []);
+  const getAutoLowQuality = useCallback(() => engineRef.current?.getAutoLowQuality() ?? false, []);
+
+  const submitScoreToLeaderboard = useCallback((score: number) => {
+    engineRef.current?.submitScoreToLeaderboard(score);
+  }, []);
+
+  const restoreSession = useCallback((): boolean => {
+    const session = sessionManager.load();
+    if (session && engineRef.current) {
+      logger.info('Restored game session', { score: session.engineSnapshot.score });
+      return true;
+    }
+    return false;
+  }, []);
+
+  const wrappedStart = useCallback((forceSeed?: number) => {
+    setWinner(null);
+    setLastGameScore(null);
+    setRareSplash(null);
+    setLevelUpBadge(null);
+    engineRef.current?.start(forceSeed);
+    engineRef.current?.startSessionPersistence();
+  }, []);
 
   return {
     snapshot, heartAnimP1, heartAnimP2, shakeGrid1, shakeGrid2, toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
-    start, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
+    start: wrappedStart, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     startBot, stopBot, isBotActive, setBotAssist, botAssistActive,
+    getAutoLowQuality, submitScoreToLeaderboard, restoreSession,
   };
 }

@@ -11,7 +11,15 @@
     "build": "tsc && vite build",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "deploy": "pnpm build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath htdocs.zip -Force\"",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
+    "prepare": "husky install",
+    "lint-staged": "lint-staged",
+    "ship": "bash scripts/ship.sh",
+    "release:patch": "npm version patch && git push && git push --tags",
+    "release:minor": "npm version minor && git push && git push --tags",
+    "release:major": "npm version major && git push && git push --tags"
   },
   "dependencies": {
     "@microsoft/clarity": "^1.0.2",
@@ -30,8 +38,11 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "1.6.1",
     "jsdom": "^29.0.2",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "terser": "^5.47.1",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
+    "vite-plugin-compression": "^0.5.1",
     "vitest": "^1.6.1"
   }
 }

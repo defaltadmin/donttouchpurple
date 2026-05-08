@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import "./styles/game.css";
 import "./styles/enhancements.css";
+import { logger } from "./utils/logger";
+import { sessionManager } from "./utils/session";
+import { settingsManager } from "./utils/settings";
+import { analytics } from "./utils/analytics";
+import { audioEngine } from "./utils/audio";
+import { i18n, type Locale } from "./utils/i18n";
+import { Preloader } from "./utils/preloader";
+import { gamepadManager } from "./utils/gamepad";
+import { configManager } from "./utils/game-config";
+import { errorTracker } from "./utils/error-tracker";
+import { LazyHydrate } from "./utils/lazy-hydrate";
+import { achievementSystem } from "./utils/achievements";
+import { scoreCardGen } from "./utils/score-card";
+import { privacyManager } from "./utils/privacy";
+import { TouchGesture } from "./utils/gestures";
+import { orientationMonitor } from "./utils/orientation";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -207,6 +223,18 @@ export default function App() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadDone, setLoadDone] = useState(false);
   const [showNameEntry, setShowNameEntry] = useState(false);
+  const [currentLocale, setCurrentLocale] = useState<Locale>(i18n.current);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [gamepadActive, setGamepadActive] = useState(false);
+  const [achievementQueue, setAchievementQueue] = useState<any[]>([]);
+  const [dailyComplete, setDailyComplete] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [showRotatePrompt, setShowRotatePrompt] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && localStorage.getItem('dtp:dev') === 'true');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preloaderRef = useRef(new Preloader());
 
   // Persistence State
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
@@ -472,10 +500,16 @@ export default function App() {
     const [showEnergyPopup, setShowEnergyPopup] = useState(false);
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showFps, setShowFps] = useState(() => localStorage.getItem('showFps') === 'true');
+  const [fps, setFps] = useState(0);
+  const fpsFrameRef = useRef(0);
+  const lastFpsTimeRef = useRef<number>(performance.now());
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(dust);
   const pbFlashedRef = useRef(false);
   const [gameOverProgress, setGameOverProgress] = useState(0);
+  const [liveMessage, setLiveMessage] = useState('');
 
   const saveShopDataState = useCallback((data: ShopData) => {
     saveShopData(data);
@@ -753,6 +787,9 @@ export default function App() {
     startBot, stopBot, isBotActive,
     setBotAssist, botAssistActive,
     lastGameScore,
+    getAutoLowQuality,
+    submitScoreToLeaderboard,
+    restoreSession,
   } = useGameEngine(
     engineConfig,
     handleEngineGameOver,
@@ -777,6 +814,14 @@ export default function App() {
       safeSentry.addBreadcrumb({ category: "game", message: "bomb_defused", level: "info" });
     },
   );
+
+  // Session restore on mount
+  useEffect(() => {
+    const restored = restoreSession();
+    if (restored) {
+      toast$("📦 Progress restored from last session!");
+    }
+  }, [restoreSession, toast$]);
 
   const handleBotToggle = useCallback((player: 1 | 2) => {
     const currentDust = dustRef.current;
@@ -806,6 +851,28 @@ export default function App() {
     'ambient-flow': { component: AmbientFlow },
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
+
+  const [settings, setSettings] = useState(settingsManager.get());
+  useEffect(() => {
+    const unsub = settingsManager.subscribe(s => { setSettings(s); });
+    return () => { unsub(); };
+  }, []);
+
+  // First-interaction audio init
+  const handleFirstInteraction = useCallback(() => {
+    audioEngine.init();
+    window.removeEventListener('click', handleFirstInteraction);
+    window.removeEventListener('keydown', handleFirstInteraction);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('click', handleFirstInteraction, { once: true });
+    window.addEventListener('keydown', handleFirstInteraction, { once: true });
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, [handleFirstInteraction]);
 
   const snapshotRef = useRef(snapshot);
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
@@ -853,6 +920,74 @@ export default function App() {
     setPaused(true);
   }, [pauseEngine]);
 
+  // Reduced Motion CSS Vars
+  useEffect(() => {
+    const handleMotionPref = (e: MediaQueryListEvent) => {
+      document.documentElement.style.setProperty('--motion-scale', e.matches ? '0' : '1');
+      document.documentElement.style.setProperty('--particles-enabled', e.matches ? '0' : '1');
+    };
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    document.documentElement.style.setProperty('--motion-scale', prefersReduced.matches ? '0' : '1');
+    document.documentElement.style.setProperty('--particles-enabled', prefersReduced.matches ? '0' : '1');
+    prefersReduced.addEventListener('change', handleMotionPref);
+    return () => prefersReduced.removeEventListener('change', handleMotionPref);
+  }, []);
+
+  // Visibility/Unload safety
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden' && snapshotRef.current?.phase === "playing") {
+        const snap = snapshotRef.current;
+        sessionManager.save({
+          hearts: snap.p1.health,
+          score: snap.p1.score,
+          timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick,
+          isPaused: snap.paused
+        });
+      }
+    };
+    const handleUnload = () => {
+      if (snapshotRef.current?.phase === "playing") {
+        navigator.sendBeacon?.('/api/telemetry', JSON.stringify({ event: 'tab_close', ts: Date.now() }));
+      }
+    };
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, []);
+
+  // Focus trap for pause overlay
+  const focusTrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!paused || !focusTrapRef.current) return;
+    const container = focusTrapRef.current;
+    const focusable = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', trap);
+    return () => document.removeEventListener('keydown', trap);
+  }, [paused]);
+
+  // Live region timer
+  useEffect(() => {
+    if (!liveMessage) return;
+    const id = setTimeout(() => setLiveMessage(''), 2000);
+    return () => clearTimeout(id);
+  }, [liveMessage]);
+
   const closeSettings = useCallback(() => {
     setShowSettings(false);
     if (settingsFromPause && paused) {
@@ -862,6 +997,21 @@ export default function App() {
   }, [settingsFromPause, paused]);
 
   // Dev Events
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setShowDevPanel(prev => {
+          const next = !prev;
+          localStorage.setItem('dtp:dev', String(next));
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   useEffect(() => {
     const s = (e: CustomEvent) => devForceStage(e.detail);
     const p = (e: CustomEvent) => devForcePattern(e.detail);
@@ -928,10 +1078,10 @@ export default function App() {
   useEffect(() => { setAudioVolume(volume); }, [volume]);
   useEffect(() => { setHapticsEnabled(haptics); }, [haptics]);
 
-  // Escape key → pause/resume
+  // Keyboard shortcuts → pause/resume
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if ((e.key === "Escape" || e.key === "p" || e.key === "P") && document.activeElement?.tagName !== "INPUT") {
         if (screen === "playing" && snapshot?.phase === "playing") { pauseGame(); return; }
         if (screen === "playing" && paused) { resumeGame(); return; }
       }
@@ -946,6 +1096,42 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [screen, paused, snapshot?.phase, pauseGame, resumeGame, handleBotToggle]);
+
+  // FPS Monitor
+  useEffect(() => {
+    if (!showFps) return;
+    let frameId = 0;
+    let frameCount = 0;
+    let lastTime = performance.now();
+    const loop = () => {
+      const now = performance.now();
+      const delta = now - lastTime;
+      if (delta >= 500) {
+        setFps(Math.round(1000 / (delta / (frameCount || 1))));
+        lastTime = now;
+        frameCount = 0;
+      }
+      frameCount++;
+      frameId = requestAnimationFrame(loop);
+    };
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [showFps]);
+
+  // F key → toggle FPS overlay
+  useEffect(() => {
+    const handleFpsKey = (e: KeyboardEvent) => {
+      if (e.key === 'f' || e.key === 'F') {
+        setShowFps(prev => {
+          const next = !prev;
+          localStorage.setItem('showFps', String(next));
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleFpsKey);
+    return () => window.removeEventListener('keydown', handleFpsKey);
+  }, []);
 
   // Personal best delta flash
   useEffect(() => {
@@ -1009,6 +1195,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const pl = preloaderRef.current;
+    pl.setProgress((pct) => setLoadProgress(Math.round(pct * 100)));
+    pl.loadAll().finally(() => {});
+
     let p = 0;
     const interval = setInterval(() => {
       p += 8;
@@ -1019,10 +1209,107 @@ export default function App() {
         if (!playerName) setShowNameEntry(true);
         else setTimeout(() => setAppReady(true), 600);
       }
-      setLoadProgress(p);
+      setLoadProgress((prev) => Math.min(100, Math.max(prev, p)));
     }, 80);
     return () => clearInterval(interval);
   }, [playerName]);
+
+  useEffect(() => {
+    configManager.load();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: ErrorEvent) => {
+      errorTracker.capture(e.error || new Error(e.message), { source: e.filename, line: e.lineno });
+    };
+    window.addEventListener('error', handler);
+    return () => window.removeEventListener('error', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => setCurrentLocale((e as CustomEvent<Locale>).detail);
+    window.addEventListener('dtp:locale-change', handler);
+    return () => window.removeEventListener('dtp:locale-change', handler);
+  }, []);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }, { once: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    const unsub = gamepadManager.on((btn, state) => {
+      if (state === 'press') setGamepadActive(true);
+    });
+    if (gamepadManager.connected) setGamepadActive(true);
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const processQueue = () => {
+      const raw = localStorage.getItem('dtp:achievement-toasts');
+      if (!raw) return;
+      const queue = JSON.parse(raw);
+      if (queue.length > 0) {
+        setAchievementQueue(prev => [...prev, queue[0]]);
+        localStorage.setItem('dtp:achievement-toasts', JSON.stringify(queue.slice(1)));
+        toastTimer.current = setTimeout(processQueue, 3500);
+      }
+    };
+    processQueue();
+    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
+  }, []);
+
+  useEffect(() => {
+    const checkDaily = () => {
+      const saved = localStorage.getItem('dtp:daily');
+      if (saved) {
+        try {
+          const { seed, completed } = JSON.parse(saved);
+          const today = new Date().toISOString().split('T')[0];
+          const expected = btoa(today + '-donttouchpurple-daily').slice(0, 12);
+          setDailyComplete(seed === expected && completed);
+        } catch { setDailyComplete(false); }
+      }
+    };
+    checkDaily();
+    const onDaily = () => setDailyComplete(true);
+    window.addEventListener('dtp:daily-complete', onDaily);
+    return () => window.removeEventListener('dtp:daily-complete', onDaily);
+  }, []);
+
+  const handleShareScore = useCallback(async (score: number, hearts: number, time: number) => {
+    try {
+      const url = await scoreCardGen.generate({ score, hearts, time, seed: '' });
+      setShareUrl(url);
+      setShowShare(true);
+    } catch (e) { logger.error('Share generation failed', e); }
+  }, []);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('dtp:telemetry-consent');
+    if (consent === null) privacyManager.setConsent(false);
+  }, []);
+
+  useEffect(() => {
+    const unsub = orientationMonitor.onChange(isLand => {
+      setShowRotatePrompt(isLand);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const gesture = new TouchGesture(containerRef.current);
+    const unsub = gesture.on('double-tap', () => {
+      if (paused) resumeGame();
+      else pauseGame();
+    });
+    return () => { unsub(); gesture.destroy(); };
+  }, [paused, resumeGame, pauseGame]);
 
   const startGame = useCallback(() => {
     if (!practiceMode && energyData.count <= 0) {
@@ -1385,13 +1672,22 @@ export default function App() {
   }
 
   return (
-    <div className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}`}
+    <div ref={containerRef} className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
       <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
+
+      {showFps && (
+        <div className="dtp-fps-monitor" aria-live="off" aria-label="Performance Monitor">
+          <span className={`dtp-fps-value ${fps < 30 ? 'dtp-fps-low' : fps < 50 ? 'dtp-fps-med' : 'dtp-fps-good'}`}>
+            {fps} FPS
+          </span>
+          <small>Auto-Q: {getAutoLowQuality() ? '⬇️ Low' : '✅ Full'}</small>
+        </div>
+      )}
 
       <ColorblindFilters />
       
@@ -1446,6 +1742,55 @@ export default function App() {
 
       {showTutorial && <EvolveTutorial isOpen={showTutorial} onClose={handleTutorialClose} />}
       {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
+
+      {settingsOpen && (
+        <div className="dtp-modal-backdrop" onClick={() => setSettingsOpen(false)} aria-hidden="true">
+          <div className="dtp-modal" role="dialog" aria-modal="true" aria-label="Game Settings" onClick={e => e.stopPropagation()}>
+            <h2>Settings</h2>
+            <div className="dtp-setting-row">
+              <label>Master Volume</label>
+              <input type="range" min="0" max="1" step="0.1" value={settings.masterVolume}
+                     onChange={e => settingsManager.set({ masterVolume: parseFloat(e.target.value) })} />
+            </div>
+            <div className="dtp-setting-row">
+              <label>Haptics</label>
+              <button onClick={() => settingsManager.set({ hapticsEnabled: !settings.hapticsEnabled })}
+                      className={`dtp-toggle ${settings.hapticsEnabled ? 'on' : 'off'}`}>
+                {settings.hapticsEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label>Show FPS</label>
+              <button onClick={() => settingsManager.set({ showFps: !settings.showFps })}
+                      className={`dtp-toggle ${settings.showFps ? 'on' : 'off'}`}>
+                {settings.showFps ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label>Reduced Motion</label>
+              <button onClick={() => settingsManager.set({ reducedMotion: !settings.reducedMotion })}
+                      className={`dtp-toggle ${settings.reducedMotion ? 'on' : 'off'}`}>
+                {settings.reducedMotion ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <button className="dtp-btn dtp-btn-secondary" onClick={() => setSettingsOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {showShare && shareUrl && (
+        <div className="dtp-modal-backdrop" onClick={() => setShowShare(false)} aria-hidden="true">
+          <div className="dtp-share-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+            <h2>Share Score</h2>
+            <img src={shareUrl} alt="Score card" className="dtp-share-preview" />
+            <div className="dtp-share-actions">
+              <button onClick={() => { navigator.clipboard?.writeText(window.location.href); }} className="dtp-btn dtp-btn-primary">Copy Link</button>
+              <a href={shareUrl} download="donttouchpurple-score.png" className="dtp-btn dtp-btn-secondary">Download PNG</a>
+              <button onClick={() => setShowShare(false)} className="dtp-btn dtp-btn-tertiary">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showSettings && (
         <Suspense fallback={<div className="loading-placeholder">Loading settings...</div>}>
@@ -1506,8 +1851,13 @@ export default function App() {
         </div>
       )}
 
+      {/* Live region for screen readers */}
+      <div className="sr-only" aria-live="assertive" aria-atomic="true">
+        {liveMessage}
+      </div>
+
       {paused && (
-        <div className="pause-overlay">
+        <div className="pause-overlay" ref={focusTrapRef}>
           <div className="pause-card">
             <div className="pause-title">⏸ PAUSED</div>
             <div className="pause-hud-grid">
@@ -1602,6 +1952,22 @@ export default function App() {
             {snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop" ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
           </span>
         </span>
+        <div className="dtp-locale-wrapper">
+          <button className="dtp-locale-btn" onClick={() => setShowLangMenu(!showLangMenu)} aria-haspopup="true" aria-expanded={showLangMenu}>
+            🌐 {currentLocale.toUpperCase()}
+          </button>
+          {showLangMenu && (
+            <ul className="dtp-locale-list" role="menu">
+              {(i18n.getAvailable() as Locale[]).map(lang => (
+                <li key={lang} role="menuitem">
+                  <button onClick={() => { i18n.set(lang); setShowLangMenu(false); }}>
+                    {lang === 'en' ? 'English' : lang === 'es' ? 'Español' : lang === 'ja' ? '日本語' : lang === 'pt' ? 'Português' : 'Français'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
           <div className="dust-counter"><DustWidget dust={dust} /></div>
@@ -1688,6 +2054,20 @@ export default function App() {
           pendingReplaySeed={pendingReplaySeed}
           onClearReplaySeed={clearReplaySeed}
         />
+      )}
+
+      {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
+      {showDevPanel && import.meta.env.DEV && (
+        <div className="dtp-dev-overlay" aria-hidden="true">
+          <h4>Dev Mode</h4>
+          <div className="dtp-dev-grid">
+            <label><input type="checkbox" checked={showFps} onChange={() => setShowFps(!showFps)} /> FPS</label>
+            <label><input type="checkbox" checked={showDevPanel} onChange={() => { setShowDevPanel(false); localStorage.removeItem('dtp:dev'); }} /> Disable Dev</label>
+            <button onClick={() => { localStorage.clear(); location.reload(); }} className="dtp-dev-btn">Clear Storage & Reload</button>
+            <button onClick={() => settingsManager.set({ ...settingsManager.get() })} className="dtp-dev-btn">Re-apply Settings</button>
+          </div>
+          <small>Ctrl+Shift+D to toggle</small>
+        </div>
       )}
 
       {/* DevOverlay — eliminated from prod bundle by Rollup dead-code elimination */}
@@ -1797,6 +2177,7 @@ export default function App() {
                 dustEarned={isNaN(dust - dustAtStartRef.current) ? 0 : dust - dustAtStartRef.current}
                 objectiveProgress={gameOverProgress}
                 />
+              <button className="dtp-icon-btn" onClick={() => handleShareScore(snapshot.p1.score, snapshot.p1.health, snapshot.tick)} title="Share Score" style={{marginTop:8}}>Share Score</button>
             </div>
           )}
           
@@ -1851,6 +2232,34 @@ export default function App() {
               dust={dust} />
           )}
           </GridErrorBoundary>        </div>
+      )}
+
+      {gamepadActive && <div className="dtp-gamepad-badge">🎮 Gamepad Active</div>}
+
+      {achievementQueue.length > 0 && (
+        <div className="dtp-toast-stack" aria-live="polite">
+          {achievementQueue.map((a, i) => (
+            <div key={a.id} className="dtp-toast-achievement" style={{ animationDelay: `${i * 0.1}s` }}>
+              <span className="dtp-toast-icon">{a.icon}</span>
+              <div className="dtp-toast-content">
+                <strong>🏆 {a.name}</strong>
+                <small>{a.desc}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {dailyComplete && <div className="dtp-daily-badge" title="Daily Challenge Complete">✅ Daily Done</div>}
+
+      {showRotatePrompt && (
+        <div className="dtp-rotate-overlay" role="alert" aria-live="polite">
+          <div className="dtp-rotate-card">
+            <span className="dtp-rotate-icon">📱↔️📱</span>
+            <h3>Rotate Your Device</h3>
+            <p>Please play in portrait mode for the best experience.</p>
+          </div>
+        </div>
       )}
 
       {/* PWA Install Banner */}

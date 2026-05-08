@@ -191,7 +191,11 @@ describe("GameEngine", () => {
     it("decrements and removes ice cells on multiple taps", () => {
       engine.start();
       const snapshot = engine.getSnapshot();
-      snapshot.p1.active = [{ idx: 0, clicked: false, type: "ice", iceCount: 2 }];
+      // Add extra cell so grid doesn't regenerate when ice cell is cleared (all-clicked check)
+      snapshot.p1.active = [
+        { idx: 0, clicked: false, type: "ice", iceCount: 2 },
+        { idx: 1, clicked: false, type: "white" },
+      ];
       (engine as any).p1 = snapshot.p1;
       
       // _processTap is private, but engine.handleTap calls it
@@ -199,6 +203,8 @@ describe("GameEngine", () => {
       expect((engine.getSnapshot().p1.active[0] as IceCell).iceCount).toBe(1);
       expect(engine.getSnapshot().p1.active[0].clicked).toBe(false);
       
+      // Clear input buffer between taps (InputBuffer uses performance.now() which is not faked by vitest)
+      (engine as any).inputBuffer.clear();
       engine.handleTap(1, 0);
       expect(engine.getSnapshot().p1.active[0].clicked).toBe(true);
     });
