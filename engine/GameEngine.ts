@@ -14,6 +14,7 @@ import { configManager } from "../utils/game-config";
 import { errorTracker } from "../utils/error-tracker";
 import { DynamicDifficulty } from "../utils/dda";
 import { seedManager } from "../utils/seed-manager";
+import { bossEngine } from "../utils/boss-engine";
 import { achievementSystem } from "../utils/achievements";
 import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
@@ -228,6 +229,7 @@ export class GameEngine {
   private _tickSoundCounter = 0;
   private _deltaTimers: Array<{ id: string; remaining: number; duration: number; callback: () => void }> = [];
   private _lastTickTs = performance.now();
+  private _bossActive = false;
 
   constructor(private config: GameConfig) {
     perfMonitor.observe();
@@ -242,6 +244,7 @@ export class GameEngine {
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
     }).catch(e => logError('Settings module failed', e));
+    window.addEventListener('dtp:boss:complete', () => { this._bossActive = false; });
     gamepadManager.init();
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
@@ -294,6 +297,7 @@ export class GameEngine {
     this.spinLevel  = 0;
     this._lastTickTs = performance.now();
     this._deltaTimers = [];
+    this._bossActive = false;
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
@@ -792,6 +796,11 @@ destroy(): void {
       }
     }
 
+    if (mode === "evolve" && !this._bossActive && !this.bossEvent && this.p1.score > 100 && this.p1.score % 300 < 4 && this.rng() < 0.35) {
+      this._bossActive = true;
+      bossEngine.activate(5 + Math.floor(this.rng() * 3));
+    }
+
     this.tickCount += 1;
     if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
     if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
@@ -911,9 +920,11 @@ destroy(): void {
         } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
       } else {
       cell.clicked = true; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop");
+      if (this._bossActive) bossEngine.onSafeTap();
       rhythmFeedback.recordTap();
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
-      ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
+      const bossMult = this._bossActive ? bossEngine.combo.multiplier : 1;
+      ref.score += mult * bossMult; ref.streak += 1; ref.stageProgress += 1;
       if ([5, 10, 25, 50].includes(ref.streak)) this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` });
       if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "❤️ Last heart!" });
       this.checkStageProgress(player);

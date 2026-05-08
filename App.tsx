@@ -19,6 +19,7 @@ import { TouchGesture } from "./utils/gestures";
 import { orientationMonitor } from "./utils/orientation";
 import { stateGuard } from "./utils/state-guard";
 import { rhythmFeedback } from "./utils/feedback-rhythm";
+import { AssetGate } from "./utils/preloader-v2";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -238,6 +239,11 @@ export default function App() {
   const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
+  const assetGateRef = useRef(new AssetGate());
+  const [bossUi, setBossUi] = useState<{ active: boolean; shieldHits: number; maxShield: number; phase: number }>({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
+  const [comboPop, setComboPop] = useState(false);
+  const [gateReady, setGateReady] = useState(false);
+  const [gateLoadPct, setGateLoadPct] = useState(0);
 
   // Persistence State
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
@@ -1223,6 +1229,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const gate = assetGateRef.current;
+    gate.setProgress(setGateLoadPct);
+    gate.loadAll().then(() => setGateReady(true));
+  }, []);
+
+  useEffect(() => {
     const pl = preloaderRef.current;
     pl.setProgress((pct) => setLoadProgress(Math.round(pct * 100)));
     pl.loadAll().finally(() => {});
@@ -1264,6 +1276,27 @@ export default function App() {
     const handler = (e: Event) => setCombo((e as CustomEvent).detail);
     window.addEventListener('dtp:combo', handler);
     return () => window.removeEventListener('dtp:combo', handler);
+  }, []);
+
+  useEffect(() => {
+    const onBossUpdate = (e: Event) => setBossUi((e as CustomEvent).detail);
+    const onBossActivate = (e: Event) => setBossUi((e as CustomEvent).detail);
+    const onBossBreak = () => setComboPop(true);
+    const onComboKill = () => { setComboPop(true); setTimeout(() => setComboPop(false), 1500); };
+    const onBossComplete = () => setBossUi({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
+
+    window.addEventListener('dtp:boss:update', onBossUpdate);
+    window.addEventListener('dtp:boss:activate', onBossActivate);
+    window.addEventListener('dtp:boss:shield-break', onBossBreak);
+    window.addEventListener('dtp:combo:kill', onComboKill);
+    window.addEventListener('dtp:boss:complete', onBossComplete);
+    return () => {
+      window.removeEventListener('dtp:boss:update', onBossUpdate);
+      window.removeEventListener('dtp:boss:activate', onBossActivate);
+      window.removeEventListener('dtp:boss:shield-break', onBossBreak);
+      window.removeEventListener('dtp:combo:kill', onComboKill);
+      window.removeEventListener('dtp:boss:complete', onBossComplete);
+    };
   }, []);
 
   useEffect(() => {
@@ -1688,6 +1721,10 @@ export default function App() {
     ? "clamp(58px, 14vw, 78px)"
     : "clamp(52px, min(16vw,16vh), 80px)";
 
+  if (!gateReady) {
+    return <div className="dtp-gate-screen">Loading Assets... {Math.round(gateLoadPct * 100)}%</div>;
+  }
+
   if (!appReady) {
     return (
       <LoadingScreen
@@ -1753,6 +1790,16 @@ export default function App() {
           {snapshot.bossEvent.type === "blackout"  && "🌑 BLACKOUT — SURVIVE IN THE DARK! 🌑"}
         </div>
       )}
+
+      {/* Shield Boss UI */}
+      {bossUi.active && (
+        <div className="dtp-boss-bar" aria-label="Boss Shield Health">
+          <div className="dtp-boss-label">⚔️ BOSS PHASE {bossUi.phase}</div>
+          <div className="dtp-boss-track"><div className="dtp-boss-fill" style={{ width: `${(bossUi.shieldHits / bossUi.maxShield) * 100}%` }} /></div>
+          <div className="dtp-boss-hp">{bossUi.shieldHits}/{bossUi.maxShield}</div>
+        </div>
+      )}
+      {comboPop && <div className="dtp-combo-popup">⚡ COMBO x2 ⚡</div>}
 
       {showPrivacy && (
         <PrivacyBanner onDismiss={() => {

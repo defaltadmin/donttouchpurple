@@ -1,0 +1,11 @@
+:root {
+  --bg: #0a0a14; --panel: #121220; --border: #2a2a40; --text: #e0e0e0; --text-muted: #888;
+  --primary: #8a2be2; --accent: #fbbf24; --danger: #ef4444; --success: #4ade80;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); overflow: hidden; height: 100dvh; }
+#root { height: 100%; display: flex; flex-direction: column; }
+button { cursor: pointer; border: none; font: inherit; color: inherit; background: transparent; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

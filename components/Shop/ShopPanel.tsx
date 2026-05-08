@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS } from "../../config/powerupWeights";
 
 interface StoredPowerups {
@@ -55,6 +55,22 @@ export function ShopPanel({
     return "backgrounds";
   });
   const [buyAnim, setBuyAnim] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewTimeoutRef = useRef<number | null>(null);
+
+  const handlePreview = useCallback((themeId: string) => {
+    if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
+    const originalTheme = shopData.equippedTheme;
+    const updated = { ...shopData, equippedTheme: themeId };
+    saveShopData(updated);
+    setPreviewId(themeId);
+
+    previewTimeoutRef.current = window.setTimeout(() => {
+      const restored = { ...shopData, equippedTheme: originalTheme };
+      saveShopData(restored);
+      setPreviewId(null);
+    }, 10000);
+  }, [shopData, saveShopData]);
 
   const spend = (cost: number): boolean => {
     if (devMode) return true;
@@ -141,6 +157,10 @@ export function ShopPanel({
 
   const stored = loadStoredPowerups();
 
+  useEffect(() => {
+    return () => { if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current); };
+  }, []);
+
   return (
     <div className="lb-wrap screen-slide scrollable-screen">
       <div className="lb-header">
@@ -180,6 +200,14 @@ export function ShopPanel({
                       💜 {theme.cost}
                     </button>
                   )}
+                  <button
+                    className={`btn-ghost btn-sm${previewId === theme.id ? ' previewing' : ''}`}
+                    style={{ fontSize: 11, padding: "4px 12px" }}
+                    onClick={() => handlePreview(theme.id)}
+                    disabled={previewId !== null}
+                  >
+                    {previewId === theme.id ? '👁️ Previewing...' : '🔍 Try Now'}
+                  </button>
                 </div>
               );
             })}
