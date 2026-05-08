@@ -35,6 +35,7 @@ export type HoldCell = BaseCell & {
   type: "hold";
   holdRequired: number;
   holdStart?: number;
+  spawnedAt: number;   // timestamp — hold cell expires if never started within holdRequired + 1500ms
 };
 
 export type PowerupCell = BaseCell & {

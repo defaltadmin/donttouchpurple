@@ -1,10 +1,32 @@
-// HexGrid — honeycomb of hexes that pulse to random accent colors. No purple.
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
+import { useBackgroundController } from '../../hooks/useBackground';
 
 const ACCENT = ["#3b82f6","#06b6d4","#f97316","#22c55e","#eab308","#ec4899"];
 
 export default function WarpGate() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
+
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext("2d")!;
@@ -46,7 +68,6 @@ export default function WarpGate() {
       ctx.closePath();
     }
 
-    let raf: number;
     const draw = () => {
       ctx.fillStyle = "rgba(13,13,26,0.12)";
       ctx.fillRect(0, 0, c.width, c.height);
@@ -69,10 +90,11 @@ export default function WarpGate() {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
   }, []);
   return <canvas ref={ref} className="background-canvas" />;
 }

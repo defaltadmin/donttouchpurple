@@ -15,16 +15,54 @@ interface CellProps {
 }
 
 function BombTimer({ expiresAt }: { expiresAt: number }) {
+  const TOTAL_MS = 2000; // bomb fuse duration
   const [ms, setMs] = useState(() => Math.max(0, expiresAt - Date.now()));
+
   useEffect(() => {
     const id = setInterval(() => {
       const remaining = Math.max(0, expiresAt - Date.now());
       setMs(remaining);
       if (remaining === 0) clearInterval(id);
-    }, 50);
+    }, 33); // ~30fps for smooth arc
     return () => clearInterval(id);
   }, [expiresAt]);
-  return <span className="bomb-timer">{(ms / 1000).toFixed(1)}s</span>;
+
+  const pct = Math.max(0, Math.min(1, ms / TOTAL_MS));
+  const R = 20;
+  const CIRC = 2 * Math.PI * R;
+  const dashOffset = CIRC * (1 - pct); // drains clockwise
+  const isUrgent = pct < 0.35;
+
+  return (
+    <svg className="bomb-ring" viewBox="0 0 52 52" width="100%" height="100%">
+      {/* Track */}
+      <circle cx="26" cy="26" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="4" />
+      {/* Draining arc */}
+      <circle
+        cx="26" cy="26" r={R}
+        fill="none"
+        stroke={isUrgent ? "#ff2200" : "#ff6600"}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={CIRC}
+        strokeDashoffset={dashOffset}
+        transform="rotate(-90 26 26)"
+        style={{ transition: "stroke-dashoffset 0.06s linear, stroke 0.3s ease" }}
+      />
+      {/* Center label */}
+      <text
+        x="26" y="30"
+        textAnchor="middle"
+        fontSize="11"
+        fontWeight="700"
+        fill="#fff"
+        fontFamily="monospace"
+        style={{ filter: isUrgent ? "drop-shadow(0 0 4px #ff2200)" : "none" }}
+      >
+        {(ms / 1000).toFixed(1)}
+      </text>
+    </svg>
+  );
 }
 
 export default function Cell({ 
@@ -38,6 +76,8 @@ export default function Cell({
   isPressing = false 
 }: CellProps) {
 
+  const isBomb = cell.type === 'bomb';
+  const bombUrgent = isBomb && Date.now() > (cell as any).expiresAt - 700; // last 700ms = urgent
   const isClicked = cell.clicked;
   const shape = cell.shape || 'circle';
   const shapeClass = `cell-shape--${shape}`;
@@ -74,6 +114,7 @@ export default function Cell({
         ${shapeClass}
         ${cell.shape ? 'rare-danger' : ''}
         ${isPressing ? 'pressing' : ''}
+        ${bombUrgent ? 'bomb--urgent' : ''}
       `.trim()}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -92,9 +133,7 @@ export default function Cell({
         {isHold && '⏳'}
         {isIce && `🧊 ${cell.iceCount || ''}`}
         {cell.type === 'bomb' && (
-          <span className="bomb-icon">
-            💣 <BombTimer expiresAt={(cell as any).expiresAt} />
-          </span>
+          <BombTimer expiresAt={(cell as any).expiresAt} />
         )}
       </div>
 

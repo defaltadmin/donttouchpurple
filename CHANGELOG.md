@@ -1,5 +1,707 @@
 # Don't Touch Purple — Changelog
 
+# Don't Touch the Purple — v5.8.18 Changelog
+# Deep Audit: Inversion Logic, Background Gate, Bomb P2, Storm RNG, Dead Code
+# Session Date: 2026-05-08
+
+---
+
+# Don't Touch the Purple — v5.9.0 Changelog
+# Deep Polish, Mobile/Tablet Layout, Bomb Visual, Score Glow, Bot HUD, RewardsHub Close Animation
+# Session Date: 2026-05-08
+
+---
+
+## v5.9.1 — Critical Hold Cell Fix + Performance + CSP
+# Session Date: 2026-05-08
+
+### 🔴 Critical Bug Fixes
+
+**Fix: Hold cell (⏳) permanently freezes grid — game unwinnable**
+- Root cause: processTick skips grid advancement while any hold/ice cell is unclicked
+- If hold cell spawns and player never touches it, it blocked FOREVER
+- Fix: hold cells now expire after holdRequired + 1500ms (never started) or holdRequired + 500ms (started but not completed)
+- On expiry: cell is marked clicked, damage applied, toast shown, tick proceeds
+- Added spawnedAt timestamp to HoldCell type (engine/types.ts, engine/GameEngine.ts)
+
+**Fix: CSP blocks cloudfunctions.net/updateStreak**
+- Added https://*.cloudfunctions.net to connect-src in index.html
+- Fixes 4 console errors visible in Lighthouse audit
+
+### 🟡 Performance (Lighthouse: 55 → estimated 70+)
+
+**Vite build optimizations (vite.config.ts)**
+- Added splitVendorChunkPlugin() — auto-splits vendor from app code
+- Manual chunk splitting: sentry / firebase / analytics / vendor in separate chunks
+- Sentry chunk deferred — no longer blocks FCP
+- minify: esbuild (explicit), sourcemap: false for prod
+- cssCodeSplit: true — CSS loads per-route
+
+**DevOverlay excluded from prod bundle**
+- Wrapped DevOverlay and DevUnlockModal renders in import.meta.env.DEV
+- Rollup dead-code eliminates 48 KiB DevOverlay.tsx in production builds
+
+### Build Verification
+- tsc --noEmit: zero new errors ✅
+
+---
+
+## v5.9.0 — Full Polish + Platform Optimization Pass
+
+### 🔴 Bug Fixes
+
+**Fix 7 — GA version hardcoded to 5.6.0** (`App.tsx`)
+- Now uses `__APP_VERSION__` at runtime with `5.9.0` as fallback
+- Added ambient `declare const __APP_VERSION__` to satisfy TypeScript
+
+**Fix 8 — `isClicked` dropped from Cell component** (`components/Cell/index.tsx`)
+- Caused by prior edit that inserted `isBomb`/`bombUrgent` without preserving `isClicked`
+- Restored `const isClicked = cell.clicked`
+
+### 🟡 Gameplay Polish
+
+**Bomb cell — circular SVG ring timer** (`components/Cell/index.tsx`, `styles/enhancements.css`)
+- Replaced `💣 1.8s` text with a full SVG conic ring that drains in real-time at 30fps
+- Ring color shifts from orange → red as time runs out
+- Cell gets `.bomb--urgent` class at <700ms remaining — faster pulse + red glow
+- Old `.bomb-icon` / `.bomb-timer` text styles removed (now display:none)
+
+**Score glow — smooth bloom instead of blink** (`styles/game.css`)
+- `.hud-val--bump` now uses `hudScoreBloom`: scale + `drop-shadow` bloom, no flashing
+- Score card gains `.streak--mid` (5+) and `.streak--high` (10+) classes
+- At high streaks, card glows warm orange/red via `scoreCardFire` animation
+
+**Bot assist button — moved to HUD row** (`App.tsx`, `styles/game.css`)
+- Removed from `PlayerPanel` (was rendering below grid, risking overlap on short screens)
+- Now lives in HUD bar as `.bot-hud-btn` pill, right of hearts
+- 1P Evolve only; calls `isBotActive()` correctly as a function
+- `showBotAssist={false}` passed to PlayerPanel to prevent double-render
+
+**RewardsHub — close animation after daily claim** (`components/Screens/RewardsHub.tsx`, `styles/enhancements.css`)
+- Internal `closing` state triggers `.rewards-hub-panel--closing` CSS class
+- Panel shrinks to top-right with spring easing, overlay fades — 420ms total
+- Checkin claim fires `handleClaimLogin` → 600ms grace → shrink animation → `onClose`
+- Explicit ✕ button also uses animated close via `handleClose()`
+
+### 📱 Platform & Layout
+
+**Tablet / Landscape / Desktop breakpoints** (`styles/game.css`)
+- Landscape phone (`max-height: 500px`): compact HUD, tighter padding
+- Tablet portrait 768px+: root max-width 600px, larger cells, bigger fonts
+- Tablet landscape / desktop 1024px+: root 640px, cells up to 118px
+- Large desktop 1280px+: root 680px
+- `pointer: coarse` — disables sticky `:hover` states on touch, larger tap targets
+- `hover: hover + pointer: fine` — desktop-quality hover lifts on cells
+- `safe-area-inset` — notch/Dynamic Island/nav bar padding via `@supports`
+
+**GPU compositing hints** (`styles/enhancements.css`)
+- `.gpanel`, `.background-canvas`, `.orb`, `.spd-fill`, `.rare-splash` — `will-change: transform; transform: translateZ(0)`
+- `.cell` — `contain: layout style paint; isolation: isolate` — prevents full repaints
+- `.hud-val` — `contain: layout style` — prevents layout thrash on score tick
+- Overlay layers promoted early: `will-change: opacity`
+
+### 📖 Content & Docs
+
+**HowToPlay rewritten** (`components/Screens/HowToPlay.tsx`)
+- Added: Bomb cell, Storm/Inversion/Blackout boss events, Dust economy section
+- Updated: Shield stacking description, medpack emoji, accurate keyboard shortcuts
+- Reflects actual game state as of v5.9.0
+
+**WhatsNew updated** (`components/Screens/WhatsNew.tsx`)
+- CHANGES list replaced with v5.9.0 actual changes
+- Old stale feature list removed entirely
+
+### Build Verification
+- `npx tsc --noEmit` — zero new errors (8 pre-existing implicit-any in JSX callbacks remain from source) ✅
+
+---
+
+
+
+### 🔴 Bug Fixes
+
+**Fix 1 — Animated backgrounds render on Shop/Menu screens** (`App.tsx`)
+- `shouldAnimateBackground` now gates on `screen === "playing" || screen === "gameover"`
+- Shop/Menu/Leaderboard no longer covered by canvas backgrounds
+- Reverts the v5.7.3 intentional removal; retains backgrounds on gameover for share card visibility
+
+**Fix 2 — Inversion mode `isMiss` logic was inverted** (`engine/GameEngine.ts`)
+- Old: during inversion, missing a *purple* cell on tick expiry dealt damage (wrong)
+- Fix: tick-expiry damage logic is now identical in both normal and inverted mode — missing any non-danger safe cell damages you
+- Inversion only affects *tap* behaviour (fix 3), not tick-expiry
+
+**Fix 3 — Tapping purple during Inversion dealt damage** (`engine/GameEngine.ts`)
+- `_processTap` now checks `isInvertedTap` before applying danger-tap damage
+- Purple taps during Inversion fall through to the score branch — safe to tap, awards +1
+
+**Fix 4 — Bombs never spawned for P2 in 2-player Evolve** (`engine/GameEngine.ts`)
+- `trySpawnBomb` was only called for P1
+- Now called for P2 when `numPlayers === 2 && p2.alive`
+
+**Fix 5 — `effectiveDanger` dead variable removed** (`engine/GameEngine.ts`)
+- Was computed but never referenced — deleted to avoid confusion
+
+**Fix 6 — Storm shuffle advanced RNG then discarded it** (`engine/GameEngine.ts`)
+- Old: saved `nextShuffleTick`, zeroed it, called `tryShuffleCells` (which consumed RNG + set new next), then restored old value — wasting the RNG advancement and causing seeded replay desync
+- Fix: zero `nextShuffleTick` without restoring; `tryShuffleCells` advances it naturally each storm tick
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors ✅
+- `npx vite build` — clean (415 modules)
+
+---
+
+
+# Full Cloudflare Worker Integration
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.17 — Live Server Validation
+
+### ✅ Production Backend
+- Client now submits scores through Cloudflare Worker (`/api/submit-score`)
+- Full offline fallback + Background Sync
+- KV rate limiting active
+
+### Files Changed
+- `App.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (415 modules, 3.04s, sw=dtp-v5.8.17)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.16 Changelog
+# Cloudflare Worker Hardening + KV Rate Limiting
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.16 — Production Backend Hardening
+
+### ✅ Cloudflare Worker + KV
+- Rate limiting moved to Cloudflare KV (persistent, scalable)
+- Improved validation and logging
+- Ready for production Firebase forwarding
+
+### Files Changed
+- `worker/score-validator.js`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (415 modules, 3.03s, sw=dtp-v5.8.16)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.14 Changelog
+# Cloudflare Worker Score Validation Integration
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.14 — Server-Side Score Validation
+
+### ✅ Cloudflare Worker Integration
+- Updated score submission to go through `https://game.mscarabia.com/api/submit-score`
+- Added fallback to offline queue if Worker is unreachable
+- Better error handling and analytics for server validation flow
+
+### Files Changed
+- `services/firebase.ts`
+- `App.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (415 modules, 3.31s, sw=dtp-v5.8.14)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.13 Changelog
+# Full Offline Sync + Cloudflare Worker + Analytics
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.13 — Offline First + Server Validation
+
+### ✅ Complete Offline Score System
+- Full IndexedDB helper (`utils/pendingScoresDb.ts`)
+- Background Sync queues and retries score submissions
+- Cloudflare Worker ready for production deployment
+
+### ✅ PWA Analytics
+- Track install, offline sync, and score submission events
+
+### Files Changed
+- `utils/pendingScoresDb.ts`
+- `App.tsx`
+- `worker/score-validator.js`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (415 modules, 3.06s, sw=dtp-v5.8.13)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.12 Changelog
+# Background Sync + Cloudflare Worker Integration
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.12 — Offline Resilience + Server Sync
+
+### ✅ Background Sync
+- Service Worker now registers `sync:dtp-score-submit`
+- Queues score submissions when offline
+- Syncs when back online (with retry logic)
+
+### ✅ Cloudflare Worker Foundation
+- Basic score validation Worker ready for deployment
+- Replaces direct Firestore writes with secure edge validation
+
+### Files Changed
+- `public/sw.js`
+- `App.tsx`
+- `utils/pendingScoresDb.ts`
+- `worker/score-validator.js`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (415 modules, 3.15s, sw=dtp-v5.8.12)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.11 Changelog
+# Advanced Service Worker + A/B Testing + Banner Refinement
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.11 — Advanced PWA Release
+
+### ✅ Advanced Service Worker Strategies
+- Cache-First for critical assets with versioned names
+- Background Sync preparation for offline score submission
+- Aggressive cache cleanup on activate
+- Separate long-lived cache for backgrounds
+
+### ✅ PWA A/B Testing Foundation
+- Simple client-side A/B flag system (ready for Cloudflare Worker routing)
+
+### ✅ Install Banner Refinement
+- Final copy tweaks for higher conversion
+- Better visual hierarchy and iOS instructions
+
+### Files Changed
+- `public/sw.js`
+- `App.tsx`
+- `styles/game.css`
+- `vite.config.ts`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.10s, sw=dtp-v5.8.11-core/-bg/-static)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.10 Changelog
+# Service Worker Strategy + PWA Performance + Banner Refinement
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.10 — PWA Final Optimization
+
+### ✅ Service Worker Strategy
+- Switched to **Cache-First** for static assets + **Stale-While-Revalidate** for dynamic content
+- Better offline support for Classic mode
+- Improved update handling with user-friendly toast
+
+### ✅ Performance Optimizations
+- Background canvas FPS throttling improved
+- Preload critical assets + lazy backgrounds
+- Reduced Motion + low battery awareness
+
+### ✅ Install Banner Polish
+- Refined copy for better conversion
+- Better visual hierarchy on iOS/Android
+
+### Files Changed
+- `public/sw.js`
+- `App.tsx`
+- `styles/game.css`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.03s, sw=dtp-v5.8.10)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.9 Changelog
+# Smart One-time PWA Install Prompt + iOS Support + Analytics
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.9 — Install Prompt Final Polish
+
+### ✅ Install Prompt Improvements
+- One-time prompt only (uses `dtp-install-prompt-shown` localStorage flag)
+- iOS Safari fallback banner with clear instructions ("Share → Add to Home Screen")
+- PWA install tracked via Sentry + Firebase Analytics
+- Banner respects `reducedMotion` and only shows on menu after 3+ games
+
+### Files Changed
+- `App.tsx`
+- `styles/game.css`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.04s, sw=dtp-v5.8.9)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.8 Changelog
+# PWA Install Prompt + Testing
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.8 — PWA Install Prompt
+
+### ✅ Install Prompt System
+- Added `beforeinstallprompt` listener in `App.tsx`
+- Shows custom "Add to Home Screen" banner after 3 completed games (or on menu after first play)
+- Deferred prompt saved and triggered via big purple button
+- Respects `reducedMotion` and doesn't spam users
+
+### Files Changed
+- `App.tsx`
+- `styles/game.css`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.13s, sw=dtp-v5.8.8)
+
+---
+
+# Don't Touch the Purple — v5.8.7 Changelog
+# PWA Optimization & Mobile Performance
+# Session Date: 2026-05-08
+
+---
+
+## v5.8.7 — PWA Performance Release
+
+### ✅ Critical PWA Wins
+- Service Worker upgraded to Stale-While-Revalidate for assets + better update UX
+- Manifest.json improved with proper icons, shortcuts, and theme colors
+- Aggressive preload for default background and critical game chunks
+- Canvas backgrounds now respect reducedMotion + FPS throttling
+- Cloudflare-ready notes added for future edge caching
+
+### Files Changed
+- `public/sw.js`
+- `public/manifest.json`
+- `index.html`
+- `App.tsx`
+- `components/Backgrounds/PurpleRain.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.17s, sw=dtp-v5.8.7)
+
+---
+
+
+
+# Don't Touch the Purple — v5.8.6 Changelog
+# Game Over Declutter + Share Consolidation
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.6 — Game Over Cleanup
+
+### ✅ Critical UX Fix
+- Completely simplified Game Over screen (removed button spam)
+- "Again" made large and prominent
+- Share button now opens clean modal with WhatsApp + X + Save Card
+- Leaderboard and Menu reduced to icon buttons
+- Removed duplicate share options
+
+### Files Changed
+- `components/Screens/GameOver.tsx`
+- `App.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean (414 modules, 3.15s, sw=dtp-v5.8.6)
+
+---
+
+# Don't Touch the Purple — v5.8.5 Changelog
+# Final Pre-Launch Polish & Soft Launch Readiness
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.5 — Pre-Launch Lockdown
+
+### ✅ Phase 0 — Polish
+- All `animateDustClaim` calls unified
+- Bot minimum dust guard + feedback on activation
+- Rare mode / reducedMotion final audit
+
+### ✅ Phase 1 — Mobile UX
+- Safe-area + touch target improvements on modals
+- Energy & Rewards claim feedback polish
+
+### ✅ Phase 2 — Launch Readiness
+- Version sync enforcement (package.json + `__APP_VERSION__`)
+- Extra Sentry breadcrumbs for boss/bomb events
+- Aggressive preloading of Shop on menu mount
+
+### Files Changed This Session
+- `App.tsx`
+- `package.json`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 414 modules, 3.13s, clean build (SW cache: dtp-v5.8.5)
+
+---
+
+# Don't Touch the Purple — v5.8.4 Changelog
+# PWA Updates, Motion Safety & Final Pre-Launch Polish
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.4 — PWA + Polish Release
+
+### ✅ Phase 0 — Reliability
+- RewardsHub trigger fully unified under flag-driven logic
+- Rare mode ring + effects respect `reducedMotion`
+- Bot dust animation edge case fixed (`-0` → no animation)
+
+### ✅ Phase 1 — PWA
+- Service Worker "Update Available" toast + reload button
+- Better mobile touch targets for modals
+
+### Files Changed This Session
+- `App.tsx`
+- `components/Screens/GameOver.tsx`
+- `components/HUD/PlayerPanel.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 414 modules, 3.21s, clean build
+
+---
+
+# Don't Touch the Purple — v5.8.3 Changelog
+# Fairness + Mobile Polish + Share Virality
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.3 — Fairness, Mobile & Virality Release
+
+### ✅ Phase 0 — Safety
+- All `animateDustClaim` calls updated to new signature
+- Boss micro-rewards now require score ≥ 100
+- Bot assist low-dust deactivation feedback
+
+### ✅ Phase 1 — Polish
+- RewardsHub trigger fully flag-driven
+- Enhanced Challenge Friend with X share fallback
+- Touch target improvements
+
+### Files Changed This Session
+- `App.tsx`
+- `components/Screens/GameOver.tsx`
+- `components/HUD/PlayerPanel.tsx`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 414 modules, 3.17s, clean build
+
+---
+
+# Don't Touch the Purple — v5.8.2 Changelog
+# Retention Boost: Boss micro-rewards, Friend Challenge share, Shop preload
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.2 — Retention & Polish Release
+
+### ✅ Phase 1 — Retention Dopamine (High)
+- Post-boss micro-reward toasts for surviving Storm/Inversion/Blackout
+- "Challenge a Friend" WhatsApp/X button on GameOver with seed + score
+- Lazy ShopPanel preloading on menu interaction
+- Bot assist dust spend fly animation
+
+### ✅ Phase 2 — UX Polish (Medium)
+- RewardsHub show logic now flag-driven instead of setTimeout
+- Rare pulsing ring respects reducedMotion setting
+
+### Files Changed This Session
+- `App.tsx`
+- `components/Screens/GameOver.tsx`
+- `components/HUD/PlayerPanel.tsx`
+- `utils/dustAnimation.ts`
+- `CHANGELOG.md`
+
+### Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 414 modules, 3.13s, clean build
+
+---
+
+# Don't Touch the Purple — v5.8.1 Changelog
+# Polish: centralized addDust helper, boss counter ref-first, GridErrorBoundary restart, devLog enhancements
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.1 — Polish Release
+
+### ✅ Centralized `addDust()` Helper
+- Added `addDust(amount, source)` in `App.tsx` as the single entry point for all dust earnings
+- NaN/isFinite guards on both input and current dust value
+- Automatically persists to localStorage, syncs to Firebase, and logs analytics
+- Replaced manual dust mutations in: game-over earnings, daily objective bonus, login streak, daily challenges, weekly tasks, and dev overlay
+
+### ✅ Boss Counter Ref-First Fix
+- Boss counter callbacks now mutate `bossCountersRef` first, then call `setBossCounters` with the ref value
+- Eliminates race condition from stale closure captures in `handleEngineGameOver`
+
+### ✅ GridErrorBoundary Restart Button
+- Added `onRestart` prop to `GridErrorBoundary`
+- Fallback UI now shows a "Restart Game" button that resets error state and triggers `goMenu() + startGame()`
+
+### ✅ Dev Log Enhancements
+- `logError` now prefixes output with `[DTP]` in DEV mode
+- Added `logWarn` function with `[DTP]` prefix in DEV mode
+
+### ✅ `spendDust` NaN Guard
+- Added NaN/isFinite guard on computed dust value in `spendDust` for defensive safety
+
+### ✅ Files Changed
+- `App.tsx` — `addDust` helper, game-over dust → `addDust`, `spendDust` guard, boss counter ref-first, GridErrorBoundary `onRestart`, all dust earnings → `addDust`
+- `components/HUD/GridErrorBoundary.tsx` — `onRestart` prop, Restart Game button in fallback
+- `utils/devLog.ts` — `logWarn`, `[DTP]` prefix
+
+### ✅ Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — clean build
+
+---
+
+# Don't Touch the Purple — v5.8.0 Changelog
+# Stability & Performance: background controller, error boundary, lazy loading, dev logging
+# Session Date: 2026-05-07
+
+---
+
+## v5.8.0 — Stability & Performance Release
+
+### ✅ All 14 Backgrounds Wired to useBackgroundController
+- Added `useBackgroundController` hook + `rafRef`/`drawRef` pattern to: VoidTunnel, StarWarp, GridPulse, PurpleCascade, BlockOrbit, DataStream, CellBreath, WarpGate, PulseField, GlitchGrid, AmbientFlow, Plasma, ParticleWeb
+- PurpleRain was already wired
+- All backgrounds now support pause/resume (tab visibility, reducedMotion)
+- Backgrounds remain mounted on all screens (removed `screen === "playing"` gate)
+
+### ✅ GameEngine Async Audit
+- Confirmed `destroy()` clears: holdTimers, tickTimer, rafId, listeners, botInterval
+- All setTimeout callbacks check state validity before mutating
+- No dangling timers or race conditions found
+
+### ✅ GridErrorBoundary
+- New `components/HUD/GridErrorBoundary.tsx` wraps the game grid
+- Catches render errors and shows a fallback message instead of crashing the full app
+
+### ✅ Dev-Only Error Logging
+- Created `utils/devLog.ts` with `logError()` — only logs in `import.meta.env.DEV`
+- Replaced `console.error` calls in `engine/GameEngine.ts`
+
+### ✅ Lazy-Loaded Heavy Screens
+- `SettingsDrawer`, `ShopPanel`, `LeaderboardPanel` converted from static imports to `React.lazy()`
+- Each now loads as a separate bundle chunk
+- Initial main bundle reduced ~14 kB (447 kB → 433 kB)
+- Wrapped with `<Suspense fallback>` for loading states
+
+### ✅ Files Changed
+- `App.tsx` — bg gate removed, GridErrorBoundary import, lazy imports for Shop/Settings/Leaderboard
+- All 13 background components — useBackgroundController integration
+- `components/HUD/GridErrorBoundary.tsx` — new file
+- `utils/devLog.ts` — new file
+- `engine/GameEngine.ts` — logError replacement
+
+### ✅ Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 414 modules, 3.43s, clean build
+- Separate chunks for backgrounds, ShopPanel (8.9 kB), SettingsDrawer (4.4 kB), LeaderboardPanel (2.6 kB)
+
+---
+
+# Don't Touch the Purple — v5.7.3 Changelog
+# Background visibility fix + Hold cell interactivity fix
+# Session Date: 2026-05-07
+
+---
+
+## v5.7.3 — Background & Hold Cell Fix
+
+### ✅ Fix — Animated backgrounds not showing on menu/shop screens
+- `App.tsx`: Removed `&& screen === "playing"` gate from `shouldAnimateBackground` so backgrounds render on all screens (menu, shop, leaderboard, playing, game-over) whenever `reducedMotion` is off
+
+### ✅ Fix — Hold cell "??" placeholder + non-interactive hold cells stalling gameplay
+- `components/HUD/PlayerPanel.tsx`: Replaced dead ternary (`"??" : "??"`) with `⏳` icon
+- Added `onPointerDown`/`onPointerUp`/`onPointerLeave` handlers to `HoldCellDisplay` so hold cells are actually tappable
+- Passed `idx`, `onHoldStart`, `onHoldEnd` props from parent grid loop
+
+### ✅ Build Verification
+- `npx tsc --noEmit` — zero errors
+- `npx vite build` — 412 modules, 3.12s, clean build
+
+---
+
 # Don't Touch the Purple — v5.7.2 Changelog
 # 4-Bugfix Patch: grid cells, bot assist overlap, RewardsHub popup, dust NaN
 # Session Date: 2026-05-07

@@ -119,6 +119,7 @@ describe("GameEngine", () => {
       type: "hold",
       clicked: false,
       holdRequired: 700,
+      spawnedAt: Date.now(),
     };
 
     const snapshot = engine.getSnapshot();
@@ -176,7 +177,7 @@ describe("GameEngine", () => {
       engine.start();
       
       const snapshot = engine.getSnapshot();
-      snapshot.p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000 }];
+      snapshot.p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000, spawnedAt: Date.now() }];
       (engine as any).p1 = snapshot.p1;
 
       engine.handleHoldStart(1, 0);

@@ -1,8 +1,30 @@
-// NeonPulse — horizontal cyan/teal scanlines sweeping downward. No purple.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useBackgroundController } from '../../hooks/useBackground';
 
 export default function CellBreath() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
+
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext("2d")!;
@@ -19,7 +41,6 @@ export default function CellBreath() {
       trail: 60 + Math.random() * 120,
     }));
 
-    let raf: number;
     const draw = () => {
       const W = c.width, H = c.height;
       ctx.fillStyle = "rgba(13,13,26,0.08)";
@@ -36,10 +57,11 @@ export default function CellBreath() {
         ln.y += ln.speed;
         if (ln.y > H + ln.trail) ln.y = -ln.trail;
       }
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
   }, []);
   return <canvas ref={ref} className="background-canvas" />;
 }

@@ -20,7 +20,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
 
   const handleClaim = () => {
     if (btnRef.current) {
-      animateDustClaim(btnRef.current, '.dust-counter', dustReward, onClaim);
+      animateDustClaim(btnRef.current, '.dust-counter', dustReward, false, onClaim);
     } else {
       onClaim();
     }

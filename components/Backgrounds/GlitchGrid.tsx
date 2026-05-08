@@ -1,10 +1,32 @@
-// MatrixRain — columns of falling game symbols in green. No purple.
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
+import { useBackgroundController } from '../../hooks/useBackground';
 
 const SYMBOLS = "■□◆◇▲△▼▽●○★☆✦✧";
 
 export default function GlitchGrid() {
   const cvs = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
+
   useEffect(() => {
     const c = cvs.current; if (!c) return;
     const ctx = c.getContext("2d")!;
@@ -26,7 +48,6 @@ export default function GlitchGrid() {
     const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; buildCols(); };
     resize(); window.addEventListener("resize", resize);
 
-    let raf: number;
     const draw = () => {
       ctx.fillStyle = "rgba(13,13,26,0.15)";
       ctx.fillRect(0, 0, c.width, c.height);
@@ -45,10 +66,11 @@ export default function GlitchGrid() {
         col.y += col.speed;
         if (col.y - col.chars.length * FONT_SIZE > c.height) col.y = -Math.random() * c.height * 0.5;
       }
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
   }, []);
   return <canvas ref={cvs} className="background-canvas" />;
 }

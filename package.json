@@ -1,7 +1,7 @@
 {
   "name": "dont-touch-purple",
   "private": true,
-  "version": "5.6.0",
+  "version": "5.8.17",
   "type": "module",
   "scripts": {
     "dev": "vite",

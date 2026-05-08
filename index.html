@@ -15,8 +15,8 @@
     <meta property="og:title"       content="Don't Touch the Purple" />
     <meta property="og:description" content="Fast-paced reflex game. Tap safe colors. Don't touch purple. Free to play." />
     <meta property="og:image"       content="https://game.mscarabia.com/og-image.png" />
-    <meta property="og:image:width"  content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width"  content="1280" />
+    <meta property="og:image:height" content="720" />
     <meta property="og:site_name"   content="Don't Touch the Purple" />
     <meta property="og:locale"      content="en_US" />
 
@@ -33,14 +33,15 @@
     <!-- Microsoft Clarity: initialized via services/clarity.ts -->
     <!-- Set VITE_CLARITY_PROJECT_ID in .env or InfinityFree env vars -->
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="image" href="/og-image.png" type="image/png" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
      
     <title>Don't Touch the Purple</title>
 
     <!-- Meta Tags for Mobile -->
-    <meta name="theme-color" content="#0d0820" />
+    <meta name="theme-color" content="#c026d3" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
@@ -56,7 +57,8 @@
           https://*.firebaseio.com
           https://firestore.googleapis.com
           https://identitytoolkit.googleapis.com
-          https://*.clarity.ms;
+          https://*.clarity.ms
+          https://*.cloudfunctions.net;
         img-src 'self' data: blob:;
         frame-src 'none';
         object-src 'none';

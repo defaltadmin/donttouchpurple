@@ -1,8 +1,29 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useBackgroundController } from '../../hooks/useBackground';
 
 export function Plasma({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useEffect(() => {
     if (!active) return;
@@ -35,6 +56,7 @@ export function Plasma({ active }: { active: boolean }) {
       tick++;
       rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
 
     return () => {

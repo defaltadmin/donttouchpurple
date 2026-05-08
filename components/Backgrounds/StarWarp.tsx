@@ -1,14 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 type Shape = 'square' | 'circle' | 'triangle' | 'diamond';
 const SHAPES: Shape[] = ['square', 'circle', 'triangle', 'diamond'];
 const COLORS = ['#c026d3', '#a21caf', '#7c3aed', '#9333ea', '#db2777', '#e879f9'];
 
 interface WarpShape {
-  x: number; y: number;       // start (near center)
+  x: number; y: number;
   angle: number;
   speed: number;
-  dist: number;               // current distance from center
+  dist: number;
   maxDist: number;
   size: number;
   shape: Shape;
@@ -58,6 +59,27 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, x: number, y: nu
 
 export default function StarWarp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,13 +96,12 @@ export default function StarWarp() {
       makeWarpShape(canvas.width, canvas.height)
     );
 
-    let raf: number;
     const draw = () => {
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
       for (const s of shapes) {
-        s.dist += s.speed * (1 + s.dist / 80); // accelerate as it moves out
+        s.dist += s.speed * (1 + s.dist / 80);
         if (s.dist > s.maxDist) { Object.assign(s, makeWarpShape(w, h)); continue; }
 
         const x = w / 2 + Math.cos(s.angle) * s.dist;
@@ -93,11 +114,12 @@ export default function StarWarp() {
       }
 
       ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
 
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
   }, []);
 
   return (

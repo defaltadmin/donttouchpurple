@@ -62,9 +62,9 @@ export function getDailyObjective(dateStr?: string): DailyObjective {
 }
 
 export interface BossObjectiveCounters {
-  bosssSurvived: number;
+  bossSurvived: number;
   bombsDefused: number;
-  inversionssSurvived: number;
+  inversionSurvived: number;
 }
 
 export function checkObjective(
@@ -77,15 +77,15 @@ export function checkObjective(
 ): boolean {
   if (objective.completed) return false;
   const speed = parseFloat(speedLabel);
-  const c = counters ?? { bosssSurvived: 0, bombsDefused: 0, inversionssSurvived: 0 };
+  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 };
   switch (objective.type) {
     case 'score':             return score >= objective.target;
     case 'tick':              return tick >= objective.target;
     case 'streak':            return streak >= objective.target;
     case 'speed':             return !isNaN(speed) && speed >= objective.target;
-    case 'boss_survive':      return c.bosssSurvived >= objective.target;
+    case 'boss_survive':      return c.bossSurvived >= objective.target;
     case 'bomb_defuse':       return c.bombsDefused >= objective.target;
-    case 'survive_inversion': return c.inversionssSurvived >= objective.target;
+    case 'survive_inversion': return c.inversionSurvived >= objective.target;
     default:                  return false;
   }
 }
@@ -100,16 +100,16 @@ export function getObjectiveProgress(
 ): number {
   if (objective.completed) return 1;
   const speed = parseFloat(speedLabel);
-  const c = counters ?? { bosssSurvived: 0, bombsDefused: 0, inversionssSurvived: 0 };
+  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 };
   let current = 0;
   switch (objective.type) {
     case 'score':             current = score; break;
     case 'tick':              current = tick; break;
     case 'streak':            current = streak; break;
     case 'speed':             current = !isNaN(speed) ? speed : 0; break;
-    case 'boss_survive':      current = c.bosssSurvived; break;
+    case 'boss_survive':      current = c.bossSurvived; break;
     case 'bomb_defuse':       current = c.bombsDefused; break;
-    case 'survive_inversion': current = c.inversionssSurvived; break;
+    case 'survive_inversion': current = c.inversionSurvived; break;
   }
   return Math.min(1, current / (objective.target || 1));
 }

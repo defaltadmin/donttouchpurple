@@ -2,10 +2,11 @@ import { DIFFICULTY, GAME, LS_KEYS } from "../config/difficulty";
 import { STAGES, EVOLVE_PATTERNS, RARE_COLORS, getRareModeConfig } from "../config/gridPatterns";
 import { POWERUP_TABLE } from "../config/powerupWeights";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
+import { logError } from "../utils/devLog";
 import type {
   ActiveCell, CellType, CellShape, GameConfig, GameEvent,
   GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
-  BombCell, BossEvent, BossEventType,
+  BombCell, BossEvent, BossEventType, HoldCell,
 } from "./types";
 
 // ─── Safe cell palette ────────────────────────────────────────────
@@ -109,16 +110,16 @@ const powerupEligible = isEvolve ? stage >= 2 : true;
     }
 
     return idxs.map((idx, i) => {
-    if (i === 0 && powerup) return { idx, clicked: false, type: powerup } as any;
+    if (i === 0 && powerup) return { idx, clicked: false, type: powerup } as ActiveCell;
     if (i === 0 && evolveSpecial === "ice") {
       return { idx, clicked: false, type: "ice", iceCount: 2 + Math.floor(rng() * 3) };
     }
     if (i === 0 && evolveSpecial === "hold") {
-      return { idx, clicked: false, type: "hold", holdRequired: 700 + rng() * 500 };
+      return { idx, clicked: false, type: "hold", holdRequired: 700 + rng() * 500, spawnedAt: Date.now() };
     }
     const baseType = randCell(rng, tick, !isEvolve);
-    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor as any, shape: rareShape };
-    return { idx, clicked: false, type: baseType } as any;
+    if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor, shape: rareShape } as ActiveCell;
+    return { idx, clicked: false, type: baseType } as ActiveCell;
   });
 }
 
@@ -210,7 +211,7 @@ export class GameEngine {
     this.gameSeed   = forceSeed ?? makeGameSeed();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
-    this.nextShuffleTick = 40 + Math.floor(Math.random() * 20); // K2: first shuffle at tick 40-60
+    this.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
     this.bossEvent = null;
     this.nextBossTriggerScore = 500;
     this.activeBomb = null;
@@ -449,8 +450,8 @@ destroy(): void {
     const players: Array<{ ref: PlayerState; pi: 0 | 1 }> = [{ ref: this.p1, pi: 0 }, { ref: this.p2, pi: 1 }];
     for (const { ref, pi } of players) {
       if (!ref.alive || (pi === 1 && this.config.numPlayers === 1)) continue;
-      if ((ref as any).pendingStageUpdate) {
-        (ref as any).pendingStageUpdate = false; ref.gridStage += 1; ref.stageProgress = 0;
+      if (ref.pendingStageUpdate) {
+        ref.pendingStageUpdate = false; ref.gridStage += 1; ref.stageProgress = 0;
         // Only increment spinLevel if not in keys mode (rotation locked for keyboard input)
         if (this.config.inputMode !== 'keys') {
           this.spinLevel += 1;
@@ -461,24 +462,22 @@ destroy(): void {
       const curStage = ref.gridStage;
       const patIdx   = ref.patternIdx;
       const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-      if (!pat || pat.cols === 0) { console.error("[DTP-002]"); continue; }
+      if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
       const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
       const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
       const isInverted = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
       // During inversion: purple is SAFE, safe colors are DANGER
-      const effectiveDanger = isInverted ? "__inverted__" : dangerColor;
+      // effectiveDanger removed — isInverted handled directly in _processTap
 
       const player = (pi + 1) as 1 | 2;
 
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
-        // Inverted: tapping purple would be safe, NOT tapping a non-danger color is fine
-        // Normal: missing a safe (non-danger) cell = damage
-        const isMiss = isInverted
-          ? c.type === dangerColor  // purple/danger cells were SAFE — missing them now costs
-          : (c.type !== dangerColor && !isPwr);
-        if (isMiss && !isPwr) {
+        // Missing a safe (non-danger) cell = damage in both normal and inverted mode
+        // Inversion only affects tap behaviour (tapping purple is safe), not tick-expiry misses
+        const isMiss = c.type !== dangerColor && !isPwr;
+        if (isMiss) {
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!this.devGodMode) {
             if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
@@ -498,6 +497,34 @@ destroy(): void {
         // Danger color cells that weren't tapped just disappear — no penalty
       });
       if (!ref.alive) continue;
+
+      // Expire hold cells that were never started (or started too long ago) — prevent permanent grid lock
+      const now = Date.now();
+      ref.active.forEach(c => {
+        if (c.clicked || c.type !== "hold") return;
+        const hold = c as import("./types").HoldCell;
+        const deadline = hold.holdStart
+          ? hold.holdStart + hold.holdRequired + 500   // started: expire 500ms after required
+          : hold.spawnedAt + hold.holdRequired + 1500; // never started: expire after holdRequired + 1.5s grace
+        if (now > deadline) {
+          hold.clicked = true; // mark expired — tick will proceed, no infinite freeze
+          const dmg = mode === "evolve" ? 0.5 : 1;
+          if (!this.devGodMode) {
+            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
+            else {
+              ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
+              this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
+              this.emit({ type: "toast", message: "⏳ Hold expired!" });
+              if (ref.health <= 0) {
+                ref.alive = false;
+                const other = this.config.numPlayers === 2 ? (pi === 0 ? this.p2.alive : this.p1.alive) : false;
+                this.triggerGameOver(this.config.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
+              }
+            }
+          }
+        }
+      });
+
       if (ref.active.some(c => !c.clicked && (c.type === "hold" || c.type === "ice"))) { ref.cells = activeToCellsP(ref.active, pat); continue; }
       const nextPatIdx = mode === "evolve" ? pickPattern(this.rng, curStage, patIdx, ref.score) : 0;
       ref.patternIdx = nextPatIdx;
@@ -507,7 +534,7 @@ destroy(): void {
       const spawnStage = mode === "evolve" ? curStage : Math.min(Math.floor(this.tickCount / 12), 7);
       const newActive = spawnActive(this.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, rareShape, this.tickCount, this.devGodMode);
       if (this.devForcedPwr && newActive.length > 0) {
-        newActive[0] = { ...newActive[0], type: (this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr) as any };
+        newActive[0] = { ...newActive[0], type: (this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr) } as ActiveCell;
         if (pi === (this.config.numPlayers === 1 ? 0 : 1)) this.devForcedPwr = null;
       }
       ref.active = newActive;
@@ -572,15 +599,13 @@ destroy(): void {
       const stormActive = this.bossEvent?.type === "storm" && Date.now() < (this.bossEvent?.endsAt ?? 0);
       const shufflePat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
       if (stormActive) {
-        // Storm: force shuffle every tick by temporarily zeroing nextShuffleTick
-        const savedNext = this.nextShuffleTick;
+        // Force shuffle every tick by zeroing threshold; tryShuffleCells advances nextShuffleTick naturally
         this.nextShuffleTick = 0;
         if (this.p1.alive) this.tryShuffleCells(this.p1, shufflePat, 1);
         if (this.config.numPlayers === 2 && this.p2.alive) {
           const p2Pat = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
           this.tryShuffleCells(this.p2, p2Pat, 2);
         }
-        this.nextShuffleTick = savedNext; // restore so normal schedule resumes after storm
       } else {
         if (this.p1.alive) this.tryShuffleCells(this.p1, shufflePat, 1);
         if (this.config.numPlayers === 2 && this.p2.alive) {
@@ -597,6 +622,10 @@ destroy(): void {
         const bombPat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
         this.trySpawnBomb(this.p1, 1, bombPat);
       }
+      if (this.config.numPlayers === 2 && this.p2.alive) {
+        const bombPat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
+        this.trySpawnBomb(this.p2, 2, bombPat2);
+      }
     }
 
     this.tickCount += 1;
@@ -610,7 +639,7 @@ destroy(): void {
     this.dirty = true;
     this.emit({ type: "sound", name: "tick" });
     } catch (err) {
-      console.error("[GameEngine] processTick crashed:", err);
+      logError("[GameEngine] processTick crashed:", err);
       this.emit({ type: "toast", message: "⚠️ Engine error — game ended" });
       this.triggerGameOver(null);
     }
@@ -640,6 +669,7 @@ destroy(): void {
     if (!cell || cell.clicked) return;
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     if (!(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)).includes(idx)) return;
+    const isInvertedTap = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
     const danger = this.rareMode.active ? this.rareMode.color : "purple";
 
     if (cell.type === "ice") {
@@ -651,7 +681,7 @@ destroy(): void {
         const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
         ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
         this.checkStageProgress(player);
-        if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
+        if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
       } else cell.iceCount = rem;
       ref.cells = activeToCellsP(ref.active, pat);
       this.dirty = true;
@@ -676,7 +706,7 @@ destroy(): void {
       return;
     }
     const dmg = this.config.mode === "evolve" ? 0.5 : 1;
-    if (cell.type === danger) {
+    if (cell.type === danger && !isInvertedTap) {
       cell.clicked = true;
       if (!this.devGodMode) {
         if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
@@ -718,7 +748,7 @@ destroy(): void {
 
   private checkStageProgress(player: 1 | 2): void {
     const ref = player === 1 ? this.p1 : this.p2;
-    if (this.config.mode === "evolve" && ref.stageProgress >= GAME.STAGE_TAPS_NEEDED && ref.gridStage < STAGES.length - 1) (ref as any).pendingStageUpdate = true;
+    if (this.config.mode === "evolve" && ref.stageProgress >= GAME.STAGE_TAPS_NEEDED && ref.gridStage < STAGES.length - 1) ref.pendingStageUpdate = true;
   }
 
   private triggerCellAnim(player: 1 | 2, idx: number, anim: "pop" | "shake"): void {
@@ -734,13 +764,13 @@ destroy(): void {
     if (!ref.alive) return;
     const cell = ref.active.find(c => c.idx === idx && c.type === "hold" && !c.clicked);
     if (!cell || cell.type !== "hold") return;
-    (cell as any).holdStart = Date.now();
+    (cell as HoldCell).holdStart = Date.now();
     const key = `${player}_${idx}`;
     if (this.holdTimers.has(key)) clearTimeout(this.holdTimers.get(key)!.timer);
     const timer = setTimeout(() => {
       const entry = this.holdTimers.get(key);
       if (!entry || entry.cell.clicked) return;
-      (entry.cell as any).holdStart = undefined;
+      (entry.cell as HoldCell).holdStart = undefined;
       this.dirty = true;
       this.triggerCellAnim(entry.player, entry.cell.idx, "shake");
       this.emitSnapshot();
@@ -761,16 +791,16 @@ destroy(): void {
     const entry = this.holdTimers.get(key);
     if (entry) { clearTimeout(entry.timer); this.holdTimers.delete(key); }
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-    const elapsed = Date.now() - ((cell as any).holdStart ?? Date.now());
-    if (elapsed >= (cell as any).holdRequired) {
+    const elapsed = Date.now() - ((cell as HoldCell).holdStart ?? Date.now());
+    if (elapsed >= (cell as HoldCell).holdRequired) {
       cell.clicked = true; this.triggerCellAnim(player, idx, "pop");
       this.emit({ type: "sound", name: "powerup" });
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult * 2; ref.streak += 1; ref.stageProgress += 1;
       this.checkStageProgress(player);
       this.emit({ type: "toast", message: "💪 Hold! +2" });
-      if (ref.active.every(c => c.clicked || (c.type as any) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
-    } else { (cell as any).holdStart = undefined; this.triggerCellAnim(player, idx, "shake"); }
+      if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
+    } else { (cell as HoldCell).holdStart = undefined; this.triggerCellAnim(player, idx, "shake"); }
     ref.cells = activeToCellsP(ref.active, pat);
     this.emitSnapshot();
   }
@@ -819,9 +849,9 @@ destroy(): void {
     this.emitSnapshot();
   }
 
-  devForceRare(r: { color: string; cssColor: string } | null): void {
+  devForceRare(r: { color: string; cssColor: string; shape?: CellShape; emoji?: string } | null): void {
     if (!r) this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
-    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10, shape: (r as any).shape ?? "circle", emoji: (r as any).emoji ?? "" }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); this.emit({ type: "sound", name: "rareStart" }); }
+    else { this.rareMode = { active: true, color: r.color, cssColor: r.cssColor, turnsLeft: 10, shape: r.shape ?? "circle", emoji: r.emoji ?? "" }; this.emit({ type: "rareStart", color: r.color, cssColor: r.cssColor }); this.emit({ type: "sound", name: "rareStart" }); }
     this.emitSnapshot();
   }
 
@@ -990,9 +1020,9 @@ private triggerGameOver(winner: Winner): void {
 
       active.forEach(cell => {
         if (cell.clicked) return;
-        if ((cell.type as any) === "void") return;
+        if ((cell.type as string) === "void") return;
 
-        if (cell.type === (dangerIdentity as any)) return;
+        if (cell.type === dangerIdentity) return;
         if (this.rng() > accuracy) return;
 
         // Skip specials in this timer-based bot path.

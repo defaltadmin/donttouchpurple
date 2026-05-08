@@ -1,5 +1,5 @@
 // components/Backgrounds/PurpleRain.tsx
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 
 interface PurpleRainProps {
@@ -27,6 +27,8 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const shapesRef = useRef<Shape[]>([]);
+  const lastFrameRef = useRef(0);
+  const frameInterval = reducedMotion ? 33 : 16;
   const { register } = useBackgroundController(!reducedMotion);
 
   const pause = useCallback(() => {
@@ -39,7 +41,7 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
   const resume = useCallback(() => {
     if (reducedMotion || !canvasRef.current) return;
     if (!animationRef.current) {
-      animate();
+      animate(performance.now());
     }
   }, [reducedMotion]);
 
@@ -102,7 +104,13 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
     ctx.restore();
   };
 
-  const animate = useCallback(() => {
+  const animate = useCallback((time: number) => {
+    if (time - lastFrameRef.current < frameInterval) {
+      animationRef.current = requestAnimationFrame(animate);
+      return;
+    }
+    lastFrameRef.current = time;
+
     const canvas = canvasRef.current;
     if (!canvas || reducedMotion) return;
 
@@ -131,7 +139,7 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
     }
 
     animationRef.current = requestAnimationFrame(animate);
-  }, [reducedMotion]);
+  }, [reducedMotion, frameInterval]);
 
   // Expose control methods
   useImperativeHandle(ref, () => ({ pause, resume }));
@@ -163,7 +171,7 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
     window.addEventListener('resize', handleResize);
 
     if (!reducedMotion) {
-      animate();
+      animate(performance.now());
     }
 
     return () => {

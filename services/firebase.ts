@@ -96,6 +96,30 @@ export async function fbAddScoreGlobal(
   await addDoc(collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: serverTimestamp() });
 }
 
+// Submit score through Cloudflare Worker (with validation)
+export async function fbAddScoreViaWorker(scoreData: any): Promise<boolean> {
+  try {
+    const response = await fetch('https://game.mscarabia.com/api/submit-score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scoreData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('[DTP] Score accepted by Worker:', result);
+    return true;
+
+  } catch (err) {
+    console.warn('[DTP] Worker submission failed, falling back to offline queue:', err);
+    return false;
+  }
+}
+
 export async function fbLogEvent(name: string, params: Record<string, string | number | boolean | null | undefined> = {}): Promise<void> {
   if (!IS_PROD || typeof window === "undefined") return;
   try {

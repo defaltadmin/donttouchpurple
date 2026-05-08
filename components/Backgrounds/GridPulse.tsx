@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 const GRID = 5;
 const SAFE_COLORS = ['#3b82f6','#22c55e','#f97316','#eab308','#06b6d4','#ec4899'];
@@ -9,11 +10,32 @@ interface GridCell {
   opacity: number;
   phase: 'appearing' | 'hold' | 'disappearing' | 'empty';
   timer: number;
-  size: number; // scale 0–1
+  size: number;
 }
 
 export default function GridPulse() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,7 +55,6 @@ export default function GridPulse() {
       size: 0,
     }));
 
-    let raf: number;
     const draw = () => {
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
@@ -73,7 +94,6 @@ export default function GridPulse() {
           }
         }
 
-        // Animate size/opacity
         if (c.phase === 'appearing') c.size = Math.min(1, c.size + 0.06);
         if (c.phase === 'disappearing') c.size = Math.max(0, c.size - 0.07);
         c.opacity = c.size;
@@ -84,7 +104,6 @@ export default function GridPulse() {
         ctx.globalAlpha = c.opacity * 0.55;
         ctx.fillStyle = c.color;
 
-        // Rounded rect
         const r = s * 0.2;
         ctx.beginPath();
         ctx.moveTo(x - s/2 + r, y - s/2);
@@ -101,13 +120,13 @@ export default function GridPulse() {
       }
 
       ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
 
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
   }, []);
 
   return <canvas ref={canvasRef} className="background-canvas" />;
-
 }

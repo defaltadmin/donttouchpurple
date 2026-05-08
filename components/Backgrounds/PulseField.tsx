@@ -1,11 +1,33 @@
 import { useRef, useEffect, useCallback } from "react";
+import { useBackgroundController } from '../../hooks/useBackground';
 
-const BASE_SPEED = 0.35; // 60% slower than typical
+const BASE_SPEED = 0.35;
 
 interface Props { rareColor?: string; }
 
 export default function PulseField({ rareColor }: Props) {
   const cvs = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   const draw = useCallback(() => {
     const c = cvs.current; if (!c) return;
@@ -31,11 +53,9 @@ export default function PulseField({ rareColor }: Props) {
         : `rgba(192,38,211,${alpha})`;
       ctx.lineWidth = 2.5;
 
-      // Draw square outline with DTP block shapes at corners
       const s = r * 2;
       ctx.strokeRect(cx - r, cy - r, s, s);
 
-      // Corner block shapes
       const bs = 8;
       ctx.fillStyle = rareColor || "rgba(192,38,211,0.6)";
       [[cx - r, cy - r], [cx + r - bs, cy - r], [cx - r, cy + r - bs], [cx + r - bs, cy + r - bs]].forEach(([x, y]) => {
@@ -45,10 +65,10 @@ export default function PulseField({ rareColor }: Props) {
   }, [rareColor]);
 
   useEffect(() => {
-    let id: number;
-    const loop = () => { draw(); id = requestAnimationFrame(loop); };
+    const loop = () => { draw(); rafRef.current = requestAnimationFrame(loop); };
+    drawRef.current = loop;
     loop();
-    return () => cancelAnimationFrame(id);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [draw]);
 
   return <canvas ref={cvs} className="background-canvas" />;

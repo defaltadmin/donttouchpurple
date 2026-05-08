@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 const COLORS = ['#c026d3','#a21caf','#7c3aed','#9333ea','#3b82f6','#db2777'];
 const CELL = 14; const GAP = 3;
@@ -7,6 +8,28 @@ interface Column { x:number; cells:{y:number; color:string; opacity:number}[]; s
 
 export default function DataStream() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
+
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
@@ -29,7 +52,6 @@ export default function DataStream() {
     const resize = () => { c.width=window.innerWidth; c.height=window.innerHeight; buildCols(); };
     resize(); window.addEventListener('resize',resize);
 
-    let raf: number;
     const draw = () => {
       ctx.clearRect(0,0,c.width,c.height);
       for (const col of cols) {
@@ -41,10 +63,11 @@ export default function DataStream() {
           ctx.fillRect(col.x, cell.y, CELL, CELL);
         }
       }
-      ctx.globalAlpha=1; raf=requestAnimationFrame(draw);
+      ctx.globalAlpha=1; rafRef.current=requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize',resize); };
   }, []);
   return <canvas ref={ref} className="background-canvas" style={{opacity:0.45}} />;
 }

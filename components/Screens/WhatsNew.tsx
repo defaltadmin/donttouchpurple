@@ -10,14 +10,17 @@ interface WhatsNewProps {
 }
 
 const CHANGES = [
-  { emoji: "🎮", text: "Correct game logic: tap safe colors to score, tap purple to lose health" },
-  { emoji: "🎉", text: "New Best! badge on game over when you beat your personal best" },
-  { emoji: "💔", text: "Streak lost toast when you break a streak of 5+" },
-  { emoji: "⚠️", text: "Rare mode turns-left indicator in the power bar" },
-  { emoji: "🛡", text: "Shield, Freeze, and Energy drop animations now properly reset" },
-  { emoji: "⚡", text: "Full energy refill button now works correctly" },
-  { emoji: "🤖", text: "Bot assist feature in Evolve mode" },
-  { emoji: "🌌", text: "Animated backgrounds: Void Tunnel, Star Warp, Grid Pulse" },
+  { emoji: "💣", text: "Bomb cells now show a circular SVG countdown ring — tap before it drains!" },
+  { emoji: "🔄", text: "Inversion boss event fully fixed — purple is safe to tap, safe colors are the threat" },
+  { emoji: "🌀", text: "Storm boss event RNG fixed — seeded replays stay accurate through storms" },
+  { emoji: "🎯", text: "Score display upgraded — smooth glow bloom per point, streak-heat color ramp" },
+  { emoji: "🤖", text: "Bot assist button moved into HUD row — never overlaps the grid" },
+  { emoji: "🎁", text: "Daily check-in panel animates closed after claiming dust" },
+  { emoji: "🖼️", text: "Animated backgrounds now only show during gameplay — Shop and Menu stay clean" },
+  { emoji: "💣", text: "Bombs now spawn in 2-player Evolve mode for both players" },
+  { emoji: "∞",  text: "Evolve mode: grid grows 2×2 → 5×5 with named shape stages" },
+  { emoji: "⚡", text: "Boss events: Storm, Inversion, Blackout — every 500 points in Evolve" },
+  { emoji: "🏆", text: "Global leaderboard, daily streaks, dust economy, and cosmetic shop" },
 ];
 
 export function WhatsNew({ onClose }: WhatsNewProps) {
@@ -61,5 +64,7 @@ export function shouldShowWhatsNew(): boolean {
 }
 
 export function markWhatsNewSeen(): void {
-  try { localStorage.setItem(LS_KEY, WHATS_NEW_VERSION); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, WHATS_NEW_VERSION);
+  } catch { /* ignore */ }
 }

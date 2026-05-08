@@ -1,46 +1,113 @@
-const CACHE_NAME = 'dtp-v__SW_VERSION__';
-const ASSETS = [
+const CACHE_NAME = 'dtp-v__SW_VERSION__-core';
+const BG_CACHE = 'dtp-v__SW_VERSION__-bg';
+const STATIC_CACHE = 'dtp-v__SW_VERSION__-static';
+
+const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
+  '/manifest.json'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+function openScoreDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('dtp-pending-scores', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('pendingScores')) {
+        db.createObjectStore('pendingScores', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    Promise.all([
+      caches.open(STATIC_CACHE).then(c => c.addAll(CORE_ASSETS)),
+      caches.open(BG_CACHE)
+    ])
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME && k !== BG_CACHE && k !== STATIC_CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'dtp-score-submit') {
+    event.waitUntil(
+      (async () => {
+        try {
+          const db = await openScoreDb();
+          const allScores = await new Promise<any[]>((resolve, reject) => {
+            const tx = db.transaction('pendingScores', 'readonly');
+            const req = tx.objectStore('pendingScores').getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
 
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match('/index.html'))
+          for (const score of allScores) {
+            try {
+              const res = await fetch('/api/submit-score', {
+                method: 'POST',
+                body: JSON.stringify(score),
+                headers: { 'Content-Type': 'application/json' }
+              });
+              if (res.ok) {
+                const tx = db.transaction('pendingScores', 'readwrite');
+                tx.objectStore('pendingScores').delete(score.id);
+                await new Promise(r => { tx.oncomplete = r; });
+              }
+            } catch (e) {
+              console.error('[SW] Sync failed for score', score.id, e);
+            }
+          }
+          db.close();
+        } catch (e) {
+          console.error('[SW] Sync handler error', e);
+        }
+      })()
+    );
+  }
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  if (event.request.method !== 'GET' || !url.origin.includes(self.location.origin)) {
+    return;
+  }
+
+  if (url.pathname.match(/\.(js|css|png|svg|webp|woff2|json)$/)) {
+    event.respondWith(
+      caches.match(event.request).then(cached =>
+        cached || fetch(event.request).then(resp => {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+          return resp;
+        })
+      )
     );
     return;
   }
 
-  e.respondWith(
-    caches.match(e.request).then((r) => r || fetch(e.request).then((response) => {
-      if (!response || !response.ok) return response;
-      return caches.open(CACHE_NAME).then((cache) => {
-        cache.put(e.request, response.clone());
-        return response;
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      const fetchPromise = fetch(event.request).then(networkResp => {
+        if (networkResp.status === 200) {
+          caches.open(CACHE_NAME).then(c => c.put(event.request, networkResp.clone()));
+        }
+        return networkResp;
       });
-    }))
+      return cached || fetchPromise;
+    })
   );
 });

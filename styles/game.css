@@ -1196,6 +1196,32 @@ text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .bot-assist-btn--disabled { opacity: 0.45; cursor: not-allowed; }
 .bot-assist-btn--disabled:hover { transform: none; background: rgba(255,255,255,0.07); border-color: rgba(192,38,211,0.3); }
 
+/* ── Bot assist HUD pill — lives in HUD row, never near grid ── */
+.bot-hud-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.07); border: 1.5px solid rgba(192,38,211,0.35);
+  border-radius: 99px; padding: 5px 12px;
+  font-family: var(--font-game); font-size: 12px; color: var(--text);
+  cursor: pointer; transition: all 0.15s var(--ease-spring);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bot-hud-btn:active { transform: scale(0.92); box-shadow: none; }
+.bot-hud-btn--on {
+  background: linear-gradient(135deg, rgba(192,38,211,0.4), rgba(124,58,237,0.3));
+  border-color: var(--purple);
+  color: #fff;
+  box-shadow: 0 2px 0 var(--purple-dark), 0 3px 12px rgba(192,38,211,0.35);
+  animation: botPulse 1.8s ease-in-out infinite;
+}
+@keyframes botPulse {
+  0%,100% { box-shadow: 0 2px 0 var(--purple-dark), 0 3px 12px rgba(192,38,211,0.35); }
+  50%     { box-shadow: 0 2px 0 var(--purple-dark), 0 3px 20px rgba(192,38,211,0.65); }
+}
+.bot-hud-btn--off { opacity: 0.42; cursor: not-allowed; }
+
 /* ── Credit footer ── */
 .credit { position: fixed; bottom: 8px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: 10px; color: var(--muted); opacity: 0.45; flex-wrap: wrap; pointer-events: none; gap: 4px; }
 .credit-link { color: var(--muted); text-decoration: none; pointer-events: all; transition: opacity 0.15s; }
@@ -1928,9 +1954,31 @@ body { background-color: var(--bg); }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* ── HUD score pulse on change ── */
-.hud-val { font-variant-numeric: tabular-nums; transition: transform 0.1s ease-out; }
-.hud-val--bump { animation: hudScoreBump 0.25s cubic-bezier(0.22,1,0.36,1); }
+/* ── HUD score — smooth glow bloom on each point, no flash ── */
+.hud-val {
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.08s ease-out;
+  will-change: transform, filter;
+}
+.hud-val--bump {
+  animation: hudScoreBloom 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hudScoreBloom {
+  0%   { transform: scale(1);    filter: brightness(1)    drop-shadow(0 0 0px rgba(192,38,211,0)); }
+  25%  { transform: scale(1.12); filter: brightness(1.4)  drop-shadow(0 0 10px rgba(240,171,252,0.9)); }
+  60%  { transform: scale(1.04); filter: brightness(1.15) drop-shadow(0 0 6px rgba(192,38,211,0.5)); }
+  100% { transform: scale(1);    filter: brightness(1)    drop-shadow(0 0 0px rgba(192,38,211,0)); }
+}
+/* Streak ramp — score glows warmer at high streaks */
+.hud-card--score.streak--mid .hud-val  { filter: drop-shadow(0 0 6px rgba(251,146,60,0.5)); }
+.hud-card--score.streak--high .hud-val { filter: drop-shadow(0 0 10px rgba(239,68,68,0.7)); }
+.hud-card--score.streak--high {
+  animation: scoreCardFire 1.2s ease-in-out infinite !important;
+}
+@keyframes scoreCardFire {
+  0%,100% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 16px rgba(239,68,68,0.25); }
+  50%     { box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 28px rgba(251,146,60,0.5), 0 0 0 1px rgba(251,146,60,0.15) inset; }
+}
 @keyframes hudScoreBump {
   0%   { transform: scale(1); }
   40%  { transform: scale(1.12); filter: brightness(1.2); }
@@ -2889,6 +2937,54 @@ body { background-color: var(--bg); }
   opacity: 0.55;
 }
 
+/* ── PWA Install Banner ── */
+.install-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26, 0, 51, 0.98);
+  border: 2px solid #c026d3;
+  border-radius: 20px;
+  padding: 20px 24px;
+  z-index: 9999;
+  max-width: 380px;
+  box-shadow: 0 15px 40px rgba(192, 38, 211, 0.45);
+  animation: installPop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.install-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  font-size: 15.5px;
+  line-height: 1.4;
+}
+
+.ios-instructions {
+  font-size: 14px;
+  color: #e0d0ff;
+  background: rgba(192,38,211,0.1);
+  padding: 12px;
+  border-radius: 12px;
+  border-left: 3px solid #c026d3;
+}
+
+.install-banner strong {
+  color: #f472b6;
+}
+
+@keyframes installPop {
+  from { opacity: 0; transform: translate(-50%, 30px) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-banner { animation: none; }
+}
+
 /* Rewards Hub icon button (in StartScreen bottom nav) */
 .rewards-hub-btn {
   position: relative;
@@ -2920,3 +3016,196 @@ body { background-color: var(--bg); }
 }
 
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLET / LANDSCAPE / DESKTOP BREAKPOINTS
+   Max-width lifted from 520px for wider screens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Landscape phone (short + wide) ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .root {
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 4px 10px;
+    gap: 4px;
+  }
+  .hdr { min-height: 36px; }
+  .hud { gap: 6px; }
+  .hud-card { padding: 4px 8px; }
+  .hud-val { font-size: 20px; }
+  .hud-card--score .hud-val { font-size: 22px; }
+  .game-area { margin: 0; }
+  .go-overlay { padding: 12px; }
+  .menu-card { padding: 14px; gap: 10px; }
+  .btn-play { padding: 12px; font-size: 15px; }
+}
+
+/* ── Tablet portrait (768px+) ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .root {
+    max-width: 600px;
+    padding: 16px 20px 20px;
+    gap: 12px;
+  }
+  .hud-val { font-size: 28px; }
+  .hud-card--score .hud-val { font-size: 32px; }
+  .menu-card { padding: 28px; border-radius: 32px; }
+  .btn-play { font-size: 18px; padding: 20px; border-radius: 20px; }
+  .gpanel { border-radius: 20px; }
+  :root {
+    --cell-1p: min(clamp(72px, 16vw, 110px), clamp(72px, 14vh, 110px));
+    --gap: 10px;
+    --r: 16px;
+  }
+  .modal-panel { max-width: 440px; padding: 28px; }
+  .drawer-panel { width: 340px; }
+}
+
+/* ── Tablet landscape / small desktop (1024px+) ── */
+@media (min-width: 1024px) {
+  .root {
+    max-width: 640px;
+    padding: 20px 24px 24px;
+    gap: 14px;
+  }
+  .hud { gap: 12px; }
+  .hud-val { font-size: 30px; }
+  .hud-card--score .hud-val { font-size: 34px; }
+  .menu-card { padding: 32px; border-radius: 36px; }
+  .btn-play { font-size: 19px; padding: 22px; border-radius: 22px; }
+  :root {
+    --cell-1p: min(clamp(80px, 11vw, 118px), clamp(80px, 13vh, 118px));
+    --gap: 12px;
+    --r: 18px;
+    --panel-blur: 24px;
+  }
+  .modal-panel { max-width: 480px; padding: 32px; }
+  .drawer-panel { width: 360px; }
+  /* Show cursor on desktop */
+  html { cursor: auto; }
+  .cell:not(.inactive) { cursor: pointer; }
+}
+
+/* ── Large desktop (1280px+) ── */
+@media (min-width: 1280px) {
+  .root { max-width: 680px; }
+  :root {
+    --cell-1p: min(clamp(88px, 9vw, 126px), clamp(88px, 13vh, 126px));
+  }
+}
+
+/* ── Touch optimizations — coarse pointer = mobile/tablet ── */
+@media (pointer: coarse) {
+  /* Larger tap targets */
+  .btn-icon { width: 44px; height: 44px; }
+  .btn-pause-inline { width: 40px; height: 40px; }
+  .hub-tab-btn { padding: 11px 8px; }
+  /* Disable hover states that cause sticky :hover on touch */
+  .cell:not(.inactive):not(.cell--press):hover {
+    transform: none !important;
+    filter: none !important;
+  }
+  .btn-play:hover { transform: none; }
+  .btn-ghost:not(:disabled):hover { transform: none; }
+  .btn-primary:not(:disabled):hover { transform: none; }
+}
+
+/* ── Mouse/precision pointer — desktop ── */
+@media (hover: hover) and (pointer: fine) {
+  .cell:not(.inactive):hover {
+    transform: scale(1.07) translateY(-2px) !important;
+    filter: brightness(1.25) saturate(1.2) !important;
+    z-index: 2;
+  }
+}
+
+/* ── Safe area insets (iPhone notch / Dynamic Island / Android nav bar) ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .root {
+    padding-bottom: max(12px, calc(12px + env(safe-area-inset-bottom)));
+    padding-left:  max(10px, calc(10px + env(safe-area-inset-left)));
+    padding-right: max(10px, calc(10px + env(safe-area-inset-right)));
+  }
+  .fs-controls {
+    right: max(10px, calc(10px + env(safe-area-inset-right)));
+  }
+  .go-overlay {
+    padding-bottom: max(24px, calc(24px + env(safe-area-inset-bottom)));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLET / DESKTOP / LANDSCAPE — responsive layout upgrades
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tablet portrait (768px+) — wider card, bigger cells */
+@media (min-width: 768px) {
+  .root {
+    max-width: 600px;
+    padding: 12px 16px 20px;
+    gap: 12px;
+  }
+  :root {
+    --cell-1p: min(clamp(72px, 16vw, 110px), clamp(72px, 13vh, 110px));
+    --gap: 10px;
+  }
+  .hud-val { font-size: 28px; }
+  .hud-card--score .hud-val { font-size: 32px; }
+  .menu-card { padding: 28px 32px; }
+  .btn-play { font-size: 20px; padding: 18px; }
+}
+
+/* Desktop (1024px+) — centered column with breathing room */
+@media (min-width: 1024px) {
+  .root {
+    max-width: 680px;
+    gap: 14px;
+  }
+  :root {
+    --cell-1p: min(clamp(88px, 12vw, 128px), clamp(88px, 14vh, 128px));
+    --gap: 12px;
+    --r: 18px;
+  }
+  .hud-card { padding: 10px 16px; }
+  .hud-val { font-size: 30px; }
+  .hud-card--score .hud-val { font-size: 36px; }
+  .menu-card { padding: 32px 40px; border-radius: 32px; }
+}
+
+/* Landscape phone — compress vertical, keep grid centered */
+@media (max-height: 500px) and (orientation: landscape) {
+  .root { padding: 4px 10px 6px; gap: 4px; }
+  .hdr { min-height: 32px; }
+  .hud-lbl { display: none; }
+  .hud-val { font-size: 20px; }
+  .hud-card { padding: 4px 10px; }
+  .spd-wrap { display: none; } /* hide speed bar on tiny landscape */
+  :root {
+    --cell-1p: min(clamp(44px, 11vw, 68px), clamp(44px, 14vh, 68px));
+  }
+}
+
+/* Touch-only: larger tap targets, remove hover states that feel sticky */
+@media (pointer: coarse) {
+  .btn-icon { width: 44px; height: 44px; font-size: 18px; }
+  .btn-play { padding: 18px; }
+  .hub-tab-btn { padding: 11px 6px; }
+  .cell { -webkit-tap-highlight-color: transparent; }
+  /* Increase cell minimum touch target */
+  :root { --cell-1p: max(var(--cell-1p), 52px); }
+}
+
+/* Non-touch (mouse): restore crisp hover, tighter targets */
+@media (pointer: fine) {
+  .btn-icon { width: 36px; height: 36px; }
+}
+
+/* High-DPI / Retina — sharper borders */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .gpanel { border-width: 1px; }
+  .hud-card { border-width: 1px; }
+  .menu-card { border-width: 1px; }
+}

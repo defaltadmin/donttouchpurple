@@ -31,7 +31,7 @@ export default function DailyChallengesPopup({ challenges, onClaim, onClose }: D
       onClaim(challenge.id, challenge.reward);
     };
     if (btn) {
-      animateDustClaim(btn, '.dust-counter', challenge.reward, doComplete);
+      animateDustClaim(btn, '.dust-counter', challenge.reward, false, doComplete);
     } else {
       doComplete();
     }

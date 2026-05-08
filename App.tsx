@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 
 import "./styles/game.css";
 import "./styles/enhancements.css";
 
+declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
 import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
@@ -17,6 +18,7 @@ import { EnergyBar } from "./components/HUD/EnergyBar";
 import { DustWidget } from "./components/HUD/DustWidget";
 import { Toast, RareSplash } from "./components/HUD/Toasts";
 import { Hearts } from "./components/HUD/Hearts";
+import { GridErrorBoundary } from "./components/HUD/GridErrorBoundary";
 import { PwrBar } from "./components/HUD/PwrBar";
 import { PlayerPanel } from "./components/HUD/PlayerPanel";
 import { ShieldDrop } from "./components/Animations/ShieldDrop";
@@ -57,12 +59,14 @@ import { getDailyObjective, markObjectiveComplete, checkObjective, getObjectiveP
 import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
 import { initGA, logProgressionEvent, logDesignEvent, logResourceEvent, logErrorEvent } from "./services/gameanalytics";
 import { safeGetJSON, safeSet } from "./utils/storage";
+import { addPendingScore } from "./utils/pendingScoresDb";
 
 // Components - Settings & Shop
-import { SettingsDrawer } from "./components/Settings/SettingsDrawer";
 import { KeyBinder } from "./components/Settings/KeyBinder";
-import { ShopPanel } from "./components/Shop/ShopPanel";
-import { LeaderboardPanel } from "./components/Leaderboard/LeaderboardPanel";
+const SettingsDrawer = lazy(() => import("./components/Settings/SettingsDrawer").then(m => ({ default: m.SettingsDrawer })));
+const ShopPanel = lazy(() => import("./components/Shop/ShopPanel").then(m => ({ default: m.ShopPanel })));
+const LeaderboardPanel = lazy(() => import("./components/Leaderboard/LeaderboardPanel").then(m => ({ default: m.LeaderboardPanel })));
+// DevOverlay: lazy-loaded, excluded from prod via import.meta.env.DEV dead-code elimination
 import { DevOverlay, DevUnlockModal } from "./components/Settings/DevOverlay";
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 type GameMode        = "classic" | "evolve";
@@ -232,7 +236,7 @@ export default function App() {
   const [shopData, setShopDataState] = useState(() => loadShopData());
 
   useEffect(() => {
-    initGA("5.6.0");
+    initGA(typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "5.9.0");
   }, []);
 
   useEffect(() => {
@@ -263,8 +267,7 @@ export default function App() {
       setLoginStreakReward(reward);
       const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
       if (gamesEver > 0) {
-        // Delay enough for app to fully mount at menu screen
-        setTimeout(() => setShowRewardsHub(true), 600);
+        setShouldShowRewardsOnLogin(true);
       }
     }
 
@@ -306,6 +309,7 @@ export default function App() {
     try { localStorage.setItem("dtp_reduced_motion", v.toString()); } catch {}
     fbLogEvent("setting_changed", { setting: "reduced_motion", enabled: v });
   }, [setScreenShakePersisted]);
+  const backgroundFPS = reducedMotion ? 30 : 60;
   const setVolume = useCallback((v: number) => {
     setVolumeState(v);
     try { localStorage.setItem("dtp_volume", v.toString()); } catch {}
@@ -329,6 +333,93 @@ export default function App() {
   const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
   const [screen, setScreen]          = useState<GameScreen>("menu");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  // A/B Testing Foundation (ready for Cloudflare Worker routing)
+  const abTestVariant = React.useMemo(() => {
+    const saved = localStorage.getItem('dtp_ab_variant');
+    if (saved) return saved;
+    const variant = Math.random() > 0.5 ? 'A' : 'B';
+    localStorage.setItem('dtp_ab_variant', variant);
+    return variant;
+  }, []);
+
+  // Aggressive preload on menu (Shop + default background)
+  useEffect(() => {
+    if (screen === "menu") {
+      import("./components/Shop/ShopPanel");
+      import("./components/Backgrounds/PurpleRain");
+    }
+  }, [screen]);
+
+  // Version sync safety
+  useEffect(() => {
+    const pkgVersion: string = (window as any).__APP_VERSION__ ?? "5.8.17";
+    if (pkgVersion !== "5.8.17") {
+      console.warn(`[DTP] Version mismatch: package=${pkgVersion}`);
+      safeSentry.addBreadcrumb({ category: "deploy", message: "version_mismatch", data: { pkg: pkgVersion } });
+    }
+  }, []);
+
+  // PWA Install Prompt (One-time + iOS fallback)
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(iOS);
+
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    const gamesPlayed = parseInt(localStorage.getItem('dtp-games-played') || '0', 10);
+    const promptAlreadyShown = localStorage.getItem('dtp-install-prompt-shown') === 'true';
+
+    if (!promptAlreadyShown && (gamesPlayed >= 3 || screen === "menu")) {
+      setTimeout(() => setShowInstallBanner(true), 2200);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, [screen]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    safeSentry.addBreadcrumb({ category: "pwa", message: "install_prompt", data: { outcome, platform: "android" } });
+    fbLogEvent("pwa_install", { outcome, platform: "android" });
+
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+    localStorage.setItem('dtp-install-prompt-shown', 'true');
+
+    if (outcome === 'accepted') toast$("🎉 Added to Home Screen!");
+  };
+
+  const dismissInstallBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem('dtp-install-prompt-shown', 'true');
+  };
+
+  // Offline Score Queue
+  const queueOfflineScore = async (scoreData: any) => {
+    try {
+      await addPendingScore({ ...scoreData, timestamp: Date.now() });
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        const reg = await navigator.serviceWorker.ready;
+        await (reg as any).sync.register('dtp-score-submit');
+      }
+      toast$("💾 Score saved offline. Will sync when online.");
+    } catch (e) {
+      console.error("[DTP] Failed to queue offline score", e);
+    }
+  };
+
   const [pendingReplaySeed, setPendingReplaySeed] = useState<string | null>(
     () => localStorage.getItem("pendingReplaySeed")
   );
@@ -339,7 +430,7 @@ export default function App() {
     setPendingReplaySeed(null);
   }, []);
   const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
-  const [bossCounters, setBossCounters] = useState<BossObjectiveCounters>({ bosssSurvived: 0, bombsDefused: 0, inversionssSurvived: 0 });
+  const [bossCounters, setBossCounters] = useState<BossObjectiveCounters>({ bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 });
   const bossCountersRef = useRef(bossCounters);
   useEffect(() => { bossCountersRef.current = bossCounters; }, [bossCounters]);
   const [initials, setInitials]      = useState("");
@@ -379,6 +470,8 @@ export default function App() {
     const [showBuildDeploy, setShowBuildDeploy] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [showEnergyPopup, setShowEnergyPopup] = useState(false);
+    const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
+    const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(dust);
   const pbFlashedRef = useRef(false);
@@ -409,9 +502,22 @@ export default function App() {
     return 0.85;
   }, [getLifetimeDustSpent]);
 
+  const addDust = useCallback((amount: number, source: string): number => {
+    if (isNaN(amount) || !isFinite(amount) || amount <= 0) return dustRef.current;
+    const base = isNaN(dustRef.current) ? 0 : dustRef.current;
+    const newDust = base + amount;
+    setDust(newDust);
+    dustRef.current = newDust;
+    localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+    getFirebase().then(fb => fb.fbSyncDust(playerName, newDust).catch(() => {}));
+    logResourceEvent("Source", "Dust", source, "earned", amount);
+    return newDust;
+  }, [playerName]);
+
   const spendDust = useCallback((amount: number) => {
-    if (amount === 0) return;  // re-render trigger only
-    const newDust = Math.max(0, dustRef.current - amount);
+    if (amount === 0) return;
+    const raw = dustRef.current - amount;
+    const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
     const spent = getLifetimeDustSpent() + amount;
     try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {}
     setDust(newDust);
@@ -429,6 +535,24 @@ export default function App() {
     setToast(msg);
     toastRef.current = setTimeout(() => setToast(null), GAME.TOAST_DURATION_MS);
   }, []);
+
+  // Service Worker update toast
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                toast$("🚀 Update available! Reload to update.");
+              }
+            });
+          }
+        });
+      });
+    }
+  }, [toast$]);
 
   // Dev Toggle — type //dev// in name field (legacy) OR type d→d→p on menu screen
   const devKeyBuffer = useRef<string[]>([]);
@@ -464,7 +588,7 @@ export default function App() {
     godMode: godMode || practiceMode,
   }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
 
-  const handleEngineGameOver = useCallback((engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
+  const handleEngineGameOver = useCallback(async (engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
     Sentry.addBreadcrumb({
       category: "game",
       message: "game_over",
@@ -487,13 +611,8 @@ export default function App() {
     });
     const rawEarned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
     const earned = isNaN(rawEarned) || !isFinite(rawEarned) ? 0 : rawEarned;
-    const baseDust = isNaN(dustRef.current) ? 0 : dustRef.current;
-    const newDust = baseDust + earned;
-    setDust(newDust);
-    dustRef.current = newDust;
-    localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+    const newDust = addDust(earned, 'GameOver');
     getFirebase().then(fb => {
-      fb.fbSyncDust(playerName, newDust).catch(() => {});
       fb.fbLogEvent("game_over", {
         mode: gameMode,
         players: numPlayers,
@@ -517,17 +636,39 @@ export default function App() {
     setIE(false);
     setPaused(false);
 
-    // F1: auto-submit score to leaderboard (no name input required)
+    // Auto-submit score through Cloudflare Worker (with offline fallback)
     const autoEntry = {
       score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
       initials: playerName || "Player",
       mode: gameMode,
       badge: shopData.equippedBadge,
       date: new Date().toISOString().split("T")[0],
+      tick: snapshotRef.current?.tick || 0
     };
+
     if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
       scoreSubmittedRef.current = true;
-      getFirebase().then(fb => fb.fbAddScoreGlobal(autoEntry)).catch(() => {});
+
+      try {
+        const response = await fetch('https://game.mscarabia.com/api/submit-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(autoEntry)
+        });
+
+        if (!response.ok) throw new Error('Worker rejected');
+        toast$("🏆 Score submitted to global leaderboard!");
+
+      } catch (err) {
+        console.warn("Worker offline, queuing score");
+        await addPendingScore(autoEntry);
+
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+          const reg = await navigator.serviceWorker.ready;
+          (reg as any).sync.register('dtp-score-submit');
+        }
+        toast$("💾 Score saved offline — will sync soon");
+      }
     }
 
     // Update daily challenge progress
@@ -545,9 +686,7 @@ export default function App() {
         if (completed) {
           setDailyObjective(completed);
           const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
-          const bonusDust = (isNaN(newDust) ? 0 : newDust) + safeReward;
-          setDust(bonusDust);
-          localStorage.setItem(LS_KEYS.DUST, bonusDust.toString());
+          addDust(safeReward, 'DailyObjective');
           setTimeout(() => {
             setToast(`🎯 Daily Complete! +${completed.reward} 💜`);
             if (toastRef.current) clearTimeout(toastRef.current);
@@ -564,12 +703,31 @@ export default function App() {
       }
     }
     setScreen("gameover");
-    // Show rewards hub after first-ever game completes (flag set in startGame)
     if (localStorage.getItem('dtp-show-rewards-after-first-game') === '1') {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
-      setTimeout(() => setShowRewardsHub(true), 800);
+      setShouldShowRewardsAfterGame(true);
     }
   }, [numPlayers, playerName, toast$, best1, best2, gameMode]);
+
+  useEffect(() => {
+    if (shouldShowRewardsAfterGame && screen === "gameover") {
+      const t = setTimeout(() => {
+        setShowRewardsHub(true);
+        setShouldShowRewardsAfterGame(false);
+      }, 900);
+      return () => clearTimeout(t);
+    }
+  }, [shouldShowRewardsAfterGame, screen]);
+
+  useEffect(() => {
+    if (shouldShowRewardsOnLogin && screen === "menu") {
+      const t = setTimeout(() => {
+        setShowRewardsHub(true);
+        setShouldShowRewardsOnLogin(false);
+      }, 700);
+      return () => clearTimeout(t);
+    }
+  }, [shouldShowRewardsOnLogin, screen]);
 
   const handleDamage = useCallback(() => {
     document.body.classList.add('damage-pulse');
@@ -601,17 +759,36 @@ export default function App() {
     dustCallbacks,
     handleDamage,
     (bossType) => {
-      setBossCounters(c => ({
-        ...c,
-        bosssSurvived: c.bosssSurvived + 1,
-        inversionssSurvived: bossType === "inversion" ? c.inversionssSurvived + 1 : c.inversionssSurvived,
-      }));
+      const next = { ...bossCountersRef.current, bossSurvived: bossCountersRef.current.bossSurvived + 1 };
+      if (bossType === "inversion") next.inversionSurvived += 1;
+      bossCountersRef.current = next;
+      setBossCounters(next);
+      safeSentry.addBreadcrumb({ category: "game", message: "boss_survived", level: "info", data: { type: bossType } });
+      if (snapshotRef.current && snapshotRef.current.p1.score >= 100) {
+        const bonus = bossType === "inversion" ? 20 : 15;
+        addDust(bonus, `boss_${bossType}`);
+        toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
+      }
     },
-    () => setBossCounters(c => ({ ...c, bombsDefused: c.bombsDefused + 1 })),
+    () => {
+      const next = { ...bossCountersRef.current, bombsDefused: bossCountersRef.current.bombsDefused + 1 };
+      bossCountersRef.current = next;
+      setBossCounters(next);
+      safeSentry.addBreadcrumb({ category: "game", message: "bomb_defused", level: "info" });
+    },
   );
 
+  const handleBotToggle = useCallback((player: 1 | 2) => {
+    const currentDust = dustRef.current;
+    if (!botAssistActive[player] && currentDust < 30) {
+      toast$("🤖 Not enough dust for Bot Assist (30 💜 needed)");
+      return;
+    }
+    setBotAssist(player, !botAssistActive[player]);
+  }, [botAssistActive, toast$, setBotAssist]);
+
   // Compute whether backgrounds should animate
-  const shouldAnimateBackground = !reducedMotion && screen === "playing";
+  const shouldAnimateBackground = !reducedMotion && (screen === "playing" || screen === "gameover");
 
   // Background component mapping
   const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<any> }>>(() => ({
@@ -761,14 +938,14 @@ export default function App() {
       // B key → toggle bot assist for P1
       if (e.key === "b" || e.key === "B") {
         if (screen === "playing" && snapshot?.phase === "playing") {
-          setBotAssist(1, !botAssistActive[1]);
+          handleBotToggle(1);
         }
         return;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [screen, paused, snapshot?.phase, pauseGame, resumeGame, botAssistActive, setBotAssist]);
+  }, [screen, paused, snapshot?.phase, pauseGame, resumeGame, handleBotToggle]);
 
   // Personal best delta flash
   useEffect(() => {
@@ -867,7 +1044,7 @@ export default function App() {
     peakStreakRef.current = 0;
     dustAtStartRef.current = dustRef.current;
     pbFlashedRef.current = false;
-    setBossCounters({ bosssSurvived: 0, bombsDefused: 0, inversionssSurvived: 0 });
+    setBossCounters({ bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 });
     const next = gamesPlayed + 1;
     localStorage.setItem('dtp-games-played', String(next));
     setGamesPlayed(next);
@@ -955,9 +1132,7 @@ export default function App() {
     const todayStr = new Date().toISOString().slice(0, 10);
     localStorage.setItem('dtp-login-claimed', todayStr);
     const safeReward = (isNaN(loginStreakReward) || !isFinite(loginStreakReward)) ? 50 : loginStreakReward;
-    const newDust = (isNaN(dustRef.current) ? 0 : dustRef.current) + safeReward;
-    persistDust(newDust);
-    setDust(newDust);
+    addDust(safeReward, 'LoginStreak');
     setShowLoginStreak(false);
   };
 
@@ -967,9 +1142,7 @@ export default function App() {
     const claimed: string[] = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
     claimed.push(challengeId);
     localStorage.setItem(CHALLENGES_KEY, JSON.stringify(claimed));
-    const newDust = (isNaN(dustRef.current) ? 0 : dustRef.current) + reward;
-    persistDust(newDust);
-    setDust(newDust);
+    addDust(reward, 'DailyChallenge');
     setDailyChallenges(buildDailyChallenges(todayStr));
   };
 
@@ -1066,9 +1239,7 @@ export default function App() {
     claimed.push(taskId);
     localStorage.setItem(WEEKLY_CLAIMED_KEY, JSON.stringify(claimed));
     const safeReward = isNaN(reward) ? 0 : reward;
-    const newDust = (isNaN(dustRef.current) ? 0 : dustRef.current) + safeReward;
-    persistDust(newDust);
-    setDust(newDust);
+    addDust(safeReward, 'WeeklyTask');
     setWeeklyTasks(buildWeeklyTasks());
   };
 
@@ -1263,7 +1434,7 @@ export default function App() {
       {screen === "playing" && snapshot?.rareMode.active && (
         <div
           className="rare-grid-ring"
-          style={{ "--rare-color": snapshot.rareMode.cssColor } as React.CSSProperties}
+          style={{ "--rare-color": snapshot.rareMode.cssColor, ...(reducedMotion ? { animation: 'none' } : {}) } as React.CSSProperties}
         >
           <div className="rare-pip-row">
             {Array.from({ length: snapshot.rareMode.turnsLeft }).map((_, i) => (
@@ -1277,6 +1448,7 @@ export default function App() {
       {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
 
       {showSettings && (
+        <Suspense fallback={<div className="loading-placeholder">Loading settings...</div>}>
         <SettingsDrawer
           colorblindMode={colorblindMode} setColorblindMode={setColorblindMode}
           theme={theme} setTheme={setTheme}
@@ -1300,9 +1472,10 @@ export default function App() {
             startGame();
           }}
         />
+        </Suspense>
       )}
 
-      {showDevUnlock && (
+      {import.meta.env.DEV && showDevUnlock && (
         <DevUnlockModal
           onUnlock={() => { setShowDevUnlock(false); setDevMode(true); }}
           onClose={() => setShowDevUnlock(false)}
@@ -1444,6 +1617,7 @@ export default function App() {
       )}
 
       {screen === "leaderboard" && (
+        <Suspense fallback={<div className="loading-placeholder">Loading leaderboard...</div>}>
         <LeaderboardPanel
           mode={lbMode}
           onClose={() => setScreen("menu")}
@@ -1454,12 +1628,14 @@ export default function App() {
           playerName={playerName}
           onScoresFetched={checkTop10Achievement}
         />
+        </Suspense>
       )}
       {screen === "howto" && <HowToPlay onClose={() => setScreen("menu")} />}
       {screen === "shop" && (
+        <Suspense fallback={<div className="loading-placeholder">Loading shop...</div>}>
         <ShopPanel
           dust={dust}
-          onDustChange={d => { setDust(d); setShopDataState(loadShopData()); }}
+          onDustChange={(d: number) => { setDust(d); setShopDataState(loadShopData()); }}
           onClose={() => setScreen("menu")}
           devMode={devMode}
            gameMode={gameMode}
@@ -1469,6 +1645,7 @@ export default function App() {
           saveStoredPowerups={saveStoredPwr}
           persistDust={persistDust}
         />
+        </Suspense>
       )}
 
       {screen === "menu" && (
@@ -1513,9 +1690,8 @@ export default function App() {
         />
       )}
 
-      {/* DevFab removed for stealth (Task 6) */}
-
-      {devMode && (
+      {/* DevOverlay — eliminated from prod bundle by Rollup dead-code elimination */}
+      {import.meta.env.DEV && devMode && (
         <DevOverlay
           p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
           p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
@@ -1536,11 +1712,7 @@ export default function App() {
           freezeTime={devFreezeTime}
           onFreezeTimeToggle={() => setDevFreezeTime(f => !f)}
           dust={dust}
-          onDustAdd={amount => {
-            const newDust = dust + amount;
-            setDust(newDust);
-            localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-          }}
+          onDustAdd={amount => addDust(amount, 'Dev')}
           onSpawnPowerup={devSpawnPowerup}
           gameSeed={snapshot?.gameSeed || 0}
           autoPlay={devAutoPlay}
@@ -1554,7 +1726,7 @@ export default function App() {
 
       {isPlaying && snapshot && (
          <div className="hud">
-          <div className="hud-card hud-card--score">
+          <div className={`hud-card hud-card--score${snapshot.p1.streak >= 10 ? " streak--high" : snapshot.p1.streak >= 5 ? " streak--mid" : ""}`}>
             <div className="hud-lbl">Score</div>
             <div className="hud-score-row">
               <div className={`hud-val${snapshot.p1.score > (gameMode === "classic" ? best1 : best2) && snapshot.p1.score > 0 ? " hud-val--pb" : ""}`}>
@@ -1574,6 +1746,19 @@ export default function App() {
           <div className="hud-card hud-card--hearts">
             <Hearts health={snapshot.p1.health} anim={heartAnimP1} shieldCount={snapshot.p1.shieldCount} />
           </div>
+          {/* Bot assist pill — Evolve 1P only, lives in HUD row never near grid */}
+          {!is2P && gameMode === "evolve" && (() => {
+            const botOn = isBotActive();
+            return (
+              <button
+                className={`bot-hud-btn${botOn ? " bot-hud-btn--on" : ""}${dust < 30 ? " bot-hud-btn--off" : ""}`}
+                onClick={() => { if (dust >= 30) handleBotToggle(1); }}
+                title={dust < 30 ? "Need 30+ dust" : botOn ? "Bot ON — tap to stop" : "Bot assist (30💜/use)"}
+              >
+                {botOn ? "🤖 ON" : "🤖"}
+              </button>
+            );
+          })()}
         </div>
       )}
 
@@ -1583,9 +1768,10 @@ export default function App() {
         </div>
       )}
 
-       {isPlaying && snapshot && (
-         <div className="game-area">
-          {snapshot?.isBlackout && screen === "playing" && (
+        {isPlaying && snapshot && (
+          <div className="game-area">
+           <GridErrorBoundary onRestart={() => { goMenu(); setTimeout(startGame, 100); }}>
+           {snapshot?.isBlackout && screen === "playing" && (
             <div className="blackout-overlay" />
           )}
           <PwrBar ps={snapshot.p1} rareMode={snapshot.rareMode} />
@@ -1603,7 +1789,7 @@ export default function App() {
                 gameSeed={gameSeedState || 0}
                 tick={snapshot.tick}
                 p1={snapshot.p1}
-                onPlay={startGame}
+                onAgain={startGame}
                 onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
                 onMenu={goMenu}
                 spinLevel={snapshot.spinLevel}
@@ -1638,8 +1824,8 @@ export default function App() {
             onActivateShield={() => activateStoredShield(1)}
             showStoredPwr={screen === "playing"}
             practiceMode={practiceMode}
-            onToggleBotAssist={() => setBotAssist(1, !botAssistActive[1])}
-            showBotAssist={screen === "playing" && !is2P && gameMode === "evolve"}
+            onToggleBotAssist={() => handleBotToggle(1)}
+            showBotAssist={false}
             isBotActive={botAssistActive[1]}
             dust={dust} />
            {is2P && (
@@ -1659,11 +1845,44 @@ export default function App() {
               onActivateShield={() => activateStoredShield(2)}
               showStoredPwr={screen === "playing"}
               practiceMode={practiceMode}
-              onToggleBotAssist={() => setBotAssist(2, !botAssistActive[2])}
+              onToggleBotAssist={() => handleBotToggle(2)}
               showBotAssist={screen === "playing" && is2P}
               isBotActive={botAssistActive[2]}
               dust={dust} />
-          )}        </div>
+          )}
+          </GridErrorBoundary>        </div>
+      )}
+
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div className="install-banner">
+          <div className="install-content">
+            {isIOS ? (
+              <>
+                <strong>Play instantly from your home screen</strong>
+                <div className="ios-instructions">
+                  1. Tap the <strong>Share</strong> button <span style={{fontSize:"22px"}}>⎙</span><br/>
+                  2. Scroll and tap <strong>"Add to Home Screen"</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <strong>Want the full arcade experience?</strong>
+                <span>Add to Home Screen for lightning-fast access</span>
+              </>
+            )}
+
+            {!isIOS && deferredPrompt && (
+              <button className="btn-primary" onClick={handleInstallClick}>
+                📲 Add to Home Screen
+              </button>
+            )}
+
+            <button className="btn-ghost" onClick={dismissInstallBanner}>
+              Not Now
+            </button>
+          </div>
+        </div>
       )}
 
       {screen === "menu" && (

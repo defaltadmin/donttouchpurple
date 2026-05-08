@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 const COLORS = ['#c026d3','#7c3aed','#db2777','#9333ea','#a21caf','#e879f9'];
 type Shape = 'square'|'triangle'|'diamond'|'circle';
@@ -17,6 +18,28 @@ function drawShape(ctx:CanvasRenderingContext2D, shape:Shape, x:number, y:number
 
 export default function BlockOrbit() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
+
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
@@ -40,7 +63,6 @@ export default function BlockOrbit() {
       }))
     );
 
-    let raf: number;
     const draw = () => {
       const w=c.width, h=c.height;
       ctx.clearRect(0,0,w,h);
@@ -51,10 +73,11 @@ export default function BlockOrbit() {
         ctx.globalAlpha = 0.5; ctx.fillStyle = b.color;
         drawShape(ctx, b.shape, x, y, b.size, b.angle);
       }
-      ctx.globalAlpha=1; raf=requestAnimationFrame(draw);
+      ctx.globalAlpha=1; rafRef.current=requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize',resize); };
   }, []);
   return <canvas ref={ref} className="background-canvas" style={{opacity:0.5}} />;
 }

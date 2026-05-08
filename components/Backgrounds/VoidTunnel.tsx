@@ -1,15 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 type Shape = 'square' | 'triangle' | 'diamond';
 
 interface SpiralBlock {
-  angle: number;       // current angle in radians
-  radius: number;      // distance from center
-  size: number;        // px
+  angle: number;
+  radius: number;
+  size: number;
   shape: Shape;
   color: string;
-  speed: number;       // radians per frame
-  radiusSpeed: number; // px per frame (shrinking toward center)
+  speed: number;
+  radiusSpeed: number;
   opacity: number;
 }
 
@@ -31,7 +32,7 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, x: number, y: nu
     ctx.lineTo(size / 2, size / 2);
     ctx.lineTo(-size / 2, size / 2);
     ctx.closePath();
-  } else { // diamond
+  } else {
     ctx.moveTo(0, -size / 2);
     ctx.lineTo(size / 2, 0);
     ctx.lineTo(0, size / 2);
@@ -58,6 +59,27 @@ function makeBlock(w: number, h: number): SpiralBlock {
 
 export default function VoidTunnel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const drawRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && drawRef.current) {
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -77,7 +99,6 @@ export default function VoidTunnel() {
       makeBlock(canvas.width, canvas.height)
     );
 
-    let raf: number;
     const draw = () => {
       const w = canvas.width, h = canvas.height;
       const cx = w / 2, cy = h / 2;
@@ -87,7 +108,6 @@ export default function VoidTunnel() {
         b.angle += b.speed;
         b.radius -= b.radiusSpeed;
 
-        // Reset when reaches center
         if (b.radius < 8) {
           Object.assign(b, makeBlock(w, h));
           b.radius = Math.max(w, h) * (0.5 + Math.random() * 0.15);
@@ -102,12 +122,13 @@ export default function VoidTunnel() {
       }
 
       ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(draw);
     };
+    drawRef.current = draw;
     draw();
 
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
   }, []);

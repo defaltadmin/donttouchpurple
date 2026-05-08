@@ -46,21 +46,33 @@ export function RewardsHub({
   onClose,
 }: RewardsHubProps) {
   const [tab, setTab] = useState<HubTab>("checkin");
+  const [closing, setClosing] = useState(false);
 
   // Badge counts for tab headers
   const loginBadge  = loginClaimedToday ? 0 : 1;
   const dailyBadge  = dailyChallenges.filter(c => c.completed && !c.claimed).length;
   const weeklyBadge = weeklyTasks.filter(t => t.completed && !t.claimed).length;
 
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 420);
+  };
+
+  const handleClaimLogin = () => {
+    onClaimLogin();
+    // Trigger close animation after claim
+    setTimeout(() => { setClosing(true); setTimeout(onClose, 420); }, 600);
+  };
+
   return (
     // No outside-click dismiss (E8) — modal is persistent until explicit ✕
-    <div className="modal-overlay rewards-hub-overlay" onClick={(e) => e.stopPropagation()}>
-      <div className="modal-panel rewards-hub-panel" onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay rewards-hub-overlay${closing ? " rewards-hub-overlay--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-panel rewards-hub-panel${closing ? " rewards-hub-panel--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div className="modal-header">
           <span className="modal-title">🎁 Rewards Hub</span>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="btn-icon" onClick={handleClose}>✕</button>
         </div>
 
         {/* Tab bar */}
@@ -77,7 +89,7 @@ export function RewardsHub({
               streak={loginStreak}
               reward={loginReward}
               claimed={loginClaimedToday}
-              onClaim={onClaimLogin}
+              onClaim={handleClaimLogin}
             />
           )}
           {tab === "daily" && (

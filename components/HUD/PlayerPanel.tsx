@@ -2,6 +2,7 @@ import React from "react";
 import Cell from "../Cell";
 import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
+import { animateDustClaim } from "../../utils/dustAnimation";
 import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot } from "../../engine/types";
 
 
@@ -93,6 +94,7 @@ export function PlayerPanel({
   const maskSet   = mask ? new Set(mask) : null;
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const botBtnRef = useRef<HTMLButtonElement>(null);
 
   const spinClass = snapshot?.spinCfg
     ? (snapshot.spinCfg.direction === 1 ? "gpanel--cw" : "gpanel--ccw")
@@ -193,8 +195,11 @@ export function PlayerPanel({
                   return (
                     <HoldCellDisplay
                       key={i}
+                      idx={activeCell.idx}
                       holdRequired={(activeCell as any).holdRequired ?? 800}
                       holdStart={(activeCell as any).holdStart}
+                      onHoldStart={onHoldStart}
+                      onHoldEnd={onHoldEnd}
                     />
                   );
                 }
@@ -228,8 +233,16 @@ export function PlayerPanel({
       {showBotAssist && !practiceMode && onToggleBotAssist && (
         <div className="bot-assist-row">
           <button
+            ref={botBtnRef}
             className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-assist-btn--disabled" : ""}`}
-            onClick={() => { if ((dust ?? 0) >= 30) onToggleBotAssist(); }}
+            onClick={() => {
+              if ((dust ?? 0) >= 30 && !isBotActive && botBtnRef.current) {
+                animateDustClaim(botBtnRef.current, '.dust-counter', 30, true);
+              }
+              if ((dust ?? 0) >= 30) {
+                onToggleBotAssist();
+              }
+            }}
             title={(dust ?? 0) < 30 ? "Need 30+ dust to activate" : isBotActive ? "Bot ON — click to deactivate" : "Activate bot assist"}
           >
             🤖 {isBotActive ? `ON · 3💜/tap` : `OFF`}
@@ -241,7 +254,19 @@ export function PlayerPanel({
 }
 
 // ─── Hold Cell Display (I2) ───────────────────────────────
-function HoldCellDisplay({ holdRequired, holdStart }: { holdRequired: number; holdStart?: number }) {
+function HoldCellDisplay({
+  holdRequired,
+  holdStart,
+  idx,
+  onHoldStart,
+  onHoldEnd,
+}: {
+  holdRequired: number;
+  holdStart?: number;
+  idx: number;
+  onHoldStart: (idx: number) => void;
+  onHoldEnd: (idx: number) => void;
+}) {
   const [pct, setPct] = useState(0);
   const rafRef = useRef<number | null>(null);
 
@@ -260,16 +285,19 @@ function HoldCellDisplay({ holdRequired, holdStart }: { holdRequired: number; ho
   // conic-gradient arc - fills clockwise from top
   const deg = Math.round(pct * 360);
   return (
-    <div className="hold-cell">
+    <div
+      className="hold-cell"
+      onPointerDown={(e) => { e.preventDefault(); onHoldStart(idx); }}
+      onPointerUp={() => onHoldEnd(idx)}
+      onPointerLeave={() => onHoldEnd(idx)}
+    >
       <div
         className="hold-arc"
         style={{
           background: `conic-gradient(var(--accent) ${deg}deg, rgba(255,255,255,0.12) ${deg}deg)`,
         }}
       />
-      <div className="hold-icon">
-         {holdStart !== undefined ? "??" : "??"}
-      </div>
+      <div className="hold-icon">⏳</div>
     </div>
   );
 }

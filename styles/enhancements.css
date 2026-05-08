@@ -615,6 +615,40 @@ body.damage-pulse::after {
    REWARDS HUB — rich tab style
    ═══════════════════════════════════════════════════════════════════ */
 
+.rewards-hub-overlay--closing {
+  animation: modalOverlayLeave 0.42s ease forwards;
+}
+@keyframes modalOverlayLeave {
+  from { opacity: 1; }
+  to   { opacity: 0; pointer-events: none; }
+}
+.rewards-hub-panel--closing {
+  animation: hubPanelShrink 0.42s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+  transform-origin: top right;
+}
+@keyframes hubPanelShrink {
+  0%   { transform: scale(1) translateY(0);    opacity: 1; }
+  40%  { transform: scale(1.04) translateY(-4px); opacity: 1; }
+  100% { transform: scale(0.05) translateY(-60px) translateX(60px); opacity: 0; }
+}
+
+.rewards-hub-overlay--closing {
+  animation: modalOverlayExit 0.42s ease forwards !important;
+}
+@keyframes modalOverlayExit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.rewards-hub-panel--closing {
+  animation: hubPanelCollapse 0.42s var(--ease-in-back) forwards !important;
+  transform-origin: top right;
+}
+@keyframes hubPanelCollapse {
+  0%   { transform: scale(1) translateY(0);       opacity: 1; }
+  60%  { transform: scale(0.55) translateY(-12px); opacity: 0.7; }
+  100% { transform: scale(0.1) translateY(-30px);  opacity: 0; }
+}
+
 .rewards-hub-overlay {
   display: flex;
   align-items: center;
@@ -1261,17 +1295,44 @@ body.damage-pulse::after {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   BOMB CELL
+   BOMB CELL — circular SVG ring timer
    ═══════════════════════════════════════════════════════════════════ */
 .cell.bomb {
-  background: radial-gradient(circle, #ff4400 0%, #880000 100%);
-  border: 2px solid #ff6600;
-  animation: bombPulse 0.4s ease-in-out infinite alternate;
+  background: radial-gradient(circle at 40% 35%, #ff6622 0%, #991100 70%, #550000 100%);
+  border: 2px solid #ff4400;
+  animation: bombPulse 0.5s ease-in-out infinite alternate;
+  overflow: visible;
+  z-index: 10;
 }
 @keyframes bombPulse {
-  from { box-shadow: 0 0 8px 2px #ff4400aa; transform: scale(1); }
-  to   { box-shadow: 0 0 18px 6px #ff6600dd; transform: scale(1.06); }
+  from {
+    box-shadow: 0 0 10px 3px rgba(255,68,0,0.5), inset 0 0 12px rgba(255,100,0,0.2);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 22px 8px rgba(255,100,0,0.85), inset 0 0 20px rgba(255,150,0,0.3);
+    transform: scale(1.04);
+  }
 }
+/* Override bombPulse when urgent (<35% remaining) */
+.cell.bomb--urgent {
+  animation: bombUrgentPulse 0.2s ease-in-out infinite alternate !important;
+  border-color: #ff0000;
+}
+@keyframes bombUrgentPulse {
+  from { box-shadow: 0 0 14px 4px rgba(255,0,0,0.6); transform: scale(1); }
+  to   { box-shadow: 0 0 30px 12px rgba(255,0,0,1); transform: scale(1.07); }
+}
+
+.bomb-ring {
+  display: block;
+  /* Ring sits centered in cell, overflows slightly for visual impact */
+  filter: drop-shadow(0 0 3px rgba(255,100,0,0.7));
+  pointer-events: none;
+}
+/* Remove old text bomb styles */
+.bomb-icon { display: none; }
+.bomb-timer { display: none; }
 
 /* ═══════════════════════════════════════════════════════════════════
    BOSS STORM BANNER
@@ -1381,3 +1442,42 @@ body.damage-pulse::after {
 .share-social--wa   { background: #25d366; color: #fff; }
 .share-social--img  { background: rgba(192,38,211,0.15); color: var(--text); border-color: rgba(192,38,211,0.3); }
 .share-social--copy { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.12); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PERFORMANCE — GPU compositing hints for animated elements
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Promote frequently-animated elements to their own GPU layers */
+.gpanel,
+.gpanel-shake-wrap,
+.background-canvas,
+.orb,
+.spd-fill,
+.rare-splash {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Prevent layout thrash on score tick */
+.hud-val {
+  contain: layout style;
+}
+
+/* Cells: contain paint to avoid full repaints on animation */
+.cell {
+  contain: layout style paint;
+  isolation: isolate;
+}
+
+/* Overlay backdrops: promote to own layer early */
+.pause-overlay,
+.go-overlay,
+.modal-overlay {
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* Canvas backgrounds: already on GPU via canvas, ensure no style recalc */
+.background-canvas {
+  contain: strict;
+}
