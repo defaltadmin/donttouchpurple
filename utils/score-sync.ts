@@ -5,6 +5,7 @@ const RETRY_DELAY_MS = 2000;
 const MAX_ATTEMPTS = 3;
 
 const queueKey = 'dtp:score-queue';
+const USE_REAL_API = typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_LEADERBOARD === 'true';
 
 export const scoreSync = {
   queue(score: number) {
@@ -30,9 +31,16 @@ export const scoreSync = {
 
     for (const item of due) {
       try {
-        // REPLACE with your actual leaderboard API call
-        // await fetch('/api/leaderboard', { method: 'POST', body: JSON.stringify({ score: item.score }) });
-        await new Promise(res => setTimeout(res, 500));
+        if (USE_REAL_API) {
+          const res = await fetch('/api/leaderboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ score: item.score })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        } else {
+          await new Promise(res => setTimeout(res, 300));
+        }
         logger.info('Score synced successfully', item.score);
       } catch (err) {
         logger.warn('Score sync failed, retrying', item.score, err);

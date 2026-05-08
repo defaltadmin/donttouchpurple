@@ -17,6 +17,8 @@ import { scoreCardGen } from "./utils/score-card";
 import { privacyManager } from "./utils/privacy";
 import { TouchGesture } from "./utils/gestures";
 import { orientationMonitor } from "./utils/orientation";
+import { stateGuard } from "./utils/state-guard";
+import { rhythmFeedback } from "./utils/feedback-rhythm";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -233,6 +235,7 @@ export default function App() {
   const [showRotatePrompt, setShowRotatePrompt] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && localStorage.getItem('dtp:dev') === 'true');
+  const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
 
@@ -276,7 +279,7 @@ export default function App() {
         count: streak,
         lastDate: new Date().toDateString()
       }));
-    });
+    }).catch(e => logger.warn('Firebase operation failed', e));
   }, []);
 
   useEffect(() => {
@@ -543,7 +546,7 @@ export default function App() {
     setDust(newDust);
     dustRef.current = newDust;
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-    getFirebase().then(fb => fb.fbSyncDust(playerName, newDust).catch(() => {}));
+    getFirebase().then(fb => fb.fbSyncDust(playerName, newDust).catch(() => {})).catch(e => logger.warn('Firebase operation failed', e));
     logResourceEvent("Source", "Dust", source, "earned", amount);
     return newDust;
   }, [playerName]);
@@ -655,7 +658,7 @@ export default function App() {
         winner: engineWinner ?? "solo",
         seed: gameSeed ?? 0,
       });
-    });
+    }).catch(e => logger.warn('Firebase operation failed', e));
     logProgressionEvent("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
     setPrevBest(gameMode === "classic" ? best1 : best2);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
@@ -731,7 +734,7 @@ export default function App() {
               level: "info",
               data: { reward: completed.reward, objective: obj.type },
             });
-            getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type }));
+            getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type })).catch(e => logger.warn('Firebase operation failed', e));
           }, 800);
         }
       }
@@ -815,12 +818,20 @@ export default function App() {
     },
   );
 
-  // Session restore on mount
+  // Session restore on mount with corruption guard
   useEffect(() => {
+    const raw = sessionStorage.getItem('dtp:session');
+    const session = stateGuard.parse<{ engineSnapshot?: Record<string, unknown> } | null>(raw, null, (d: any) =>
+      typeof d === 'object' && d !== null && 'engineSnapshot' in d
+    );
+    if (session?.engineSnapshot) {
+      logger.info('Session safely recovered');
+    }
     const restored = restoreSession();
     if (restored) {
       toast$("📦 Progress restored from last session!");
     }
+    return () => sessionStorage.removeItem('dtp:session');
   }, [restoreSession, toast$]);
 
   const handleBotToggle = useCallback((player: 1 | 2) => {
@@ -933,17 +944,22 @@ export default function App() {
     return () => prefersReduced.removeEventListener('change', handleMotionPref);
   }, []);
 
-  // Visibility/Unload safety
+  // Visibility/Unload safety with auto-pause/resume
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'hidden' && snapshotRef.current?.phase === "playing") {
-        const snap = snapshotRef.current;
-        sessionManager.save({
-          hearts: snap.p1.health,
-          score: snap.p1.score,
-          timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick,
-          isPaused: snap.paused
-        });
+      if (document.visibilityState === 'hidden') {
+        if (snapshotRef.current?.phase === "playing") {
+          pauseEngine();
+          const snap = snapshotRef.current;
+          stateGuard.safeStore('dtp:session', {
+            ts: Date.now(),
+            engineSnapshot: { hearts: snap.p1.health, score: snap.p1.score, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
+          });
+        }
+      } else if (document.visibilityState === 'visible') {
+        if (snapshotRef.current?.phase === "paused") {
+          resumeEngine();
+        }
       }
     };
     const handleUnload = () => {
@@ -957,7 +973,7 @@ export default function App() {
       window.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('beforeunload', handleUnload);
     };
-  }, []);
+  }, [pauseEngine, resumeEngine]);
 
   // Focus trap for pause overlay
   const focusTrapRef = useRef<HTMLDivElement>(null);
@@ -1078,24 +1094,25 @@ export default function App() {
   useEffect(() => { setAudioVolume(volume); }, [volume]);
   useEffect(() => { setHapticsEnabled(haptics); }, [haptics]);
 
-  // Keyboard shortcuts → pause/resume
+  // Keyboard shortcuts → pause/resume (registered once, uses ref)
+  const keyboardHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  keyboardHandlerRef.current = (e: KeyboardEvent) => {
+    if ((e.key === "Escape" || e.key === "p" || e.key === "P") && document.activeElement?.tagName !== "INPUT") {
+      if (screen === "playing" && snapshot?.phase === "playing") { pauseGame(); return; }
+      if (screen === "playing" && paused) { resumeGame(); return; }
+    }
+    if (e.key === "b" || e.key === "B") {
+      if (screen === "playing" && snapshot?.phase === "playing") {
+        handleBotToggle(1);
+      }
+      return;
+    }
+  };
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key === "Escape" || e.key === "p" || e.key === "P") && document.activeElement?.tagName !== "INPUT") {
-        if (screen === "playing" && snapshot?.phase === "playing") { pauseGame(); return; }
-        if (screen === "playing" && paused) { resumeGame(); return; }
-      }
-      // B key → toggle bot assist for P1
-      if (e.key === "b" || e.key === "B") {
-        if (screen === "playing" && snapshot?.phase === "playing") {
-          handleBotToggle(1);
-        }
-        return;
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [screen, paused, snapshot?.phase, pauseGame, resumeGame, handleBotToggle]);
+    const listener = (e: KeyboardEvent) => keyboardHandlerRef.current(e);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
 
   // FPS Monitor
   useEffect(() => {
@@ -1176,21 +1193,32 @@ export default function App() {
   const energyDataRef = useRef(energyData);
   useEffect(() => { energyDataRef.current = energyData; }, [energyData]);
 
+  const energyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     const id = setInterval(() => {
       const ed = energyDataRef.current;
-      if (ed.count >= GAME.MAX_ENERGY) return;
+      if (ed.count >= GAME.MAX_ENERGY) {
+        clearInterval(id);
+        energyIntervalRef.current = null;
+        return;
+      }
       const now = Date.now();
       const elapsed = now - ed.lastRegen;
       if (elapsed >= GAME.ENERGY_REGEN_MS) {
         const gained = Math.floor(elapsed / GAME.ENERGY_REGEN_MS);
+
         const newCount = Math.min(GAME.MAX_ENERGY, ed.count + gained);
         const newLastRegen = ed.lastRegen + gained * GAME.ENERGY_REGEN_MS;
         const newEd = { count: newCount, lastRegen: newLastRegen };
         setEnergyData(newEd);
         localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+        if (newCount >= GAME.MAX_ENERGY) {
+          clearInterval(id);
+          energyIntervalRef.current = null;
+        }
       }
     }, 10000);
+    energyIntervalRef.current = id;
     return () => clearInterval(id);
   }, []);
 
@@ -1230,6 +1258,12 @@ export default function App() {
     const handler = (e: Event) => setCurrentLocale((e as CustomEvent<Locale>).detail);
     window.addEventListener('dtp:locale-change', handler);
     return () => window.removeEventListener('dtp:locale-change', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => setCombo((e as CustomEvent).detail);
+    window.addEventListener('dtp:combo', handler);
+    return () => window.removeEventListener('dtp:combo', handler);
   }, []);
 
   useEffect(() => {
@@ -1348,7 +1382,7 @@ export default function App() {
       input: inputMode,
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
-    }));
+    })).catch(e => logger.warn('Firebase operation failed', e));
     logProgressionEvent("Start", gameMode, 0, 0);
     startEngine(forceSeed);
     if (forceSeed !== undefined) {
@@ -1395,7 +1429,7 @@ export default function App() {
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
       tutorial_completed: true,
-    }));
+    })).catch(e => logger.warn('Firebase operation failed', e));
     logProgressionEvent("Start", gameMode, 0, 0);
     startEngine(forceSeed);
     if (forceSeed !== undefined) {
@@ -1701,7 +1735,15 @@ export default function App() {
         </Suspense>
       )}
 
-      {(engineToast || toast) && <div className="toast">{engineToast || toast}</div>}
+      {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
+
+      {/* Combo Counter */}
+      {combo.count > 1 && screen === "playing" && (
+        <div className="dtp-combo-badge" style={{ '--combo-scale': Math.min(combo.multiplier, 2.5) } as any}>
+          <span className="dtp-combo-count">{combo.count}x</span>
+          <span className="dtp-combo-mult">×{combo.multiplier}</span>
+        </div>
+      )}
 
       {/* Boss Banner */}
       {snapshot?.bossEvent && screen === "playing" && (
@@ -2063,7 +2105,7 @@ export default function App() {
           <div className="dtp-dev-grid">
             <label><input type="checkbox" checked={showFps} onChange={() => setShowFps(!showFps)} /> FPS</label>
             <label><input type="checkbox" checked={showDevPanel} onChange={() => { setShowDevPanel(false); localStorage.removeItem('dtp:dev'); }} /> Disable Dev</label>
-            <button onClick={() => { localStorage.clear(); location.reload(); }} className="dtp-dev-btn">Clear Storage & Reload</button>
+            <button onClick={() => { if (!confirm('Clear ALL local progress, settings & cache? This cannot be undone.')) return; localStorage.clear(); location.reload(); }} className="dtp-dev-btn">Clear Storage & Reload</button>
             <button onClick={() => settingsManager.set({ ...settingsManager.get() })} className="dtp-dev-btn">Re-apply Settings</button>
           </div>
           <small>Ctrl+Shift+D to toggle</small>
@@ -2134,6 +2176,8 @@ export default function App() {
                 className={`bot-hud-btn${botOn ? " bot-hud-btn--on" : ""}${dust < 30 ? " bot-hud-btn--off" : ""}`}
                 onClick={() => { if (dust >= 30) handleBotToggle(1); }}
                 title={dust < 30 ? "Need 30+ dust" : botOn ? "Bot ON — tap to stop" : "Bot assist (30💜/use)"}
+                aria-label="Toggle bot assist"
+                aria-pressed={botOn}
               >
                 {botOn ? "🤖 ON" : "🤖"}
               </button>

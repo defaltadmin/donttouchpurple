@@ -18,6 +18,7 @@ import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
 import { scoreCardGen } from "../utils/score-card";
 import { privacyManager } from "../utils/privacy";
+import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellType, CellShape, GameConfig, GameEvent,
   GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
@@ -220,6 +221,10 @@ export class GameEngine {
   private daily = new DailyChallenge();
   private _lastTapTime = 0;
   private _sessionStartTime = performance.now();
+  private _isDisposed = false;
+  private _isInverted = false;
+  private _timeouts: ReturnType<typeof setTimeout>[] = [];
+  private _tickSoundCounter = 0;
 
   constructor(private config: GameConfig) {
     perfMonitor.observe();
@@ -233,7 +238,7 @@ export class GameEngine {
     audioEngine.init();
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
-    });
+    }).catch(e => logError('Settings module failed', e));
     gamepadManager.init();
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
@@ -273,7 +278,9 @@ export class GameEngine {
   wipeUserData(keepSettings: boolean) { privacyManager.deleteAll(keepSettings); }
 
   start(forceSeed?: number): void {
+    this._isDisposed = false;
     this.stop();
+    rhythmFeedback.reset();
     this.tickCount  = 0;
     this.evolveTick = 0;
     this.iMult      = this.config.speedMult;
@@ -354,6 +361,20 @@ export class GameEngine {
     }, ms);
   }
 
+  private scheduleTimeout(cb: () => void, ms: number): ReturnType<typeof setTimeout> {
+    const id = setTimeout(() => {
+      this._timeouts = this._timeouts.filter(t => t !== id);
+      cb();
+    }, ms);
+    this._timeouts.push(id);
+    return id;
+  }
+
+  private clearAllTimeouts(): void {
+    this._timeouts.forEach(clearTimeout);
+    this._timeouts = [];
+  }
+
   pause(): void {
     if (this.phase !== "playing") return;
     this.paused = true;
@@ -380,13 +401,42 @@ export class GameEngine {
   onResume(cb: () => void): void { this._resumeListeners.push(cb); }
 
 destroy(): void {
+    this._isDisposed = true;
     this._settingsUnsub?.();
     this._gamepadUnsub?.();
     this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
     this.holdTimers.clear();
     this.tapBuffer = { 1: null, 2: null };
+    this.clearAllTimeouts();
     this.stop();
     this.listeners.clear();
+  }
+
+  safeReset(keepSettings = false) {
+    this.paused = false;
+    this.phase = "playing";
+    this.clearAllTimeouts();
+    this.stop();
+    this._sessionStartTime = performance.now();
+    this._lastTapTime = 0;
+    this._tickSoundCounter = 0;
+    this._isInverted = false;
+
+    this.p1.health = GAME.MAX_HEARTS;
+    this.p1.score = 0;
+    this.p1.streak = 0;
+    this.p1.active = [];
+    this.p2.health = GAME.MAX_HEARTS;
+    this.p2.score = 0;
+    this.p2.streak = 0;
+    this.p2.active = [];
+    this.tickCount = 0;
+    this.evolveTick = 0;
+    this.activeBomb = null;
+    rhythmFeedback.reset();
+    this.dda.reset(1200);
+
+    if (!keepSettings) this._settingsUnsub?.();
   }
 
   subscribe(fn: (e: GameEvent) => void): () => void {
@@ -471,7 +521,7 @@ destroy(): void {
       ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now() };
 
       // Auto-clear slide anim after duration
-      setTimeout(() => {
+      this.scheduleTimeout(() => {
         if (ref.slideAnim) delete ref.slideAnim[toIdx];
         this.dirty = true;
       }, this.SHUFFLE_DURATION_MS + 50);
@@ -555,19 +605,17 @@ destroy(): void {
       if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
       const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
       const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
-      const isInverted = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
-      // During inversion: purple is SAFE, safe colors are DANGER
-      // effectiveDanger removed — isInverted handled directly in _processTap
+      this._isInverted = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
 
       const player = (pi + 1) as 1 | 2;
 
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
-        // Missing a safe (non-danger) cell = damage in both normal and inverted mode
-        // Inversion only affects tap behaviour (tapping purple is safe), not tick-expiry misses
-        const isMiss = c.type !== dangerColor && !isPwr;
+        // Inversion: purple is safe (miss = purple), normal: safe = non-danger (miss = non-danger)
+        const isMiss = this._isInverted ? c.type === "purple" && !isPwr : c.type !== dangerColor && !isPwr;
         if (isMiss) {
+          this.dda.recordAttempt(false, 0, true);
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!this.devGodMode) {
             if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
@@ -722,12 +770,16 @@ destroy(): void {
     if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
     if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
       const bonus = this.tickCount > 200 ? 5 : this.tickCount > 120 ? 3 : 2;
-      if (this.p1.alive) this.p1.score += bonus;
-      if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += bonus;
-      this.emit({ type: "toast", message: `🔥 Survival +${bonus}!` });
+      const multBonus = Math.round(bonus * rhythmFeedback.state.multiplier);
+      if (this.p1.alive) this.p1.score += multBonus;
+      if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += multBonus;
+      this.emit({ type: "toast", message: `🔥 Survival +${multBonus}!` });
     }
     this.dirty = true;
-    this.emit({ type: "sound", name: "tick" });
+    this._tickSoundCounter++;
+    if (this._tickSoundCounter % 4 === 0) {
+      this.emit({ type: "sound", name: "tick" });
+    }
     } catch (err) {
       logError("[GameEngine] processTick crashed:", err);
       errorTracker.capture(err instanceof Error ? err : new Error(String(err)), { phase: 'processTick', tick: this.tickCount });
@@ -800,19 +852,7 @@ destroy(): void {
       return;
     }
     const dmg = this.config.mode === "evolve" ? 0.5 : 1;
-    if (cell.type === danger && !isInvertedTap) {
-      cell.clicked = true;
-      if (!this.devGodMode) {
-        if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
-        else {
-          if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
-          ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
-          this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
-          this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-          if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
-        }
-      } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
-    } else if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
+    if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
       cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
       if (cell.type === "medpack") ref.health = Math.min(GAME.MAX_HEARTS, ref.health + 1);
       if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; }
@@ -828,7 +868,23 @@ destroy(): void {
         this.emit({ type: "pwrToast", message: "❄ Freeze activated!", player });
       }
     } else {
+      const tappedIsDanger = isInvertedTap ? cell.type !== 'purple' : cell.type === danger;
+      if (tappedIsDanger) {
+        cell.clicked = true;
+        this.dda.recordAttempt(false, 0, true);
+        if (!this.devGodMode) {
+          if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+          else {
+            if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
+            ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
+            this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
+            this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
+            if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
+          }
+        } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+      } else {
       cell.clicked = true; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop");
+      rhythmFeedback.recordTap();
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
       if ([5, 10, 25, 50].includes(ref.streak)) this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` });
@@ -840,6 +896,7 @@ destroy(): void {
       if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
       achievementSystem.check('first_blood', () => true);
       achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
+    }
     }
     ref.cells = activeToCellsP(ref.active, pat);
     this.dirty = true;
@@ -1002,6 +1059,12 @@ destroy(): void {
     }
   }
 
+  restoreFromSession(data: { hearts?: number; score?: number; timeLeft?: number }): void {
+    if (data.hearts != null) this.p1.health = data.hearts;
+    if (data.score != null) this.p1.score = data.score;
+    if (data.timeLeft != null) this.tickCount = Math.max(0, GAME.HUMAN_LIMIT_TICK - data.timeLeft);
+  }
+
   submitScoreToLeaderboard(score: number): void {
     scoreSync.queue(score);
   }
@@ -1080,7 +1143,7 @@ destroy(): void {
     this.emit({ type: "toast", message: "💣 BOMB! Tap it!" });
 
     // Auto-explode if not tapped
-    setTimeout(() => {
+    this.scheduleTimeout(() => {
       if (!this.activeBomb || this.activeBomb.idx !== idx || this.activeBomb.player !== player) return;
       const stillActive = ref.active.find(c => c.idx === idx && c.type === "bomb" && !c.clicked);
       if (!stillActive) return;

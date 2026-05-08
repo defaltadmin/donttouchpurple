@@ -393,12 +393,14 @@ export function useGameEngine(
   }, []);
 
   const restoreSession = useCallback((): boolean => {
-    const session = sessionManager.load();
-    if (session && engineRef.current) {
-      logger.info('Restored game session', { score: session.engineSnapshot.score });
+    const raw = sessionStorage.getItem('dtp:session');
+    if (!raw || !engineRef.current) return false;
+    try {
+      const { engineSnapshot } = JSON.parse(raw);
+      engineRef.current.restoreFromSession(engineSnapshot);
+      engineRef.current.startSessionPersistence();
       return true;
-    }
-    return false;
+    } catch { return false; }
   }, []);
 
   const wrappedStart = useCallback((forceSeed?: number) => {

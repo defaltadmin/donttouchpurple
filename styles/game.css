@@ -2275,6 +2275,32 @@ body { background-color: var(--bg); }
   filter: brightness(1.15) contrast(1.25);
 }
 
+/* ── Screen shake & combo badge (Batch 11) ── */
+:root { --shake-intensity: 0; --combo-scale: 1; }
+.game-container { animation: shake calc(0.15s * var(--shake-intensity)) ease-out; }
+@keyframes shake {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(calc(-2px * var(--shake-intensity)), calc(1px * var(--shake-intensity))); }
+  50% { transform: translate(calc(2px * var(--shake-intensity)), calc(-1px * var(--shake-intensity))); }
+  75% { transform: translate(calc(-1px * var(--shake-intensity)), calc(2px * var(--shake-intensity))); }
+}
+
+.dtp-combo-badge {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 9998; text-align: center;
+  animation: comboPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.dtp-combo-count { font-size: calc(3rem * var(--combo-scale)); font-weight: 900; color: #fbbf24; text-shadow: 0 2px 8px rgba(0,0,0,0.6); display: block; }
+.dtp-combo-mult { font-size: 1.2rem; color: #fff; opacity: 0.9; }
+
+/* Graceful degradation for low-end/older browsers */
+.no-webgl .particle-layer { display: none; }
+.no-raf .game-grid { animation: none; }
+@media (max-width: 360px) { .dtp-combo-count { font-size: 2rem; } }
+
+/* Safe fallback for missing theme vars */
+:root:not([style*="--theme-bg"]) { --theme-bg: #0a0a14; --theme-primary: #8a2be2; --theme-text: #e0e0e0; }
+
 /* ── Cell Icon & Layout Polish ── */
 .cell-icon {
   position: absolute;
@@ -3412,3 +3438,35 @@ input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px;
 @media (prefers-reduced-data: reduce) {
   .particle-layer, .bg-animated, .dtp-toast-achievement { display: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BATCH 11: STABILITY, ANTI-FRAGILITY & GAMEPLAY POLISH
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Screen shake (driven by --shake-intensity via JS) ─── */
+:root { --shake-intensity: 0; --combo-scale: 1; }
+.game-container { animation: shake calc(0.15s * var(--shake-intensity)) ease-out; }
+@keyframes shake {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(calc(-2px * var(--shake-intensity)), calc(1px * var(--shake-intensity))); }
+  50% { transform: translate(calc(2px * var(--shake-intensity)), calc(-1px * var(--shake-intensity))); }
+  75% { transform: translate(calc(-1px * var(--shake-intensity)), calc(2px * var(--shake-intensity))); }
+}
+
+/* ─── Combo Badge ─── */
+.dtp-combo-badge {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 9998; text-align: center;
+  animation: comboPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.dtp-combo-count { font-size: calc(3rem * var(--combo-scale)); font-weight: 900; color: #fbbf24; text-shadow: 0 2px 8px rgba(0,0,0,0.6); display: block; }
+.dtp-combo-mult { font-size: 1.2rem; color: #fff; opacity: 0.9; }
+@keyframes comboPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 60% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+/* ─── Graceful degradation for low-end browsers ─── */
+.no-webgl .particle-layer { display: none; }
+.no-raf .game-grid { animation: none; }
+@media (max-width: 360px) { .dtp-combo-count { font-size: 2rem; } }
+
+/* ─── Safe fallback for missing theme vars ─── */
+:root:not([style*="--theme-bg"]) { --theme-bg: #0a0a14; --theme-primary: #8a2be2; --theme-text: #e0e0e0; }
