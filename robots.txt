@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: *.zip
+Disallow: *.log
+Disallow: /dist
+Disallow: /node_modules
+Disallow: /.git
+Sitemap: https://game.mscarabia.com/sitemap.xml
