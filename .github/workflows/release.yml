@@ -8,11 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
-      - run: npm ci
-      - run: npm run test:coverage
-      - run: npm run build
+        with: { node-version: 20, cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:coverage
+      - run: pnpm run build
       - name: Generate Changelog
         id: changelog
         uses: requarks/changelog-action@v1
