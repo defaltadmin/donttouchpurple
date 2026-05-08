@@ -13,6 +13,7 @@ import { gamepadManager } from "../utils/gamepad";
 import { configManager } from "../utils/game-config";
 import { errorTracker } from "../utils/error-tracker";
 import { DynamicDifficulty } from "../utils/dda";
+import { seedManager } from "../utils/seed-manager";
 import { achievementSystem } from "../utils/achievements";
 import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
@@ -225,6 +226,8 @@ export class GameEngine {
   private _isInverted = false;
   private _timeouts: ReturnType<typeof setTimeout>[] = [];
   private _tickSoundCounter = 0;
+  private _deltaTimers: Array<{ id: string; remaining: number; duration: number; callback: () => void }> = [];
+  private _lastTickTs = performance.now();
 
   constructor(private config: GameConfig) {
     perfMonitor.observe();
@@ -289,7 +292,9 @@ export class GameEngine {
     this.phase      = "playing";
     this.cellShape  = "square";
     this.spinLevel  = 0;
-    this.gameSeed   = forceSeed ?? makeGameSeed();
+    this._lastTickTs = performance.now();
+    this._deltaTimers = [];
+    this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
     this.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
@@ -375,6 +380,16 @@ export class GameEngine {
     this._timeouts = [];
   }
 
+  addDeltaTimer(id: string, durationMs: number, callback: () => void) {
+    this._deltaTimers.push({ id, remaining: durationMs, duration: durationMs, callback });
+  }
+
+  removeDeltaTimer(id: string) {
+    this._deltaTimers = this._deltaTimers.filter(t => t.id !== id);
+  }
+
+  clearAllDeltaTimers() { this._deltaTimers = []; }
+
   pause(): void {
     if (this.phase !== "playing") return;
     this.paused = true;
@@ -408,6 +423,7 @@ destroy(): void {
     this.holdTimers.clear();
     this.tapBuffer = { 1: null, 2: null };
     this.clearAllTimeouts();
+    this.clearAllDeltaTimers();
     this.stop();
     this.listeners.clear();
   }
@@ -416,6 +432,7 @@ destroy(): void {
     this.paused = false;
     this.phase = "playing";
     this.clearAllTimeouts();
+    this.clearAllDeltaTimers();
     this.stop();
     this._sessionStartTime = performance.now();
     this._lastTapTime = 0;
@@ -553,6 +570,14 @@ destroy(): void {
   private processTick(): void {
     try {
     if (this.phase !== "playing") return;
+    const now = performance.now();
+    const delta = Math.min(now - this._lastTickTs, 100);
+    this._lastTickTs = now;
+    this._deltaTimers = this._deltaTimers.filter(timer => {
+      timer.remaining -= delta;
+      if (timer.remaining <= 0) { timer.callback(); return false; }
+      return true;
+    });
     const mode = this.config.mode;
     this._flushTapBuffer(1);
     if (this.config.numPlayers === 2) this._flushTapBuffer(2);
@@ -629,6 +654,7 @@ destroy(): void {
               }
             }
           }
+          haptics.damage();
           if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
           ref.streak = 0;
         }
@@ -823,6 +849,7 @@ destroy(): void {
       this.triggerCellAnim(player, idx, rem <= 0 ? "pop" : "shake");
       this.emit({ type: "sound", name: rem <= 0 ? "ok" : "tick" });
       if (rem <= 0) {
+        haptics.success();
         cell.clicked = true;
         const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
         ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
@@ -923,8 +950,12 @@ destroy(): void {
     if (!cell || cell.type !== "hold") return;
     (cell as HoldCell).holdStart = Date.now();
     const key = `${player}_${idx}`;
-    if (this.holdTimers.has(key)) clearTimeout(this.holdTimers.get(key)!.timer);
-    const timer = setTimeout(() => {
+    if (this.holdTimers.has(key)) {
+      clearTimeout(this.holdTimers.get(key)!.timer);
+      this.removeDeltaTimer(`hold_${key}`);
+      this.holdTimers.delete(key);
+    }
+    this.addDeltaTimer(`hold_${key}`, GAME.HOLD_TIMEOUT_MS, () => {
       const entry = this.holdTimers.get(key);
       if (!entry || entry.cell.clicked) return;
       (entry.cell as HoldCell).holdStart = undefined;
@@ -932,8 +963,8 @@ destroy(): void {
       this.triggerCellAnim(entry.player, entry.cell.idx, "shake");
       this.emitSnapshot();
       this.holdTimers.delete(key);
-    }, GAME.HOLD_TIMEOUT_MS);
-    this.holdTimers.set(key, { timer, cell, player });
+    });
+    this.holdTimers.set(key, { timer: null as unknown as NodeJS.Timeout, cell, player });
     this.dirty = true;
     this.emitSnapshot();
   }
@@ -946,7 +977,7 @@ destroy(): void {
     if (!cell || cell.type !== "hold") return;
     const key = `${player}_${idx}`;
     const entry = this.holdTimers.get(key);
-    if (entry) { clearTimeout(entry.timer); this.holdTimers.delete(key); }
+    if (entry) { clearTimeout(entry.timer); this.removeDeltaTimer(`hold_${key}`); this.holdTimers.delete(key); }
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const elapsed = Date.now() - ((cell as HoldCell).holdStart ?? Date.now());
     if (elapsed >= (cell as HoldCell).holdRequired) {
@@ -1139,11 +1170,11 @@ destroy(): void {
     this.activeBomb = { idx, expiresAt, player };
     this.dirty = true;
     this.emit({ type: "bombSpawn", player, idx, expiresAt });
+    haptics.bomb();
     this.emit({ type: "sound", name: "bomb" });
     this.emit({ type: "toast", message: "💣 BOMB! Tap it!" });
 
-    // Auto-explode if not tapped
-    this.scheduleTimeout(() => {
+    this.addDeltaTimer(`bomb_${player}_${idx}`, 2000, () => {
       if (!this.activeBomb || this.activeBomb.idx !== idx || this.activeBomb.player !== player) return;
       const stillActive = ref.active.find(c => c.idx === idx && c.type === "bomb" && !c.clicked);
       if (!stillActive) return;
@@ -1166,14 +1197,15 @@ destroy(): void {
       const pat2 = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
       ref.cells = activeToCellsP(ref.active, pat2);
       this.dirty = true;
-    }, 2000);
+    });
   }
 
 private triggerGameOver(winner: Winner): void {
-    // Clear pending taps and hold timers
+    // Clear pending taps, hold timers, and delta timers
     this.tapBuffer = { 1: null, 2: null };
     this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
     this.holdTimers.clear();
+    this.clearAllDeltaTimers();
 
     this.stop(); this.phase = "gameover";
     const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
