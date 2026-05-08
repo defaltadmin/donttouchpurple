@@ -51,15 +51,26 @@ export default defineConfig({
             if (id.includes('lucide') || id.includes('icon')) return 'ui-icons';
             return 'vendor';
           }
-          if (id.includes('engine/') || id.includes('utils/')) return 'game-core';
-          if (id.includes('components/') || id.includes('hooks/')) return 'app-ui';
+          if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
+          if (id.includes('utils/')) return 'game-utils';
+          if (id.includes('components/') || id.includes('hooks/')) return 'ui-layer';
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        assetFileNames: (assetInfo) => {
+          const info = (assetInfo.name ?? '').split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return 'assets/img/[name]-[hash].[ext]';
+          }
+          return 'assets/[ext]/[name]-[hash].[ext]';
+        },
       },
     },
     cssCodeSplit: true,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   },
   server: {
     headers: {
@@ -69,11 +80,13 @@ export default defineConfig({
     }
   },
   test: {
+    exclude: ['e2e/**', 'node_modules/**'],
     environment: 'jsdom',
     setupFiles: './test/setup.ts',
     clearMocks: true,
     coverage: {
       exclude: [
+        'e2e/**',
         'junk/**',
         'sonnet-eval/**',
         'dist/**',

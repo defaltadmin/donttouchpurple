@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "build": "tsc && vite build",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "deploy": "pnpm build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath htdocs.zip -Force\"",
@@ -19,7 +21,8 @@
     "ship": "bash scripts/ship.sh",
     "release:patch": "npm version patch && git push && git push --tags",
     "release:minor": "npm version minor && git push && git push --tags",
-    "release:major": "npm version major && git push && git push --tags"
+    "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",
+    "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
   },
   "dependencies": {
     "@microsoft/clarity": "^1.0.2",
@@ -44,6 +47,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
     "vite-plugin-compression": "^0.5.1",
-    "vitest": "^1.6.1"
+    "vitest": "^1.6.1",
+    "@playwright/test": "^1.52.0"
   }
 }
