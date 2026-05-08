@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
+import { settingsManager } from '../../utils/settings';
 
 interface CellProps {
   cell: ActiveCell;
@@ -105,6 +106,9 @@ export default function Cell({
     }
   };
 
+  const isCB = settingsManager.get().colorblindMode;
+  const cbClass = isCB ? `cb-pattern cb-${cell.type}` : '';
+
   return (
     <div
       className={`
@@ -115,11 +119,13 @@ export default function Cell({
         ${cell.shape ? 'rare-danger' : ''}
         ${isPressing ? 'pressing' : ''}
         ${bombUrgent ? 'bomb--urgent' : ''}
+        ${cbClass}
       `.trim()}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       data-shape={shape}
+      style={{ '--cb-type': cell.type } as any}
     >
       {/* Shape background layer */}
       <div className={`cell-shape-overlay ${shapeClass}`} />

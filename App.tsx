@@ -7,6 +7,9 @@ import { settingsManager } from "./utils/settings";
 import { analytics } from "./utils/analytics";
 import { audioEngine } from "./utils/audio";
 import { i18n, type Locale } from "./utils/i18n";
+import { AssetHydrator } from "./utils/asset-hydrator";
+
+type AssetTier = 'critical' | 'deferred' | 'background';
 import { Preloader } from "./utils/preloader";
 import { gamepadManager } from "./utils/gamepad";
 import { configManager } from "./utils/game-config";
@@ -20,6 +23,9 @@ import { orientationMonitor } from "./utils/orientation";
 import { stateGuard } from "./utils/state-guard";
 import { rhythmFeedback } from "./utils/feedback-rhythm";
 import { AssetGate } from "./utils/preloader-v2";
+import { useOffsetCursor } from "./hooks/useOffsetCursor";
+import { visualA11y } from "./utils/visual-a11y";
+import { challengeLink } from "./utils/challenge-link";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -245,7 +251,40 @@ export default function App() {
   const [gateReady, setGateReady] = useState(false);
   const [gateLoadPct, setGateLoadPct] = useState(0);
 
-  // Persistence State
+  // Resume session state
+  const [resumeReady, setResumeReady] = useState(false);
+  const [resumeData, setResumeData] = useState<Record<string, unknown> | null>(null);
+  const resumeCheckedRef = useRef(false);
+
+  const hydrator = useRef(new AssetHydrator());
+  const [uiReady, setUiReady] = useState(false);
+  const [loadPct, setLoadPct] = useState({ critical: 0, deferred: 0, background: 0 });
+
+  useEffect(() => {
+    // 1. Init i18n
+    i18n.init().then(() => setUiReady(true));
+    
+    // 2. Configure asset tiers
+    const h = hydrator.current;
+    h.setProgress((pct: number, tier: AssetTier) => setLoadPct(prev => ({ ...prev, [tier]: pct })));
+    
+    // CRITICAL (blocks UI)
+    // h.add('/sfx/tick.mp3', 'critical', 'audio');
+    // h.add('/sfx/damage.mp3', 'critical', 'audio');
+    // h.add('/themes/default-purple.json', 'critical', 'json');
+    
+    // DEFERRED (loads after menu shows)
+    // h.add('/themes/shop-theme-1.json', 'deferred', 'json');
+    // h.add('/themes/shop-theme-2.json', 'deferred', 'json');
+    
+    // BACKGROUND (loads during gameplay/idle)
+    // h.add('/sfx/boss-intro.mp3', 'background', 'audio');
+    // h.add('/sfx/shield-break.mp3', 'background', 'audio');
+    // h.add('/bg/ambient-loop.mp3', 'background', 'audio');
+    
+    h.hydrateAll();
+  }, []);
+
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
   const [dust, setDust] = useState(() => {
     try {
@@ -509,7 +548,12 @@ export default function App() {
     const [showEnergyPopup, setShowEnergyPopup] = useState(false);
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('dtp:onboard-seen'));
+  const [shareToast, setShareToast] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showOffset, setShowOffset] = useState(() => settingsManager.get().offsetPointer ?? false);
+  const cursorPos = useOffsetCursor(showOffset, containerRef);
+  useEffect(() => { settingsManager.set({ offsetPointer: showOffset }); }, [showOffset]);
   const [showFps, setShowFps] = useState(() => localStorage.getItem('showFps') === 'true');
   const [fps, setFps] = useState(0);
   const fpsFrameRef = useRef(0);
@@ -772,6 +816,14 @@ export default function App() {
     }
   }, [shouldShowRewardsOnLogin, screen]);
 
+  // Challenge URL detection
+  useEffect(() => {
+    const { isChallenge, seed } = challengeLink.parse();
+    if (isChallenge && seed) {
+      logger.info('Challenge link loaded', { seed });
+    }
+  }, []);
+
   const handleDamage = useCallback(() => {
     document.body.classList.add('damage-pulse');
     setTimeout(() => document.body.classList.remove('damage-pulse'), 350);
@@ -799,6 +851,8 @@ export default function App() {
     getAutoLowQuality,
     submitScoreToLeaderboard,
     restoreSession,
+    restoreSessionSnapshot,
+    generateChallengeUrl,
   } = useGameEngine(
     engineConfig,
     handleEngineGameOver,
@@ -824,21 +878,31 @@ export default function App() {
     },
   );
 
-  // Session restore on mount with corruption guard
+  const handleCopyChallenge = useCallback(async () => {
+    const url = generateChallengeUrl();
+    if (!url) return;
+    const ok = await challengeLink.copyToClipboard(snapshot?.p1.score ?? 0, String(snapshot?.gameSeed ?? 0), snapshot?.p1.health ?? 3);
+    setShareToast(true);
+    setTimeout(() => setShareToast(false), 2000);
+  }, [generateChallengeUrl, snapshot]);
+
+  // Resume detection on menu screen
   useEffect(() => {
+    if (screen !== 'menu') return;
+    if (resumeCheckedRef.current) return;
+    resumeCheckedRef.current = true;
     const raw = sessionStorage.getItem('dtp:session');
-    const session = stateGuard.parse<{ engineSnapshot?: Record<string, unknown> } | null>(raw, null, (d: any) =>
-      typeof d === 'object' && d !== null && 'engineSnapshot' in d
+    if (!raw) { setResumeReady(false); return; }
+    const parsed = stateGuard.parse<Record<string, unknown> | null>(raw, null, (d: any) =>
+      d && typeof d === 'object' && typeof d.gameSeed === 'number' && typeof d.score === 'number'
     );
-    if (session?.engineSnapshot) {
-      logger.info('Session safely recovered');
+    if (parsed) {
+      setResumeReady(true);
+      setResumeData(parsed);
+    } else {
+      setResumeReady(false);
     }
-    const restored = restoreSession();
-    if (restored) {
-      toast$("📦 Progress restored from last session!");
-    }
-    return () => sessionStorage.removeItem('dtp:session');
-  }, [restoreSession, toast$]);
+  }, [screen]);
 
   const handleBotToggle = useCallback((player: 1 | 2) => {
     const currentDust = dustRef.current;
@@ -924,6 +988,18 @@ export default function App() {
       rareMode: snapshot.rareMode.active ? snapshot.rareMode.color : "purple",
     });
   }, [snapshot]);
+
+  const handleResumeGame = useCallback(() => {
+    if (!resumeData) return;
+    const success = restoreSessionSnapshot(resumeData);
+    if (success) {
+      setScreen("playing");
+      setPaused(false);
+      setResumeReady(false);
+      setResumeData(null);
+      toast$("📦 Game restored! Score: " + (resumeData.score as number));
+    }
+  }, [resumeData, restoreSessionSnapshot, toast$]);
 
   const resumeGame = useCallback(() => {
     Sentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
@@ -1379,6 +1455,9 @@ export default function App() {
   }, [paused, resumeGame, pauseGame]);
 
   const startGame = useCallback(() => {
+    resumeCheckedRef.current = false;
+    setResumeReady(false);
+    setResumeData(null);
     if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
@@ -1471,6 +1550,9 @@ export default function App() {
   };
 
   const goMenu = useCallback(() => {
+    resumeCheckedRef.current = false;
+    setResumeReady(false);
+    setResumeData(null);
     pauseEngine();
     setPaused(false);
     setScreen("menu");
@@ -1721,8 +1803,16 @@ export default function App() {
     ? "clamp(58px, 14vw, 78px)"
     : "clamp(52px, min(16vw,16vh), 80px)";
 
-  if (!gateReady) {
-    return <div className="dtp-gate-screen">Loading Assets... {Math.round(gateLoadPct * 100)}%</div>;
+  if (!uiReady) {
+    return (
+      <div className="dtp-gate-screen">
+        <h2>{i18n.t('game.title')}</h2>
+        <div className="dtp-hydrate-bar">
+          <span>Critical: {Math.round(loadPct.critical * 100)}%</span>
+          {loadPct.deferred > 0 && <span>UI: Ready</span>}
+        </div>
+      </div>
+    );
   }
 
   if (!appReady) {
@@ -1773,6 +1863,7 @@ export default function App() {
       )}
 
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
+      {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}
 
       {/* Combo Counter */}
       {combo.count > 1 && screen === "playing" && (
@@ -1829,6 +1920,17 @@ export default function App() {
         </div>
       )}
 
+      {showOnboarding && screen === 'playing' && (
+        <div className="dtp-onboarding" role="dialog" aria-label="Quick visual tutorial">
+          <div className="dtp-hint-step tap-hint">Tap green</div>
+          <div className="dtp-hint-step avoid-hint">Avoid purple</div>
+          <button onClick={() => { localStorage.setItem('dtp:onboard-seen', 'true'); setShowOnboarding(false); }}
+                  className="dtp-btn dtp-btn-primary" data-icon={visualA11y.icons.play}>
+            <span className="dtp-text-label">Start</span>
+          </button>
+        </div>
+      )}
+
       {showTutorial && <EvolveTutorial isOpen={showTutorial} onClose={handleTutorialClose} />}
       {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
 
@@ -1860,6 +1962,39 @@ export default function App() {
               <button onClick={() => settingsManager.set({ reducedMotion: !settings.reducedMotion })}
                       className={`dtp-toggle ${settings.reducedMotion ? 'on' : 'off'}`}>
                 {settings.reducedMotion ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label>Offset Touch Cursor</label>
+              <button onClick={() => setShowOffset(v => !v)}
+                      className={`dtp-toggle ${showOffset ? 'on' : 'off'}`}
+                      aria-label="Toggle offset touch cursor for mobile visibility"
+                      aria-pressed={showOffset}>
+                {showOffset ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label><span className="dtp-text-label">{visualA11y.icons.colorblind} Colorblind Patterns</span></label>
+              <button onClick={() => settingsManager.set({ colorblindMode: !settings.colorblindMode })}
+                      className={`dtp-toggle ${settings.colorblindMode ? 'on' : 'off'}`}
+                      data-icon={visualA11y.icons.colorblind}>
+                {settings.colorblindMode ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label><span className="dtp-text-label">{visualA11y.icons.iconMode} Icon-Only UI</span></label>
+              <button onClick={() => settingsManager.set({ iconOnlyMode: !settings.iconOnlyMode })}
+                      className={`dtp-toggle ${settings.iconOnlyMode ? 'on' : 'off'}`}
+                      data-icon={visualA11y.icons.iconMode}>
+                {settings.iconOnlyMode ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="dtp-setting-row">
+              <label><span className="dtp-text-label">{visualA11y.icons.lite} Lite Mode (Low-End)</span></label>
+              <button onClick={() => settingsManager.set({ liteMode: !settings.liteMode })}
+                      className={`dtp-toggle ${settings.liteMode ? 'on' : 'off'}`}
+                      data-icon={visualA11y.icons.lite}>
+                {settings.liteMode ? 'ON' : 'OFF'}
               </button>
             </div>
             <button className="dtp-btn dtp-btn-secondary" onClick={() => setSettingsOpen(false)}>Close</button>
@@ -2016,6 +2151,10 @@ export default function App() {
         </div>
       )}
 
+      {showOffset && cursorPos.visible && (
+        <div className="dtp-offset-cursor" style={{ left: cursorPos.x, top: cursorPos.y, position: 'fixed', pointerEvents: 'none' }} aria-hidden="true" />
+      )}
+
       {showExitConfirm && (
         <div className="modal-overlay" onClick={() => setShowExitConfirm(false)}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
@@ -2142,6 +2281,9 @@ export default function App() {
            }} onEnergyIconClick={() => setShowEnergyPopup(true)} dust={dust} />}
           pendingReplaySeed={pendingReplaySeed}
           onClearReplaySeed={clearReplaySeed}
+          resumeReady={resumeReady}
+          resumeData={resumeData}
+          onResumeGame={handleResumeGame}
         />
       )}
 
@@ -2269,6 +2411,7 @@ export default function App() {
                 objectiveProgress={gameOverProgress}
                 />
               <button className="dtp-icon-btn" onClick={() => handleShareScore(snapshot.p1.score, snapshot.p1.health, snapshot.tick)} title="Share Score" style={{marginTop:8}}>Share Score</button>
+              <button className="dtp-icon-btn" onClick={handleCopyChallenge} title="Copy challenge link" aria-label="Share score & challenge friends" style={{marginTop:8}}>Challenge</button>
             </div>
           )}
           

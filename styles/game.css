@@ -3471,3 +3471,109 @@ input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px;
 
 /* ─── Safe fallback for missing theme vars ─── */
 :root:not([style*="--theme-bg"]) { --theme-bg: #0a0a14; --theme-primary: #8a2be2; --theme-text: #e0e0e0; }
+
+/* ─── Offset Touch Cursor ─── */
+.dtp-offset-cursor {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(138,43,226,0.4) 60%, transparent 100%);
+  border: 2px solid #fff; box-shadow: 0 0 8px rgba(138,43,226,0.6);
+  z-index: 9998; transition: opacity 0.1s;
+  mix-blend-mode: difference;
+}
+
+/* ─── Emergency DDA visual feedback ─── */
+:root[data-dda-emergency="true"] {
+  --grid-tint: rgba(239, 68, 68, 0.1);
+  animation: dda-pulse 2s ease-in-out;
+}
+@keyframes dda-pulse {
+  0%, 100% { --grid-tint: transparent; }
+  50% { --grid-tint: rgba(239, 68, 68, 0.15); }
+}
+
+.dtp-dda-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(30,30,40,0.95); border: 1px solid #f59e0b; color: #fbbf24;
+  padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+  animation: fadeSlide 0.4s ease; pointer-events: none;
+}
+@keyframes fadeSlide { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ─── Resume Button ─── */
+.dtp-btn-resume {
+  background: linear-gradient(135deg, #065f46, #059669);
+  color: #ecfdf5; border: 1px solid #34d399;
+  padding: 0.8rem 1.5rem; border-radius: 10px;
+  font-weight: 600; margin: 0.5rem 0 1.5rem; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  transition: transform 0.15s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.dtp-btn-resume:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(5,150,105,0.4); }
+.dtp-btn-resume:active { transform: translateY(0); }
+.dtp-resume-meta { font-size: 0.8rem; opacity: 0.8; background: rgba(0,0,0,0.2); padding: 0.2rem 0.5rem; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .dtp-btn-resume { animation: none !important; } }
+
+/* ─── Thumb-zone root variable ─── */
+:root {
+  --thumb-safe-bottom: env(safe-area-inset-bottom, 16px);
+  --thumb-zone-height: 45vh;
+}
+
+/* ─── Colorblind Patterns ─── */
+.colorblind-active .cell {
+  position: relative; overflow: hidden;
+}
+.colorblind-active .cell::after {
+  content: ''; position: absolute; inset: 0; opacity: 0.45; pointer-events: none;
+  background: var(--pattern-type);
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+.colorblind-active .cb-purple { border: 2px solid #ff6b6b; box-shadow: inset 0 0 6px rgba(255,107,107,0.5); }
+.colorblind-active .cb-safe { border: 2px solid #69db7c; }
+.colorblind-active .cb-bomb { animation: pulse-warn 1s infinite; }
+
+/* ─── Icon-Only Mode ─── */
+.icon-mode .dtp-text-label { display: none; }
+.icon-mode [data-icon]::before { content: attr(data-icon); font-size: 1.4rem; }
+.icon-mode .dtp-btn { min-width: 44px; min-height: 44px; font-size: 0; display: flex; align-items: center; justify-content: center; }
+/* ─── Lite Mode ─── */
+.lite-mode *, .lite-mode *::before, .lite-mode *::after {
+  animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;
+  box-shadow: none !important; filter: none !important;
+}
+.lite-mode .particle-layer, .lite-mode .bg-animated, .lite-mode .dtp-combo-popup { display: none !important; }
+.lite-mode .game-grid { backdrop-filter: none; }
+
+/* ─── Thumb-zone optimization ─── */
+@media (max-height: 700px) {
+  .game-container { padding-bottom: var(--thumb-safe-bottom); }
+}
+
+/* ─── First-run onboarding ─── */
+.dtp-onboarding {
+  position: fixed; inset: 0; background: rgba(5,5,15,0.88); z-index: 99999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  backdrop-filter: blur(4px);
+}
+.dtp-hint-step {
+  font-size: 1.5rem; font-weight: 700; padding: 1rem 2rem; border-radius: 12px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  animation: floatHint 3s ease-in-out infinite;
+}
+.tap-hint { color: #4ade80; border-color: rgba(74,222,128,0.4); }
+.avoid-hint { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+@keyframes floatHint { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.dtp-toast-success {
+  position: fixed; bottom: 20%; left: 50%; transform: translateX(-50%);
+  background: #065f46; color: #a7f3d0; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600;
+  animation: fadeSlide 0.3s ease; pointer-events: none; z-index: 10001;
+}
+
+/* ─── Hydration Progress ─── */
+.dtp-hydrate-bar { display: flex; gap: 1rem; font-family: monospace; color: #aaa; margin-top: 1rem; }
+.dtp-hydrate-bar span { opacity: 0.7; }
+.dtp-hydrate-bar span:last-child { color: #4ade80; opacity: 1; }
+

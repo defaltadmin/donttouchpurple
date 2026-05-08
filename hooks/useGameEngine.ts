@@ -175,6 +175,8 @@ export interface UseGameEngineReturn {
   getAutoLowQuality: () => boolean;
   submitScoreToLeaderboard: (score: number) => void;
   restoreSession: () => boolean;
+  restoreSessionSnapshot: (data: Record<string, unknown>) => boolean;
+  generateChallengeUrl: () => string;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────
@@ -392,6 +394,15 @@ export function useGameEngine(
     engineRef.current?.submitScoreToLeaderboard(score);
   }, []);
 
+  const generateChallengeUrl = useCallback((): string => {
+    return engineRef.current?.generateChallengeUrl() ?? '';
+  }, []);
+
+  const restoreSessionSnapshot = useCallback((data: Record<string, unknown>): boolean => {
+    if (!engineRef.current) return false;
+    return engineRef.current.restoreSessionSnapshot(data);
+  }, []);
+
   const restoreSession = useCallback((): boolean => {
     const raw = sessionStorage.getItem('dtp:session');
     if (!raw || !engineRef.current) return false;
@@ -418,6 +429,6 @@ export function useGameEngine(
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     startBot, stopBot, isBotActive, setBotAssist, botAssistActive,
-    getAutoLowQuality, submitScoreToLeaderboard, restoreSession,
+    getAutoLowQuality, submitScoreToLeaderboard, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
   };
 }

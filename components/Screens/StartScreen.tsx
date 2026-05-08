@@ -100,6 +100,9 @@ export interface StartScreenProps {
   dailyObjective?: import("../../config/dailyObjective").DailyObjective;
   pendingReplaySeed?: string | null;
   onClearReplaySeed?: () => void;
+  resumeReady?: boolean;
+  resumeData?: Record<string, unknown> | null;
+  onResumeGame?: () => void;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -116,6 +119,7 @@ export function StartScreen({
   dustWidget, energyBar,
   dailyObjective,
   pendingReplaySeed, onClearReplaySeed,
+  resumeReady, resumeData, onResumeGame,
 }: StartScreenProps) {
   const isKbd = inputMode === "keyboard";
 
@@ -126,6 +130,12 @@ export function StartScreen({
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
           <button className="btn-ghost btn-sm" onClick={onClearReplaySeed}>Clear</button>
         </div>
+      )}
+      {resumeReady && resumeData && onResumeGame && (
+        <button onClick={onResumeGame} className="dtp-btn-resume" aria-label="Resume saved game">
+          🔄 Resume Game
+          <span className="dtp-resume-meta">Score: {resumeData.score as number} | ❤️ {resumeData.hearts as number}</span>
+        </button>
       )}
       {/* Top row: player pill + energy pips */}
       <div className="menu-top-row">

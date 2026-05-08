@@ -10,11 +10,19 @@ export interface DDAMetrics {
 export class DynamicDifficulty {
   private baselineSpawnMs: number;
   private currentSpawnMs: number;
-  private readonly minSpawnMs: number = 400;
-  private readonly maxSpawnMs: number = 2000;
+  private readonly minSpawnMs = 400;
+  private readonly maxSpawnMs = 2000;
   private readonly adjustmentWindow = 10;
   private tickCount = 0;
   private metrics: DDAMetrics = { accuracy: 0, avgReactionMs: 0, streak: 0, deaths: 0 };
+
+  private _consecutiveDeaths = 0;
+  private _recentReactions: number[] = [];
+  private readonly MAX_REACTION_SAMPLES = 8;
+  private readonly DEATH_SPIKE_THRESHOLD = 2;
+  private readonly REACTION_SPIKE_PCT = 0.85;
+  private _emergencyCooldown = 0;
+  private readonly EMERGENCY_COOLDOWN_MS = 5000;
 
   constructor(initialSpawnMs: number) {
     this.baselineSpawnMs = initialSpawnMs;
@@ -22,16 +30,27 @@ export class DynamicDifficulty {
   }
 
   recordAttempt(hit: boolean, reactionMs: number, died: boolean) {
-    const { accuracy, avgReactionMs, streak, deaths } = this.metrics;
-    this.metrics.accuracy = (accuracy * this.tickCount + (hit ? 1 : 0)) / (this.tickCount + 1);
-    this.metrics.avgReactionMs = (avgReactionMs * this.tickCount + reactionMs) / (this.tickCount + 1);
-    this.metrics.streak = hit ? streak + 1 : 0;
-    this.metrics.deaths = died ? deaths + 1 : deaths;
+    if (hit) {
+      this._consecutiveDeaths = 0;
+      this._recentReactions.push(reactionMs);
+      if (this._recentReactions.length > this.MAX_REACTION_SAMPLES) this._recentReactions.shift();
+    } else {
+      this._consecutiveDeaths++;
+      this._recentReactions = [];
+    }
+
     this.tickCount++;
+    this.metrics.accuracy = (this.metrics.accuracy * (this.tickCount - 1) + (hit ? 1 : 0)) / this.tickCount;
+    this.metrics.avgReactionMs = (this.metrics.avgReactionMs * (this.tickCount - 1) + reactionMs) / this.tickCount;
+    this.metrics.streak = hit ? this.metrics.streak + 1 : 0;
+    this.metrics.deaths = died ? this.metrics.deaths + 1 : this.metrics.deaths;
   }
 
   compute(): number {
+    this._checkEmergency();
+
     if (this.tickCount % this.adjustmentWindow !== 0) return this.currentSpawnMs;
+
     const { accuracy, avgReactionMs, streak, deaths } = this.metrics;
     const score = (accuracy * 400) - (avgReactionMs / 5) + (streak * 25) - (deaths * 150);
 
@@ -45,6 +64,29 @@ export class DynamicDifficulty {
     return this.currentSpawnMs;
   }
 
-  reset(ms: number) { this.baselineSpawnMs = ms; this.currentSpawnMs = ms; this.tickCount = 0; this.metrics = { accuracy: 0, avgReactionMs: 0, streak: 0, deaths: 0 }; }
+  private _checkEmergency() {
+    const now = performance.now();
+    if (now < this._emergencyCooldown) return;
+
+    const avgReaction = this._recentReactions.length ? this._recentReactions.reduce((a, b) => a + b, 0) / this._recentReactions.length : 0;
+    const reactionSpike = avgReaction > 800 && this._recentReactions.length >= this.MAX_REACTION_SAMPLES;
+    const deathSpike = this._consecutiveDeaths >= this.DEATH_SPIKE_THRESHOLD;
+
+    if (deathSpike || reactionSpike) {
+      const drop = deathSpike ? 180 : 100;
+      this.currentSpawnMs = Math.min(this.maxSpawnMs, this.currentSpawnMs + drop);
+      this._emergencyCooldown = now + this.EMERGENCY_COOLDOWN_MS;
+      this._consecutiveDeaths = 0;
+      this._recentReactions = [];
+      logger.warn('DDA EMERGENCY DROP', { reason: deathSpike ? 'consecutive_deaths' : 'slow_reactions', newSpawn: this.currentSpawnMs });
+      window.dispatchEvent(new CustomEvent('dtp:difficulty:emergency', { detail: { newSpawnMs: this.currentSpawnMs, reason: deathSpike ? 'deaths' : 'reaction' } }));
+    }
+  }
+
+  reset(ms: number) {
+    this.baselineSpawnMs = ms; this.currentSpawnMs = ms; this.tickCount = 0;
+    this.metrics = { accuracy: 0, avgReactionMs: 0, streak: 0, deaths: 0 };
+    this._consecutiveDeaths = 0; this._recentReactions = []; this._emergencyCooldown = 0;
+  }
   get spawnRate() { return this.currentSpawnMs; }
 }

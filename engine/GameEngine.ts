@@ -6,6 +6,7 @@ import { logError } from "../utils/devLog";
 import { InputBuffer } from "../utils/input-smoothing";
 import { haptics } from "../utils/haptics";
 import { sessionManager } from "../utils/session";
+import { stateGuard } from "../utils/state-guard";
 import { scoreSync } from "../utils/score-sync";
 import { audioEngine } from "../utils/audio";
 import { analytics } from "../utils/analytics";
@@ -30,6 +31,7 @@ import {
   activeToCellsP, spawnActive, pickPattern, pickCellShape,
 } from "./subsystems/CellLifecycle";
 import { calculateTapScore, checkStreakMilestone } from "./subsystems/ScoreTracker";
+import { challengeLink } from "../utils/challenge-link";
 import {
   getNextBossEventType, getBossDuration, getBossLabel, getBossDoneLabel,
   getNextBossTriggerScore, shouldTriggerBossEvent, shouldTriggerShieldBoss,
@@ -91,6 +93,7 @@ export class GameEngine {
   // Boss/Bomb state
   private bossEvent: BossEvent | null = null;
   private nextBossTriggerScore = 500;
+  private readonly SESSION_KEY = 'dtp:session';
   private activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null = null;
   private _settingsUnsub: (() => void) | null = null;
   private _gamepadUnsub: (() => void) | null = null;
@@ -122,6 +125,13 @@ export class GameEngine {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
     }).catch(e => logError('Settings module failed', e));
     window.addEventListener('dtp:boss:complete', () => { this._bossActive = false; });
+    window.addEventListener('dtp:difficulty:emergency', () => {
+      const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
+      this.p1.score += bonus;
+      this.emit({ type: "toast", message: `⚖️ Difficulty adjusted! +${bonus} pts` });
+      document.documentElement.setAttribute('data-dda-emergency', 'true');
+      setTimeout(() => document.documentElement.removeAttribute('data-dda-emergency'), 2200);
+    });
     gamepadManager.init();
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
@@ -130,9 +140,18 @@ export class GameEngine {
     });
   }
 
-  private _applySettings(s: { reducedMotion?: boolean }) {
-    // Bridge settings to engine behavior if needed
+  private _applySettings(s: { reducedMotion?: boolean; liteMode?: boolean }) {
+    if (s.liteMode !== undefined) {
+      this.skipParticles = s.liteMode;
+      // Cap engine tick rate if needed, but computeMs already handles difficulty.
+      // We mainly want to reduce visual load.
+    }
+    if (s.reducedMotion !== undefined) {
+      this.devRotationSpeed = s.reducedMotion ? 0.5 : 1;
+    }
   }
+
+  private skipParticles = false;
 
   setConfig(cfg: typeof this._config) { this._config = cfg; }
 
@@ -164,6 +183,7 @@ export class GameEngine {
     this._isDisposed = false;
     this.stop();
     rhythmFeedback.reset();
+    sessionStorage.removeItem(this.SESSION_KEY);
     this.tickCount  = 0;
     this.evolveTick = 0;
     this.iMult      = this.config.speedMult;
@@ -315,6 +335,7 @@ destroy(): void {
     this.clearAllTimeouts();
     this.clearAllDeltaTimers();
     this.stop();
+    sessionStorage.removeItem(this.SESSION_KEY);
     this._sessionStartTime = performance.now();
     this._lastTapTime = 0;
     this._tickSoundCounter = 0;
@@ -679,6 +700,7 @@ destroy(): void {
     }
 
     this.tickCount += 1;
+    if (this.tickCount % 10 === 0) this.autoSaveSession();
     if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
     if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
       const bonus = this.tickCount > 200 ? 5 : this.tickCount > 120 ? 3 : 2;
@@ -987,6 +1009,10 @@ destroy(): void {
     scoreSync.queue(score);
   }
 
+  generateChallengeUrl(): string {
+    return challengeLink.generate(this.p1.score, this.gameSeed.toString(), this.p1.health);
+  }
+
   getSnapshot(): GameSnapshot {
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const cloneActive = (active: ActiveCell[]): ActiveCell[] => active.map(c => ({ ...c }));
@@ -1012,6 +1038,123 @@ destroy(): void {
   }
 
   getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
+
+  getSessionSnapshot(): Record<string, unknown> {
+    return {
+      version: 1,
+      ts: Date.now(),
+      gameSeed: this.gameSeed,
+      tickCount: this.tickCount,
+      evolveTick: this.evolveTick,
+      cellShape: this.cellShape,
+      spinLevel: this.spinLevel,
+      rareMode: { ...this.rareMode },
+      isInverted: this._isInverted,
+      nextShuffleTick: this.nextShuffleTick,
+      bossEvent: this.bossEvent ? { type: this.bossEvent.type, endsAt: this.bossEvent.endsAt } : null,
+      nextBossTriggerScore: this.nextBossTriggerScore,
+      _bossActive: this._bossActive,
+      bossEngineActive: bossEngine.state.active,
+      bossEngineShieldHits: bossEngine.state.shieldHits,
+      activeBomb: this.activeBomb ? { idx: this.activeBomb.idx, expiresAt: this.activeBomb.expiresAt, player: this.activeBomb.player } : null,
+      ddaSpawnRate: this.dda.spawnRate,
+      hearts: this.p1.health,
+      score: this.p1.score,
+      timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
+      isPaused: this.paused,
+      p1: {
+        score: this.p1.score, health: this.p1.health, streak: this.p1.streak,
+        gridStage: this.p1.gridStage, stageProgress: this.p1.stageProgress, patternIdx: this.p1.patternIdx,
+        shield: this.p1.shield, shieldCount: this.p1.shieldCount,
+        freezeEnd: this.p1.freezeEnd, multiplierEnd: this.p1.multiplierEnd,
+        storedFreezeCharges: this.p1.storedFreezeCharges, storedShieldCharges: this.p1.storedShieldCharges,
+        alive: this.p1.alive,
+        active: this.p1.active.map(c => ({ ...c })),
+      },
+      p2: this.config.numPlayers === 2 ? {
+        score: this.p2.score, health: this.p2.health, streak: this.p2.streak,
+        gridStage: this.p2.gridStage, stageProgress: this.p2.stageProgress, patternIdx: this.p2.patternIdx,
+        shield: this.p2.shield, shieldCount: this.p2.shieldCount,
+        freezeEnd: this.p2.freezeEnd, multiplierEnd: this.p2.multiplierEnd,
+        storedFreezeCharges: this.p2.storedFreezeCharges, storedShieldCharges: this.p2.storedShieldCharges,
+        alive: this.p2.alive,
+        active: this.p2.active.map(c => ({ ...c })),
+      } : null,
+    };
+  }
+
+  restoreSessionSnapshot(data: Record<string, unknown>): boolean {
+    try {
+      if (!data || !data.gameSeed) return false;
+      this.gameSeed = data.gameSeed as number;
+      this.rng = mulberry32(this.gameSeed);
+      this.tickCount = (data.tickCount as number) ?? 0;
+      this.evolveTick = (data.evolveTick as number) ?? 0;
+      this.cellShape = (data.cellShape as CellShape) ?? "square";
+      this.spinLevel = (data.spinLevel as number) ?? 0;
+      if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode, this.rareMode);
+      this._isInverted = (data.isInverted as boolean) ?? false;
+      this.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
+      this.bossEvent = data.bossEvent ? { type: (data.bossEvent as any).type, endsAt: (data.bossEvent as any).endsAt } : null;
+      this.nextBossTriggerScore = (data.nextBossTriggerScore as number) ?? 500;
+      this._bossActive = (data._bossActive as boolean) ?? false;
+      if (data.bossEngineActive) bossEngine.activate((data.bossEngineShieldHits as number) ?? 5);
+      this.activeBomb = data.activeBomb ? { idx: (data.activeBomb as any).idx, expiresAt: (data.activeBomb as any).expiresAt, player: (data.activeBomb as any).player } : null;
+      this.dda.reset((data.ddaSpawnRate as number) ?? 1200);
+      const p1 = data.p1 as Record<string, unknown> | undefined;
+      if (p1) {
+        this.p1.score = (p1.score as number) ?? 0;
+        this.p1.health = (p1.health as number) ?? GAME.MAX_HEARTS;
+        this.p1.streak = (p1.streak as number) ?? 0;
+        this.p1.gridStage = (p1.gridStage as number) ?? 0;
+        this.p1.stageProgress = (p1.stageProgress as number) ?? 0;
+        this.p1.patternIdx = (p1.patternIdx as number) ?? 0;
+        this.p1.shield = (p1.shield as boolean) ?? false;
+        this.p1.shieldCount = (p1.shieldCount as number) ?? 0;
+        this.p1.freezeEnd = (p1.freezeEnd as number) ?? 0;
+        this.p1.multiplierEnd = (p1.multiplierEnd as number) ?? 0;
+        this.p1.storedFreezeCharges = (p1.storedFreezeCharges as number) ?? 0;
+        this.p1.storedShieldCharges = (p1.storedShieldCharges as number) ?? 0;
+        this.p1.alive = (p1.alive as boolean) ?? true;
+        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
+        const pat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
+        this.p1.cells = activeToCellsP(this.p1.active, pat);
+      }
+      const p2 = data.p2 as Record<string, unknown> | null | undefined;
+      if (p2 && this.config.numPlayers === 2) {
+        this.p2.score = (p2.score as number) ?? 0;
+        this.p2.health = (p2.health as number) ?? GAME.MAX_HEARTS;
+        this.p2.streak = (p2.streak as number) ?? 0;
+        this.p2.gridStage = (p2.gridStage as number) ?? 0;
+        this.p2.stageProgress = (p2.stageProgress as number) ?? 0;
+        this.p2.patternIdx = (p2.patternIdx as number) ?? 0;
+        this.p2.shield = (p2.shield as boolean) ?? false;
+        this.p2.shieldCount = (p2.shieldCount as number) ?? 0;
+        this.p2.freezeEnd = (p2.freezeEnd as number) ?? 0;
+        this.p2.multiplierEnd = (p2.multiplierEnd as number) ?? 0;
+        this.p2.storedFreezeCharges = (p2.storedFreezeCharges as number) ?? 0;
+        this.p2.storedShieldCharges = (p2.storedShieldCharges as number) ?? 0;
+        this.p2.alive = (p2.alive as boolean) ?? true;
+        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
+        const pat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
+        this.p2.cells = activeToCellsP(this.p2.active, pat2);
+      }
+      this.emit({ type: "phaseChange", phase: "playing" });
+      this.dirty = true;
+      this.emitSnapshot();
+      return true;
+    } catch (e) {
+      logError("Session restore failed", e);
+      return false;
+    }
+  }
+
+  private autoSaveSession(): void {
+    if (this.phase !== "playing" || this.paused) return;
+    try {
+      sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(this.getSessionSnapshot()));
+    } catch {}
+  }
 
   private triggerBossEvent(): void {
     const prevType = this.bossEvent?.type ?? null;
