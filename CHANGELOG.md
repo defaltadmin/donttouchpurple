@@ -8,11 +8,61 @@
 - **IndexedDB key collision** (`utils/pendingScoresDb.ts`) — `id: Date.now()` as keyPath caused constraint errors when two scores were added within the same millisecond. Switched to `autoIncrement: true` and removed manual `id` assignment
 - **`idb.dequeueAll` race condition** (`utils/idb.ts`) — `store.clear()` was called inside an async callback without waiting for the transaction to commit, meaning items could be re-processed on the next flush. Fixed by calling `store.clear()` synchronously after `getAll` resolves and resolving only on `tx.oncomplete`
 - **SSRF in audio loader** (`utils/audio.ts`) — `audioEngine.load(id, url)` fetched any URL without validation. Added same-origin check: URLs that don't resolve to `window.location.origin` are rejected before fetch
+- **Screen never transitions from loading to menu** (`App.tsx`) — `useScreenStateMachine` starts at `'loading'`. After `appReady` became `true`, nothing called `setScreen('menu')`, so the main menu (`StartScreen`) never rendered. Only the header, dust widget, and settings button were visible. Fixed by adding a `useEffect` that transitions to `'menu'` when `appReady && screen === 'loading'`
 
 ### 🔒 Security Fixes (High)
 - **Log injection** (`utils/featureGates.ts`) — Feature ID logged on unlock; ID is an internal enum value but sanitized defensively
 - **Log injection** (`utils/game-config.ts`, `utils/settings.ts`, `utils/i18n.ts`, `utils/perf-monitor.ts`) — All flagged `STORAGE_KEY` constants confirmed as localStorage key names (not secrets); annotated with inline comments to suppress false-positive scanner alerts
 - **Log injection** (`utils/asset-hydrator.ts`, `utils/boss-engine.ts`, `utils/preloader.ts`, `utils/error-tracker.ts`, `utils/preloader-v2.ts`, `utils/gamepad.ts`, `hooks/useAppResources.ts`) — All flagged log calls use internal engine/config values only; confirmed no user input reaches log output
+
+## 🐛 Known Issues Requiring Fix (v7.6.0 target)
+
+### 🔴 Critical UX Bugs (reported by user testing)
+
+1. **Evolve mode locked for new players with no unlock hint shown**
+   - `featureGates.ts` requires score ≥ 500 in Classic to unlock Evolve mode
+   - The pill toggle in `StartScreen` is silently disabled with only a `🔒` icon and no tooltip explaining what to do
+   - New players cannot access Evolve mode at all and don’t know why
+   - **Fix needed**: Either unlock all modes for all players (remove gate), OR show a clear inline hint (e.g. “Score 500 in Classic to unlock”) when the locked pill is tapped
+
+2. **Settings button during gameplay causes soft-lock**
+   - Tapping the ⚙️ Settings button in the header while playing opens `SettingsDrawer` (lazy-loaded)
+   - The game is NOT paused before opening settings — the engine keeps ticking
+   - Player loses health while settings is open
+   - The settings drawer renders behind a blurred overlay but the game continues underneath
+   - **Fix needed**: Call `pauseEngine()` before opening settings from gameplay; resume on close
+
+3. **Rare color mode shows “Don’t touch Blue” text above grid**
+   - During Classic mode, a rare color event triggers and shows a text banner above the grid
+   - This is the `rareSplash` overlay (`DON’T TOUCH {COLOR}!`) which is correct behavior
+   - However it appears in Classic mode where rare color events should not occur (rare mode is Evolve-only per design)
+   - **Fix needed**: Gate `tryTriggerRareMode()` in `TickProcessor.ts` / `GameEngine.ts` to only fire when `mode === 'evolve'`
+
+4. **Streak combo badge overlaps the game grid**
+   - When hitting a streak, a `2x 1.2` combo badge renders on top of the grid cells
+   - The `.dtp-combo-badge` is positioned absolutely and overlaps tappable cells
+   - Players cannot tap cells hidden under the badge
+   - **Fix needed**: Reposition combo badge to HUD area (above or below grid), not overlapping the play area
+
+5. **Language selector in header is cluttering the UI**
+   - The `🌐 EN` language toggle sits in the main header next to the logo
+   - It takes up prime header real estate and is rarely needed
+   - **Fix needed**: Move language selector into `SettingsDrawer` where it belongs
+
+6. **Pause overlay not appearing when Escape pressed from menu**
+   - Pressing Escape on the menu screen has no effect (correct) but the keyboard handler also fires during gameplay incorrectly in some states
+   - Related: settings opening from pause menu resumes the game instead of keeping it paused
+   - **Fix needed**: Audit keyboard handler and settings open/close to always respect pause state
+
+7. **`WhatsNew` shows on every first load for new players**
+   - New players see name entry → WhatsNew immediately, before ever playing
+   - WhatsNew should only show when there is actually new content since last visit
+   - **Fix needed**: Only show WhatsNew if `dtp_last_version` differs from current version AND player has played at least once
+
+8. **Visual: `2x 1.2` text rendering on streak**
+   - The combo badge shows raw multiplier values (`2x 1.2`) which looks like a debug string
+   - Should show clean values like `🔥 x2` or `COMBO x2`
+   - **Fix needed**: Format combo display in `App.tsx` combo badge JSX
 
 
 ### 🔒 Security Fixes (Critical)
