@@ -7,29 +7,34 @@ interface PurpleRainProps {
 }
 
 interface Shape {
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  opacity: number;
-  opacityTarget: number;
-  opacityBase: number;
-  opacityRange: number;
-  breathPhase: number;
-  breathSpeed: number;
+  x: number; y: number;
+  size: number; speed: number;
+  opacity: number; opacityTarget: number; opacityBase: number; opacityRange: number;
+  breathPhase: number; breathSpeed: number;
   type: "square" | "circle" | "triangle";
-  filled: boolean;
-  rotation: number;
-  rotSpeed: number;
+  filled: boolean; rotation: number; rotSpeed: number;
 }
 
 const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const shapesRef = useRef<Shape[]>([]);
-  const lastFrameRef = useRef(0);
-  const frameInterval = reducedMotion ? 33 : 16;
-  const { register } = useBackgroundController(!reducedMotion);
+  const canvasRef      = useRef<HTMLCanvasElement>(null);
+  const animationRef   = useRef<number | null>(null);
+  const shapesRef      = useRef<Shape[]>([]);
+  const lastFrameRef   = useRef(0);
+  const purpleColorRef = useRef<string>('#c026d3');   // FIX: read once, not per-frame
+  const frameInterval  = reducedMotion ? 33 : 16;
+  const { register }   = useBackgroundController(!reducedMotion);
+
+  // Read CSS custom property once on mount (and on theme change if you add one)
+  useEffect(() => {
+    const readColor = () => {
+      purpleColorRef.current =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--purple').trim() || '#c026d3';
+    };
+    readColor();
+    window.addEventListener('dtp:theme-change', readColor);
+    return () => window.removeEventListener('dtp:theme-change', readColor);
+  }, []);
 
   const pause = useCallback(() => {
     if (animationRef.current) {
@@ -40,12 +45,9 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
 
   const resume = useCallback(() => {
     if (reducedMotion || !canvasRef.current) return;
-    if (!animationRef.current) {
-      animate(performance.now());
-    }
+    if (!animationRef.current) animate(performance.now());
   }, [reducedMotion]);
 
-  // Register this background with the controller
   useEffect(() => {
     const unregister = register({ pause, resume });
     return unregister;
@@ -53,20 +55,17 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
 
   const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
     const types: Shape["type"][] = ["square", "circle", "triangle"];
-    const size = 18 + Math.random() * 72;
+    const size        = 18 + Math.random() * 72;
     const opacityBase = 0.06 + Math.random() * 0.09;
     return {
       x: Math.random() * canvasW,
       y: y ?? -size - Math.random() * canvasH,
-      size,
-      speed: 0.18 + Math.random() * 0.32,
-      opacity: opacityBase,
-      opacityTarget: opacityBase,
-      opacityBase,
-      opacityRange: 0.04 + Math.random() * 0.06,
-      breathPhase: Math.random() * Math.PI * 2,
-      breathSpeed: 0.004 + Math.random() * 0.008,
-      type: types[Math.floor(Math.random() * 3)],
+      size, speed: 0.18 + Math.random() * 0.32,
+      opacity: opacityBase, opacityTarget: opacityBase, opacityBase,
+      opacityRange:  0.04 + Math.random() * 0.06,
+      breathPhase:   Math.random() * Math.PI * 2,
+      breathSpeed:   0.004 + Math.random() * 0.008,
+      type:   types[Math.floor(Math.random() * 3)],
       filled: Math.random() > 0.5,
       rotation: Math.random() * Math.PI * 2,
       rotSpeed: (Math.random() - 0.5) * 0.002,
@@ -77,8 +76,8 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
     ctx.save();
     ctx.globalAlpha = s.opacity;
     ctx.strokeStyle = purple;
-    ctx.fillStyle = purple;
-    ctx.lineWidth = 1.5;
+    ctx.fillStyle   = purple;
+    ctx.lineWidth   = 1.5;
     ctx.translate(s.x, s.y);
     ctx.rotate(s.rotation);
 
@@ -91,7 +90,6 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
       if (s.filled) ctx.fillRect(-h, -h, s.size, s.size);
       else ctx.strokeRect(-h, -h, s.size, s.size);
     } else {
-      // triangle
       const r = s.size / 2;
       ctx.beginPath();
       ctx.moveTo(0, -r);
@@ -100,7 +98,6 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
       ctx.closePath();
       s.filled ? ctx.fill() : ctx.stroke();
     }
-
     ctx.restore();
   };
 
@@ -113,66 +110,51 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
 
     const canvas = canvasRef.current;
     if (!canvas || reducedMotion) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const { width, height } = canvas;
     ctx.clearRect(0, 0, width, height);
 
-    const style = getComputedStyle(document.documentElement);
-    const purple = style.getPropertyValue("--purple").trim() || "#c026d3";
+    // FIX: use cached ref — no layout thrash per frame
+    const purple = purpleColorRef.current;
 
-    // Update and draw shapes
     for (const s of shapesRef.current) {
-      s.y += s.speed;
-      s.rotation += s.rotSpeed;
+      s.y           += s.speed;
+      s.rotation    += s.rotSpeed;
       s.breathPhase += s.breathSpeed;
-      s.opacity = s.opacityBase + Math.sin(s.breathPhase) * s.opacityRange;
-      s.opacity = Math.max(0.03, Math.min(0.15, s.opacity));
+      s.opacity      = s.opacityBase + Math.sin(s.breathPhase) * s.opacityRange;
+      s.opacity      = Math.max(0.03, Math.min(0.15, s.opacity));
 
-      if (s.y - s.size / 2 > height) {
-        Object.assign(s, makeShape(width, height));
-      }
-
+      if (s.y - s.size / 2 > height) Object.assign(s, makeShape(width, height));
       drawShape(ctx, s, purple);
     }
 
     animationRef.current = requestAnimationFrame(animate);
   }, [reducedMotion, frameInterval]);
 
-  // Expose control methods
   useImperativeHandle(ref, () => ({ pause, resume }));
 
   useEffect(() => {
-    if (reducedMotion) {
-      pause();
-      return;
-    }
+    if (reducedMotion) { pause(); return; }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = window.innerWidth;
+    canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const COUNT = 28;
     shapesRef.current = [];
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < 28; i++) {
       shapesRef.current.push(makeShape(canvas.width, canvas.height, Math.random() * canvas.height));
     }
 
     const handleResize = () => {
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+      if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     };
     window.addEventListener('resize', handleResize);
 
-    if (!reducedMotion) {
-      animate(performance.now());
-    }
+    animate(performance.now());
 
     return () => {
       pause();

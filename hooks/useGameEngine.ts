@@ -176,7 +176,7 @@ export interface UseGameEngineReturn {
   submitScoreToLeaderboard: (score: number) => void;
   restoreSession: () => boolean;
   restoreSessionSnapshot: (data: Record<string, unknown>) => boolean;
-  generateChallengeUrl: () => string;
+  generateChallengeUrl: () => Promise<string>;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────
@@ -394,8 +394,8 @@ export function useGameEngine(
     engineRef.current?.submitScoreToLeaderboard(score);
   }, []);
 
-  const generateChallengeUrl = useCallback((): string => {
-    return engineRef.current?.generateChallengeUrl() ?? '';
+  const generateChallengeUrl = useCallback(async (): Promise<string> => {
+    return (await engineRef.current?.generateChallengeUrl()) ?? '';
   }, []);
 
   const restoreSessionSnapshot = useCallback((data: Record<string, unknown>): boolean => {
@@ -404,7 +404,7 @@ export function useGameEngine(
   }, []);
 
   const restoreSession = useCallback((): boolean => {
-    const raw = sessionStorage.getItem('dtp:session');
+    const raw = sessionStorage.getItem('dtp:session-ui');
     if (!raw || !engineRef.current) return false;
     try {
       const { engineSnapshot } = JSON.parse(raw);

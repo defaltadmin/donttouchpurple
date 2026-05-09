@@ -1,3 +1,8 @@
+// utils/session.ts
+// KEY CHANGE: 'dtp:session-ui' (was 'dtp:session') to prevent collision with
+// GameEngine's full crash-recovery snapshot that also uses 'dtp:session'.
+// The light UI snapshot (hearts/score/timeLeft) is only used by the
+// resume-banner logic; the full snapshot owns the 'dtp:session' key exclusively.
 import { logger } from './logger';
 
 export interface GameSession {
@@ -8,15 +13,15 @@ export interface GameSession {
 }
 
 export const sessionManager = {
-  KEY: 'dtp:session',
-  
+  KEY: 'dtp:session-ui',          // ← was 'dtp:session' — collision fixed
+
   save(snapshot: GameSession['engineSnapshot'], extraState: Record<string, unknown> = {}) {
     try {
       const data: GameSession = {
         version: 1,
         timestamp: Date.now(),
         state: extraState,
-        engineSnapshot: snapshot
+        engineSnapshot: snapshot,
       };
       sessionStorage.setItem(this.KEY, JSON.stringify(data));
       logger.debug('Session saved', { ts: data.timestamp });
@@ -30,6 +35,7 @@ export const sessionManager = {
       const raw = sessionStorage.getItem(this.KEY);
       if (!raw) return null;
       const data = JSON.parse(raw) as GameSession;
+      // Expire after 12 hours
       if (Date.now() - data.timestamp > 4.32e7) {
         this.clear();
         return null;
@@ -41,5 +47,5 @@ export const sessionManager = {
     }
   },
 
-  clear() { sessionStorage.removeItem(this.KEY); }
+  clear() { sessionStorage.removeItem(this.KEY); },
 };

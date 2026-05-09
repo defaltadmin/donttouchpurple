@@ -1,5 +1,80 @@
 # Don't Touch Purple — Changelog
 
+# Don't Touch the Purple — v6.1.0 (Security & Bugfix Release)
+# HMAC Challenge Signatures, DDA Shield Fix, Session Collision Fix, PRNG Determinism, i18n Full Localization
+# Session Date: 2026-05-09
+
+---
+
+## v6.1.0 — Security, Reliability & Localization
+
+This release focuses on hardening challenge URL integrity, fixing two DDA bugs that penalised shield blocks as deaths, eliminating a session-storage key collision between light UI snapshots and full crash-recovery state, and shipping complete i18n translations for four languages.
+
+### 🔐 Security
+
+- **challenge-link.ts** — HMAC-SHA256 signed challenge URLs; `generate()` now async; `parseAndVerify()` replaces `parse()` with integrity verification. Legacy `parseUnsafe()` retained for non-competitive display.
+- **seed-challenge.ts** — Daily seed hashed via SHA-256 (was reversible `btoa`); `DailyChallenge.init()` is async — `init().catch()` wired into `GameEngine` constructor.
+- **score-sync.ts** — `queue(score, tick)` now attaches `tick` count + per-tab `sessionId` (via `crypto.randomUUID()`) to every submission for server-side plausibility checks.
+- **worker/score-validator.js** — `tick` and `sessionId` are now required fields; impossible-score check always runs instead of being gated on `data.tick`.
+
+### 🐛 Bug Fixes
+
+- **DDA shield penalty fix** — `dda.ts` `_consecutiveDeaths` now driven by the `died` parameter, not by `!hit`. Shield blocks register `recordAttempt(false, 0, false)` and no longer trigger the emergency difficulty drop. Applied to both the cell-expiry miss path and tap-danger path in `GameEngine.ts` (patches 9a/9b).
+- **Session key collision** — `session.ts` changed its storage key from `'dtp:session'` → `'dtp:session-ui'`. The full crash-recovery snapshot (written by `autoSaveSession`) owns `'dtp:session'` exclusively. `hooks/useGameEngine.ts` `restoreSession()` reads `'dtp:session-ui'`.
+- **PRNG determinism** — `GameEngine.ts` adds `_rngCallCount` to track PRNG calls. `getSessionSnapshot()` includes `rngCallCount`; `restoreSessionSnapshot()` fast-forwards the `mulberry32` PRNG to the exact saved call count, eliminating post-crash cell desync.
+- **Dead call removed** — `App.tsx` `handleCopyChallenge` rewritten; the dead `generateChallengeUrl()` synchronous call removed. `challengeLink.copyToClipboard()` now called directly with `snapshot` data.
+
+### ⚡ Performance
+
+- **PurpleRain.tsx** — `getComputedStyle` moved out of the `requestAnimationFrame` loop into a `useRef`; refreshed on `dtp:theme-change` custom event. Eliminates per-frame layout thrash.
+
+### 🆕 New
+
+- **`engine/subsystems/SessionPersistor.ts`** — Extracts crash-recovery session persistence from `GameEngine.ts`. Uses `stateGuard` for typed parse-and-validate.
+- **`locales/es|fr|ja|pt.json`** — Full 36-key translations for Spanish, French, Japanese, and Portuguese. (Were previously empty `{}` stubs.)
+- **`utils/asset-hydrator.ts`** — AudioContext now lazy-initialised (never created on class instantiation); decoded audio buffers stored in `Map<string, AudioBuffer>` with `getBuffer(id)` accessor; `dispose()` method added for resource cleanup.
+
+### ✅ Verification
+
+- **TypeScript:** `tsc --noEmit` — zero errors.
+- **Tests:** 40/40 passing (6 test files).
+- **Build:** `pnpm build` — clean.
+
+---
+
+# Don't Touch the Purple — v6.2.0 (Phase 1 — Architecture & Privacy)
+# Cloudflare Worker TypeScript Migration, Short-Lived OAuth2 Tokens, Dead Code Removal, Privacy-Gated Telemetry
+# Session Date: 2026-05-09
+
+---
+
+## v6.2.0 — Architecture & Privacy
+
+This release migrates the Cloudflare Worker to TypeScript with short-lived OAuth2 Firebase tokens, removes dead public API methods from GameEngine, and privacy-gates achievement telemetry.
+
+### 🔐 Security
+
+- **workers/score-validator.ts** — Migrated from plain JS to TypeScript with `@cloudflare/workers-types` interfaces (`Env`, `ScorePayload`, `ExportedHandler`). Static `FIREBASE_ACCESS_TOKEN` env var replaced with on-demand OAuth2 token generation via Google service account JWT grant. Token cached in-memory with 60s grace period before refresh.
+- **workers/wrangler.toml** — Created with `main = "score-validator.ts"` entry point.
+- **worker/score-validator.js** — Deleted (replaced by TypeScript worker).
+
+### 🧹 Housekeeping
+
+- **engine/GameEngine.ts** — Removed `import { privacyManager }` and three dead public API methods: `isTelemetryAllowed()`, `exportUserData()`, `wipeUserData()` (T8).
+
+### 🛡️ Privacy
+
+- **utils/analytics.ts** — Added `'achievement_unlocked'` to `EventName` union.
+- **utils/achievements.ts** — Achievement unlock telemetry now gated behind `privacyManager.getConsent()` check. Analytics only fire when user has consented (T7).
+
+### ✅ Verification
+
+- **TypeScript:** `tsc --noEmit` — zero errors.
+- **Tests:** 40/40 passing (6 test files).
+- **Dead code:** `grep` confirms zero remaining references to `FIREBASE_ACCESS_TOKEN`, `isTelemetryAllowed`, `exportUserData`, `wipeUserData`.
+
+---
+
 # Don't Touch the Purple — v6.0.0 (Production Release)
 # PWA Transformation, Decoupled Engine, Accessibility, Viral Features, Asset Tiers
 # Session Date: 2026-05-09

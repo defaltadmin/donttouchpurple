@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 type Shape = 'square' | 'triangle' | 'diamond';
 
@@ -59,33 +60,54 @@ function makeBlock(w: number, h: number): SpiralBlock {
 
 export default function VoidTunnel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const blocksRef = useRef<SpiralBlock[]>([]);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
+  const { start, stop } = useSafeRaf(() => {
+    const ctx = ctxRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
 
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2, cy = h / 2;
+    ctx.clearRect(0, 0, w, h);
+
+    for (const b of blocksRef.current) {
+      b.angle += b.speed;
+      b.radius -= b.radiusSpeed;
+
+      if (b.radius < 8) {
+        Object.assign(b, makeBlock(w, h));
+        b.radius = Math.max(w, h) * (0.5 + Math.random() * 0.15);
+      }
+
+      const x = cx + Math.cos(b.angle) * b.radius;
+      const y = cy + Math.sin(b.angle) * b.radius;
+
+      ctx.globalAlpha = b.opacity * (b.radius / (Math.max(w, h) * 0.6));
+      ctx.fillStyle = b.color;
+      drawShape(ctx, b.shape, x, y, b.size, b.angle);
     }
-  }, []);
+
+    ctx.globalAlpha = 1;
+  });
 
   useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctxRef.current = ctx;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -95,41 +117,13 @@ export default function VoidTunnel() {
     window.addEventListener('resize', resize);
 
     const BLOCK_COUNT = 48;
-    const blocks: SpiralBlock[] = Array.from({ length: BLOCK_COUNT }, () =>
+    blocksRef.current = Array.from({ length: BLOCK_COUNT }, () =>
       makeBlock(canvas.width, canvas.height)
     );
 
-    const draw = () => {
-      const w = canvas.width, h = canvas.height;
-      const cx = w / 2, cy = h / 2;
-      ctx.clearRect(0, 0, w, h);
-
-      for (const b of blocks) {
-        b.angle += b.speed;
-        b.radius -= b.radiusSpeed;
-
-        if (b.radius < 8) {
-          Object.assign(b, makeBlock(w, h));
-          b.radius = Math.max(w, h) * (0.5 + Math.random() * 0.15);
-        }
-
-        const x = cx + Math.cos(b.angle) * b.radius;
-        const y = cy + Math.sin(b.angle) * b.radius;
-
-        ctx.globalAlpha = b.opacity * (b.radius / (Math.max(w, h) * 0.6));
-        ctx.fillStyle = b.color;
-        drawShape(ctx, b.shape, x, y, b.size, b.angle);
-      }
-
-      ctx.globalAlpha = 1;
-      rafRef.current = requestAnimationFrame(draw);
-    };
-    drawRef.current = draw;
-    draw();
-
     return () => {
-      cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
+      ctxRef.current = null;
     };
   }, []);
 

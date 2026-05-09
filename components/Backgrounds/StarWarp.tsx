@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 type Shape = 'square' | 'circle' | 'triangle' | 'diamond';
 const SHAPES: Shape[] = ['square', 'circle', 'triangle', 'diamond'];
@@ -59,67 +60,63 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, x: number, y: nu
 
 export default function StarWarp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const shapesRef = useRef<WarpShape[]>([]);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
+  const { start, stop } = useSafeRaf(() => {
+    const ctx = ctxRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
 
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    for (const s of shapesRef.current) {
+      s.dist += s.speed * (1 + s.dist / 80);
+      if (s.dist > s.maxDist) { Object.assign(s, makeWarpShape(w, h)); continue; }
+
+      const x = w / 2 + Math.cos(s.angle) * s.dist;
+      const y = h / 2 + Math.sin(s.angle) * s.dist;
+      const progress = s.dist / s.maxDist;
+
+      ctx.globalAlpha = s.opacity * (0.2 + progress * 0.8);
+      ctx.fillStyle = s.color;
+      drawShape(ctx, s.shape, x, y, s.size * (0.4 + progress * 0.6), s.angle + progress * Math.PI);
     }
-  }, []);
+
+    ctx.globalAlpha = 1;
+  });
 
   useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctxRef.current = ctx;
 
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener('resize', resize);
 
     const COUNT = 60;
-    const shapes: WarpShape[] = Array.from({ length: COUNT }, () =>
+    shapesRef.current = Array.from({ length: COUNT }, () =>
       makeWarpShape(canvas.width, canvas.height)
     );
 
-    const draw = () => {
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      for (const s of shapes) {
-        s.dist += s.speed * (1 + s.dist / 80);
-        if (s.dist > s.maxDist) { Object.assign(s, makeWarpShape(w, h)); continue; }
-
-        const x = w / 2 + Math.cos(s.angle) * s.dist;
-        const y = h / 2 + Math.sin(s.angle) * s.dist;
-        const progress = s.dist / s.maxDist;
-
-        ctx.globalAlpha = s.opacity * (0.2 + progress * 0.8);
-        ctx.fillStyle = s.color;
-        drawShape(ctx, s.shape, x, y, s.size * (0.4 + progress * 0.6), s.angle + progress * Math.PI);
-      }
-
-      ctx.globalAlpha = 1;
-      rafRef.current = requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener('resize', resize);
+      ctxRef.current = null;
     };
-    drawRef.current = draw;
-    draw();
-
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
   }, []);
 
   return (

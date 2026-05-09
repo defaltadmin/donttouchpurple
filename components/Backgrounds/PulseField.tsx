@@ -1,5 +1,6 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 const BASE_SPEED = 0.35;
 
@@ -7,31 +8,12 @@ interface Props { rareColor?: string; }
 
 export default function PulseField({ rareColor }: Props) {
   const cvs = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
-
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
-    }
-  }, []);
-
-  useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
-
-  const draw = useCallback(() => {
+  const { start, stop } = useSafeRaf(() => {
     const c = cvs.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
+    const ctx = ctxRef.current; if (!ctx) return;
     const W = c.width = window.innerWidth;
     const H = c.height = window.innerHeight;
     const t = performance.now() * 0.001 * BASE_SPEED;
@@ -62,14 +44,22 @@ export default function PulseField({ rareColor }: Props) {
         ctx.fillRect(x, y, bs, bs);
       });
     }
-  }, [rareColor]);
+  });
 
   useEffect(() => {
-    const loop = () => { draw(); rafRef.current = requestAnimationFrame(loop); };
-    drawRef.current = loop;
-    loop();
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [draw]);
+    const c = cvs.current; if (!c) return;
+    ctxRef.current = c.getContext("2d");
+    return () => { ctxRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   return <canvas ref={cvs} className="background-canvas" />;
 }

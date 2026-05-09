@@ -818,10 +818,12 @@ export default function App() {
 
   // Challenge URL detection
   useEffect(() => {
-    const { isChallenge, seed } = challengeLink.parse();
-    if (isChallenge && seed) {
-      logger.info('Challenge link loaded', { seed });
-    }
+    challengeLink.parseAndVerify().then(({ isChallenge, valid, seed }) => {
+      if (isChallenge && seed) {
+        if (!valid) logger.warn('Challenge link signature invalid — score claim untrusted');
+        logger.info('Challenge link loaded', { seed, valid });
+      }
+    });
   }, []);
 
   const handleDamage = useCallback(() => {
@@ -879,12 +881,17 @@ export default function App() {
   );
 
   const handleCopyChallenge = useCallback(async () => {
-    const url = generateChallengeUrl();
-    if (!url) return;
-    const ok = await challengeLink.copyToClipboard(snapshot?.p1.score ?? 0, String(snapshot?.gameSeed ?? 0), snapshot?.p1.health ?? 3);
-    setShareToast(true);
-    setTimeout(() => setShareToast(false), 2000);
-  }, [generateChallengeUrl, snapshot]);
+    if (!snapshot) return;
+    const ok = await challengeLink.copyToClipboard(
+      snapshot.p1.score,
+      String(snapshot.gameSeed),
+      snapshot.p1.health,
+    );
+    if (ok) {
+      setShareToast(true);
+      setTimeout(() => setShareToast(false), 2000);
+    }
+  }, [snapshot]);
 
   // Resume detection on menu screen
   useEffect(() => {

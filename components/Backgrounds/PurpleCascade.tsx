@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 const COLORS = ['#c026d3','#a21caf','#7c3aed','#9333ea','#db2777'];
 type Shape = 'square'|'circle'|'diamond';
@@ -23,47 +24,46 @@ function drawShape(ctx:CanvasRenderingContext2D, shape:Shape, x:number, y:number
 
 export default function PurpleCascade() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const dropsRef = useRef<Drop[]>([]);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
+  const { start, stop } = useSafeRaf(() => {
+    const ctx = ctxRef.current;
+    const canvas = ref.current;
+    if (!ctx || !canvas) return;
 
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const d of dropsRef.current) {
+      d.y += d.speed;
+      if (d.y > canvas.height + 20) Object.assign(d, makeDrop(canvas.width, canvas.height));
+      ctx.globalAlpha = d.opacity; ctx.fillStyle = d.color;
+      drawShape(ctx, d.shape, d.x, d.y, d.size);
     }
-  }, []);
+    ctx.globalAlpha = 1;
+  });
 
   useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
+    ctxRef.current = ctx;
     const resize = () => { c.width=window.innerWidth; c.height=window.innerHeight; };
     resize(); window.addEventListener('resize', resize);
-    const drops: Drop[] = Array.from({length:70}, ()=>makeDrop(c.width, c.height));
-    const draw = () => {
-      ctx.clearRect(0,0,c.width,c.height);
-      for (const d of drops) {
-        d.y += d.speed;
-        if (d.y > c.height+20) Object.assign(d, makeDrop(c.width, c.height));
-        ctx.globalAlpha = d.opacity; ctx.fillStyle = d.color;
-        drawShape(ctx, d.shape, d.x, d.y, d.size);
-      }
-      ctx.globalAlpha=1; rafRef.current=requestAnimationFrame(draw);
+    dropsRef.current = Array.from({length:70}, ()=>makeDrop(c.width, c.height));
+    return () => {
+      window.removeEventListener('resize',resize);
+      ctxRef.current = null;
     };
-    drawRef.current = draw;
-    draw();
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize',resize); };
   }, []);
+
   return <canvas ref={ref} className="background-canvas" style={{opacity:0.45}} />;
 }

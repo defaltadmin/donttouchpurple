@@ -1,6 +1,6 @@
-// AmbientFlow — slow diagonal drift of faint geometric shapes
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 interface Drifter {
   x: number; y: number;
@@ -11,35 +11,56 @@ interface Drifter {
 
 export default function AmbientFlow() {
   const cvs = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const shapesRef = useRef<Drifter[]>([]);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
+  const { start, stop } = useSafeRaf(() => {
+    const ctx = ctxRef.current;
+    const canvas = cvs.current;
+    if (!ctx || !canvas) return;
 
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
+    ctx.fillStyle = "rgba(13,13,26,0.12)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (const s of shapesRef.current) {
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < -s.size) s.x = canvas.width + s.size;
+      if (s.y < -s.size) s.y = canvas.height + s.size;
+      if (s.x > canvas.width + s.size) s.x = -s.size;
+      if (s.y > canvas.height + s.size) s.y = -s.size;
+      s.rotation += s.rotSpeed;
+      ctx.save();
+      ctx.globalAlpha = s.opacity;
+      ctx.fillStyle = "#c026d3";
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rotation);
+      const sz = s.size;
+      ctx.beginPath();
+      if (s.shape === "square") ctx.rect(-sz/2,-sz/2,sz,sz);
+      else if (s.shape === "diamond") { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,0); ctx.lineTo(0,sz/2); ctx.lineTo(-sz/2,0); ctx.closePath(); }
+      else { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,sz/2); ctx.lineTo(-sz/2,sz/2); ctx.closePath(); }
+      ctx.fill();
+      ctx.restore();
     }
-  }, []);
+  });
 
   useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   useEffect(() => {
     const c = cvs.current; if (!c) return;
     const ctx = c.getContext("2d")!;
+    ctxRef.current = ctx;
     const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; };
     resize(); window.addEventListener("resize", resize);
 
-    const shapes: Drifter[] = Array.from({ length: 40 }, () => ({
+    shapesRef.current = Array.from({ length: 40 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       vx: (Math.random() - 0.5) * 0.3,
@@ -51,34 +72,11 @@ export default function AmbientFlow() {
       rotSpeed: (Math.random() - 0.5) * 0.002,
     }));
 
-    const draw = () => {
-      ctx.fillStyle = "rgba(13,13,26,0.12)";
-      ctx.fillRect(0,0,c.width,c.height);
-      for (const s of shapes) {
-        s.x += s.vx; s.y += s.vy;
-        if (s.x < -s.size) s.x = c.width + s.size;
-        if (s.y < -s.size) s.y = c.height + s.size;
-        if (s.x > c.width + s.size) s.x = -s.size;
-        if (s.y > c.height + s.size) s.y = -s.size;
-        s.rotation += s.rotSpeed;
-        ctx.save();
-        ctx.globalAlpha = s.opacity;
-        ctx.fillStyle = "#c026d3";
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.rotation);
-        const sz = s.size;
-        ctx.beginPath();
-        if (s.shape === "square") ctx.rect(-sz/2,-sz/2,sz,sz);
-        else if (s.shape === "diamond") { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,0); ctx.lineTo(0,sz/2); ctx.lineTo(-sz/2,0); ctx.closePath(); }
-        else { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,sz/2); ctx.lineTo(-sz/2,sz/2); ctx.closePath(); }
-        ctx.fill();
-        ctx.restore();
-      }
-      rafRef.current = requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener("resize", resize);
+      ctxRef.current = null;
     };
-    drawRef.current = draw;
-    draw();
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
   }, []);
+
   return <canvas ref={cvs} className="background-canvas" />;
 }

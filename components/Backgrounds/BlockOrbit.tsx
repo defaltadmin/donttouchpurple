@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
+import { useSafeRaf } from '../../utils/cleanup-pattern';
 
 const COLORS = ['#c026d3','#7c3aed','#db2777','#9333ea','#a21caf','#e879f9'];
 type Shape = 'square'|'triangle'|'diamond'|'circle';
@@ -18,31 +19,40 @@ function drawShape(ctx:CanvasRenderingContext2D, shape:Shape, x:number, y:number
 
 export default function BlockOrbit() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const drawRef = useRef<(() => void) | null>(null);
+  const blocksRef = useRef<OrbBlock[]>([]);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const { register } = useBackgroundController(true);
 
-  const pause = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, []);
+  const { start, stop } = useSafeRaf(() => {
+    const ctx = ctxRef.current;
+    const canvas = ref.current;
+    if (!ctx || !canvas) return;
 
-  const resume = useCallback(() => {
-    if (!rafRef.current && drawRef.current) {
-      rafRef.current = requestAnimationFrame(drawRef.current);
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    for (const b of blocksRef.current) {
+      b.angle += b.speed;
+      const x = w/2 + Math.cos(b.angle)*b.radius;
+      const y = h/2 + Math.sin(b.angle)*b.radius;
+      ctx.globalAlpha = 0.5; ctx.fillStyle = b.color;
+      drawShape(ctx, b.shape, x, y, b.size, b.angle);
     }
-  }, []);
+    ctx.globalAlpha = 1;
+  });
 
   useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => {
+      unregister?.();
+      stop();
+    };
+  }, [register, start, stop]);
 
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
+    ctxRef.current = ctx;
     const resize = () => { c.width=window.innerWidth; c.height=window.innerHeight; };
     resize(); window.addEventListener('resize',resize);
 
@@ -52,7 +62,7 @@ export default function BlockOrbit() {
       { radius: 165, count: 11, speed: 0.004,  size: 10 },
       { radius: 220, count: 14, speed: -0.003, size: 8  },
     ];
-    const blocks: OrbBlock[] = rings.flatMap(ring =>
+    blocksRef.current = rings.flatMap(ring =>
       Array.from({length: ring.count}, (_, i) => ({
         angle: (i / ring.count) * Math.PI * 2,
         radius: ring.radius,
@@ -63,21 +73,11 @@ export default function BlockOrbit() {
       }))
     );
 
-    const draw = () => {
-      const w=c.width, h=c.height;
-      ctx.clearRect(0,0,w,h);
-      for (const b of blocks) {
-        b.angle += b.speed;
-        const x = w/2 + Math.cos(b.angle)*b.radius;
-        const y = h/2 + Math.sin(b.angle)*b.radius;
-        ctx.globalAlpha = 0.5; ctx.fillStyle = b.color;
-        drawShape(ctx, b.shape, x, y, b.size, b.angle);
-      }
-      ctx.globalAlpha=1; rafRef.current=requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener('resize',resize);
+      ctxRef.current = null;
     };
-    drawRef.current = draw;
-    draw();
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize',resize); };
   }, []);
+
   return <canvas ref={ref} className="background-canvas" style={{opacity:0.5}} />;
 }

@@ -1,5 +1,5 @@
 import { DIFFICULTY, GAME, LS_KEYS } from "../config/difficulty";
-import { STAGES, EVOLVE_PATTERNS, RARE_COLORS, getRareModeConfig } from "../config/gridPatterns";
+import { STAGES, EVOLVE_PATTERNS, getRareModeConfig } from "../config/gridPatterns";
 import { POWERUP_TABLE } from "../config/powerupWeights";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
 import { logError } from "../utils/devLog";
@@ -20,7 +20,6 @@ import { achievementSystem } from "../utils/achievements";
 import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
 import { scoreCardGen } from "../utils/score-card";
-import { privacyManager } from "../utils/privacy";
 import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellType, CellShape, GameConfig, GameEvent,
@@ -28,14 +27,12 @@ import type {
   BombCell, BossEvent, BossEventType, HoldCell,
 } from "./types";
 import {
-  activeToCellsP, spawnActive, pickPattern, pickCellShape,
+  activeToCellsP, spawnActive,
 } from "./subsystems/CellLifecycle";
 import { calculateTapScore, checkStreakMilestone } from "./subsystems/ScoreTracker";
 import { challengeLink } from "../utils/challenge-link";
-import {
-  getNextBossEventType, getBossDuration, getBossLabel, getBossDoneLabel,
-  getNextBossTriggerScore, shouldTriggerBossEvent, shouldTriggerShieldBoss,
-} from "./subsystems/EventOrchestrator";
+import { TickProcessor, type TickContext } from "./subsystems/TickProcessor";
+import { BotController } from "./subsystems/BotController";
 
 function makePS(bonusHearts: number, hasMult: boolean, stored: { freeze: number; shield: number; mult: number; heart: number }): PlayerState {
   return {
@@ -49,7 +46,7 @@ function makePS(bonusHearts: number, hasMult: boolean, stored: { freeze: number;
   };
 }
 
-// ─── GameEngine class ─────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ GameEngine class ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export class GameEngine {
   private rafId: number | null = null;
   private tickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -84,9 +81,6 @@ export class GameEngine {
   private fpsHistory: number[] = [];
   private autoLowQuality = false;
   private lowQualityThreshold = 40;
-  private botActive      = false;
-  private botIntervalRef: ReturnType<typeof setInterval> | null = null;
-  private dustSpentTotal = 0;
   // K1: cell shuffle state
   private nextShuffleTick: number = 0;
   private readonly SHUFFLE_DURATION_MS = 200; // K3: slide animation duration
@@ -110,6 +104,9 @@ export class GameEngine {
   private _deltaTimers: Array<{ id: string; remaining: number; duration: number; callback: () => void }> = [];
   private _lastTickTs = performance.now();
   private _bossActive = false;
+  private _tickProcessor = new TickProcessor();
+  private _tickCtx!: TickContext;
+  private _bot: BotController;
 
   constructor(private config: GameConfig) {
     perfMonitor.observe();
@@ -117,9 +114,9 @@ export class GameEngine {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
     achievementSystem.load();
-    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '💥', unlocked: false });
-    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '🛡️', unlocked: false });
-    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '📅', unlocked: false });
+    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '≡ƒÆÑ', unlocked: false });
+    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '≡ƒ¢í∩╕Å', unlocked: false });
+    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '≡ƒôà', unlocked: false });
     audioEngine.init();
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
@@ -128,7 +125,7 @@ export class GameEngine {
     window.addEventListener('dtp:difficulty:emergency', () => {
       const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
       this.p1.score += bonus;
-      this.emit({ type: "toast", message: `⚖️ Difficulty adjusted! +${bonus} pts` });
+      this.emit({ type: "toast", message: `ΓÜû∩╕Å Difficulty adjusted! +${bonus} pts` });
       document.documentElement.setAttribute('data-dda-emergency', 'true');
       setTimeout(() => document.documentElement.removeAttribute('data-dda-emergency'), 2200);
     });
@@ -137,6 +134,51 @@ export class GameEngine {
       if (state !== 'press') return;
       if (btn === 'a' || btn === 'dpad_up') this.handleTap(1, parseInt(this._lastFocusedCell) || 0);
       if (btn === 'start') this.paused ? this.resume() : this.pause();
+    });
+    const self = this;
+    this._tickCtx = {
+      get config() { return self.config; },
+      get phase() { return self.phase; }, set phase(v) { self.phase = v; },
+      get tickCount() { return self.tickCount; }, set tickCount(v) { self.tickCount = v; },
+      get evolveTick() { return self.evolveTick; }, set evolveTick(v) { self.evolveTick = v; },
+      get cellShape() { return self.cellShape; }, set cellShape(v) { self.cellShape = v; },
+      get rareMode() { return self.rareMode; }, set rareMode(v) { self.rareMode = v; },
+      get spinLevel() { return self.spinLevel; }, set spinLevel(v) { self.spinLevel = v; },
+      get p1() { return self.p1; },
+      get p2() { return self.p2; },
+      get bossEvent() { return self.bossEvent; }, set bossEvent(v) { self.bossEvent = v; },
+      get _bossActive() { return self._bossActive; }, set _bossActive(v) { self._bossActive = v; },
+      get _isInverted() { return self._isInverted; }, set _isInverted(v) { self._isInverted = v; },
+      get nextShuffleTick() { return self.nextShuffleTick; }, set nextShuffleTick(v) { self.nextShuffleTick = v; },
+      get nextBossTriggerScore() { return self.nextBossTriggerScore; }, set nextBossTriggerScore(v) { self.nextBossTriggerScore = v; },
+      get activeBomb() { return self.activeBomb; }, set activeBomb(v) { self.activeBomb = v; },
+      get dirty() { return self.dirty; }, set dirty(v) { self.dirty = v; },
+      get _tickSoundCounter() { return self._tickSoundCounter; }, set _tickSoundCounter(v) { self._tickSoundCounter = v; },
+      get _lastTickTs() { return self._lastTickTs; }, set _lastTickTs(v) { self._lastTickTs = v; },
+      get numPlayers() { return self.config.numPlayers; },
+      get _deltaTimers() { return self._deltaTimers; }, set _deltaTimers(v) { self._deltaTimers = v; },
+      get devGodMode() { return self.devGodMode; }, set devGodMode(v) { self.devGodMode = v; },
+      get devFreezeTime() { return self.devFreezeTime; }, set devFreezeTime(v) { self.devFreezeTime = v; },
+      get devForcedPwr() { return self.devForcedPwr; }, set devForcedPwr(v) { self.devForcedPwr = v; },
+      get botAssistActive() { return self.botAssistActive; }, set botAssistActive(v) { self.botAssistActive = v; },
+      get dda() { return self.dda; },
+      emit: (e) => self.emit(e),
+      _flushTapBuffer: (p) => self._flushTapBuffer(p),
+      checkStageProgress: (p) => self.checkStageProgress(p),
+      autoSaveSession: () => self.autoSaveSession(),
+      triggerGameOver: (w) => self.triggerGameOver(w),
+      scheduleTimeout: (cb, ms) => self.scheduleTimeout(cb, ms),
+      addDeltaTimer: (id, dur, cb) => self.addDeltaTimer(id, dur, cb),
+      removeDeltaTimer: (id) => self.removeDeltaTimer(id),
+      get rng() { return self.rng; },
+    };
+    this._bot = new BotController({
+      getDangerColor:  () => this.rareMode?.active ? this.rareMode.color : 'purple',
+      isInverted:      () => this.bossEvent?.type === 'inversion' && Date.now() < (this.bossEvent?.endsAt ?? 0),
+      handleTap:       (player, idx) => this.handleTap(player, idx),
+      emit:            (event) => this.emit(event as any),
+      getActiveCells:  (player) => (player === 1 ? this.p1 : this.p2).active,
+      isPlaying:       () => this.phase === 'playing',
     });
   }
 
@@ -175,10 +217,6 @@ export class GameEngine {
     });
   }
 
-  isTelemetryAllowed() { return privacyManager.getConsent(); }
-  exportUserData() { return privacyManager.getAllData(); }
-  wipeUserData(keepSettings: boolean) { privacyManager.deleteAll(keepSettings); }
-
   start(forceSeed?: number): void {
     this._isDisposed = false;
     this.stop();
@@ -197,6 +235,7 @@ export class GameEngine {
     this._bossActive = false;
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
+    this._bot.setRng(this.rng);
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
     this.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
     this.bossEvent = null;
@@ -228,6 +267,7 @@ export class GameEngine {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+    this._bot.dispose();
   }
 
   private lastFrameTime = 0;
@@ -354,6 +394,7 @@ destroy(): void {
     this.activeBomb = null;
     rhythmFeedback.reset();
     this.dda.reset(1200);
+    this._bot.dispose();
 
     if (!keepSettings) this._settingsUnsub?.();
   }
@@ -379,347 +420,8 @@ destroy(): void {
     return computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
   }
 
-  // K1-K4: Cell shuffle — 1-2 cells slide to adjacent empty positions
-  private tryShuffleCells(ref: PlayerState, pat: { cols: number; rows: number; mask: number[] | null }, player: 1 | 2): void {
-    // K2: only Evolve, stage 3+
-    if (this.config.mode !== "evolve" || ref.gridStage < 3) return;
-    if (this.tickCount < this.nextShuffleTick) return;
-
-    // Schedule next shuffle: 40-60 ticks from now
-    this.nextShuffleTick = this.tickCount + 40 + Math.floor(this.rng() * 20);
-
-    const { cols, rows, mask } = pat;
-    const total = cols * rows;
-    const validSlots = new Set<number>(mask ?? Array.from({ length: total }, (_, i) => i));
-
-    // Find occupied (non-clicked, non-void) and empty valid slots
-    const occupied = new Set<number>(ref.active.filter(c => !c.clicked).map(c => c.idx));
-    const empty = [...validSlots].filter(i => !occupied.has(i));
-    if (empty.length === 0) return;
-
-    // Pick 1-2 cells to shuffle (K1)
-    const shuffleCount = 1 + (this.rng() < 0.35 ? 1 : 0);
-    const candidates = ref.active.filter(c =>
-      !c.clicked &&
-      validSlots.has(c.idx) &&
-      c.type !== "hold" &&   // K4: don't shuffle hold — holdStart would be invalid
-      c.type !== "ice"       // K4: don't shuffle ice — iceCount mid-tap confusing
-    );
-
-    if (candidates.length === 0) return;
-
-    const moved: number[] = [];
-    for (let i = 0; i < Math.min(shuffleCount, candidates.length); i++) {
-      if (empty.length === 0) break;
-
-      // Pick random candidate not already moved
-      const cIdx = Math.floor(this.rng() * candidates.length);
-      const cell  = candidates[cIdx];
-      if (moved.includes(cell.idx)) continue;
-
-      // Pick random adjacent empty slot (prefer adjacency for visual clarity)
-      const adjacent = this.getAdjacentSlots(cell.idx, cols, rows, validSlots)
-        .filter(s => !occupied.has(s) && !moved.includes(s));
-      const targetPool = adjacent.length > 0 ? adjacent : empty.filter(s => !moved.includes(s));
-      if (targetPool.length === 0) continue;
-
-      const toIdx = targetPool[Math.floor(this.rng() * targetPool.length)];
-
-      // K4: retain type and all other properties, only move idx
-      const fromIdx = cell.idx;
-      cell.idx = toIdx;
-      occupied.delete(fromIdx);
-      occupied.add(toIdx);
-      const emptyI = empty.indexOf(toIdx);
-      if (emptyI !== -1) empty.splice(emptyI, 1);
-      empty.push(fromIdx);
-      moved.push(toIdx);
-
-      // K3: record slide animation on PlayerState
-      if (!ref.slideAnim) ref.slideAnim = {};
-      ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now() };
-
-      // Auto-clear slide anim after duration
-      this.scheduleTimeout(() => {
-        if (ref.slideAnim) delete ref.slideAnim[toIdx];
-        this.dirty = true;
-      }, this.SHUFFLE_DURATION_MS + 50);
-
-      // K5: emit cellShuffle event
-      this.emit({ type: "cellShuffle", player, fromIdx, toIdx });
-      // M1: play sound on shuffle
-      this.emit({ type: "sound", name: "shuffle" });
-    }
-
-    if (moved.length > 0) {
-      ref.cells = activeToCellsP(ref.active, pat);
-      this.dirty = true;
-    }
-  }
-
-  // Helper: get valid adjacent slot indices (4-directional)
-  private getAdjacentSlots(idx: number, cols: number, rows: number, validSlots: Set<number>): number[] {
-    const row = Math.floor(idx / cols);
-    const col = idx % cols;
-    const adj: number[] = [];
-    if (row > 0)        { const n = idx - cols; if (validSlots.has(n)) adj.push(n); }
-    if (row < rows - 1) { const n = idx + cols; if (validSlots.has(n)) adj.push(n); }
-    if (col > 0)        { const n = idx - 1;    if (validSlots.has(n)) adj.push(n); }
-    if (col < cols - 1) { const n = idx + 1;    if (validSlots.has(n)) adj.push(n); }
-    return adj;
-  }
-
   private processTick(): void {
-    try {
-    if (this.phase !== "playing") return;
-    const now = performance.now();
-    const delta = Math.min(now - this._lastTickTs, 100);
-    this._lastTickTs = now;
-    this._deltaTimers = this._deltaTimers.filter(timer => {
-      timer.remaining -= delta;
-      if (timer.remaining <= 0) { timer.callback(); return false; }
-      return true;
-    });
-    const mode = this.config.mode;
-    this._flushTapBuffer(1);
-    if (this.config.numPlayers === 2) this._flushTapBuffer(2);
-    this.evolveTick += 1;
-    if (mode === "evolve") this.cellShape = pickCellShape(this.evolveTick);
-
-    if (mode === "evolve") {
-      if (this.rareMode.active) {
-        this.rareMode.turnsLeft -= 1;
-        if (this.rareMode.turnsLeft <= 0) {
-          this.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
-          this.emit({ type: "toast", message: "🟣 Back to Purple!" });
-        }
-      } else {
-        const s1 = this.p1.score;
-        // Pre-warn one score-window before rare mode activates
-        const RARE_TRIGGER_INTERVAL = 50;
-        const RARE_PRE_WARN_THRESHOLD = 3;
-        if (
-          s1 > 0 &&
-          (s1 % RARE_TRIGGER_INTERVAL) === (RARE_TRIGGER_INTERVAL - RARE_PRE_WARN_THRESHOLD)
-        ) {
-          this.emit({ type: "toast", message: "⚠️ Danger color changing soon!" });
-        }
-        if (s1 >= 50 && s1 % 50 < 4 && this.rng() < 0.35) {
-          const pick = RARE_COLORS[Math.floor(this.rng() * RARE_COLORS.length)];
-          this.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(this.rng() * 4), shape: pick.shape, emoji: pick.emoji };
-          this.emit({ type: "rareStart", color: pick.color, cssColor: pick.cssColor });
-          this.emit({ type: "sound", name: "rareStart" }); // M2
-          this.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
-        }
-      }
-    }
-
-    const players: Array<{ ref: PlayerState; pi: 0 | 1 }> = [{ ref: this.p1, pi: 0 }, { ref: this.p2, pi: 1 }];
-    for (const { ref, pi } of players) {
-      if (!ref.alive || (pi === 1 && this.config.numPlayers === 1)) continue;
-      if (ref.pendingStageUpdate) {
-        ref.pendingStageUpdate = false; ref.gridStage += 1; ref.stageProgress = 0;
-        // Only increment spinLevel if not in keys mode (rotation locked for keyboard input)
-        if (this.config.inputMode !== 'keys') {
-          this.spinLevel += 1;
-        }
-        this.emit({ type: "sound",   name: "levelup" });
-        this.emit({ type: "levelUp", player: (pi + 1) as 1 | 2, stage: ref.gridStage });
-      }
-      const curStage = ref.gridStage;
-      const patIdx   = ref.patternIdx;
-      const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-      if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
-      const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
-      const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
-      this._isInverted = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
-
-      const player = (pi + 1) as 1 | 2;
-
-      ref.active.forEach(c => {
-        if (!validSlots.has(c.idx) || c.clicked) return;
-        const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
-        // Inversion: purple is safe (miss = purple), normal: safe = non-danger (miss = non-danger)
-        const isMiss = this._isInverted ? c.type === "purple" && !isPwr : c.type !== dangerColor && !isPwr;
-        if (isMiss) {
-          this.dda.recordAttempt(false, 0, true);
-          const dmg = mode === "evolve" ? 0.5 : 1;
-          if (!this.devGodMode) {
-            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
-            else {
-              ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
-              this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-              if (ref.health <= 0) {
-                ref.alive = false;
-                const other = this.config.numPlayers === 2 ? (pi === 0 ? this.p2.alive : this.p1.alive) : false;
-                this.triggerGameOver(this.config.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
-              }
-            }
-          }
-          haptics.damage();
-          if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
-          ref.streak = 0;
-        }
-        // Danger color cells that weren't tapped just disappear — no penalty
-      });
-      if (!ref.alive) continue;
-
-      // Expire hold cells that were never started (or started too long ago) — prevent permanent grid lock
-      const now = Date.now();
-      ref.active.forEach(c => {
-        if (c.clicked || c.type !== "hold") return;
-        const hold = c as import("./types").HoldCell;
-        const deadline = hold.holdStart
-          ? hold.holdStart + hold.holdRequired + 500   // started: expire 500ms after required
-          : hold.spawnedAt + hold.holdRequired + 1500; // never started: expire after holdRequired + 1.5s grace
-        if (now > deadline) {
-          hold.clicked = true; // mark expired — tick will proceed, no infinite freeze
-          const dmg = mode === "evolve" ? 0.5 : 1;
-          if (!this.devGodMode) {
-            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
-            else {
-              ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
-              this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-              this.emit({ type: "toast", message: "⏳ Hold expired!" });
-              if (ref.health <= 0) {
-                ref.alive = false;
-                const other = this.config.numPlayers === 2 ? (pi === 0 ? this.p2.alive : this.p1.alive) : false;
-                this.triggerGameOver(this.config.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
-              }
-            }
-          }
-        }
-      });
-
-      if (ref.active.some(c => !c.clicked && (c.type === "hold" || c.type === "ice"))) { ref.cells = activeToCellsP(ref.active, pat); continue; }
-      const nextPatIdx = mode === "evolve" ? pickPattern(this.rng, curStage, patIdx, ref.score) : 0;
-      ref.patternIdx = nextPatIdx;
-      const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-      const rareColor = this.rareMode.active ? this.rareMode.color : undefined;
-      const rareShape = this.rareMode.active ? this.rareMode.shape : undefined;
-      const spawnStage = mode === "evolve" ? curStage : Math.min(Math.floor(this.tickCount / 12), 7);
-      const newActive = spawnActive(this.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, rareShape, this.tickCount, this.devGodMode);
-      if (this.devForcedPwr && newActive.length > 0) {
-        newActive[0] = { ...newActive[0], type: (this.devForcedPwr === "heart" ? "medpack" : this.devForcedPwr) } as ActiveCell;
-        if (pi === (this.config.numPlayers === 1 ? 0 : 1)) this.devForcedPwr = null;
-      }
-      ref.active = newActive;
-      ref.cells  = activeToCellsP(newActive, nextPat);
-      // Trigger powerup drop animation on newly spawned powerups
-      for (const c of newActive) {
-        if (["medpack", "shield", "freeze", "multiplier"].includes(c.type)) {
-          ref.anim[c.idx] = "pwr-drop";
-          setTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") delete ref.anim[c.idx]; }, 600);
-        }
-      }
-    }
-
-    // ─── Bot Assist ────────────────────────────────────────────
-    const botCfg = this.config.botAssist;
-    if (botCfg) {
-      const botPlayers: Array<{ ref: PlayerState; player: 1 | 2 }> = [
-        { ref: this.p1, player: 1 },
-        ...(this.config.numPlayers === 2 ? [{ ref: this.p2, player: 2 as const }] : []),
-      ];
-      for (const { ref, player } of botPlayers) {
-        if (!this.botAssistActive[player] || !ref.alive) continue;
-        const dust = botCfg.getDust();
-        if (dust < 30) { this.botAssistActive[player] = false; this.emit({ type: "toast", message: "🤖 Bot off — low dust!" }); continue; }
-        const accuracy = botCfg.getAccuracy();
-        const dangerColor = this.rareMode.active ? this.rareMode.color : "purple";
-        const botInverted = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
-        const missedCells = ref.active.filter(c =>
-          !c.clicked &&
-          (botInverted ? c.type === dangerColor : c.type !== dangerColor) &&
-          (c.type as string) !== "void" &&
-          c.type !== "hold" &&
-          c.type !== "ice"
-        );
-        for (const cell of missedCells) {
-          if (this.rng() > accuracy) continue; // accuracy miss (use seeded rng)
-          const costPerTap = 3;
-          const currentDust = botCfg.getDust();
-          if (currentDust < costPerTap) break;
-          botCfg.spendDust(costPerTap);
-          this.emit({ type: "botTap", player, idx: cell.idx, dustCost: costPerTap });
-          // Simulate the tap directly
-          cell.clicked = true;
-          const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
-          ref.score += mult;
-          ref.streak += 1;
-          ref.stageProgress += 1;
-          this.checkStageProgress(player);
-        }
-        if (missedCells.length > 0) {
-          const pat = this.config.mode === "evolve"
-            ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0])
-            : { cols: 3, rows: 3, mask: null as number[] | null };
-          ref.cells = activeToCellsP(ref.active, pat);
-        }
-      }
-    }
-
-    // K1: Cell shuffle — only for p1 in single player (or both in 2P)
-    if (this.config.mode === "evolve") {
-      // Boss event: Storm triples shuffle frequency
-      const stormActive = this.bossEvent?.type === "storm" && Date.now() < (this.bossEvent?.endsAt ?? 0);
-      const shufflePat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
-      if (stormActive) {
-        // Force shuffle every tick by zeroing threshold; tryShuffleCells advances nextShuffleTick naturally
-        this.nextShuffleTick = 0;
-        if (this.p1.alive) this.tryShuffleCells(this.p1, shufflePat, 1);
-        if (this.config.numPlayers === 2 && this.p2.alive) {
-          const p2Pat = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-          this.tryShuffleCells(this.p2, p2Pat, 2);
-        }
-      } else {
-        if (this.p1.alive) this.tryShuffleCells(this.p1, shufflePat, 1);
-        if (this.config.numPlayers === 2 && this.p2.alive) {
-          const p2Pat = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-          this.tryShuffleCells(this.p2, p2Pat, 2);
-        }
-      }
-
-      // Boss event trigger: every 500 score points
-      if (this.p1.score >= this.nextBossTriggerScore) this.triggerBossEvent();
-
-      // Bomb spawn attempt each tick
-      if (this.p1.alive) {
-        const bombPat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
-        this.trySpawnBomb(this.p1, 1, bombPat);
-      }
-      if (this.config.numPlayers === 2 && this.p2.alive) {
-        const bombPat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-        this.trySpawnBomb(this.p2, 2, bombPat2);
-      }
-    }
-
-    if (shouldTriggerShieldBoss(this.p1.score, this._bossActive, this.bossEvent !== null, mode, this.rng)) {
-      this._bossActive = true;
-      bossEngine.activate(5 + Math.floor(this.rng() * 3));
-    }
-
-    this.tickCount += 1;
-    if (this.tickCount % 10 === 0) this.autoSaveSession();
-    if (this.phase === "playing" && this.tickCount >= GAME.HUMAN_LIMIT_TICK) { this.phase = "humanlimit"; this.emit({ type: "phaseChange", phase: "humanlimit" }); }
-    if (this.tickCount > GAME.SURVIVAL_BONUS_START_TICK && this.tickCount % 20 === 0) {
-      const bonus = this.tickCount > 200 ? 5 : this.tickCount > 120 ? 3 : 2;
-      const multBonus = Math.round(bonus * rhythmFeedback.state.multiplier);
-      if (this.p1.alive) this.p1.score += multBonus;
-      if (this.config.numPlayers === 2 && this.p2.alive) this.p2.score += multBonus;
-      this.emit({ type: "toast", message: `🔥 Survival +${multBonus}!` });
-    }
-    this.dirty = true;
-    this._tickSoundCounter++;
-    if (this._tickSoundCounter % 4 === 0) {
-      this.emit({ type: "sound", name: "tick" });
-    }
-    } catch (err) {
-      logError("[GameEngine] processTick crashed:", err);
-      errorTracker.capture(err instanceof Error ? err : new Error(String(err)), { phase: 'processTick', tick: this.tickCount });
-      this.emit({ type: "toast", message: "⚠️ Engine error — game ended" });
-      this.triggerGameOver(null);
-    }
+    this._tickProcessor.processTick(this._tickCtx);
   }
 
   handleTap(player: 1 | 2, idx: number): void {
@@ -770,14 +472,14 @@ destroy(): void {
       return;
     }
     if (cell.type === "hold") return;
-    // Bomb cell — defuse it
+    // Bomb cell ΓÇö defuse it
     if (cell.type === "bomb") {
       cell.clicked = true;
       if (this.activeBomb?.idx === idx && this.activeBomb?.player === player) this.activeBomb = null;
       this.triggerCellAnim(player, idx, "pop");
       this.emit({ type: "sound", name: "powerup" });
       this.emit({ type: "bombDefused", player });
-      this.emit({ type: "toast", message: "💣✓ Defused! +3" });
+      this.emit({ type: "toast", message: "≡ƒÆúΓ£ô Defused! +3" });
       const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
       ref.score += mult * 3; ref.streak += 1; ref.stageProgress += 1;
       this.checkStageProgress(player);
@@ -794,13 +496,13 @@ destroy(): void {
       if (cell.type === "freeze") ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
       if (cell.type === "shield") {
-        this.emit({ type: "pwrToast", message: `🛡 Shield ×${ref.shieldCount}!`, player });
+        this.emit({ type: "pwrToast", message: `≡ƒ¢í Shield ├ù${ref.shieldCount}!`, player });
       } else if (cell.type === "medpack") {
-        this.emit({ type: "toast", message: "♥ +1 Heart!" });
+        this.emit({ type: "toast", message: "ΓÖÑ +1 Heart!" });
       } else if (cell.type === "multiplier") {
-        this.emit({ type: "pwrToast", message: "⚡ multiplier ×2!", player });
+        this.emit({ type: "pwrToast", message: "ΓÜí multiplier ├ù2!", player });
       } else {
-        this.emit({ type: "pwrToast", message: "❄ Freeze activated!", player });
+        this.emit({ type: "pwrToast", message: "Γ¥ä Freeze activated!", player });
       }
     } else {
       const tappedIsDanger = isInvertedTap ? cell.type !== 'purple' : cell.type === danger;
@@ -810,7 +512,7 @@ destroy(): void {
         if (!this.devGodMode) {
           if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
           else {
-            if (ref.streak >= 5) this.emit({ type: "toast", message: `💔 ${ref.streak} streak lost!` });
+            if (ref.streak >= 5) this.emit({ type: "toast", message: `≡ƒÆö ${ref.streak} streak lost!` });
             ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
             this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
             this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
@@ -823,8 +525,8 @@ destroy(): void {
       rhythmFeedback.recordTap();
       const { mult, bossMult } = calculateTapScore(Date.now() < ref.multiplierEnd, this._bossActive, bossEngine.combo.multiplier);
       ref.score += mult * bossMult; ref.streak += 1; ref.stageProgress += 1;
-      if (checkStreakMilestone(ref.streak)) this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` });
-      if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "❤️ Last heart!" });
+      if (checkStreakMilestone(ref.streak)) this.emit({ type: "toast", message: `≡ƒöÑ ${ref.streak} Streak!` });
+      if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "Γ¥ñ∩╕Å Last heart!" });
       this.checkStageProgress(player);
       const now = performance.now();
       const reaction = this._lastTapTime ? now - this._lastTapTime : 0;
@@ -895,7 +597,7 @@ destroy(): void {
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
       ref.score += mult * 2; ref.streak += 1; ref.stageProgress += 1;
       this.checkStageProgress(player);
-      this.emit({ type: "toast", message: "💪 Hold! +2" });
+      this.emit({ type: "toast", message: "≡ƒÆ¬ Hold! +2" });
       if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
     } else { (cell as HoldCell).holdStart = undefined; this.triggerCellAnim(player, idx, "shake"); }
     ref.cells = activeToCellsP(ref.active, pat);
@@ -909,7 +611,7 @@ destroy(): void {
     ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: stored.mult, heart: stored.heart });
-    this.emit({ type: "toast", message: "❄ Freeze activated!" });
+    this.emit({ type: "toast", message: "Γ¥ä Freeze activated!" });
     this.emitSnapshot();
   }
 
@@ -921,7 +623,7 @@ destroy(): void {
     ref.shield = true;
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     this.config.storage?.saveStoredPowerups({ freeze: ref.storedFreezeCharges, shield: ref.storedShieldCharges, mult: stored.mult, heart: stored.heart });
-    this.emit({ type: "toast", message: `🛡 Shield ×${ref.shieldCount}!` });
+    this.emit({ type: "toast", message: `≡ƒ¢í Shield ├ù${ref.shieldCount}!` });
     this.emitSnapshot();
   }
 
@@ -1009,7 +711,7 @@ destroy(): void {
     scoreSync.queue(score);
   }
 
-  generateChallengeUrl(): string {
+  async generateChallengeUrl(): Promise<string> {
     return challengeLink.generate(this.p1.score, this.gameSeed.toString(), this.p1.health);
   }
 
@@ -1156,73 +858,6 @@ destroy(): void {
     } catch {}
   }
 
-  private triggerBossEvent(): void {
-    const prevType = this.bossEvent?.type ?? null;
-    const type = getNextBossEventType(prevType);
-    const durationMs = getBossDuration(type);
-    this.bossEvent = { type, endsAt: Date.now() + durationMs };
-    this.nextBossTriggerScore = getNextBossTriggerScore(this.nextBossTriggerScore);
-    this.emit({ type: "bossStart", bossType: type });
-    this.emit({ type: "sound", name: "bossStart" });
-    this.emit({ type: "toast", message: getBossLabel(type) });
-    setTimeout(() => {
-      if (this.bossEvent?.type === type) {
-        this.bossEvent = null;
-        this.dirty = true;
-        this.emit({ type: "toast", message: getBossDoneLabel(type) });
-      }
-    }, durationMs);
-  }
-
-  // Spawn a bomb cell for player if none active and score > 100
-  private trySpawnBomb(ref: PlayerState, player: 1 | 2, pat: { cols: number; rows: number; mask: number[] | null }): void {
-    if (this.activeBomb && this.activeBomb.player === player) return;
-    if (ref.score < 100) return;
-    if (this.rng() > 0.12) return; // ~12% chance per tick when eligible
-
-    const validSlots = pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i);
-    const occupied = new Set(ref.active.filter(c => !c.clicked).map(c => c.idx));
-    const free = validSlots.filter(i => !occupied.has(i));
-    if (free.length === 0) return;
-
-    const idx = free[Math.floor(this.rng() * free.length)];
-    const expiresAt = Date.now() + 2000;
-    const bomb: BombCell = { idx, clicked: false, type: "bomb", expiresAt };
-    ref.active.push(bomb);
-    ref.cells = activeToCellsP(ref.active, pat);
-    this.activeBomb = { idx, expiresAt, player };
-    this.dirty = true;
-    this.emit({ type: "bombSpawn", player, idx, expiresAt });
-    haptics.bomb();
-    this.emit({ type: "sound", name: "bomb" });
-    this.emit({ type: "toast", message: "💣 BOMB! Tap it!" });
-
-    this.addDeltaTimer(`bomb_${player}_${idx}`, 2000, () => {
-      if (!this.activeBomb || this.activeBomb.idx !== idx || this.activeBomb.player !== player) return;
-      const stillActive = ref.active.find(c => c.idx === idx && c.type === "bomb" && !c.clicked);
-      if (!stillActive) return;
-      stillActive.clicked = true;
-      this.activeBomb = null;
-      if (!this.devGodMode) {
-        if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
-        else {
-          const dmg = this.config.mode === "evolve" ? 0.5 : 1;
-          ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
-          this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-          if (ref.health <= 0) {
-            ref.alive = false;
-            this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1"));
-          }
-        }
-      }
-      this.emit({ type: "bombExplode", player });
-      this.emit({ type: "toast", message: "💥 Bomb exploded!" });
-      const pat2 = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-      ref.cells = activeToCellsP(ref.active, pat2);
-      this.dirty = true;
-    });
-  }
-
 private triggerGameOver(winner: Winner): void {
     // Clear pending taps, hold timers, and delta timers
     this.tapBuffer = { 1: null, 2: null };
@@ -1248,92 +883,16 @@ private triggerGameOver(winner: Winner): void {
     }
   }
 
-  startBot(): void {
-    if (this.config.mode !== "evolve") return;
+  startBot(): void { this._bot.start(this.config.mode, this.config.botAssist); }
 
-    if (this.botIntervalRef) {
-      clearInterval(this.botIntervalRef);
-      this.botIntervalRef = null;
-    }
+  stopBot(): void { this._bot.stop(); }
 
-    // Unit tests may not provide config.botAssist.
-    // Provide a safe fallback so botActive can still be toggled deterministically.
-    const botCfg = this.config.botAssist ?? {
-      getDust: () => 9999,
-      spendDust: (_amount: number) => {},
-      getAccuracy: () => 1,
-    };
-
-    this.botActive = true;
-    this.dustSpentTotal = 0;
-
-
-    this.botIntervalRef = setInterval(() => {
-      if (!this.botActive || this.phase !== "playing") return;
-      if (typeof document !== "undefined" && document.hidden) return;
-
-      const currentDust = botCfg.getDust();
-      if (currentDust < 30) {
-        this.botActive = false;
-        this.emit({ type: "toast", message: "🤖 Bot off — low dust!" });
-        return;
-      }
-
-      const delay = Math.max(80, 200 - this.dustSpentTotal * 0.5);
-      const active = this.p1.active;
-
-      const dangerColorNow = this.rareMode.active ? this.rareMode.color : "purple";
-      const accuracy = botCfg.getAccuracy();
-      const costPerTap = 3;
-      const dangerIdentity = dangerColorNow;
-
-      active.forEach(cell => {
-        if (cell.clicked) return;
-        if ((cell.type as string) === "void") return;
-
-        if (cell.type === dangerIdentity) return;
-        if (this.rng() > accuracy) return;
-
-        // Skip specials in this timer-based bot path.
-        if (cell.type === "hold" || cell.type === "ice") return;
-
-        const dustNow = botCfg.getDust();
-        if (dustNow < costPerTap) return;
-
-        botCfg.spendDust(costPerTap);
-        this.dustSpentTotal += costPerTap;
-        this.emit({ type: "dustConsumed", amount: costPerTap });
-
-        setTimeout(() => {
-          if (!this.botActive || this.phase !== "playing") return;
-          this.handleTap(1, cell.idx);
-          this.emit({ type: "botTap", player: 1, idx: cell.idx, dustCost: costPerTap });
-        }, delay);
-      });
-    }, 1000);
-  }
-
-  stopBot(): void {
-
-    this.botActive = false;
-    if (this.botIntervalRef) {
-      clearInterval(this.botIntervalRef);
-      this.botIntervalRef = null;
-    }
-  }
-
-  isBotActive(): boolean {
-    return this.botActive;
-  }
+  isBotActive(): boolean { return this._bot.isActive(); }
 
   setBotAssist(player: 1 | 2, enabled: boolean): void {
-    this.botAssistActive[player] = enabled;
-    if (player === 1) {
-      if (enabled) this.startBot(); else this.stopBot();
-    }
+    this._bot.setAssist(player, enabled);
+    if (player === 1 && enabled) this._bot.start(this.config.mode, this.config.botAssist);
   }
 
-  getBotAssistActive(): { 1: boolean; 2: boolean } {
-    return { ...this.botAssistActive };
-  }
+  getBotAssistActive(): { 1: boolean; 2: boolean } { return this._bot.getAssistState(); }
 }

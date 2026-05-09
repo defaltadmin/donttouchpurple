@@ -1,4 +1,6 @@
 import { logger } from './logger';
+import { privacyManager } from './privacy';
+import { analytics } from './analytics';
 
 export interface Achievement { id: string; name: string; desc: string; icon: string; unlocked: boolean; date?: string; }
 const ACH_KEY = 'dtp:achievements';
@@ -33,6 +35,11 @@ export const achievementSystem = {
     localStorage.setItem(TOAST_KEY, JSON.stringify(queue.slice(-5)));
     logger.info('🏆 Achievement unlocked:', ach.name);
     window.dispatchEvent(new CustomEvent('dtp:achievement', { detail: ach }));
+    if (privacyManager.getConsent()) {
+      analytics.track('achievement_unlocked', { id: ach.id });
+    } else {
+      logger.debug('Telemetry skipped for achievement unlock (consent revoked)');
+    }
   },
 
   load() {

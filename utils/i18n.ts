@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import type { I18nKey } from './i18n-keys';
 
 export type Locale = 'en' | 'es' | 'ja' | 'pt' | 'fr';
 type Dict = Record<string, string>;
@@ -42,14 +43,18 @@ class I18nManager {
     window.dispatchEvent(new CustomEvent('dtp:locale-change', { detail: lang }));
   }
 
-  t(key: string, params?: Record<string, string | number>): string {
+  t(key: I18nKey, params?: Record<string, string | number>): string {
     const dict = this.dicts[this._current] || this._fallback;
     let str = dict[key] || this._fallback[key] || key;
     if (params) Object.entries(params).forEach(([k, v]) => { str = str.replace(`{${k}}`, String(v)); });
     return str;
   }
 
-  getAvailable(): Locale[] { return Object.keys(this.dicts) as Locale[]; }
+  getAvailable(): Locale[] {
+    return (Object.entries(this.dicts) as [Locale, Dict][])
+      .filter(([, d]) => d && Object.keys(d).length > 0)
+      .map(([lang]) => lang);
+  }
 }
 
 export const i18n = new I18nManager();

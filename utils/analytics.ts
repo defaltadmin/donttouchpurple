@@ -1,6 +1,6 @@
 import { logger } from './logger';
 
-type EventName = 'game_start' | 'game_over' | 'retry' | 'pause' | 'settings_change';
+type EventName = 'game_start' | 'game_over' | 'retry' | 'pause' | 'settings_change' | 'achievement_unlocked';
 interface GameEvent { name: EventName; ts: number; payload?: Record<string, unknown>; }
 
 const QUEUE_KEY = 'dtp:events';
