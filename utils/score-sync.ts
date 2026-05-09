@@ -5,7 +5,8 @@ import { idb } from './idb';
 
 export const scoreSync = {
   async queue(score: number, mode: 'classic' | 'evolve' = 'evolve') {
-    const initials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
+    const rawInitials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
+    const initials = rawInitials.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON';
     const pending = { score, initials, mode, attempts: 0, nextRetry: Date.now() };
 
     if (navigator.onLine) {
@@ -23,14 +24,14 @@ export const scoreSync = {
 
   async _submit(item: any): Promise<boolean> {
     try {
-      const res = await fetch('/api/leaderboard', {
+      const res = await fetch('/api/submit-score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          score: item.score,
-          initials: item.initials,
-          mode: item.mode,
-          tick: Date.now(),
+          score: Math.max(0, Math.min(9999, Math.floor(item.score || 0))),
+          initials: String(item.initials || 'ANON').replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON',
+          mode: ['classic', 'evolve'].includes(item.mode) ? item.mode : 'classic',
+          tick: typeof item.tick === 'number' ? item.tick : 0,
           sessionId: crypto.randomUUID?.() || `sess-${Date.now()}`,
         }),
       });

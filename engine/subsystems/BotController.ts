@@ -1,3 +1,4 @@
+import { BALANCE } from '../../config/gameBalance';
 import { logger } from '../../utils/logger';
 
 export interface BotConfig {
@@ -43,16 +44,16 @@ export class BotController {
       if (typeof document !== 'undefined' && document.hidden) return;
 
       const dust = botCfg.getDust();
-      if (dust < 30) {
+      if (dust < BALANCE.bot.minDustToStart) {
         this._active[1] = false;
         this.callbacks.emit({ type: 'toast', message: '🤖 Bot off — low dust!' });
         return;
       }
 
-      const delay = Math.max(80, 200 - this._dustSpentTotal * 0.5);
+      const delay = Math.max(BALANCE.bot.minDelayMs, BALANCE.bot.baseDelayMs - this._dustSpentTotal * BALANCE.bot.delayReductionPerTap);
       const accuracy = botCfg.getAccuracy();
       const danger = this.callbacks.getDangerColor();
-      const costPerTap = 3;
+      const costPerTap = BALANCE.bot.baseCostPerTap;
       const rng = this._rng ?? Math.random;
 
       for (const cell of this.callbacks.getActiveCells(1)) {
@@ -76,7 +77,7 @@ export class BotController {
           this.callbacks.emit({ type: 'botTap', player: 1, idx, dustCost: costPerTap });
         }, delay);
       }
-    }, 1000);
+    }, BALANCE.bot.checkIntervalMs);
   }
 
   private _stop(): void {

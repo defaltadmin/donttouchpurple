@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/133</span>
+                <span class='fraction'>0/138</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/133</span>
+                <span class='fraction'>0/138</span>
             </div>
         
             
@@ -196,7 +196,17 @@
 <a name='L131'></a><a href='#L131'>131</a>
 <a name='L132'></a><a href='#L132'>132</a>
 <a name='L133'></a><a href='#L133'>133</a>
-<a name='L134'></a><a href='#L134'>134</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -346,6 +356,11 @@
 <span class="cstat-no" title="statement not covered" >  fetchGlobalScores: () =&gt; Promise&lt;LeaderboardEntry[]&gt;;</span>
 <span class="cstat-no" title="statement not covered" >  classicStorageKey: string;</span>
 <span class="cstat-no" title="statement not covered" >  evolveStorageKey: string;</span>
+<span class="cstat-no" title="statement not covered" >  // F6: personal best for pinned row</span>
+<span class="cstat-no" title="statement not covered" >  personalBest?: number;</span>
+<span class="cstat-no" title="statement not covered" >  playerName?: string;</span>
+<span class="cstat-no" title="statement not covered" >  // P1: callback when scores are fetched (for top-10 achievement check)</span>
+<span class="cstat-no" title="statement not covered" >  onScoresFetched?: (entries: { score: number; initials: string }[]) =&gt; void;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export function LeaderboardPanel({</span>
@@ -354,30 +369,35 @@
 <span class="cstat-no" title="statement not covered" >  fetchGlobalScores,</span>
 <span class="cstat-no" title="statement not covered" >  classicStorageKey,</span>
 <span class="cstat-no" title="statement not covered" >  evolveStorageKey,</span>
+<span class="cstat-no" title="statement not covered" >  personalBest,</span>
+<span class="cstat-no" title="statement not covered" >  playerName,</span>
+<span class="cstat-no" title="statement not covered" >  onScoresFetched,</span>
 <span class="cstat-no" title="statement not covered" >}: LeaderboardPanelProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const [entries, setEntries] = useState&lt;LeaderboardEntry[]&gt;([]);</span>
 <span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true);</span>
 <span class="cstat-no" title="statement not covered" >  const [isGlobal, setIsGlobal] = useState(false);</span>
-<span class="cstat-no" title="statement not covered" >  const [expanded, setExpanded] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const fetchScores = useCallback(async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const global = await fetchGlobalScores();</span>
-<span class="cstat-no" title="statement not covered" >      setEntries(global);</span>
+<span class="cstat-no" title="statement not covered" >      // F6: cap at top 10</span>
+<span class="cstat-no" title="statement not covered" >      setEntries(global.slice(0, 10));</span>
 <span class="cstat-no" title="statement not covered" >      setIsGlobal(true);</span>
+<span class="cstat-no" title="statement not covered" >      // P1: notify parent with fetched entries (for top-10 achievement check)</span>
+<span class="cstat-no" title="statement not covered" >      if (onScoresFetched) onScoresFetched(global);</span>
 <span class="cstat-no" title="statement not covered" >    } catch (err) {</span>
 <span class="cstat-no" title="statement not covered" >      console.warn("[DTP-LB] Firebase fetch failed, using local fallback:", err);</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        const classicRaw = localStorage.getItem(classicStorageKey);</span>
-<span class="cstat-no" title="statement not covered" >        const evolveRaw = localStorage.getItem(evolveStorageKey);</span>
+<span class="cstat-no" title="statement not covered" >        const evolveRaw  = localStorage.getItem(evolveStorageKey);</span>
 <span class="cstat-no" title="statement not covered" >        const classic: LeaderboardEntry[] = classicRaw</span>
-<span class="cstat-no" title="statement not covered" >          ? JSON.parse(classicRaw).map((entry: LeaderboardEntry) =&gt; ({ ...entry, mode: "classic" }))</span>
+<span class="cstat-no" title="statement not covered" >          ? JSON.parse(classicRaw).map((e: LeaderboardEntry) =&gt; ({ ...e, mode: "classic" as const }))</span>
 <span class="cstat-no" title="statement not covered" >          : [];</span>
 <span class="cstat-no" title="statement not covered" >        const evolve: LeaderboardEntry[] = evolveRaw</span>
-<span class="cstat-no" title="statement not covered" >          ? JSON.parse(evolveRaw).map((entry: LeaderboardEntry) =&gt; ({ ...entry, mode: "evolve" }))</span>
+<span class="cstat-no" title="statement not covered" >          ? JSON.parse(evolveRaw).map((e: LeaderboardEntry) =&gt; ({ ...e, mode: "evolve" as const }))</span>
 <span class="cstat-no" title="statement not covered" >          : [];</span>
-<span class="cstat-no" title="statement not covered" >        setEntries([...classic, ...evolve].sort((a, b) =&gt; b.score - a.score).slice(0, 20));</span>
+<span class="cstat-no" title="statement not covered" >        setEntries([...classic, ...evolve].sort((a, b) =&gt; b.score - a.score).slice(0, 10));</span>
 <span class="cstat-no" title="statement not covered" >      } catch {</span>
 <span class="cstat-no" title="statement not covered" >        setEntries([]);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
@@ -387,12 +407,12 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }, [classicStorageKey, evolveStorageKey, fetchGlobalScores]);</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    fetchScores();</span>
-<span class="cstat-no" title="statement not covered" >  }, [fetchScores]);</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; { fetchScores(); }, [fetchScores]);</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const visibleEntries = expanded ? entries : entries.slice(0, 10);</span>
-<span class="cstat-no" title="statement not covered" >  const hasMore = entries.length &gt; 10;</span>
+<span class="cstat-no" title="statement not covered" >  // F6: is player already in top 10?</span>
+<span class="cstat-no" title="statement not covered" >  const playerInTop10 = personalBest != null &amp;&amp; playerName</span>
+<span class="cstat-no" title="statement not covered" >    ? entries.some(e =&gt; e.initials === playerName &amp;&amp; e.score &gt;= personalBest)</span>
+<span class="cstat-no" title="statement not covered" >    : false;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="lb-wrap screen-slide scrollable-screen"&gt;</span>
@@ -402,17 +422,16 @@
 <span class="cstat-no" title="statement not covered" >          {isGlobal ? "🌐 Live" : "📴 Offline"}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      {loading ? (</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="lb-empty" style={{ padding: "32px 0", opacity: 0.6 }}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          Loading...</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="lb-empty" style={{ padding: "32px 0", opacity: 0.6 }}&gt;Loading...&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      ) : entries.length === 0 ? (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;p className="lb-empty"&gt;No scores yet. Be the first!&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >      ) : (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="lb-list"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {visibleEntries.map((entry, i) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >              const badgeObj = entry.badge ? SHOP_BADGES.find((badge) =&gt; badge.id === entry.badge) : null;</span>
+<span class="cstat-no" title="statement not covered" >            {entries.map((entry, i) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >              const badgeObj = entry.badge ? SHOP_BADGES.find(b =&gt; b.id === entry.badge) : null;</span>
 <span class="cstat-no" title="statement not covered" >              return (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div</span>
 <span class="cstat-no" title="statement not covered" >                  key={`${entry.initials}-${entry.score}-${entry.date}-${i}`}</span>
@@ -429,11 +448,8 @@
 <span class="cstat-no" title="statement not covered" >                    style={{</span>
 <span class="cstat-no" title="statement not covered" >                      background: entry.mode === "evolve" ? "rgba(192,38,211,0.18)" : "rgba(96,165,250,0.18)",</span>
 <span class="cstat-no" title="statement not covered" >                      color: entry.mode === "evolve" ? "#f0abfc" : "#93c5fd",</span>
-<span class="cstat-no" title="statement not covered" >                      fontSize: 9,</span>
-<span class="cstat-no" title="statement not covered" >                      padding: "1px 5px",</span>
-<span class="cstat-no" title="statement not covered" >                      borderRadius: 4,</span>
-<span class="cstat-no" title="statement not covered" >                      fontWeight: 800,</span>
-<span class="cstat-no" title="statement not covered" >                      fontFamily: "var(--font-ui)",</span>
+<span class="cstat-no" title="statement not covered" >                      fontSize: 9, padding: "1px 5px", borderRadius: 4,</span>
+<span class="cstat-no" title="statement not covered" >                      fontWeight: 800, fontFamily: "var(--font-ui)",</span>
 <span class="cstat-no" title="statement not covered" >                    }}</span>
 <span class="cstat-no" title="statement not covered" >                  &gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {entry.mode === "evolve" ? "∞ Evolve" : "⊞ Classic"}</span>
@@ -443,21 +459,20 @@
 <span class="cstat-no" title="statement not covered" >              );</span>
 <span class="cstat-no" title="statement not covered" >            })}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {hasMore &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;button</span>
-<span class="cstat-no" title="statement not covered" >              className="btn-ghost"</span>
-<span class="cstat-no" title="statement not covered" >              style={{ width: "100%", marginTop: 8, fontSize: 13, opacity: 0.75 }}</span>
-<span class="cstat-no" title="statement not covered" >              onClick={() =&gt; setExpanded((value) =&gt; !value)}</span>
-<span class="cstat-no" title="statement not covered" >            &gt;</span>
-<span class="cstat-no" title="statement not covered" >              {expanded ? "▲ Show less" : `▼ Show all ${entries.length}`}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          {/* F6: Personal best pinned row — shown only if not already in top 10 */}</span>
+<span class="cstat-no" title="statement not covered" >          {!playerInTop10 &amp;&amp; personalBest != null &amp;&amp; personalBest &gt; 0 &amp;&amp; playerName &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="lb-pb-row"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span className="lb-pb-label"&gt;Your Best&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span className="lb-ini"&gt;{playerName}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span className="lb-score"&gt;{personalBest}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          )}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >      )}</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      &lt;div style={{ display: "flex", gap: 8, marginTop: 12, paddingBottom: 8 }}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-ghost" style={{ flex: 1 }} onClick={fetchScores}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          ↻ Refresh</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-ghost" style={{ flex: 1 }} onClick={fetchScores}&gt;↻ Refresh&lt;/button&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >  );</span>
@@ -469,7 +484,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-30T22:40:06.810Z
+                at 2026-05-09T16:22:51.383Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig, splitVendorChunkPlugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync, writeFileSync } from 'fs'
 import { visualizer } from 'rollup-plugin-visualizer'
@@ -11,10 +11,9 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 export default defineConfig({
   plugins: [
     react(),
-    splitVendorChunkPlugin(),
     compression({ algorithm: 'brotliCompress', threshold: 10240 }),
     compression({ algorithm: 'gzip' }),
-    visualizer({ open: false, filename: 'dist/stats.html' }),
+    visualizer({ open: false, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
     {
       name: 'sw-version-inject',
       writeBundle() {
@@ -38,22 +37,49 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
     minify: 'terser',
-    terserOptions: { compress: { drop_console: true, drop_debugger: true } },
+    terserOptions: { compress: { drop_console: true, drop_debugger: true, pure_funcs: ['console.log', 'console.info'] }, mangle: { safari10: true }, output: { comments: false } },
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('@sentry')) return 'sentry';
-          if (id.includes('firebase')) return 'firebase';
+          // Game Analytics - separate chunk
           if (id.includes('gameanalytics')) return 'analytics';
+
+          // React ecosystem
           if (id.includes('node_modules')) {
-            if (id.includes('react')) return 'react-vendor';
+            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
             if (id.includes('lucide') || id.includes('icon')) return 'ui-icons';
+            // Other vendor libraries in smaller chunks
+            if (id.includes('date-fns') || id.includes('lodash')) return 'utils-vendor';
             return 'vendor';
           }
+
+          // Game engine and core logic
           if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
           if (id.includes('utils/')) return 'game-utils';
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
+            if (id.includes('lucide') || id.includes('icon')) return 'ui-icons';
+            // Other vendor libraries in smaller chunks
+            if (id.includes('date-fns') || id.includes('lodash')) return 'utils-vendor';
+            return 'vendor';
+          }
+
+          // Game engine and core logic
+          if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
+          if (id.includes('utils/')) return 'game-utils';
+
+          // UI components by feature
+          if (id.includes('Backgrounds/')) return 'bg-effects';
+          if (id.includes('Shop/') || id.includes('Leaderboard/')) return 'heavy-panels';
+          if (id.includes('Settings/')) return 'settings-panel';
           if (id.includes('components/') || id.includes('hooks/')) return 'ui-layer';
+
+          // Services - split heavy ones (but not Firebase/Sentry since lazy)
+          if (id.includes('services/')) {
+            if (id.includes('errorLogger.ts') || id.includes('metrics.ts')) return 'services-monitoring';
+            return 'services-core';
+          }
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',

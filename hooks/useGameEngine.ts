@@ -138,6 +138,9 @@ function playSound(type: "ok" | "bad" | "tick" | "powerup" | "levelup" | "shuffl
   } catch (_) {}
 }
 
+// ─── Bot FX type ──────────────────────────────────────────────────
+export type BotTapFx = { id: string; idx: number; dustCost: number; at: number; };
+
 // ─── Hook return type ─────────────────────────────────────────────
 export interface UseGameEngineReturn {
   snapshot:    GameSnapshot | null;
@@ -166,12 +169,16 @@ export interface UseGameEngineReturn {
   devSetFreezeTime:(v: boolean) => void;
   devSetRotationSpeed: (v: number) => void;
   devSpawnPowerup: (type: "shield" | "freeze" | "heart") => void;
+  devSpawnSpecialCell: (player: 1 | 2, type: "ice" | "hold" | "bomb" | "rare", idx?: number) => void;
+  devTriggerBotTap: (player: 1 | 2, idx: number, dustCost?: number) => void;
+  devToggleBotAssist: (player: 1 | 2, enabled: boolean) => void;
   startBot: () => void;
   stopBot: () => void;
   isBotActive: () => boolean;
   setBotAssist: (player: 1 | 2, enabled: boolean) => void;
   botAssistActive: { 1: boolean; 2: boolean };
   botTapHighlights: { 1: Record<number, number>; 2: Record<number, number> };
+  botTapFx: BotTapFx[];
   lastGameScore: number | null;
   getAutoLowQuality: () => boolean;
   submitScoreToLeaderboard: (score: number) => void;
@@ -216,6 +223,7 @@ export function useGameEngine(
   const [lastGameScore, setLastGameScore] = useState<number | null>(null);
   const [botAssistActive, setBotAssistActiveState] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
   const [botTapHighlights, setBotTapHighlights] = useState<{ 1: Record<number, number>; 2: Record<number, number> }>({ 1: {}, 2: {} });
+  const [botTapFx, setBotTapFx] = useState<BotTapFx[]>([]);
 
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -341,6 +349,19 @@ export function useGameEngine(
               return { ...prev, [event.player]: nextPlayer };
             });
           }, 420));
+          // Track per-tap dust cost for floating marker
+          if (event.dustCost) {
+            const fx: BotTapFx = {
+              id: `bot-fx-${event.player}-${event.idx}-${Date.now()}`,
+              idx: event.idx,
+              dustCost: event.dustCost,
+              at: Date.now(),
+            };
+            setBotTapFx(prev => [...prev, fx]);
+            botTapTimersRef.current.push(setTimeout(() => {
+              if (mountedRef.current) setBotTapFx(prev => prev.filter(f => f.id !== fx.id));
+            }, 650));
+          }
           break;
         case "bossStart":
           onBossEvent?.(event.bossType);
@@ -405,6 +426,9 @@ export function useGameEngine(
   const devSetFreezeTime= useCallback((v: boolean) => engineRef.current?.devSetFreezeTime(v), []);
   const devSetRotationSpeed = useCallback((v: number) => engineRef.current?.devSetRotationSpeed(v), []);
   const devSpawnPowerup = useCallback((type: "shield" | "freeze" | "heart") => engineRef.current?.devSpawnPowerup(type), []);
+  const devSpawnSpecialCell = useCallback((player: 1 | 2, type: "ice" | "hold" | "bomb" | "rare", idx?: number) => engineRef.current?.devSpawnSpecialCell(player, type, idx), []);
+  const devTriggerBotTap = useCallback((player: 1 | 2, idx: number, dustCost?: number) => engineRef.current?.devTriggerBotTap(player, idx, dustCost), []);
+  const devToggleBotAssist = useCallback((player: 1 | 2, enabled: boolean) => engineRef.current?.devToggleBotAssist(player, enabled), []);
   const getAutoLowQuality = useCallback(() => engineRef.current?.getAutoLowQuality() ?? false, []);
 
   const submitScoreToLeaderboard = useCallback((score: number) => {
@@ -446,7 +470,8 @@ export function useGameEngine(
     start: wrappedStart, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
-    startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights,
+    devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
+    startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights, botTapFx,
     getAutoLowQuality, submitScoreToLeaderboard, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
   };
 }

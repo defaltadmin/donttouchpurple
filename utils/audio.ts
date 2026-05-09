@@ -32,6 +32,17 @@ class AudioEngine {
   async load(id: string, url: string) {
     if (!this.ctx || !this._initialized) await this.init();
     if (!this.ctx || this.buffers.has(id)) return;
+    // Only allow same-origin or relative URLs to prevent SSRF
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (parsed.origin !== window.location.origin) {
+        logger.warn('Audio load blocked: cross-origin URL rejected');
+        return;
+      }
+    } catch {
+      logger.warn('Audio load blocked: invalid URL');
+      return;
+    }
     try {
       const res = await fetch(url);
       const arrBuf = await res.arrayBuffer();

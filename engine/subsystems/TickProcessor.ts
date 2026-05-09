@@ -1,4 +1,5 @@
 import { GAME } from "../../config/difficulty";
+import { BALANCE } from "../../config/gameBalance";
 import { STAGES, EVOLVE_PATTERNS, RARE_COLORS } from "../../config/gridPatterns";
 import { logError } from "../../utils/devLog";
 import { haptics } from "../../utils/haptics";
@@ -79,17 +80,16 @@ export class TickProcessor {
         }
       } else {
         const s1 = ctx.p1.score;
-        const RARE_TRIGGER_INTERVAL = 50;
-        const RARE_PRE_WARN_THRESHOLD = 3;
+        const { triggerInterval, warnThreshold, minScore, modCheck, chance, minTurns, bonusTurns } = BALANCE.rare;
         if (
           s1 > 0 &&
-          (s1 % RARE_TRIGGER_INTERVAL) === (RARE_TRIGGER_INTERVAL - RARE_PRE_WARN_THRESHOLD)
+          (s1 % triggerInterval) === (triggerInterval - warnThreshold)
         ) {
           ctx.emit({ type: "toast", message: "⚠️ Danger color changing soon!" });
         }
-        if (s1 >= 50 && s1 % 50 < 4 && ctx.rng() < 0.35) {
+        if (s1 >= minScore && s1 % 50 < modCheck && ctx.rng() < chance) {
           const pick = RARE_COLORS[Math.floor(ctx.rng() * RARE_COLORS.length)];
-          ctx.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: 5 + Math.floor(ctx.rng() * 4), shape: pick.shape, emoji: pick.emoji };
+          ctx.rareMode = { active: true, color: pick.color, cssColor: pick.cssColor, turnsLeft: minTurns + Math.floor(ctx.rng() * bonusTurns), shape: pick.shape, emoji: pick.emoji };
           ctx.emit({ type: "rareStart", color: pick.color, cssColor: pick.cssColor });
           ctx.emit({ type: "sound", name: "rareStart" });
           ctx.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
@@ -188,7 +188,7 @@ export class TickProcessor {
       for (const c of newActive) {
         if (["medpack", "shield", "freeze", "multiplier"].includes(c.type)) {
           ref.anim[c.idx] = "pwr-drop";
-          setTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") delete ref.anim[c.idx]; }, 600);
+          setTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") { ref.anim = { ...ref.anim }; delete ref.anim[c.idx]; } }, 600);
         }
       }
     }
@@ -203,7 +203,7 @@ export class TickProcessor {
       for (const { ref, player } of botPlayers) {
         if (!ctx.botAssistActive[player] || !ref.alive) continue;
         const dust = botCfg.getDust();
-        if (dust < 30) { ctx.botAssistActive[player] = false; ctx.emit({ type: "toast", message: "🤖 Bot off — low dust!" }); continue; }
+        if (dust < BALANCE.bot.minDustToStart) { ctx.botAssistActive[player] = false; ctx.emit({ type: "toast", message: "🤖 Bot off — low dust!" }); continue; }
         const accuracy = botCfg.getAccuracy();
         const dangerColor = ctx.rareMode.active ? ctx.rareMode.color : "purple";
         const botInverted = ctx.bossEvent?.type === "inversion" && Date.now() < (ctx.bossEvent?.endsAt ?? 0);
@@ -216,7 +216,7 @@ export class TickProcessor {
         );
         for (const cell of missedCells) {
           if (ctx.rng() > accuracy) continue;
-          const costPerTap = 3;
+          const costPerTap = BALANCE.bot.baseCostPerTap;
           const currentDust = botCfg.getDust();
           if (currentDust < costPerTap) break;
           botCfg.spendDust(costPerTap);
@@ -271,14 +271,14 @@ export class TickProcessor {
 
     if (shouldTriggerShieldBoss(ctx.p1.score, ctx._bossActive, ctx.bossEvent !== null, mode, ctx.rng)) {
       ctx._bossActive = true;
-      bossEngine.activate(5 + Math.floor(ctx.rng() * 3));
+      bossEngine.activate(BALANCE.boss.shieldBaseHits + Math.floor(ctx.rng() * BALANCE.boss.shieldBonusHits));
     }
 
     ctx.tickCount += 1;
     if (ctx.tickCount % 10 === 0) ctx.autoSaveSession();
     if (ctx.phase === "playing" && ctx.tickCount >= GAME.HUMAN_LIMIT_TICK) { ctx.phase = "humanlimit"; ctx.emit({ type: "phaseChange", phase: "humanlimit" }); }
-    if (ctx.tickCount > GAME.SURVIVAL_BONUS_START_TICK && ctx.tickCount % 20 === 0) {
-      const bonus = ctx.tickCount > 200 ? 5 : ctx.tickCount > 120 ? 3 : 2;
+    if (ctx.tickCount > GAME.SURVIVAL_BONUS_START_TICK && ctx.tickCount % BALANCE.survival.interval === 0) {
+      const bonus = ctx.tickCount > BALANCE.survival.lateThreshold ? BALANCE.survival.lateAmount : ctx.tickCount > BALANCE.survival.midThreshold ? BALANCE.survival.midAmount : BALANCE.survival.earlyAmount;
       const multBonus = Math.round(bonus * rhythmFeedback.state.multiplier);
       if (ctx.p1.alive) ctx.p1.score += multBonus;
       if (ctx.numPlayers === 2 && ctx.p2.alive) ctx.p2.score += multBonus;
@@ -302,7 +302,7 @@ export class TickProcessor {
     if (ctx.config.mode !== "evolve" || ref.gridStage < 3) return;
     if (ctx.tickCount < ctx.nextShuffleTick) return;
 
-    ctx.nextShuffleTick = ctx.tickCount + 40 + Math.floor(ctx.rng() * 20);
+    ctx.nextShuffleTick = ctx.tickCount + BALANCE.shuffle.minInterval + Math.floor(ctx.rng() * BALANCE.shuffle.bonusInterval);
 
     const { cols, rows, mask } = pat;
     const total = cols * rows;
@@ -312,7 +312,7 @@ export class TickProcessor {
     const empty = [...validSlots].filter(i => !occupied.has(i));
     if (empty.length === 0) return;
 
-    const shuffleCount = 1 + (ctx.rng() < 0.35 ? 1 : 0);
+    const shuffleCount = 1 + (ctx.rng() < BALANCE.shuffle.secondShuffleChance ? 1 : 0);
     const candidates = ref.active.filter(c =>
       !c.clicked &&
       validSlots.has(c.idx) &&
@@ -350,9 +350,9 @@ export class TickProcessor {
       ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now() };
 
       ctx.scheduleTimeout(() => {
-        if (ref.slideAnim) delete ref.slideAnim[toIdx];
+        if (ref.slideAnim) { ref.slideAnim = { ...ref.slideAnim }; delete ref.slideAnim[toIdx]; }
         ctx.dirty = true;
-      }, 200 + 50);
+      }, BALANCE.shuffle.slideCleanupMs);
 
       ctx.emit({ type: "cellShuffle", player, fromIdx, toIdx });
       ctx.emit({ type: "sound", name: "shuffle" });
@@ -377,8 +377,8 @@ export class TickProcessor {
 
   private _trySpawnBomb(ctx: TickContext, ref: PlayerState, player: 1 | 2, pat: { cols: number; rows: number; mask: number[] | null }): void {
     if (ctx.activeBomb) return;
-    if (ref.score < 100) return;
-    if (ctx.rng() > 0.12) return;
+    if (ref.score < BALANCE.bomb.minScore) return;
+    if (ctx.rng() > BALANCE.bomb.spawnChance) return;
 
     const validSlots = pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i);
     const occupied = new Set(ref.active.filter(c => !c.clicked).map(c => c.idx));
@@ -386,7 +386,7 @@ export class TickProcessor {
     if (free.length === 0) return;
 
     const idx = free[Math.floor(ctx.rng() * free.length)];
-    const expiresAt = Date.now() + 2000;
+    const expiresAt = Date.now() + BALANCE.bomb.fuseTimeMs;
     const bomb: BombCell = { idx, clicked: false, type: "bomb", expiresAt };
     ref.active.push(bomb);
     ref.cells = activeToCellsP(ref.active, pat);
@@ -397,7 +397,7 @@ export class TickProcessor {
     ctx.emit({ type: "sound", name: "bomb" });
     ctx.emit({ type: "toast", message: "💣 BOMB! Tap it!" });
 
-    ctx.addDeltaTimer(`bomb_${player}_${idx}`, 2000, () => {
+    ctx.addDeltaTimer(`bomb_${player}_${idx}`, BALANCE.bomb.fuseTimeMs, () => {
       if (!ctx.activeBomb || ctx.activeBomb.idx !== idx || ctx.activeBomb.player !== player) return;
       const stillActive = ref.active.find(c => c.idx === idx && c.type === "bomb" && !c.clicked);
       if (!stillActive) return;

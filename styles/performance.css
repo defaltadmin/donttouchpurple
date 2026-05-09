@@ -1,0 +1,34 @@
+/* GPU Containment & Layout Isolation */
+.panel-skeleton, .dtp-btn, .cell, .hud-panel, .modal-card {
+  contain: layout style paint;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Safe Animation Enforcement (Transform/Opacity ONLY) */
+@keyframes safePulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.03);opacity:0.9} }
+@keyframes safeFade { from{opacity:0} to{opacity:1} }
+@keyframes safeSlide { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* Reduced motion — kill all animations */
+@media (prefers-reduced-motion: reduce), .lite-mode {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lite-mode .cell, .lite-mode .bg-layer, .lite-mode .modal-card {
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Dev warning for layout-thrashing CSS */
+@media screen and (min-width: 0) {
+  [class*="animate-"][class*="width"], [class*="animate-"][class*="height"], [class*="animate-"][class*="margin"] {
+    outline: 2px solid red !important;
+  }
+}

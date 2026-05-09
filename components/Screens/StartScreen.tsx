@@ -125,8 +125,79 @@ export function StartScreen({
 }: StartScreenProps) {
   const isKbd = inputMode === "keyboard";
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle navigation when not in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          onPlay();
+          break;
+        case 'h':
+        case 'H':
+          e.preventDefault();
+          onHowTo();
+          break;
+        case 'l':
+        case 'L':
+          e.preventDefault();
+          onLeaderboard();
+          break;
+        case 's':
+        case 'S':
+          e.preventDefault();
+          onShop();
+          break;
+        case 'k':
+        case 'K':
+          e.preventDefault();
+          onKeybind();
+          break;
+        case 'r':
+        case 'R':
+          if (resumeReady && onResumeGame) {
+            e.preventDefault();
+            onResumeGame();
+          }
+          break;
+        case '1':
+          e.preventDefault();
+          setGameMode('classic');
+          break;
+        case '2':
+          if (isFeatureUnlocked('evolve_mode') || devMode) {
+            e.preventDefault();
+            setGameMode('evolve');
+          }
+          break;
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          e.preventDefault();
+          setNumPlayers(numPlayers === 1 ? 2 : 1);
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          setInputMode('touch');
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+          e.preventDefault();
+          setInputMode(inputMode === 'touch' ? 'keyboard' : 'touch');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame]);
+
   return (
-    <div className="menu-card screen-slide">
+    <div className="menu-card screen-slide" role="main" aria-label="Game menu">
       {pendingReplaySeed && (
         <div className="replay-banner">
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
@@ -208,14 +279,17 @@ export function StartScreen({
       </div>
 
       {(devMode || energyCount > 0) ? (
-        <button className="btn-play" onClick={onPlay}>▶ PLAY!{devMode ? " 🔧" : ""}</button>
+        <button className="btn-play" onClick={onPlay} aria-label="Start new game">
+          ▶ PLAY!{devMode ? " 🔧" : ""}
+        </button>
       ) : (
-        <div className="no-energy-block">
+        <div className="no-energy-block" role="status" aria-label="No energy available">
           <div className="no-energy-txt">⚡ No energy</div>
           <EnergyCountdown energyLastRegen={energyLastRegen} />
           <button className="btn-ghost" style={{ marginTop: 8, fontSize: 13 }}
             onClick={onRefillEnergy}
             disabled={dust < GAME.DUST_PER_ENERGY}
+            aria-label={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} dust to refill energy` : "Spend dust to refill energy"}
             title={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} 💜 dust` : ""}>
             💜 Spend {GAME.DUST_PER_ENERGY} dust to refill
           </button>
@@ -223,25 +297,36 @@ export function StartScreen({
       )}
 
       {dailyObjective && (
-        <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}>
+        <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}
+             role="status"
+             aria-label={`Daily objective: ${dailyObjective.description}, reward ${dailyObjective.reward} dust${dailyObjective.completed ? ', completed' : ''}`}>
           🎯 {dailyObjective.description} → +{dailyObjective.reward} 💜
           {dailyObjective.completed && " ✓"}
         </div>
       )}
 
-      <div className="menu-links">
-        <button className="btn-link" onClick={onHowTo}>❓ How to Play</button>
-        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}>
+      <div className="menu-links" role="navigation" aria-label="Menu options">
+        <button className="btn-link" onClick={onHowTo} aria-label="How to play instructions">❓ How to Play</button>
+        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}
+                aria-label={!isFeatureUnlocked('leaderboard') && !devMode ? "Leaderboard locked - score higher to unlock" : "View leaderboard"}>
           🏆 Leaderboard {!isFeatureUnlocked('leaderboard') && "🔒"}
         </button>
-        <button className="btn-link" onClick={onShop}>🛒 Shop</button>
-        <button className="rewards-hub-btn" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}>
+        <button className="btn-link" onClick={onShop} aria-label="Open shop">🛒 Shop</button>
+        <button className="rewards-hub-btn" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}
+                aria-label={!isFeatureUnlocked('daily_challenges') && !devMode ? "Rewards hub locked" : `Rewards hub${(rewardsBadgeCount ?? 0) > 0 ? `, ${rewardsBadgeCount} rewards available` : ''}`}>
           🎁 {!isFeatureUnlocked('daily_challenges') && "🔒"}
           {(rewardsBadgeCount ?? 0) > 0 && isFeatureUnlocked('daily_challenges') && (
             <span className="rewards-hub-badge">{rewardsBadgeCount}</span>
           )}
         </button>
-        {isKbd && <button className="btn-link" onClick={onKeybind}>⌨ Keys</button>}
+        {isKbd && <button className="btn-link" onClick={onKeybind} aria-label="Configure keyboard bindings">⌨ Keys</button>}
+      </div>
+
+      {/* Screen reader instructions */}
+      <div className="sr-only" aria-live="polite">
+        Use keyboard shortcuts: Enter/Space to play, H for help, L for leaderboard, S for shop, K for keys.
+        Use 1/2 to switch game modes, arrow keys to change players and input mode.
+        {resumeReady ? ' Press R to resume saved game.' : ''}
       </div>
     </div>
   );

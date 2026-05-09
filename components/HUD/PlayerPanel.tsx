@@ -4,6 +4,7 @@ import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
 import { animateDustClaim } from "../../utils/dustAnimation";
 import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot } from "../../engine/types";
+import type { BotTapFx } from "../../hooks/useGameEngine";
 
 
 // ─── Dynamic cell size ────────────────────────────────────────────
@@ -54,6 +55,7 @@ export interface PlayerPanelProps {
   onStopBot?:    () => void;
   isBotActive?:  boolean;
   botTapHighlights?: Record<number, number>;
+  botTapFx?: BotTapFx[];
   onToggleBotAssist?: () => void;
   showBotAssist?: boolean;
   dust?:         number;
@@ -79,6 +81,7 @@ export const PlayerPanel = memo(function PlayerPanel({
   onStopBot,
   isBotActive = false,
   botTapHighlights = {},
+  botTapFx,
   onToggleBotAssist,
   showBotAssist = false,
   dust = 0,
@@ -191,6 +194,10 @@ export const PlayerPanel = memo(function PlayerPanel({
 
             const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
+            const bombFuse = activeCell.type === 'bomb'
+              ? Math.max(0, (activeCell as any).expiresAt - Date.now())
+              : undefined;
+
             return (
               (() => {
                 if (activeCell.type === "hold") {
@@ -224,6 +231,8 @@ export const PlayerPanel = memo(function PlayerPanel({
                     keyLabel={keyLabels[keyIdx] || ''}
                     isPressing={pressing.has(i)}
                     botPulse={Boolean(botTapHighlights[i])}
+                    botDustCost={botTapFx?.findLast(fx => fx.idx === i)?.dustCost}
+                    bombFuse={bombFuse}
                   />
                   </div>
                 );
@@ -286,21 +295,21 @@ function HoldCellDisplay({
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [holdStart, holdRequired]);
 
-  // conic-gradient arc - fills clockwise from top
-  const deg = Math.round(pct * 360);
   return (
     <div
-      className="hold-cell"
+      className={`hold-cell${pct > 0 ? ' is-holding' : ''}`}
       onPointerDown={(e) => { e.preventDefault(); onHoldStart(idx); }}
       onPointerUp={() => onHoldEnd(idx)}
       onPointerLeave={() => onHoldEnd(idx)}
     >
-      <div
-        className="hold-arc"
-        style={{
-          background: `conic-gradient(var(--accent) ${deg}deg, rgba(255,255,255,0.12) ${deg}deg)`,
-        }}
-      />
+      <svg className="hold-progress-ring" viewBox="0 0 36 36" aria-hidden="true">
+        <path className="hold-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path
+          className="hold-fill"
+          strokeDasharray={`${pct * 100}, 100`}
+          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+        />
+      </svg>
       <div className="hold-icon">⏳</div>
     </div>
   );

@@ -8,7 +8,7 @@ const FIREBASE_CONFIG = {
   measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-let dbInstance: any = null;
+const dbInstance: any = null;
 
 const IS_PROD =
   typeof window !== "undefined" &&
@@ -52,39 +52,60 @@ export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreE
 
 export async function getDB(): Promise<any> {
   if (!IS_PROD) return null;
-  if (dbInstance) return dbInstance;
-  try {
-    const { initializeApp, getApps } = await import("firebase/app");
-    const { getFirestore } = await import("firebase/firestore");
-    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-    dbInstance = getFirestore(app);
-    return dbInstance;
-  } catch (error) {
-    console.warn("[DTP-Firebase] init failed:", error);
-    try {
-      const Sentry = await import("@sentry/react");
-      Sentry.captureException(error, { tags: { component: "firebase-init" } });
-    } catch {}
-    return null;
-  }
+  return await ensureFirestore();
 }
 
-// Lazy Firebase firestore module cache — deduplicates dynamic imports
-let _fbModules: {
-  collection: any; addDoc: any; serverTimestamp: any;
-  query: any; orderBy: any; limit: any; getDocs: any;
-  doc: any; setDoc: any; where: any;
-} | null = null;
+// Lazy Firebase initialization - only load when first Firebase operation is needed
+let firebaseApp: any = null;
+let firestoreDb: any = null;
+const analyticsInstance: any = null;
+let firebaseModules: any = null;
 
-async function getFbModules() {
-  if (_fbModules) return _fbModules;
-  const m = await import("firebase/firestore");
-  _fbModules = {
-    collection: m.collection, addDoc: m.addDoc, serverTimestamp: m.serverTimestamp,
-    query: m.query, orderBy: m.orderBy, limit: m.limit, getDocs: m.getDocs,
-    doc: m.doc, setDoc: m.setDoc, where: m.where,
+async function ensureFirebaseApp(): Promise<any> {
+  if (firebaseApp) return firebaseApp;
+
+  const { initializeApp, getApps } = await import("firebase/app");
+  firebaseApp = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+  return firebaseApp;
+}
+
+async function ensureFirestore(): Promise<any> {
+  if (firestoreDb) return firestoreDb;
+
+  const app = await ensureFirebaseApp();
+  const { getFirestore } = await import("firebase/firestore");
+  firestoreDb = getFirestore(app);
+  return firestoreDb;
+}
+
+async function ensureFirebaseModules(): Promise<any> {
+  if (firebaseModules) return firebaseModules;
+
+  const [firestoreMod, analyticsMod] = await Promise.all([
+    import("firebase/firestore"),
+    import("firebase/analytics")
+  ]);
+
+  firebaseModules = {
+    // Firestore
+    collection: firestoreMod.collection,
+    addDoc: firestoreMod.addDoc,
+    serverTimestamp: firestoreMod.serverTimestamp,
+    query: firestoreMod.query,
+    orderBy: firestoreMod.orderBy,
+    limit: firestoreMod.limit,
+    getDocs: firestoreMod.getDocs,
+    doc: firestoreMod.doc,
+    setDoc: firestoreMod.setDoc,
+    where: firestoreMod.where,
+
+    // Analytics
+    getAnalytics: analyticsMod.getAnalytics,
+    isSupported: analyticsMod.isSupported,
+    logEvent: analyticsMod.logEvent,
   };
-  return _fbModules;
+
+  return firebaseModules;
 }
 
 export async function fbAddScoreGlobal(
@@ -92,56 +113,38 @@ export async function fbAddScoreGlobal(
 ): Promise<void> {
   const db = await getDB();
   if (!db) return;
-  const { collection, addDoc, serverTimestamp } = await getFbModules();
-  await addDoc(collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: serverTimestamp() });
+  const modules = await ensureFirebaseModules();
+  await modules.addDoc(modules.collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: modules.serverTimestamp() });
 }
 
-// Submit score through Cloudflare Worker (with validation)
-export async function fbAddScoreViaWorker(scoreData: any): Promise<boolean> {
-  try {
-    const response = await fetch('https://game.mscarabia.com/api/submit-score', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(scoreData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('[DTP] Score accepted by Worker:', result);
-    return true;
-
-  } catch (err) {
-    console.warn('[DTP] Worker submission failed, falling back to offline queue:', err);
-    return false;
-  }
+/** @deprecated Use scoreSync.queue() instead. This function now routes to the unified queue. */
+export async function fbAddScoreViaWorker(score: number, mode: 'classic' | 'evolve' = 'evolve'): Promise<void> {
+  import('../utils/score-sync').then(({ scoreSync }) => scoreSync.queue(score, mode));
+  console.warn('[Firebase] fbAddScoreViaWorker is deprecated. Route to scoreSync.queue() directly.');
 }
 
 export async function fbLogEvent(name: string, params: Record<string, string | number | boolean | null | undefined> = {}): Promise<void> {
   if (!IS_PROD || typeof window === "undefined") return;
   try {
     const app = await getAppInstance();
-    const analyticsMod = await import("firebase/analytics");
-    if (!(await analyticsMod.isSupported())) return;
-    const analytics = analyticsMod.getAnalytics(app);
+    const modules = await ensureFirebaseModules();
+    if (!(await modules.isSupported())) return;
+    const analytics = modules.getAnalytics(app);
     const safeParams = Object.fromEntries(
       Object.entries(params)
         .filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key.slice(0, 40), typeof value === "string" ? value.slice(0, 100) : value])
     );
-    analyticsMod.logEvent(analytics, name.slice(0, 40), safeParams);
+    modules.logEvent(analytics, name.slice(0, 40), safeParams);
   } catch {}
 }
 
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
   const db = await getDB();
   if (!db) throw new Error("no db");
-  const { collection, query, orderBy, limit, getDocs } = await getFbModules();
-  const q = query(collection(db, "lb_global"), orderBy("score", "desc"), limit(20));
-  const snap = await getDocs(q);
+  const modules = await ensureFirebaseModules();
+  const q = modules.query(modules.collection(db, "lb_global"), modules.orderBy("score", "desc"), modules.limit(20));
+  const snap = await modules.getDocs(q);
   return snap.docs.map((doc: any) => {
     const data = doc.data();
     return {
@@ -158,19 +161,23 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
   const safeName = name.trim().slice(0, 20);
   if (!db || !safeName) return;
-  const { doc, setDoc, serverTimestamp } = await getFbModules();
-  await setDoc(doc(db, "dust_wallet", safeName), {
+  const modules = await ensureFirebaseModules();
+  await modules.setDoc(modules.doc(db, "dust_wallet", safeName), {
     name: safeName,
     dust: Math.max(0, Math.min(999999, Math.floor(dust))),
-    ts: serverTimestamp(),
+    ts: modules.serverTimestamp(),
   });
 }
 
 export async function fbCheckWeeklyBonus(name: string): Promise<number> {
   const db = await getDB();
   if (!db) return 0;
+  // Sanitize name before any use — same rules as normalizeGlobalScoreEntry
+  const safeName = name.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8);
+  if (!safeName) return 0;
   try {
-    const { collection, query, where, orderBy, limit, getDocs } = await getFbModules();
+    const { collection, query, where, orderBy, limit, getDocs } = await ensureFirebaseModules();
+    // oneWeekAgo is a computed ISO date string — not user input
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const q = query(
       collection(db, "lb_global"),
@@ -179,9 +186,8 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
       limit(50)
     );
     const snap = await getDocs(q);
-    // Server-side where() already filters by date, no client filter needed
     const entries = snap.docs.map((doc: any) => doc.data());
-    return entries.slice(0, 3).some((entry: any) => entry.initials === name) ? 500 : 0;
+    return entries.slice(0, 3).some((entry: any) => entry.initials === safeName) ? 500 : 0;
   } catch {
     return 0;
   }

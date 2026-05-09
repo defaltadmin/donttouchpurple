@@ -33,7 +33,7 @@ export const achievementSystem = {
     const queue = JSON.parse(localStorage.getItem(TOAST_KEY) || '[]');
     queue.push({ id, name: ach.name, icon: ach.icon, ts: Date.now() });
     localStorage.setItem(TOAST_KEY, JSON.stringify(queue.slice(-5)));
-    logger.info('🏆 Achievement unlocked:', ach.name);
+    logger.info('🏆 Achievement unlocked:', ach.name.replace(/[\r\n]/g, ''));
     window.dispatchEvent(new CustomEvent('dtp:achievement', { detail: ach }));
     if (privacyManager.getConsent()) {
       analytics.track('achievement_unlocked', { id: ach.id });

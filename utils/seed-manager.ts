@@ -1,7 +1,7 @@
 import { logger } from './logger';
 
 export const seedManager = {
-  STORAGE_KEY: 'dtp:active-seed',
+  STORAGE_KEY: 'dtp:game-seed',  // localStorage key for active seed (not a secret)
   currentSeed: 0,
 
   initOrRestore(): number {

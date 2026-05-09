@@ -3,7 +3,7 @@ const STORE_NAME = 'pendingScores';
 const DB_VERSION = 1;
 
 export interface PendingScore {
-  id: number;
+  id?: number;  // autoIncrement — omit on add
   score: number;
   initials: string;
   mode: string;
@@ -29,7 +29,7 @@ export function openPendingScoresDb(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
       }
     };
   });
@@ -40,9 +40,8 @@ export async function addPendingScore(scoreData: Omit<PendingScore, 'id' | 'time
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
 
-  const entry: PendingScore = {
+  const entry: Omit<PendingScore, 'id'> = {
     ...scoreData,
-    id: Date.now(),
     timestamp: Date.now()
   };
 

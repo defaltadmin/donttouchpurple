@@ -1,5 +1,5 @@
 // components/Cell/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 import { settingsManager } from '../../utils/settings';
@@ -14,6 +14,9 @@ interface CellProps {
   keyLabel?: string;
   isPressing?: boolean;
   botPulse?: boolean;
+  botDustCost?: number;
+  holdProgress?: number;
+  bombFuse?: number;
 }
 
 function BombTimer({ expiresAt }: { expiresAt: number }) {
@@ -77,10 +80,13 @@ export default function Cell({
   keyLabel = '',
   isPressing = false,
   botPulse = false,
+  botDustCost,
+  holdProgress,
+  bombFuse,
 }: CellProps) {
 
   const isBomb = cell.type === 'bomb';
-  const bombUrgent = isBomb && Date.now() > (cell as any).expiresAt - 700; // last 700ms = urgent
+  const bombUrgent = isBomb && (bombFuse ?? Date.now() > (cell as any).expiresAt - 700); // last 700ms = urgent
   const isClicked = cell.clicked;
   const shape = cell.shape || 'circle';
   const shapeClass = `cell-shape--${shape}`;
@@ -91,6 +97,19 @@ export default function Cell({
 
   const isHold = cell.type === 'hold';
   const isIce = cell.type === 'ice';
+
+  // ── Ice hit flash tracking ──
+  const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
+  const [iceFlash, setIceFlash] = useState(false);
+  useEffect(() => {
+    if (cell.type === 'ice' && prevIceCount.current !== undefined && cell.iceCount < prevIceCount.current) {
+      setIceFlash(true);
+      const t = setTimeout(() => setIceFlash(false), 200);
+      prevIceCount.current = cell.iceCount;
+      return () => clearTimeout(t);
+    }
+    if (cell.type === 'ice') prevIceCount.current = cell.iceCount;
+  }, [cell.type === 'ice' ? cell.iceCount : false]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isClicked) return;
@@ -133,6 +152,9 @@ export default function Cell({
       {/* Shape background layer */}
       <div className={`cell-shape-overlay ${shapeClass}`} />
 
+      {/* Ice hit flash overlay */}
+      {iceFlash && <div className="ice-hit-flash" />}
+
       {/* Powerup / Special icons */}
       <div className="cell-icon">
         {cell.type === 'medpack' && '❤️'}
@@ -156,10 +178,50 @@ export default function Cell({
         )}
       </div>
 
+      {/* Ice pips (bottom) */}
+      {isIce && cell.iceCount !== undefined && (
+        <div className="ice-pip-container" aria-label={`Ice: ${cell.iceCount} taps remaining`}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <span key={i} className={`ice-pip ${i < cell.iceCount! ? 'active' : 'spent'}`} />
+          ))}
+        </div>
+      )}
+
+      {/* Hold cell SVG progress ring */}
+      {isHold && holdProgress !== undefined && (
+        <svg className="hold-progress-ring" viewBox="0 0 36 36" aria-hidden="true">
+          <path className="hold-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path
+            className="hold-fill"
+            strokeDasharray={`${holdProgress * 100}, 100`}
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+          />
+        </svg>
+      )}
+
+      {/* Bomb escalation ring */}
+      {isBomb && bombFuse !== undefined && (
+        <div
+          className="bomb-timer-ring"
+          style={{ '--bomb-remaining': `${Math.max(0, bombFuse / 3000)}` } as React.CSSProperties}
+        />
+      )}
+
+      {/* Rare danger symbol */}
+      {cell.shape && (
+        <span className="rare-danger-symbol" aria-label="Rare danger">⛔</span>
+      )}
+
       {botPulse && (
         <div className="bot-tap-fx" aria-hidden="true">
           <span className="bot-tap-orbit" />
           <span className="bot-tap-label">BOT</span>
+        </div>
+      )}
+
+      {botDustCost !== undefined && (
+        <div className="bot-dust-marker" aria-label={`Bot spent ${botDustCost} dust`}>
+          -{botDustCost}
         </div>
       )}
 

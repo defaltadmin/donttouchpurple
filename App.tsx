@@ -18,14 +18,13 @@ import { LazyHydrate } from "./utils/lazy-hydrate";
 import { achievementSystem } from "./utils/achievements";
 import { scoreCardGen } from "./utils/score-card";
 import { privacyManager } from "./utils/privacy";
-import { TouchGesture } from "./utils/gestures";
-import { orientationMonitor } from "./utils/orientation";
+import { webVitalsMonitor } from "./utils/web-vitals";
 import { stateGuard } from "./utils/state-guard";
-import { rhythmFeedback } from "./utils/feedback-rhythm";
-import { AssetGate } from "./utils/preloader-v2";
-import { useOffsetCursor } from "./hooks/useOffsetCursor";
-import { visualA11y } from "./utils/visual-a11y";
 import { challengeLink } from "./utils/challenge-link";
+import { orientationMonitor } from "./utils/orientation";
+import { TouchGesture } from "./utils/gestures";
+import { visualA11y } from "./utils/visual-a11y";
+import { useOffsetCursor } from "./hooks/useOffsetCursor";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -247,7 +246,7 @@ export default function App() {
   const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
-  const assetGateRef = useRef(new AssetGate());
+  const assetGateRef = useRef({ setProgress: (_fn: (p: number) => void) => {}, loadAll: () => Promise.resolve() });
   const [bossUi, setBossUi] = useState<{ active: boolean; shieldHits: number; maxShield: number; phase: number }>({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
   const [comboPop, setComboPop] = useState(false);
   const [gateReady, setGateReady] = useState(false);
@@ -282,25 +281,28 @@ export default function App() {
   useEffect(() => {
     // 1. Init i18n
     i18n.init().then(() => setUiReady(true));
-    
-    // 2. Configure asset tiers
+
+    // 2. Start Web Vitals monitoring
+    webVitalsMonitor.startMonitoring();
+
+    // 3. Configure asset tiers
     const h = hydrator.current;
     h.setProgress((pct: number, tier: AssetTier) => setLoadPct(prev => ({ ...prev, [tier]: pct })));
-    
+
     // CRITICAL (blocks UI)
     // h.add('/sfx/tick.mp3', 'critical', 'audio');
     // h.add('/sfx/damage.mp3', 'critical', 'audio');
     // h.add('/themes/default-purple.json', 'critical', 'json');
-    
+
     // DEFERRED (loads after menu shows)
     // h.add('/themes/shop-theme-1.json', 'deferred', 'json');
     // h.add('/themes/shop-theme-2.json', 'deferred', 'json');
-    
+
     // BACKGROUND (loads during gameplay/idle)
     // h.add('/sfx/boss-intro.mp3', 'background', 'audio');
     // h.add('/sfx/shield-break.mp3', 'background', 'audio');
     // h.add('/bg/ambient-loop.mp3', 'background', 'audio');
-    
+
     h.hydrateAll();
   }, []);
 

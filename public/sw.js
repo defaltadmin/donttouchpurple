@@ -56,9 +56,22 @@ self.addEventListener('sync', (event) => {
 
           for (const score of allScores) {
             try {
-              const res = await fetch('/api/submit-score', {
+              // Validate score data from IndexedDB before using it
+              const safeScore = Math.max(0, Math.min(9999, parseInt(score.score, 10) || 0));
+              const safeInitials = String(score.initials || 'ANON').replace(/[^a-zA-Z0-9_ ]/g, '').slice(0, 8);
+              const safeMode = ['classic', 'evolve'].includes(score.mode) ? score.mode : 'classic';
+              const payload = {
+                score: safeScore,
+                initials: safeInitials,
+                mode: safeMode,
+                tick: typeof score.tick === 'number' ? score.tick : 0,
+                sessionId: typeof score.sessionId === 'string' ? score.sessionId.slice(0, 64) : `sw-${Date.now()}`
+              };
+              // Only submit to same-origin endpoint
+              const endpoint = new URL('/api/submit-score', self.location.origin).href;
+              const res = await fetch(endpoint, {
                 method: 'POST',
-                body: JSON.stringify(score),
+                body: JSON.stringify(payload),
                 headers: { 'Content-Type': 'application/json' }
               });
               if (res.ok) {

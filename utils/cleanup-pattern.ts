@@ -4,7 +4,11 @@ import { logger } from './logger';
 export function useSafeRaf(callback: (time: number) => void) {
   const rafRef = useRef<number>();
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+
+  // ✅ FIX: Update callback ref safely
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   const loop = useCallback((time: number) => {
     callbackRef.current(time);
@@ -26,7 +30,12 @@ export function useSafeRaf(callback: (time: number) => void) {
     }
   }, []);
 
-  useEffect(() => stop, [stop]);
+  // ✅ FIX: Cleanup on unmount only
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   return { start, stop };
 }

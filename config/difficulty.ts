@@ -51,4 +51,5 @@ export const LS_KEYS = {
   STORED_PWR:   "dtp-stored-pwr",
   BEST_CLASSIC: "dtp-best-classic",
   BEST_EVOLVE:  "dtp-best-evolve",
+  ONBOARD_SEEN: "dtp-onboarding-v1",
 } as const;

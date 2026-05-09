@@ -1,8 +1,11 @@
 // utils/challenge-link.ts
 import { logger } from './logger';
 
-// Move to import.meta.env.VITE_CHALLENGE_SECRET for v6.1 server-side signing
-const HMAC_SECRET = 'dtp-v6-challenge-hmac-2025';
+// HMAC secret loaded from env — falls back to a dev-only placeholder that is
+// intentionally weak so it is obvious when the env var is missing.
+const HMAC_SECRET: string =
+  (import.meta as any).env?.VITE_CHALLENGE_SECRET ||
+  'dtp-dev-only-not-secret';
 
 async function _importKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey(

@@ -1,0 +1,892 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for deploy-ready/files/dtp-v5.7.0-patch/components/Screens/GameOver.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../../../prettify.css" />
+    <link rel="stylesheet" href="../../../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../../../index.html">All files</a> / <a href="index.html">deploy-ready/files/dtp-v5.7.0-patch/components/Screens</a> GameOver.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/269</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/269</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React from "react";</span></span></span>
+<span class="cstat-no" title="statement not covered" >import { useState, useEffect, useRef, useCallback } from "react";</span>
+<span class="cstat-no" title="statement not covered" >import type { GameMode, Winner } from "../../engine/types";</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// ─── End-screen messages ──────────────────────────────────────────</span>
+<span class="cstat-no" title="statement not covered" >const MESSAGES: { min: number; max: number; texts: string[] }[] = [</span>
+<span class="cstat-no" title="statement not covered" >  { min: 0,   max: 4,   texts: ["Bro couldn't avoid ONE color. 💀","The grid had 12 safe colors. You still lost. 🫠","Have you considered... not touching purple?","A goldfish would've scored higher. Scientifically.","Congratulations on finding the worst possible score.","Purple: 1. You: somehow less than 1.","Even accidentally tapping would've been better.","Did you mean to play a different game? 🙃"] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 5,   max: 9,   texts: ["Single digits. Your fingers need a firmware update.","That was painful to watch. 😬","You tapped purple like it was the goal.","Somewhere, a purple cell is laughing at you.","Basic difficulty called. It wants a refund.","Bold strategy. Terrible execution.","The tutorial is embarrassed on your behalf."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 10,  max: 19,  texts: ["Double digits. The minimum bar cleared. Barely.","You made it to double digits. The grid is unimpressed.","10+ — technically not a complete disaster.","Your thumbs are getting warmed up, apparently.","Progress! You avoided purple... some of the time.","Not bad for your first conscious attempt.","The grid acknowledges your existence. Faintly."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 20,  max: 34,  texts: ["Now we're cooking. Medium rare. 🔥","The grid is starting to take you seriously.","20+ — you have actual reflexes. Interesting.","You're in the zone. Stay there.","Your thumbs are having a moment.","The purple is slightly nervous. Good.","Something resembling skill detected."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 35,  max: 49,  texts: ["Serious reflexes detected. 🔥","35+? Tell your friends. Brag a little.","Your fingers are professionally trained, apparently.","The grid didn't see that coming.","Almost 50. The threshold of greatness.","You tapped so fast the purple forgot its job.","We're getting somewhere. Keep going."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 50,  max: 74,  texts: ["FIFTY. You're a natural. 🏆","Half-century! Legendary energy.","50+ means fast hands and questionable hobbies.","The grid can't stop you. It's accepted this.","Your mom would be proud. Probably.","50+ and counting. You're becoming the grid.","Genuine talent spotted. Finally."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 75,  max: 99,  texts: ["75+ is elite territory. 👑","Approaching triple digits. A god awakens.","Your fingers are a biological miracle.","The purple filed a formal complaint. About you.","At this point just go pro.","75+ — researchers want to study your hands.","The grid is scared. Keep it scared."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 100, max: 149, texts: ["TRIPLE DIGITS. Frame this. 🤯","100+. You've transcended the average human.","The game is genuinely afraid of you now.","Are you using one hand?? Impressive.","100+ — this score belongs in a museum.","The grid has filed for emotional damages.","Absolute specimen. This is real now."] },</span>
+<span class="cstat-no" title="statement not covered" >  { min: 150, max: 999, texts: ["ARE YOU HUMAN?? 👾","150+ — we need to talk about your reflexes.","Legend. Myth. Tap god. You.","The purple has retired. Because of you.","Scientists want to study your nervous system.","You broke the intended difficulty curve. Congratulations.","This score should not be possible. And yet.","GOAT status confirmed. No debate."] },</span>
+<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export function getMessage(score: number): string {</span>
+<span class="cstat-no" title="statement not covered" >  const bucket = MESSAGES.find(b =&gt; score &gt;= b.min &amp;&amp; score &lt;= b.max) ?? MESSAGES[MESSAGES.length - 1];</span>
+<span class="cstat-no" title="statement not covered" >  return bucket.texts[Math.floor(Math.random() * bucket.texts.length)];</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// ─── Share card ───────────────────────────────────────────────────</span>
+<span class="cstat-no" title="statement not covered" >function ShareCard({ score, mode, gameSeed, onClose }: {</span>
+<span class="cstat-no" title="statement not covered" >  score: number; mode: GameMode; gameSeed: number; onClose: () =&gt; void</span>
+<span class="cstat-no" title="statement not covered" >}) {</span>
+<span class="cstat-no" title="statement not covered" >  const [copied, setCopied] = useState(false);</span>
+<span class="cstat-no" title="statement not covered" >  const [imgUrl, setImgUrl] = useState&lt;string | null&gt;(null);</span>
+<span class="cstat-no" title="statement not covered" >  const copiedTimerRef = useRef&lt;ReturnType&lt;typeof setTimeout&gt; | null&gt;(null);</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; () =&gt; { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const url        = "https://game.mscarabia.com";</span>
+<span class="cstat-no" title="statement not covered" >  const modeLabel  = mode === "classic" ? "Classic" : "Evolve";</span>
+<span class="cstat-no" title="statement not covered" >  const shareText  = `🎮 I scored ${score} in Don't Touch the Purple — ${modeLabel} Mode!\nSeed: ${gameSeed}\nCan you beat me? 👇\n${url}`;</span>
+<span class="cstat-no" title="statement not covered" >  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;</span>
+<span class="cstat-no" title="statement not covered" >  const waUrl      = `https://wa.me/?text=${encodeURIComponent(shareText)}`;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  // Generate canvas image card on mount</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      const W = 600, H = 315;</span>
+<span class="cstat-no" title="statement not covered" >      const canvas = document.createElement("canvas");</span>
+<span class="cstat-no" title="statement not covered" >      canvas.width = W; canvas.height = H;</span>
+<span class="cstat-no" title="statement not covered" >      const ctx = canvas.getContext("2d");</span>
+<span class="cstat-no" title="statement not covered" >      if (!ctx) return;</span>
+<span class="cstat-no" title="statement not covered" >      // Background</span>
+<span class="cstat-no" title="statement not covered" >      const bg = ctx.createLinearGradient(0, 0, W, H);</span>
+<span class="cstat-no" title="statement not covered" >      bg.addColorStop(0, "#0d0820"); bg.addColorStop(1, "#1e0a46");</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);</span>
+<span class="cstat-no" title="statement not covered" >      // Purple glow</span>
+<span class="cstat-no" title="statement not covered" >      const glow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 220);</span>
+<span class="cstat-no" title="statement not covered" >      glow.addColorStop(0, "rgba(192,38,211,0.18)"); glow.addColorStop(1, "transparent");</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);</span>
+<span class="cstat-no" title="statement not covered" >      // Border</span>
+<span class="cstat-no" title="statement not covered" >      ctx.strokeStyle = "rgba(192,38,211,0.5)"; ctx.lineWidth = 2;</span>
+<span class="cstat-no" title="statement not covered" >      ctx.strokeRect(1, 1, W-2, H-2);</span>
+<span class="cstat-no" title="statement not covered" >      // Game title</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = "#ffffff"; ctx.font = "bold 18px system-ui, sans-serif";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.textAlign = "center";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillText("DON'T TOUCH THE", W/2, 60);</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = "#c026d3"; ctx.font = "bold 26px system-ui, sans-serif";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillText("PURPLE", W/2, 92);</span>
+<span class="cstat-no" title="statement not covered" >      // Score</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = "#ffffff"; ctx.font = "bold 88px system-ui, sans-serif";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillText(String(score), W/2, 200);</span>
+<span class="cstat-no" title="statement not covered" >      // Mode label</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.font = "16px system-ui, sans-serif";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillText(`${modeLabel} Mode · Seed ${gameSeed}`, W/2, 235);</span>
+<span class="cstat-no" title="statement not covered" >      // CTA</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillStyle = "rgba(192,38,211,0.9)"; ctx.font = "bold 14px system-ui, sans-serif";</span>
+<span class="cstat-no" title="statement not covered" >      ctx.fillText("Can you beat this? → game.mscarabia.com", W/2, 285);</span>
+<span class="cstat-no" title="statement not covered" >      setImgUrl(canvas.toDataURL("image/png"));</span>
+<span class="cstat-no" title="statement not covered" >    } catch { /* canvas not available */ }</span>
+<span class="cstat-no" title="statement not covered" >  }, [score, mode, gameSeed]);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const copy = useCallback(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const tryFallback = () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      const el = document.createElement("textarea");</span>
+<span class="cstat-no" title="statement not covered" >      el.value = shareText; el.style.position = "fixed"; el.style.opacity = "0";</span>
+<span class="cstat-no" title="statement not covered" >      document.body.appendChild(el); el.select();</span>
+<span class="cstat-no" title="statement not covered" >      document.execCommand("copy"); document.body.removeChild(el);</span>
+<span class="cstat-no" title="statement not covered" >      setCopied(true);</span>
+<span class="cstat-no" title="statement not covered" >      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);</span>
+<span class="cstat-no" title="statement not covered" >      copiedTimerRef.current = setTimeout(() =&gt; setCopied(false), 2000);</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >    if (navigator.clipboard?.writeText) {</span>
+<span class="cstat-no" title="statement not covered" >      navigator.clipboard.writeText(shareText).then(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        setCopied(true);</span>
+<span class="cstat-no" title="statement not covered" >        if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);</span>
+<span class="cstat-no" title="statement not covered" >        copiedTimerRef.current = setTimeout(() =&gt; setCopied(false), 2000);</span>
+<span class="cstat-no" title="statement not covered" >      }).catch(tryFallback);</span>
+<span class="cstat-no" title="statement not covered" >    } else { tryFallback(); }</span>
+<span class="cstat-no" title="statement not covered" >  }, [shareText]);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const downloadImg = useCallback(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (!imgUrl) return;</span>
+<span class="cstat-no" title="statement not covered" >    const a = document.createElement("a");</span>
+<span class="cstat-no" title="statement not covered" >    a.href = imgUrl; a.download = `dtp-score-${score}.png`; a.click();</span>
+<span class="cstat-no" title="statement not covered" >  }, [imgUrl, score]);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  return (</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="share-card"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      {imgUrl &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-preview"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;img src={imgUrl} alt="Score card" className="share-preview-img" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      )}</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="share-inner"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-logo"&gt;Don't Touch the &lt;span style={{ color: "#c026d3" }}&gt;Purple&lt;/span&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-score"&gt;{score}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-mode"&gt;{modeLabel} Mode&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-invite"&gt;Think you can beat that? 👀&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="share-url"&gt;{url}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="share-btns"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;a className="share-social share-social--x" href={twitterUrl} target="_blank" rel="noopener"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;span className="share-social-icon"&gt;𝕏&lt;/span&gt; Post on X</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/a&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;a className="share-social share-social--wa" href={waUrl} target="_blank" rel="noopener"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;span className="share-social-icon"&gt;📱&lt;/span&gt; WhatsApp</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/a&gt;</span>
+<span class="cstat-no" title="statement not covered" >        {imgUrl &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >          &lt;button className="share-social share-social--img" onClick={downloadImg}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;span className="share-social-icon"&gt;🖼️&lt;/span&gt; Save Card</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        )}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="share-social share-social--copy" onClick={copy}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;span className="share-social-icon"&gt;{copied ? "✓" : "📋"}&lt;/span&gt; {copied ? "Copied!" : "Copy Link"}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;button className="btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={onClose}&gt;← Back&lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >  );</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// ─── New Best banner ──────────────────────────────────────────────</span>
+<span class="cstat-no" title="statement not covered" >function NewBestBanner() {</span>
+<span class="cstat-no" title="statement not covered" >  return (</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div style={{</span>
+<span class="cstat-no" title="statement not covered" >      fontFamily: "var(--font-game)",</span>
+<span class="cstat-no" title="statement not covered" >      fontSize: 12,</span>
+<span class="cstat-no" title="statement not covered" >      letterSpacing: 3,</span>
+<span class="cstat-no" title="statement not covered" >      textTransform: "uppercase" as const,</span>
+<span class="cstat-no" title="statement not covered" >      color: "#fbbf24",</span>
+<span class="cstat-no" title="statement not covered" >      textShadow: "0 0 12px rgba(251,191,36,0.8)",</span>
+<span class="cstat-no" title="statement not covered" >      animation: "humanLimitPulse 1s ease-in-out infinite",</span>
+<span class="cstat-no" title="statement not covered" >    }}&gt;</span>
+<span class="cstat-no" title="statement not covered" >      ✨ New Personal Best!</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >  );</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// ─── Props ────────────────────────────────────────────────────────</span>
+<span class="cstat-no" title="statement not covered" >export interface GameOverProps {</span>
+<span class="cstat-no" title="statement not covered" >  p1Score:       number;</span>
+<span class="cstat-no" title="statement not covered" >  p2Score:       number;</span>
+<span class="cstat-no" title="statement not covered" >  best:          number;</span>
+<span class="cstat-no" title="statement not covered" >  winner:        Winner;</span>
+<span class="cstat-no" title="statement not covered" >  mode:          GameMode;</span>
+<span class="cstat-no" title="statement not covered" >  is2P:          boolean;</span>
+<span class="cstat-no" title="statement not covered" >  shareMsg:      string;</span>
+<span class="cstat-no" title="statement not covered" >  gameSeed:      number;</span>
+<span class="cstat-no" title="statement not covered" >  tick:          number;</span>
+<span class="cstat-no" title="statement not covered" >  p1:            { gridStage: number; patternIdx: number; health: number; streak: number; alive: boolean };</span>
+<span class="cstat-no" title="statement not covered" >  onPlay:        () =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  onLeaderboard: () =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  onMenu:        () =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  spinLevel:     number;</span>
+<span class="cstat-no" title="statement not covered" >  isHumanLimit?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  dustEarned?:   number;</span>
+<span class="cstat-no" title="statement not covered" >  objectiveProgress?: number;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// ─── GameOver ─────────────────────────────────────────────────────</span>
+<span class="cstat-no" title="statement not covered" >export function GameOver({</span>
+<span class="cstat-no" title="statement not covered" >  p1Score, p2Score, best, winner, mode, is2P,</span>
+<span class="cstat-no" title="statement not covered" >  shareMsg, gameSeed, tick, p1,</span>
+<span class="cstat-no" title="statement not covered" >  onPlay, onLeaderboard, onMenu, spinLevel,</span>
+<span class="cstat-no" title="statement not covered" >  isHumanLimit, dustEarned,</span>
+<span class="cstat-no" title="statement not covered" >  objectiveProgress = 0,</span>
+<span class="cstat-no" title="statement not covered" >}: GameOverProps) {</span>
+<span class="cstat-no" title="statement not covered" >  const [showShare, setShowShare] = useState(false);</span>
+<span class="cstat-no" title="statement not covered" >  const [displayScore, setDisplayScore] = useState(0);</span>
+<span class="cstat-no" title="statement not covered" >  const isNewBest = !is2P &amp;&amp; p1Score &gt; 0 &amp;&amp; p1Score &gt;= best;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  // Animated score counter on mount</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (is2P || p1Score === 0) { setDisplayScore(p1Score); return; }</span>
+<span class="cstat-no" title="statement not covered" >    let start: number | null = null;</span>
+<span class="cstat-no" title="statement not covered" >    const duration = Math.min(1200, 400 + p1Score * 8);</span>
+<span class="cstat-no" title="statement not covered" >    const step = (ts: number) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      if (!start) start = ts;</span>
+<span class="cstat-no" title="statement not covered" >      const elapsed = ts - start;</span>
+<span class="cstat-no" title="statement not covered" >      const progress = Math.min(elapsed / duration, 1);</span>
+<span class="cstat-no" title="statement not covered" >      const eased = 1 - Math.pow(1 - progress, 3);</span>
+<span class="cstat-no" title="statement not covered" >      setDisplayScore(Math.round(eased * p1Score));</span>
+<span class="cstat-no" title="statement not covered" >      if (progress &lt; 1) requestAnimationFrame(step);</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >    const raf = requestAnimationFrame(step);</span>
+<span class="cstat-no" title="statement not covered" >    return () =&gt; cancelAnimationFrame(raf);</span>
+<span class="cstat-no" title="statement not covered" >  }, [p1Score, is2P]);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  if (showShare) {</span>
+<span class="cstat-no" title="statement not covered" >    return &lt;ShareCard score={p1Score} mode={mode} gameSeed={gameSeed} onClose={() =&gt; setShowShare(false)} /&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const bugHref = `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&amp;body=${encodeURIComponent(</span>
+<span class="cstat-no" title="statement not covered" >    `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.href}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`</span>
+<span class="cstat-no" title="statement not covered" >  )}`;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  return (</span>
+<span class="cstat-no" title="statement not covered" >    &lt;&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="go-eyebrow"&gt;{is2P ? "ROUND OVER" : "GAME OVER"}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      {is2P ? (</span>
+<span class="cstat-no" title="statement not covered" >        &lt;&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="go-winner"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            {winner === "p1" ? "🏆 P1 Wins!" : winner === "p2" ? "🏆 P2 Wins!" : "🤝 Tie!"}</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="go-pair"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="go-col"&gt;&lt;div className="go-plbl" style={{ color: "#60a5fa" }}&gt;P1&lt;/div&gt;&lt;div className="go-score"&gt;{p1Score}&lt;/div&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="go-sep" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="go-col"&gt;&lt;div className="go-plbl" style={{ color: "#f472b6" }}&gt;P2&lt;/div&gt;&lt;div className="go-score"&gt;{p2Score}&lt;/div&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/&gt;</span>
+<span class="cstat-no" title="statement not covered" >      ) : (</span>
+<span class="cstat-no" title="statement not covered" >        &lt;&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {isHumanLimit &amp;&amp; &lt;div className="go-humanlimit"&gt;HUMAN LIMIT&lt;/div&gt;}</span>
+<span class="cstat-no" title="statement not covered" >          {isNewBest &amp;&amp; &lt;NewBestBanner /&gt;}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="go-score-row"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className={`go-num go-num--anim${isNewBest ? " hud-val--pb" : ""}`}&gt;</span>
+<span class="cstat-no" title="statement not covered" >              {displayScore}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            {(dustEarned ?? 0) &gt; 0 &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="go-dust-inline"&gt;+{dustEarned} 💜&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            )}</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="go-msg"&gt;"{shareMsg}"&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="go-objective-progress"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="go-objective-header"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span&gt;Daily Objective&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span&gt;{Math.round(objectiveProgress * 100)}%&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="go-progress-track"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div </span>
+<span class="cstat-no" title="statement not covered" >                className="go-progress-fill" </span>
+<span class="cstat-no" title="statement not covered" >                style={{ width: `${Math.min(1, objectiveProgress) * 100}%` }} </span>
+<span class="cstat-no" title="statement not covered" >              /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/&gt;</span>
+<span class="cstat-no" title="statement not covered" >      )}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="go-btns"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-primary" onClick={onPlay}&gt;▶ Again&lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-ghost" onClick={() =&gt; setShowShare(true)}&gt;📤 Share&lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-ghost" onClick={onLeaderboard}&gt;🏆 Board&lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;button className="btn-ghost" onClick={onMenu}&gt;🏠 Menu&lt;/button&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      &lt;a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener" title="Report a bug"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        🐛</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/a&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/&gt;</span>
+<span class="cstat-no" title="statement not covered" >  );</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-05-09T16:22:51.383Z
+            </div>
+        <script src="../../../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../../../sorter.js"></script>
+        <script src="../../../../../block-navigation.js"></script>
+    </body>
+</html>
+    

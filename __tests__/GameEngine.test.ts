@@ -67,7 +67,8 @@ describe("GameEngine", () => {
   });
 
   it("damages the player when safe cells are not tapped in time", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99); // Force safe (non-purple) cells
+    // Override the engine's seeded rng to always return 0.99 (forces safe/non-purple cells)
+    (engine as any).rng = () => 0.99;
     engine.start();
 
     vi.advanceTimersByTime(4_100);
@@ -98,7 +99,8 @@ describe("GameEngine", () => {
   });
 
   it("increases score when a safe cell is tapped", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    // Override the engine's seeded rng to always return 0.99 (forces safe/non-purple cells)
+    (engine as any).rng = () => 0.99;
     engine.start();
     vi.advanceTimersByTime(2_100);
 

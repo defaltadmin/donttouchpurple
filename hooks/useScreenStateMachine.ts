@@ -75,7 +75,7 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
   const transition = useCallback((to: Screen, payload?: any) => {
     if (!canTransition(to)) return;
     
-    logger.debug(`🖥️ Transition: ${current} -> ${to}`, payload);
+    logger.debug(`🖥️ Transition: ${current} -> ${to}`);
     setPrevious(current);
     setCurrent(to);
   }, [current, canTransition]);

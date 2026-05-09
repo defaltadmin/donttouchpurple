@@ -32,10 +32,12 @@ export const idb = {
       const tx = db.transaction(this.STORE, 'readwrite');
       const store = tx.objectStore(this.STORE);
       const req = store.getAll();
-      req.onsuccess = async () => {
+      req.onsuccess = () => {
         const items = req.result || [];
+        // Clear after getAll resolves, within the same transaction
         store.clear();
-        resolve(items);
+        tx.oncomplete = () => resolve(items);
+        tx.onerror = () => reject(tx.error);
       };
       req.onerror = () => reject(req.error);
     });

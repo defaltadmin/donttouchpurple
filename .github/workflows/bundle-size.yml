@@ -1,0 +1,77 @@
+name: Bundle Size Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  bundle-size:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Build for production
+      run: pnpm build
+
+    - name: Check bundle size
+      run: node scripts/check-bundle-size.mjs
+
+    - name: Upload bundle analysis
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bundle-size-report
+        path: dist/bundle-size-report.json
+
+    - name: Comment PR with bundle size
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('dist/bundle-size-report.json', 'utf8'));
+
+          const formatFile = (file) => {
+            const status = file.passed ? '✅' : '❌';
+            const rating = file.rating === 'good' ? '🟢' : file.rating === 'needs-improvement' ? '🟡' : '🔴';
+            return `${status} ${rating} **${file.name}**: ${file.sizeKB}KB (limit: ${file.limitKB}KB)`;
+          };
+
+          const recommendations = report.recommendations.length > 0
+            ? '\n\n💡 **Recommendations:**\n' + report.recommendations.map(r => `• ${r}`).join('\n')
+            : '';
+
+          const body = `## 📊 Bundle Size Analysis
+
+**Status:** ${report.passed ? '✅ Passed' : '❌ Failed'}
+
+### Files:
+${report.files.map(formatFile).join('\n')}
+
+### Totals:
+- **JS:** ${Math.round(report.totals.js / 1024)}KB
+- **CSS:** ${Math.round(report.totals.css / 1024)}KB
+- **Total:** ${Math.round(report.totals.total / 1024)}KB (limit: ${Math.round(600)}KB)
+${recommendations}
+
+[View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });

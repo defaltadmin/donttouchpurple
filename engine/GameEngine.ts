@@ -67,7 +67,8 @@ export class GameEngine {
   private gameSeed   = makeGameSeed();
   private tapBuffer: Record<1 | 2, { idx: number; ts: number } | null> = { 1: null, 2: null };
   private static readonly TAP_BUFFER_MS = GAME.TAP_BUFFER_MS;
-  private devGodMode     = false;
+  private   devGodMode     = false;
+  devMode        = false;
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
@@ -555,7 +556,7 @@ destroy(): void {
     const ref = player === 1 ? this.p1 : this.p2;
     ref.anim[idx] = anim;
     this.emit({ type: "cellAnim", player, idx, anim });
-    setTimeout(() => { if (ref.anim[idx] === anim) delete ref.anim[idx]; }, GAME.CELL_ANIM_MS);
+    setTimeout(() => { if (ref.anim[idx] === anim) { ref.anim = { ...ref.anim }; delete ref.anim[idx]; } }, GAME.CELL_ANIM_MS);
   }
 
   handleHoldStart(player: 1 | 2, idx: number): void {
@@ -665,6 +666,34 @@ destroy(): void {
   devSetRotationSpeed(v: number): void { this.devRotationSpeed = Math.max(0.1, v); }
   devSpawnPowerup(type: "shield" | "freeze" | "heart"): void { this.devForcedPwr = type; }
   getDevRotationSpeed(): number { return this.devRotationSpeed; }
+
+  devSpawnSpecialCell(player: 1 | 2, type: "ice" | "hold" | "bomb" | "rare", idx?: number): void {
+    if (!this.devMode) return;
+    const target = player === 1 ? this.p1 : this.p2;
+    if (!target.alive) return;
+    const slot = idx !== undefined ? idx : Math.floor(this.rng() * Math.max(target.active.length, 1));
+    const existing = target.active[slot];
+    if (existing) {
+      const cellType = type === "rare"
+        ? (this.rareMode.active ? this.rareMode.color : "purple")
+        : type;
+      (existing as any).type = cellType;
+      if (type === "ice") { (existing as any).iceCount = 3; (existing as any).holdProgress = undefined; }
+      if (type === "hold") { (existing as any).holdProgress = 0; (existing as any).iceCount = undefined; }
+      if (type === "bomb") { (existing as any).expiresAt = Date.now() + 3000; }
+    }
+    this.emitSnapshot();
+  }
+
+  devTriggerBotTap(player: 1 | 2, idx: number, dustCost = 3): void {
+    if (!this.devMode) return;
+    this.emit({ type: "botTap", player, idx, dustCost });
+  }
+
+  devToggleBotAssist(player: 1 | 2, enabled: boolean): void {
+    if (!this.devMode) return;
+    this.setBotAssist(player, enabled);
+  }
 
   updatePerformanceMetrics(frameTime: number): void {
     const fps = 1000 / Math.max(frameTime, 1);

@@ -1,7 +1,7 @@
 {
   "name": "dont-touch-purple",
   "private": true,
-  "version": "7.1.0",
+  "version": "7.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "prepare": "husky install",
     "lint-staged": "lint-staged",
     "ship": "bash scripts/ship.sh",
+    "semantic-release": "semantic-release",
     "release:patch": "npm version patch && git push && git push --tags",
     "release:minor": "npm version minor && git push && git push --tags",
     "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",
@@ -33,23 +34,40 @@
     "firebase": "^12.12.0",
     "gameanalytics": "^4.4.7",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "web-vitals": "^4.2.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^10.0.7",
+    "@semantic-release/npm": "^12.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "1.6.1",
+    "autoprefixer": "^10.5.0",
+    "cssnano": "^8.0.1",
+    "eslint": "8",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jimp": "^1.6.1",
     "jsdom": "^29.0.2",
+    "postcss": "^8.5.14",
     "rollup-plugin-visualizer": "^7.0.1",
+    "semantic-release": "^23.0.8",
     "terser": "^5.47.1",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
     "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-purgecss": "^0.2.13",
     "vitest": "^1.6.1"
   }
 }

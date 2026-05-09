@@ -992,7 +992,7 @@ export default function App() {
     weekStart2.setDate(now2.getDate() - now2.getDay());
     const weekKey2 = weekStart2.toISOString().slice(0, 10);
     const WPK = `dtp-weekly-progress-${weekKey2}`;
-    let wp: Record<string, number> = safeGetJSON(WPK, {});
+    const wp: Record<string, number> = safeGetJSON(WPK, {});
     if ((wp['top10'] ?? 0) < 1) {
       wp['top10'] = 1;
       safeSet(WPK, JSON.stringify(wp));

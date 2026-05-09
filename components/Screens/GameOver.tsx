@@ -169,7 +169,7 @@ export function GameOver({
         </div>
       )}
 
-      <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener" title="Report a bug">🐛</a>
+      <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener noreferrer" title="Report a bug">🐛</a>
     </>
   );
 }

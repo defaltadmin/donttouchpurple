@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/54</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/54</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -117,7 +117,39 @@
 <a name='L52'></a><a href='#L52'>52</a>
 <a name='L53'></a><a href='#L53'>53</a>
 <a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -173,7 +205,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React from "react";</span></span></span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >const VERSION = "2.5.0";</span>
+<span class="cstat-no" title="statement not covered" >// Injected at build time via vite.config.ts define</span>
+<span class="cstat-no" title="statement not covered" >declare const __APP_VERSION__: string;</span>
+<span class="cstat-no" title="statement not covered" >const WHATS_NEW_VERSION = __APP_VERSION__;</span>
 <span class="cstat-no" title="statement not covered" >const LS_KEY = "dtp_last_version";</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >interface WhatsNewProps {</span>
@@ -181,22 +215,34 @@
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >const CHANGES = [</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "🎨", text: "Keyboard mode cells now have vibrant colors + bigger key labels" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "⚡", text: "Powerup bars redesigned with darker colors and draining animation" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "🔊", text: "Volume slider added — adjust sound from 0-100%" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "📳", text: "Screen shake toggle in settings" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "∞", text: "Practice Mode — unlimited energy, no damage" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "🧬", text: "New player tutorial for Evolve mode" },</span>
-<span class="cstat-no" title="statement not covered" >  { emoji: "🎯", text: "Shareable game seeds — challenge friends with your exact game" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "💣", text: "Bomb cells now show a circular SVG countdown ring — tap before it drains!" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🔄", text: "Inversion boss event fully fixed — purple is safe to tap, safe colors are the threat" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🌀", text: "Storm boss event RNG fixed — seeded replays stay accurate through storms" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🎯", text: "Score display upgraded — smooth glow bloom per point, streak-heat color ramp" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🤖", text: "Bot assist button moved into HUD row — never overlaps the grid" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🎁", text: "Daily check-in panel animates closed after claiming dust" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🖼️", text: "Animated backgrounds now only show during gameplay — Shop and Menu stay clean" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "💣", text: "Bombs now spawn in 2-player Evolve mode for both players" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "∞",  text: "Evolve mode: grid grows 2×2 → 5×5 with named shape stages" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "⚡", text: "Boss events: Storm, Inversion, Blackout — every 500 points in Evolve" },</span>
+<span class="cstat-no" title="statement not covered" >  { emoji: "🏆", text: "Global leaderboard, daily streaks, dust economy, and cosmetic shop" },</span>
 <span class="cstat-no" title="statement not covered" >];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export function WhatsNew({ onClose }: WhatsNewProps) {</span>
+<span class="cstat-no" title="statement not covered" >  const isNewVersion = (() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      const last = localStorage.getItem(LS_KEY);</span>
+<span class="cstat-no" title="statement not covered" >      return last !== WHATS_NEW_VERSION;</span>
+<span class="cstat-no" title="statement not covered" >    } catch { return false; }</span>
+<span class="cstat-no" title="statement not covered" >  })();</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="whatsnew-overlay" onClick={onClose}&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="whatsnew-card" onClick={(e) =&gt; e.stopPropagation()}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="whatsnew-header"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h2 className="whatsnew-title"&gt;What's New&lt;/h2&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;span className="whatsnew-version"&gt;v{VERSION}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;span className="whatsnew-version"&gt;v{WHATS_NEW_VERSION}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {isNewVersion &amp;&amp; &lt;span className="whatsnew-badge"&gt;New!&lt;/span&gt;}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;button className="whatsnew-close" onClick={onClose}&gt;✕&lt;/button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="whatsnew-list"&gt;</span>
@@ -216,14 +262,16 @@
 <span class="cstat-no" title="statement not covered" >export function shouldShowWhatsNew(): boolean {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    const last = localStorage.getItem(LS_KEY);</span>
-<span class="cstat-no" title="statement not covered" >    return last !== VERSION;</span>
+<span class="cstat-no" title="statement not covered" >    return last !== WHATS_NEW_VERSION;</span>
 <span class="cstat-no" title="statement not covered" >  } catch {</span>
 <span class="cstat-no" title="statement not covered" >    return true;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export function markWhatsNewSeen(): void {</span>
-<span class="cstat-no" title="statement not covered" >  try { localStorage.setItem(LS_KEY, VERSION); } catch {}</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    localStorage.setItem(LS_KEY, WHATS_NEW_VERSION);</span>
+<span class="cstat-no" title="statement not covered" >  } catch { /* ignore */ }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -232,7 +280,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-30T22:40:06.810Z
+                at 2026-05-09T16:22:51.383Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

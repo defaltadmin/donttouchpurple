@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/63</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/63</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -126,7 +126,21 @@
 <a name='L61'></a><a href='#L61'>61</a>
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
-<a name='L64'></a><a href='#L64'>64</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -197,6 +211,7 @@
 <span class="cstat-no" title="statement not covered" >  energyLastRegen: number;</span>
 <span class="cstat-no" title="statement not covered" >  onRefill: () =&gt; void;</span>
 <span class="cstat-no" title="statement not covered" >  onRefillFull: () =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  onEnergyIconClick?: () =&gt; void;</span>
 <span class="cstat-no" title="statement not covered" >  dust: number;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -205,6 +220,7 @@
 <span class="cstat-no" title="statement not covered" >  energyLastRegen,</span>
 <span class="cstat-no" title="statement not covered" >  onRefill,</span>
 <span class="cstat-no" title="statement not covered" >  onRefillFull,</span>
+<span class="cstat-no" title="statement not covered" >  onEnergyIconClick,</span>
 <span class="cstat-no" title="statement not covered" >  dust,</span>
 <span class="cstat-no" title="statement not covered" >}: EnergyBarProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const [now, setNow] = useState(Date.now());</span>
@@ -222,12 +238,17 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="energy-bar-wrap"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="energy-pips"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="energy-pips" onClick={onEnergyIconClick} style={{ cursor: onEnergyIconClick ? "pointer" : "default" }}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {Array.from({ length: GAME.MAX_ENERGY }, (_, i) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;span</span>
 <span class="cstat-no" title="statement not covered" >            key={i}</span>
 <span class="cstat-no" title="statement not covered" >            className={`energy-pip${i &lt; energy ? " energy-pip--full" : " energy-pip--empty-click"}`}</span>
-<span class="cstat-no" title="statement not covered" >            onClick={() =&gt; i &gt;= energy &amp;&amp; dust &gt;= GAME.DUST_PER_ENERGY &amp;&amp; onRefill()}</span>
+<span class="cstat-no" title="statement not covered" >            onClick={(e) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >              if (i &gt;= energy &amp;&amp; dust &gt;= GAME.DUST_PER_ENERGY) {</span>
+<span class="cstat-no" title="statement not covered" >                e.stopPropagation();</span>
+<span class="cstat-no" title="statement not covered" >                onRefill();</span>
+<span class="cstat-no" title="statement not covered" >              }</span>
+<span class="cstat-no" title="statement not covered" >            }}</span>
 <span class="cstat-no" title="statement not covered" >            title={i &gt;= energy &amp;&amp; dust &gt;= GAME.DUST_PER_ENERGY ? `Refill this pip — 💜${GAME.DUST_PER_ENERGY}` : undefined}</span>
 <span class="cstat-no" title="statement not covered" >          &gt;</span>
 <span class="cstat-no" title="statement not covered" >            ⚡</span>
@@ -259,7 +280,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-30T22:40:06.810Z
+                at 2026-05-09T16:22:51.383Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

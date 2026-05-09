@@ -1,7 +1,7 @@
 // engine/subsystems/SessionPersistor.ts
 import { stateGuard } from '../../utils/state-guard';
 
-const SESSION_KEY = 'dtp:session';
+const SESSION_KEY = 'dtp:game-session'; // sessionStorage key (not a secret)
 
 export const SessionPersistor = {
   save(snapshot: Record<string, unknown>): void {

@@ -14,7 +14,7 @@ interface HeartsProps {
 export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps) {
   if (practiceMode) {
     return (
-      <div className="hearts hearts--practice">
+      <div className="hearts hearts--practice" role="status" aria-label="Practice mode - unlimited health">
         <span className="hearts-infinity">∞</span>
       </div>
     );
@@ -22,8 +22,10 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
 
   const sc = shieldCount ?? 0;
   const actualHealth  = Math.max(0, health);
-const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
-const overflow      = actualHealth > MAX_DISPLAY;
+  const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
+  const overflow      = actualHealth > MAX_DISPLAY;
+
+  const healthLabel = `Health: ${actualHealth}${overflow ? '+' : ''} hearts${sc > 0 ? `, ${sc} shielded` : ''}`;
 
   const renderHeart = (i: number) => {
     const isFull         = i < displayHealth;
@@ -34,20 +36,25 @@ const overflow      = actualHealth > MAX_DISPLAY;
         "heart",
         isFull ? (isShieldHeart ? "heart--shield" : "heart--full") : "heart--empty",
         anim && i === Math.ceil(displayHealth) - 1 ? "heart--loss" : "",
-      ].filter(Boolean).join(" ")}>
+      ].filter(Boolean).join(" ")}
+      aria-hidden="true">
         {isLastDisplayed ? "♥+" : "♥"}
       </span>
     );
   };
 
-const row2Count = Math.max(0, Math.min(displayHealth - MAX_HEARTS, 2));
-if (!row2Count) {
-  return <div className="hearts">{Array.from({ length: MAX_HEARTS }, (_, i) => renderHeart(i))}</div>;
-}
-return (
-  <div className="hearts-stack">
-    <div className="hearts">{Array.from({ length: MAX_HEARTS }, (_, i) => renderHeart(i))}</div>
-    <div className="hearts hearts--row2">{Array.from({ length: row2Count }, (_, i) => renderHeart(MAX_HEARTS + i))}</div>
-  </div>
-);
+  const row2Count = Math.max(0, Math.min(displayHealth - MAX_HEARTS, 2));
+
+  const heartsElement = row2Count === 0 ? (
+    <div className="hearts" role="status" aria-label={healthLabel}>
+      {Array.from({ length: MAX_HEARTS }, (_, i) => renderHeart(i))}
+    </div>
+  ) : (
+    <div className="hearts-stack" role="status" aria-label={healthLabel}>
+      <div className="hearts">{Array.from({ length: MAX_HEARTS }, (_, i) => renderHeart(i))}</div>
+      <div className="hearts hearts--row2">{Array.from({ length: row2Count }, (_, i) => renderHeart(MAX_HEARTS + i))}</div>
+    </div>
+  );
+
+  return heartsElement;
 }

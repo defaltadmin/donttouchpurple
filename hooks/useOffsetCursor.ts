@@ -12,25 +12,40 @@ export function useOffsetCursor(enabled: boolean, rootRef: React.RefObject<HTMLD
 
     const move = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') {
-        if (activeRef.current) { setPos({ x: 0, y: 0, visible: false }); activeRef.current = false; }
+        if (activeRef.current) {
+          setPos({ x: 0, y: 0, visible: false });
+          activeRef.current = false;
+        }
         return;
       }
       activeRef.current = true;
-      setPos({ x: e.clientX, y: e.clientY - 40, visible: true });
+      // ✅ FIX: Use functional update to avoid stale closure
+      setPos(prev => ({ x: e.clientX, y: e.clientY - 40, visible: true }));
     };
 
-    const leave = () => { if (activeRef.current) setPos({ x: 0, y: 0, visible: false }); };
-    const cancel = () => { activeRef.current = false; setPos(p => ({ ...p, visible: false })); };
+    const leave = () => {
+      if (activeRef.current) {
+        setPos({ x: 0, y: 0, visible: false });
+        activeRef.current = false;
+      }
+    };
 
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerleave', leave);
-    el.addEventListener('pointercancel', cancel);
+    const cancel = () => {
+      activeRef.current = false;
+      setPos(prev => ({ ...prev, visible: false }));
+    };
+
+    // ✅ FIX: Use passive: true for pointer events
+    el.addEventListener('pointermove', move, { passive: true });
+    el.addEventListener('pointerleave', leave, { passive: true });
+    el.addEventListener('pointercancel', cancel, { passive: true });
+
     return () => {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointercancel', cancel);
     };
-  }, [enabled, rootRef.current]);
+  }, [enabled, rootRef]); // ✅ FIX: rootRef is stable, no .current in deps
 
   return pos;
 }

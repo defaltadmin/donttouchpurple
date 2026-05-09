@@ -113,10 +113,10 @@ function ShareCard({ score, mode, gameSeed, onClose }: {
         <div className="share-url">{url}</div>
       </div>
       <div className="share-btns">
-        <a className="share-social share-social--x" href={twitterUrl} target="_blank" rel="noopener">
+        <a className="share-social share-social--x" href={twitterUrl} target="_blank" rel="noopener noreferrer">
           <span className="share-social-icon">𝕏</span> Post on X
         </a>
-        <a className="share-social share-social--wa" href={waUrl} target="_blank" rel="noopener">
+        <a className="share-social share-social--wa" href={waUrl} target="_blank" rel="noopener noreferrer">
           <span className="share-social-icon">📱</span> WhatsApp
         </a>
         {imgUrl && (
@@ -261,7 +261,7 @@ export function GameOver({
         <button className="btn-ghost" onClick={onMenu}>🏠 Menu</button>
       </div>
 
-      <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener" title="Report a bug">
+      <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener noreferrer" title="Report a bug">
         🐛
       </a>
     </>

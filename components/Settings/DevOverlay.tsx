@@ -32,6 +32,9 @@ interface DevOverlayProps {
   gridCols:          number;
   gridRows:          number;
   onOpenBuildDeploy?: () => void;
+  onSpawnSpecialCell: (player: 1 | 2, type: "ice" | "hold" | "bomb" | "rare", idx?: number) => void;
+  onTriggerBotTap: (player: 1 | 2, idx: number, dustCost?: number) => void;
+  onToggleBotAssist: (player: 1 | 2, enabled: boolean) => void;
 }
 
 const SPARKLINE_CAP = 30;
@@ -156,9 +159,15 @@ export function DevOverlay({
   freezeTime, onFreezeTimeToggle, dust, onDustAdd, onSpawnPowerup, gameSeed,
   autoPlay, onAutoPlayToggle, heatmap, onResetHeatmap, gridCols, gridRows,
   onOpenBuildDeploy,
+  onSpawnSpecialCell, onTriggerBotTap, onToggleBotAssist,
 }: DevOverlayProps) {
   const [tickMs, setTickMs] = useState<number[]>([]);
   const [tuningOpen, setTuningOpen] = useState(false);
+  const [spawnType, setSpawnType] = useState<"ice" | "hold" | "bomb" | "rare">("ice");
+  const [spawnPlayer, setSpawnPlayer] = useState<1 | 2>(1);
+  const [spawnIdx, setSpawnIdx] = useState<number | "">("");
+  const [botTapIdx, setBotTapIdx] = useState<number | "">("");
+  const [botTapPlayer, setBotTapPlayer] = useState<1 | 2>(1);
   const lastTickRef = useRef(Date.now());
 
   useEffect(() => {
@@ -342,6 +351,53 @@ export function DevOverlay({
             </button>
           </Section>
         )}
+
+        <details className="dev-qa-section" style={{ marginTop: 8 }}>
+          <summary>🧪 Visual QA Harness</summary>
+          <div className="dev-control-group">
+            <label>Force Spawn Cell</label>
+            <div className="dev-row">
+              <select value={spawnType} onChange={e => setSpawnType(e.target.value as any)}>
+                <option value="ice">❄️ Ice</option>
+                <option value="hold">🤲 Hold</option>
+                <option value="bomb">💣 Bomb</option>
+                <option value="rare">🎨 Rare Danger</option>
+              </select>
+              <select value={spawnPlayer} onChange={e => setSpawnPlayer(Number(e.target.value) as 1|2)}>
+                <option value={1}>P1</option>
+                <option value={2}>P2</option>
+              </select>
+              <input
+                type="number" placeholder="Idx" value={spawnIdx}
+                onChange={e => setSpawnIdx(e.target.value === "" ? "" : Number(e.target.value))}
+                min={0} max={47} style={{ width: 60 }}
+              />
+              <button onClick={() => onSpawnSpecialCell(spawnPlayer, spawnType, spawnIdx === "" ? undefined : Number(spawnIdx))}>Spawn</button>
+            </div>
+          </div>
+          <div className="dev-control-group">
+            <label>Trigger Bot Tap FX</label>
+            <div className="dev-row">
+              <select value={botTapPlayer} onChange={e => setBotTapPlayer(Number(e.target.value) as 1|2)}>
+                <option value={1}>P1</option>
+                <option value={2}>P2</option>
+              </select>
+              <input
+                type="number" placeholder="Cell idx" value={botTapIdx}
+                onChange={e => setBotTapIdx(e.target.value === "" ? "" : Number(e.target.value))}
+                min={0} max={47} style={{ width: 60 }}
+              />
+              <button onClick={() => { if (botTapIdx !== "") onTriggerBotTap(botTapPlayer, Number(botTapIdx)); }}>
+                Pulse
+              </button>
+            </div>
+          </div>
+          <div className="dev-control-group">
+            <label>Bot Assist Toggle</label>
+            <button onClick={() => onToggleBotAssist(1, true)}>🤖 Enable P1 Bot</button>
+            <button onClick={() => onToggleBotAssist(1, false)} style={{ marginLeft: 4 }}>🤖 Disable P1 Bot</button>
+          </div>
+        </details>
 
         <div style={{ height: 16 }} />
         <div style={{ fontSize: 9, opacity: 0.2, fontFamily: "monospace", textAlign: "center" }}>
