@@ -376,7 +376,7 @@ export class TickProcessor {
   }
 
   private _trySpawnBomb(ctx: TickContext, ref: PlayerState, player: 1 | 2, pat: { cols: number; rows: number; mask: number[] | null }): void {
-    if (ctx.activeBomb && ctx.activeBomb.player === player) return;
+    if (ctx.activeBomb) return;
     if (ref.score < 100) return;
     if (ctx.rng() > 0.12) return;
 

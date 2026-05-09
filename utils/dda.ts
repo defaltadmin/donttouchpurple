@@ -15,6 +15,7 @@ export class DynamicDifficulty {
   private readonly maxSpawnMs = 2000;
   private readonly adjustmentWindow = 10;
   private tickCount = 0;
+  private lastAdjustedTickCount = 0;
   private metrics: DDAMetrics = { accuracy: 0, avgReactionMs: 0, streak: 0, deaths: 0 };
 
   private _consecutiveDeaths = 0;
@@ -63,6 +64,8 @@ export class DynamicDifficulty {
     this._checkEmergency();
 
     if (this.tickCount % this.adjustmentWindow !== 0) return this.currentSpawnMs;
+    if (this.tickCount === 0 || this.lastAdjustedTickCount === this.tickCount) return this.currentSpawnMs;
+    this.lastAdjustedTickCount = this.tickCount;
 
     const { accuracy, avgReactionMs, streak, deaths } = this.metrics;
     const score = (accuracy * 400) - (avgReactionMs / 5) + (streak * 25) - (deaths * 150);
@@ -107,6 +110,7 @@ export class DynamicDifficulty {
     this.baselineSpawnMs    = ms;
     this.currentSpawnMs     = ms;
     this.tickCount          = 0;
+    this.lastAdjustedTickCount = 0;
     this.metrics            = { accuracy: 0, avgReactionMs: 0, streak: 0, deaths: 0 };
     this._consecutiveDeaths = 0;
     this._recentReactions   = [];

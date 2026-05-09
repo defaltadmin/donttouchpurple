@@ -323,6 +323,7 @@ export class GameEngine {
   }
 
   addDeltaTimer(id: string, durationMs: number, callback: () => void) {
+    this.removeDeltaTimer(id);
     this._deltaTimers.push({ id, remaining: durationMs, duration: durationMs, callback });
   }
 
