@@ -11,6 +11,7 @@ import {
   getNextBossEventType, getBossDuration, getBossLabel, getBossDoneLabel,
   getNextBossTriggerScore, shouldTriggerShieldBoss,
 } from "./EventOrchestrator";
+import { calculateStreakBonus } from "./ScoreTracker";
 import type { ActiveCell, CellShape, GameConfig, GameEvent, GameSnapshot, PlayerState, RareColorMode, Winner, BombCell, BossEvent, NumPlayers } from "../types";
 
 export interface TickContext {
@@ -122,11 +123,11 @@ export class TickProcessor {
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
         const isMiss = ctx._isInverted ? c.type === "purple" && !isPwr : c.type !== dangerColor && !isPwr;
         if (isMiss) {
-          ctx.dda.recordAttempt(false, 0, true);
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!ctx.devGodMode) {
-            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
+            if (ref.shieldCount > 0) { ctx.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
             else {
+              ctx.dda.recordAttempt(false, 0, true);
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
               ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
               if (ref.health <= 0) {
@@ -154,8 +155,9 @@ export class TickProcessor {
           hold.clicked = true;
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!ctx.devGodMode) {
-            if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
+            if (ref.shieldCount > 0) { ctx.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
             else {
+              ctx.dda.recordAttempt(false, 0, true);
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
               ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
               ctx.emit({ type: "toast", message: "⏳ Hold expired!" });
@@ -221,8 +223,9 @@ export class TickProcessor {
           ctx.emit({ type: "botTap", player, idx: cell.idx, dustCost: costPerTap });
           cell.clicked = true;
           const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
-          ref.score += mult;
-          ref.streak += 1;
+          const nextStreak = ref.streak + 1;
+          ref.score += mult + calculateStreakBonus(nextStreak);
+          ref.streak = nextStreak;
           ref.stageProgress += 1;
           ctx.checkStageProgress(player);
         }

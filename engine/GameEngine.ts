@@ -29,7 +29,7 @@ import type {
 import {
   activeToCellsP, spawnActive,
 } from "./subsystems/CellLifecycle";
-import { calculateTapScore, checkStreakMilestone } from "./subsystems/ScoreTracker";
+import { calculateStreakBonus, calculateTapScore, checkStreakMilestone } from "./subsystems/ScoreTracker";
 import { challengeLink } from "../utils/challenge-link";
 import { TickProcessor, type TickContext } from "./subsystems/TickProcessor";
 import { BotController } from "./subsystems/BotController";
@@ -299,7 +299,8 @@ export class GameEngine {
     const now = Date.now();
     const frozen = this.p1.freezeEnd > now || (this.config.numPlayers === 2 && this.p2.freezeEnd > now);
     const tickForCalc = this.devFreezeTime ? 0 : this.tickCount;
-    const ms = computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult;
+    const ddaFactor = Math.max(0.75, Math.min(1.25, this.dda.compute() / 1200));
+    const ms = computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult * ddaFactor;
     this.tickTimer = setTimeout(() => {
       if (this.phase !== "playing") return;
       this.processTick();
@@ -462,7 +463,8 @@ destroy(): void {
         haptics.success();
         cell.clicked = true;
         const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
-        ref.score += mult; ref.streak += 1; ref.stageProgress += 1;
+        const nextStreak = ref.streak + 1;
+        ref.score += mult + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
         this.checkStageProgress(player);
         if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
       } else cell.iceCount = rem;
@@ -481,7 +483,8 @@ destroy(): void {
       this.emit({ type: "bombDefused", player });
       this.emit({ type: "toast", message: "≡ƒÆúΓ£ô Defused! +3" });
       const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
-      ref.score += mult * 3; ref.streak += 1; ref.stageProgress += 1;
+      const nextStreak = ref.streak + 1;
+      ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
       ref.cells = activeToCellsP(ref.active, pat);
       this.dirty = true;
@@ -508,10 +511,10 @@ destroy(): void {
       const tappedIsDanger = isInvertedTap ? cell.type !== 'purple' : cell.type === danger;
       if (tappedIsDanger) {
         cell.clicked = true;
-        this.dda.recordAttempt(false, 0, true);
         if (!this.devGodMode) {
-          if (ref.shieldCount > 0) { ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+          if (ref.shieldCount > 0) { this.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
           else {
+            this.dda.recordAttempt(false, 0, true);
             if (ref.streak >= 5) this.emit({ type: "toast", message: `≡ƒÆö ${ref.streak} streak lost!` });
             ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
             this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
@@ -524,7 +527,8 @@ destroy(): void {
       if (this._bossActive) bossEngine.onSafeTap();
       rhythmFeedback.recordTap();
       const { mult, bossMult } = calculateTapScore(Date.now() < ref.multiplierEnd, this._bossActive, bossEngine.combo.multiplier);
-      ref.score += mult * bossMult; ref.streak += 1; ref.stageProgress += 1;
+      const nextStreak = ref.streak + 1;
+      ref.score += (mult * bossMult) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       if (checkStreakMilestone(ref.streak)) this.emit({ type: "toast", message: `≡ƒöÑ ${ref.streak} Streak!` });
       if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "Γ¥ñ∩╕Å Last heart!" });
       this.checkStageProgress(player);
@@ -595,7 +599,8 @@ destroy(): void {
       cell.clicked = true; this.triggerCellAnim(player, idx, "pop");
       this.emit({ type: "sound", name: "powerup" });
       const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
-      ref.score += mult * 2; ref.streak += 1; ref.stageProgress += 1;
+      const nextStreak = ref.streak + 1;
+      ref.score += (mult * 2) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
       this.emit({ type: "toast", message: "≡ƒÆ¬ Hold! +2" });
       if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.emitSnapshot(); return; }
