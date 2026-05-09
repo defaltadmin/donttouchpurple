@@ -1375,6 +1375,13 @@ export default function App() {
     return () => clearInterval(interval);
   }, [playerName]);
 
+  // Transition to menu once the app is fully ready
+  useEffect(() => {
+    if (appReady && screen === 'loading') {
+      setScreen('menu');
+    }
+  }, [appReady, screen]);
+
   useEffect(() => {
     configManager.load();
   }, []);
