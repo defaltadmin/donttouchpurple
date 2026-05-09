@@ -1,7 +1,7 @@
 {
   "name": "dont-touch-purple",
   "private": true,
-  "version": "5.8.17",
+  "version": "7.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "build": "tsc && vite build",
+    "analyze": "pnpm build && npx open-cli dist/stats.html",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "deploy": "pnpm build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath htdocs.zip -Force\"",
     "preview": "vite preview",
@@ -22,6 +23,7 @@
     "release:patch": "npm version patch && git push && git push --tags",
     "release:minor": "npm version minor && git push && git push --tags",
     "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",
+    "release": "bash scripts/release-v7.sh",
     "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
   },
   "dependencies": {

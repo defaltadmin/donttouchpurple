@@ -1,5 +1,49 @@
 # Don't Touch Purple — Changelog
 
+## [7.1.0] - 2026-05-09
+### 📦 Persistence & Onboarding (Phase 10 & 11)
+- **Offline Score Queue (P10)**: Integrated `IndexedDB` to persist score submissions when offline; automatically flushes when connection is restored.
+- **Screen State Machine (P11)**: Extracted screen transition logic into a centralized `useScreenStateMachine` hook, significantly simplifying `App.tsx`.
+- **Progressive Feature Unlocking (P11)**: Introduced milestones for new players; Evolve Mode, Duo Mode, and Daily Challenges now unlock based on best score, wins, and games played.
+- **Visual Feedback**: Added **⚠️ Offline** HUD indicator and visual lock (🔒) hints for gated features.
+
+## [7.0.0] - 2026-05-09
+### 🏗️ Architecture & Refactor
+- Extracted `TickProcessor` (T1): Reduced `GameEngine.processTick()` from ~250 → ~20 lines
+- Extracted `BotController` (T2): Isolated bot logic, cleared ~85 lines from engine
+- Added `BackgroundController` & `LazyPanels` (P7): Conditional unmount + code splitting
+- Migrated all 11 backgrounds to `useSafeRaf` (T4): Zero RAF leaks, consistent cleanup
+- Removed dead public API (T8): `isTelemetryAllowed`, `exportUserData`, `wipeUserData`
+
+### 🎮 Gameplay & UX
+- First-Game Onboarding (P2): Step-by-step visual tutorial, localStorage gated
+- Bot Assist Feedback (P3): Floating `-3` dust markers, tap pulse, low-dust HUD warning
+- Special Cell Readability (P4): Ice pips, hold SVG ring, bomb escalation, rare `⛔` symbol
+- Dev Visual QA Harness (P1): Force-spawn cells, trigger bot FX, toggle assist in-dev
+- Centralized Balance Config (P5): `config/gameBalance.ts` extracts 15+ magic numbers
+
+### ⚡ Performance & Accessibility
+- Granular Bundle Splitting (P7): `vendor-react`, `heavy-panels`, `bg-effects`, `game-core`
+- GPU Containment & CSS Safes (P7): `contain: layout`, transform/opacity-only animations
+- Strict Reduced Motion & Lite Mode (P4/P7): Static fallbacks, zero jank on low-end devices
+- Mobile-Optimized Sizing (P4): Thumb-zone padding, pip/symbol scaling at 390px
+
+### 🔒 Security & Privacy
+- Short-Lived Firebase Tokens (T3+T5): JWT rotation via GCP OAuth2, KV rate-limiting
+- Telemetry Consent Guard (T7): Achievement tracking blocked until explicit consent
+- i18n Type Safety (T6): `I18nKey` union, compile-time missing key detection, locale gating
+- Automated CI Pipeline (P6): Node 18/20/22 matrix, frozen lockfile, coverage gates
+
+### 🛠️ Developer Experience
+- 22+ Unit Tests (T1/T5): DDA clamping, streak math, bot economy, balance integrity
+- Bundle Analyzer (P7): `pnpm analyze` opens gzip/brotli breakdown in browser
+- Structured Release Script (P8): `bash scripts/release-v7.sh` handles tag, push, CI trigger
+
+---
+[Previous releases archived in GitHub Releases]
+
+---
+
 # Don't Touch the Purple — v6.1.0 (Security & Bugfix Release)
 # HMAC Challenge Signatures, DDA Shield Fix, Session Collision Fix, PRNG Determinism, i18n Full Localization
 # Session Date: 2026-05-09

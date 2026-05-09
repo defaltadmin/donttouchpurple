@@ -85,6 +85,8 @@ import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
 import { initGA, logProgressionEvent, logDesignEvent, logResourceEvent, logErrorEvent } from "./services/gameanalytics";
 import { safeGetJSON, safeSet } from "./utils/storage";
 import { addPendingScore } from "./utils/pendingScoresDb";
+import { useScreenStateMachine } from "./hooks/useScreenStateMachine";
+import { featureGates } from "./utils/featureGates";
 
 // Components - Settings & Shop
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -260,6 +262,23 @@ export default function App() {
   const [uiReady, setUiReady] = useState(false);
   const [loadPct, setLoadPct] = useState({ critical: 0, deferred: 0, background: 0 });
 
+  const [gamesPlayed, setGamesPlayed] = useState(() =>
+    parseInt(localStorage.getItem('dtp-games-played') || '0', 10)
+  );
+  const [best1, setBest1]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
+  const [best2, setBest2]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
+  const [wins, setWins] = useState(() => parseInt(localStorage.getItem('dtp:wins') || '0', 10));
+  const [deaths, setDeaths] = useState(() => parseInt(localStorage.getItem('dtp:deaths') || '0', 10));
+
+  const machine = useScreenStateMachine({
+    bestScore: Math.max(best1, best2),
+    gamesPlayed,
+    wins,
+    deaths
+  });
+  const screen = machine.current;
+  const setScreen = useCallback((s: any) => machine.transition(s), [machine]);
+
   useEffect(() => {
     // 1. Init i18n
     i18n.init().then(() => setUiReady(true));
@@ -408,7 +427,6 @@ export default function App() {
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
-  const [screen, setScreen]          = useState<GameScreen>("menu");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -517,9 +535,7 @@ export default function App() {
   const [settingsFromPause, setSettingsFromPause] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
-  const [gamesPlayed, setGamesPlayed] = useState(() =>
-    parseInt(localStorage.getItem('dtp-games-played') || '0', 10)
-  );
+  
   const EVOLVE_TUTORIAL_SEEN_KEY = 'dtp-evolve-tutorial-seen';
   const [evolveTutorialSeen, setEvolveTutorialSeen] = useState(() =>
     Boolean(localStorage.getItem(EVOLVE_TUTORIAL_SEEN_KEY))
@@ -532,9 +548,10 @@ export default function App() {
   const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
   const [showRewardsHub, setShowRewardsHub]           = useState(false);
   const [weeklyTasks, setWeeklyTasks]                 = useState<WeeklyTask[]>([]);
-  const [best1, setBest1]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
-  const [best2, setBest2]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
+  const [best1_old, setBest1_old]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
+  const [best2_old, setBest2_old]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
   const [prevBest, setPrevBest]     = useState(0);
+
   const [paused, setPaused]         = useState(false);
   const [devMode, setDevMode]       = useState(false);
   const [showDevUnlock, setShowDevUnlock] = useState(false);
@@ -712,6 +729,24 @@ export default function App() {
     logProgressionEvent("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
     setPrevBest(gameMode === "classic" ? best1 : best2);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
+
+    // Update progress tracking
+    const newWins = wins + (engineWinner === "p1" ? 1 : 0);
+    const newDeaths = deaths + (p1Score === 0 ? 1 : 0);
+    const newGames = gamesPlayed + 1;
+
+    setWins(newWins);
+    setDeaths(newDeaths);
+    localStorage.setItem('dtp:wins', newWins.toString());
+    localStorage.setItem('dtp:deaths', newDeaths.toString());
+
+    machine.updateProgress({
+      bestScore: Math.max(best1, best2, gameHighScore),
+      gamesPlayed: newGames,
+      wins: newWins,
+      deaths: newDeaths
+    });
+
     if (gameMode === "classic") {
       setBest1((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
     } else {
@@ -847,6 +882,7 @@ export default function App() {
     activateStoredFreeze, activateStoredShield,
     devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
+    devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
     startBot, stopBot, isBotActive,
     setBotAssist, botAssistActive, botTapHighlights,
     lastGameScore,
@@ -2252,6 +2288,7 @@ export default function App() {
       {screen === "menu" && (
         <StartScreen
           playerName={playerName}
+          isFeatureUnlocked={machine.isFeatureUnlocked}
           dailyObjective={dailyObjective}
           energyCount={energyData.count}
           energyLastRegen={energyData.lastRegen}
@@ -2332,6 +2369,9 @@ export default function App() {
           dust={dust}
           onDustAdd={amount => addDust(amount, 'Dev')}
           onSpawnPowerup={devSpawnPowerup}
+          onSpawnSpecialCell={devSpawnSpecialCell}
+          onTriggerBotTap={devTriggerBotTap}
+          onToggleBotAssist={devToggleBotAssist}
           gameSeed={snapshot?.gameSeed || 0}
           autoPlay={devAutoPlay}
           onAutoPlayToggle={() => setDevAutoPlay(v => !v)}

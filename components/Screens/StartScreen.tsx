@@ -86,6 +86,7 @@ export interface StartScreenProps {
   dust:            number;
   devMode:         boolean;
   playerName:      string | null;
+  isFeatureUnlocked: (id: import('../../utils/featureGates').FeatureId) => boolean;
   onPlay:          () => void;
   onHowTo:         () => void;
   onLeaderboard:   () => void;
@@ -114,6 +115,7 @@ export function StartScreen({
   energyCount, energyLastRegen,
   dust, devMode,
   playerName,
+  isFeatureUnlocked,
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
   onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
   dustWidget, energyBar,
@@ -157,16 +159,38 @@ export function StartScreen({
 
       <div className="opt-grid">
         <div className="opt-section">
-          <div className="opt-label">🎮 Game Mode</div>
+          <div className="opt-label">
+            🎮 Game Mode
+            {!isFeatureUnlocked('evolve_mode') && <span className="lock-hint" title="Score 500 in Classic to unlock">🔒</span>}
+          </div>
           <PillRow<GameMode>
-            options={[{ value: "classic", label: "⊞ Classic" }, { value: "evolve", label: "∞ Evolve" }]}
-            value={gameMode} onChange={setGameMode} />
+            options={[
+              { value: "classic", label: "⊞ Classic" }, 
+              { value: "evolve", label: "∞ Evolve" }
+            ]}
+            value={gameMode} 
+            onChange={(m) => {
+              if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) return;
+              setGameMode(m);
+            }} 
+          />
         </div>
         <div className="opt-section">
-          <div className="opt-label">👥 Players</div>
+          <div className="opt-label">
+            👥 Players
+            {!isFeatureUnlocked('two_player') && <span className="lock-hint" title="Win 3 Classic games to unlock">🔒</span>}
+          </div>
           <PillRow<NumPlayers>
-            options={[{ value: 1, label: "Solo" }, { value: 2, label: "Duo" }] as { value: NumPlayers; label: string }[]}
-            value={numPlayers} onChange={setNumPlayers} />
+            options={[
+              { value: 1, label: "Solo" }, 
+              { value: 2, label: "Duo" }
+            ] as { value: NumPlayers; label: string }[]}
+            value={numPlayers} 
+            onChange={(n) => {
+              if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) return;
+              setNumPlayers(n);
+            }} 
+          />
         </div>
         <div className="opt-section">
           <div className="opt-label">🕹 Input</div>
@@ -207,11 +231,13 @@ export function StartScreen({
 
       <div className="menu-links">
         <button className="btn-link" onClick={onHowTo}>❓ How to Play</button>
-        <button className="btn-link" onClick={onLeaderboard}>🏆 Leaderboard</button>
+        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}>
+          🏆 Leaderboard {!isFeatureUnlocked('leaderboard') && "🔒"}
+        </button>
         <button className="btn-link" onClick={onShop}>🛒 Shop</button>
-        <button className="rewards-hub-btn" onClick={onOpenRewardsHub}>
-          🎁
-          {(rewardsBadgeCount ?? 0) > 0 && (
+        <button className="rewards-hub-btn" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}>
+          🎁 {!isFeatureUnlocked('daily_challenges') && "🔒"}
+          {(rewardsBadgeCount ?? 0) > 0 && isFeatureUnlocked('daily_challenges') && (
             <span className="rewards-hub-badge">{rewardsBadgeCount}</span>
           )}
         </button>
