@@ -42,6 +42,40 @@ This release focuses on hardening challenge URL integrity, fixing two DDA bugs t
 
 ---
 
+## Don't Touch the Purple — v6.2.1 (Integration Audit & Test Stability)
+# Leaderboard Payload Fix, E2E Onboarding Support, Submission Consolidation, Cleanup
+# Session Date: 2026-05-09
+
+---
+
+## v6.2.1 — Integration Audit & Test Stability
+
+This release addresses critical integration mismatches between the client and the score validator, restores E2E test reliability by accounting for the onboarding gate, and consolidates fragmented score submission paths.
+
+### 🐛 Bug Fixes
+
+- **score-sync.ts** — Fixed breaking payload mismatch. The client now includes `initials` (from `localStorage`) and `mode` (passed from engine) in the leaderboard POST body. Previously, missing these fields caused the v6.2.0 Worker to reject all submissions with `400 Invalid initials/mode`.
+- **e2e/smoke.spec.ts** — Updated smoke suite to handle the mandatory name-entry gate. Tests now explicitly complete the onboarding form before asserting gameplay or HUD elements, resolving the uniform timeouts seen in recent CI runs.
+- **firebase.ts** — Marked legacy `fbAddScoreViaWorker` as deprecated. All score submissions are now routed through the unified `scoreSync` utility to ensure offline queuing and consistent payload formatting.
+
+### 🧹 Housekeeping
+
+- **Root Directory Cleanup** — Identified several legacy patch and handoff directories (`dtp-v5.6-patch`, `dtp-claude-handoff-v5.9.1`, `dtp-bugfix2`) for removal. These were cluttering the repository and causing confusion during architectural audits.
+- **score-sync.ts / sw.js** — Synchronized the offline submission logic. The Service Worker now shares the same endpoint and payload structure as the main thread sync utility to prevent duplicate or malformed background syncs.
+
+### ⚡ Performance & Reliability
+
+- **Challenge HMAC** — Documented the risk of the client-side HMAC secret. While functional, it remains a "Security through Obscurity" measure until signing is moved to a server-side or edge function.
+- **Session Recovery** — Verified that the session key separation (`dtp:session` vs `dtp:session-ui`) is fully operational, preventing UI state from corrupting full engine crash-recovery snapshots.
+
+### ✅ Verification
+
+- **Integration:** Manual verification of `ScorePayload` interface matching between `score-sync.ts` and `workers/score-validator.ts`.
+- **E2E:** `playwright test` now clears the onboarding gate (verified via sandbox run).
+- **Bundle:** No change in bundle size; logic consolidation offset the small payload additions.
+
+---
+
 # Don't Touch the Purple — v6.2.0 (Phase 1 — Architecture & Privacy)
 # Cloudflare Worker TypeScript Migration, Short-Lived OAuth2 Tokens, Dead Code Removal, Privacy-Gated Telemetry
 # Session Date: 2026-05-09
