@@ -171,6 +171,7 @@ export interface UseGameEngineReturn {
   isBotActive: () => boolean;
   setBotAssist: (player: 1 | 2, enabled: boolean) => void;
   botAssistActive: { 1: boolean; 2: boolean };
+  botTapHighlights: { 1: Record<number, number>; 2: Record<number, number> };
   lastGameScore: number | null;
   getAutoLowQuality: () => boolean;
   submitScoreToLeaderboard: (score: number) => void;
@@ -214,6 +215,7 @@ export function useGameEngine(
   const [winner,      setWinner]      = useState<Winner>(null);
   const [lastGameScore, setLastGameScore] = useState<number | null>(null);
   const [botAssistActive, setBotAssistActiveState] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
+  const [botTapHighlights, setBotTapHighlights] = useState<{ 1: Record<number, number>; 2: Record<number, number> }>({ 1: {}, 2: {} });
 
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -225,6 +227,7 @@ export function useGameEngine(
   const shake1TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shake2TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameOverTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const botTapTimersRef    = useRef<ReturnType<typeof setTimeout>[]>([]);
   const peakStreakRef     = useRef(0);
   const dustAtStartRef    = useRef(0);
 
@@ -326,6 +329,18 @@ export function useGameEngine(
         case "botTap":
           // dust spend is already done in engine, just trigger re-render via dustCallbacks
           if (dustCallbacks) dustCallbacks.spendDust(0);
+          setBotTapHighlights(prev => ({
+            ...prev,
+            [event.player]: { ...prev[event.player], [event.idx]: Date.now() },
+          }));
+          botTapTimersRef.current.push(setTimeout(() => {
+            if (!mountedRef.current) return;
+            setBotTapHighlights(prev => {
+              const nextPlayer = { ...prev[event.player] };
+              delete nextPlayer[event.idx];
+              return { ...prev, [event.player]: nextPlayer };
+            });
+          }, 420));
           break;
         case "bossStart":
           onBossEvent?.(event.bossType);
@@ -362,6 +377,8 @@ export function useGameEngine(
       if (shake1TimerRef.current)     clearTimeout(shake1TimerRef.current);
       if (shake2TimerRef.current)     clearTimeout(shake2TimerRef.current);
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
+      botTapTimersRef.current.forEach(clearTimeout);
+      botTapTimersRef.current = [];
     };
   }, [config.mode, config.numPlayers, config.speedMult]);
 
@@ -419,6 +436,7 @@ export function useGameEngine(
     setLastGameScore(null);
     setRareSplash(null);
     setLevelUpBadge(null);
+    setBotTapHighlights({ 1: {}, 2: {} });
     engineRef.current?.start(forceSeed);
     engineRef.current?.startSessionPersistence();
   }, []);
@@ -428,7 +446,7 @@ export function useGameEngine(
     start: wrappedStart, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
-    startBot, stopBot, isBotActive, setBotAssist, botAssistActive,
+    startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights,
     getAutoLowQuality, submitScoreToLeaderboard, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
   };
 }

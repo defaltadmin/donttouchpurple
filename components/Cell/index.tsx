@@ -13,6 +13,7 @@ interface CellProps {
   showKeyLabel?: boolean;
   keyLabel?: string;
   isPressing?: boolean;
+  botPulse?: boolean;
 }
 
 function BombTimer({ expiresAt }: { expiresAt: number }) {
@@ -74,7 +75,8 @@ export default function Cell({
   colorblindMode = '',
   showKeyLabel = false,
   keyLabel = '',
-  isPressing = false 
+  isPressing = false,
+  botPulse = false,
 }: CellProps) {
 
   const isBomb = cell.type === 'bomb';
@@ -118,6 +120,7 @@ export default function Cell({
         ${shapeClass}
         ${cell.shape ? 'rare-danger' : ''}
         ${isPressing ? 'pressing' : ''}
+        ${botPulse ? 'bot-assisted' : ''}
         ${bombUrgent ? 'bomb--urgent' : ''}
         ${cbClass}
       `.trim()}
@@ -137,11 +140,28 @@ export default function Cell({
         {cell.type === 'freeze' && '❄️'}
         {cell.type === 'multiplier' && '×2'}
         {isHold && '⏳'}
-        {isIce && `🧊 ${cell.iceCount || ''}`}
+        {isIce && (
+          <div className="multi-tap-visual" aria-hidden="true">
+            <div className="multi-tap-core">✦</div>
+            <div className="multi-tap-count">{cell.iceCount || 1}</div>
+            <div className="multi-tap-pips">
+              {Array.from({ length: Math.max(1, Math.min(4, cell.iceCount || 1)) }, (_, i) => (
+                <span key={i} />
+              ))}
+            </div>
+          </div>
+        )}
         {cell.type === 'bomb' && (
           <BombTimer expiresAt={(cell as any).expiresAt} />
         )}
       </div>
+
+      {botPulse && (
+        <div className="bot-tap-fx" aria-hidden="true">
+          <span className="bot-tap-orbit" />
+          <span className="bot-tap-label">BOT</span>
+        </div>
+      )}
 
       {/* Rare mode emoji for colorblind players */}
       {rareConfig && (

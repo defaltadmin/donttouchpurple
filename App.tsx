@@ -848,7 +848,7 @@ export default function App() {
     devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     startBot, stopBot, isBotActive,
-    setBotAssist, botAssistActive,
+    setBotAssist, botAssistActive, botTapHighlights,
     lastGameScore,
     getAutoLowQuality,
     submitScoreToLeaderboard,
@@ -2447,8 +2447,9 @@ export default function App() {
             showStoredPwr={screen === "playing"}
             practiceMode={practiceMode}
             onToggleBotAssist={() => handleBotToggle(1)}
-            showBotAssist={false}
+            showBotAssist={screen === "playing"}
             isBotActive={botAssistActive[1]}
+            botTapHighlights={botTapHighlights[1]}
             dust={dust} />
            {is2P && (
              <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
@@ -2470,6 +2471,7 @@ export default function App() {
               onToggleBotAssist={() => handleBotToggle(2)}
               showBotAssist={screen === "playing" && is2P}
               isBotActive={botAssistActive[2]}
+              botTapHighlights={botTapHighlights[2]}
               dust={dust} />
           )}
           </GridErrorBoundary>        </div>

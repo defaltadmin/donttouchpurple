@@ -53,6 +53,7 @@ export interface PlayerPanelProps {
   onStartBot?:   () => void;
   onStopBot?:    () => void;
   isBotActive?:  boolean;
+  botTapHighlights?: Record<number, number>;
   onToggleBotAssist?: () => void;
   showBotAssist?: boolean;
   dust?:         number;
@@ -77,6 +78,7 @@ export const PlayerPanel = memo(function PlayerPanel({
   onStartBot,
   onStopBot,
   isBotActive = false,
+  botTapHighlights = {},
   onToggleBotAssist,
   showBotAssist = false,
   dust = 0,
@@ -162,7 +164,7 @@ export const PlayerPanel = memo(function PlayerPanel({
         <div className={shakeGrid ? "gpanel-shake-wrap shake-grid" : "gpanel-shake-wrap"}>
           <div
             ref={gridRef}
-            className={`gpanel${skinClass ? " " + skinClass : ""} ${spinClass}${showKeys ? " keyboard-mode" : ""}`}
+            className={`gpanel${skinClass ? " " + skinClass : ""} ${spinClass}${showKeys ? " keyboard-mode" : ""}${isBotActive ? " gpanel--bot-active" : ""}`}
             style={{
               "--cell": cellVar,
               gridTemplateColumns: `repeat(${cols}, var(--cell))`,
@@ -221,6 +223,7 @@ export const PlayerPanel = memo(function PlayerPanel({
                     showKeyLabel={showKeys}
                     keyLabel={keyLabels[keyIdx] || ''}
                     isPressing={pressing.has(i)}
+                    botPulse={Boolean(botTapHighlights[i])}
                   />
                   </div>
                 );
@@ -231,7 +234,7 @@ export const PlayerPanel = memo(function PlayerPanel({
         </div>
       </div>
       {showBotAssist && !practiceMode && onToggleBotAssist && (
-        <div className="bot-assist-row">
+        <div className={`bot-assist-row${isBotActive ? " bot-assist-row--active" : ""}`}>
           <button
             ref={botBtnRef}
             className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-assist-btn--disabled" : ""}`}
@@ -245,7 +248,8 @@ export const PlayerPanel = memo(function PlayerPanel({
             }}
             title={(dust ?? 0) < 30 ? "Need 30+ dust to activate" : isBotActive ? "Bot ON — click to deactivate" : "Activate bot assist"}
           >
-            🤖 {isBotActive ? `ON · 3💜/tap` : `OFF`}
+            <span className="bot-assist-dot" aria-hidden="true" />
+            🤖 {isBotActive ? `ON · marking taps` : `OFF`}
           </button>
         </div>
       )}

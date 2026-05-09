@@ -760,6 +760,7 @@ body.damage-pulse::after {
   background: transparent; border: none; box-shadow: none;
   border-radius: 20px; padding: 6px; display: grid; gap: var(--gap);
   transform-origin: center center;
+  position: relative;
   overflow: visible;
 }
 /* Only animate grid layout when NOT spinning */
@@ -824,12 +825,20 @@ body.damage-pulse::after {
 
 /* Ice and Hold cells */
 .cell.ice {
-  background: linear-gradient(145deg,#e0f2fe,#7dd3fc,#2563eb);
-  box-shadow: 0 4px 0 #1e40af, 0 5px 14px rgba(96,165,250,0.6);
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255,255,255,0.95) 0 12%, transparent 13%),
+    radial-gradient(circle at 36% 64%, rgba(186,230,253,0.75) 0 10%, transparent 11%),
+    linear-gradient(145deg,#e0f2fe,#7dd3fc 45%,#2563eb);
+  box-shadow: 0 4px 0 #1e40af, 0 5px 16px rgba(96,165,250,0.7), inset 0 0 0 2px rgba(255,255,255,0.32);
+  animation: iceCellBreathe 1.2s ease-in-out infinite;
 }
 .cell.hold {
   background: radial-gradient(circle at 50% 35%, #ff6b6b, #cc0000);
   box-shadow: 0 5px 0 #7f0000, 0 6px 20px rgba(220,0,0,0.5);
+}
+@keyframes iceCellBreathe {
+  0%,100% { filter: brightness(1); }
+  50% { filter: brightness(1.14) saturate(1.1); }
 }
 
 /* Triangle color overlays */
@@ -2313,6 +2322,154 @@ body { background-color: var(--bg); }
   z-index: 4;
   pointer-events: none;
   text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.multi-tap-visual {
+  position: relative;
+  width: min(72%, 54px);
+  height: min(72%, 54px);
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.multi-tap-core {
+  width: 64%;
+  height: 64%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #e0f2fe;
+  font-size: 1.1rem;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #38bdf8 52%, #1d4ed8);
+  box-shadow: 0 0 14px rgba(125,211,252,0.9), inset 0 -4px 8px rgba(30,64,175,0.55);
+  z-index: 2;
+}
+.multi-tap-count {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #07182f;
+  background: #e0f2fe;
+  border: 2px solid rgba(255,255,255,0.9);
+  font: 900 12px/1 var(--font-ui);
+  box-shadow: 0 2px 8px rgba(15,23,42,0.35);
+  z-index: 3;
+}
+.multi-tap-pips {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  animation: multiTapOrbit 2s linear infinite;
+}
+.multi-tap-pips span {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f8fafc;
+  box-shadow: 0 0 8px rgba(255,255,255,0.9);
+}
+.multi-tap-pips span:nth-child(1) { transform: rotate(0deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(2) { transform: rotate(90deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(3) { transform: rotate(180deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(4) { transform: rotate(270deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+@keyframes multiTapOrbit {
+  to { transform: rotate(360deg); }
+}
+
+.gpanel--bot-active {
+  box-shadow:
+    0 0 0 1px rgba(34,211,238,0.32) inset,
+    0 0 24px rgba(34,211,238,0.15),
+    0 18px 50px rgba(0,0,0,0.35);
+}
+.gpanel--bot-active::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 26px;
+  border: 1px solid rgba(34,211,238,0.32);
+  pointer-events: none;
+  animation: botPanelScan 1.4s ease-in-out infinite;
+}
+@keyframes botPanelScan {
+  0%,100% { opacity: 0.35; transform: scale(0.99); }
+  50% { opacity: 0.9; transform: scale(1.015); }
+}
+
+.cell.bot-assisted {
+  animation: botTapCell 0.42s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+.bot-tap-fx {
+  position: absolute;
+  inset: -10px;
+  z-index: 12;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+.bot-tap-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(34,211,238,0.95);
+  box-shadow: 0 0 20px rgba(34,211,238,0.8), inset 0 0 14px rgba(34,211,238,0.25);
+  animation: botTapRing 0.42s ease-out forwards;
+}
+.bot-tap-label {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #06212a;
+  background: #67e8f9;
+  border: 1px solid rgba(255,255,255,0.85);
+  font: 900 9px/1 var(--font-ui);
+  letter-spacing: 0;
+  box-shadow: 0 4px 12px rgba(8,47,73,0.35);
+  animation: botTapLabel 0.42s ease-out forwards;
+}
+@keyframes botTapCell {
+  0% { transform: scale(1); filter: brightness(1); }
+  45% { transform: scale(1.15); filter: brightness(1.45) saturate(1.25); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+@keyframes botTapRing {
+  from { opacity: 1; transform: scale(0.78); }
+  to { opacity: 0; transform: scale(1.55); }
+}
+@keyframes botTapLabel {
+  from { opacity: 0; transform: translate(-50%, 8px) scale(0.85); }
+  30% { opacity: 1; }
+  to { opacity: 0; transform: translate(-50%, -8px) scale(1); }
+}
+
+.bot-assist-row--active {
+  filter: drop-shadow(0 0 12px rgba(34,211,238,0.28));
+}
+.bot-assist-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(148,163,184,0.8);
+  box-shadow: 0 0 0 0 rgba(34,211,238,0);
+}
+.bot-assist-btn--active .bot-assist-dot {
+  background: #67e8f9;
+  animation: botAssistDot 0.9s ease-in-out infinite;
+}
+@keyframes botAssistDot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(34,211,238,0); }
 }
 
 /* Ensure shape overlay doesn't interfere with powerups */
