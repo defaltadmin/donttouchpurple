@@ -2324,6 +2324,7 @@ export default function App() {
           resumeReady={resumeReady}
           resumeData={resumeData}
           onResumeGame={handleResumeGame}
+          onToast={toast$}
         />
       )}
 

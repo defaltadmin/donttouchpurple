@@ -104,6 +104,7 @@ export interface StartScreenProps {
   resumeReady?: boolean;
   resumeData?: Record<string, unknown> | null;
   onResumeGame?: () => void;
+  onToast?: (message: string) => void;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -122,6 +123,7 @@ export function StartScreen({
   dailyObjective,
   pendingReplaySeed, onClearReplaySeed,
   resumeReady, resumeData, onResumeGame,
+  onToast,
 }: StartScreenProps) {
   const isKbd = inputMode === "keyboard";
 
@@ -236,14 +238,17 @@ export function StartScreen({
           </div>
           <PillRow<GameMode>
             options={[
-              { value: "classic", label: "⊞ Classic" }, 
+              { value: "classic", label: "⊞ Classic" },
               { value: "evolve", label: "∞ Evolve" }
             ]}
-            value={gameMode} 
+            value={gameMode}
             onChange={(m) => {
-              if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) return;
+              if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) {
+                onToast?.("Score 500+ in Classic to unlock ∞ Evolve!");
+                return;
+              }
               setGameMode(m);
-            }} 
+            }}
           />
         </div>
         <div className="opt-section">
@@ -253,14 +258,17 @@ export function StartScreen({
           </div>
           <PillRow<NumPlayers>
             options={[
-              { value: 1, label: "Solo" }, 
+              { value: 1, label: "Solo" },
               { value: 2, label: "Duo" }
             ] as { value: NumPlayers; label: string }[]}
-            value={numPlayers} 
+            value={numPlayers}
             onChange={(n) => {
-              if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) return;
+              if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) {
+                onToast?.("Win 3 Classic games to unlock Duo mode!");
+                return;
+              }
               setNumPlayers(n);
-            }} 
+            }}
           />
         </div>
         <div className="opt-section">

@@ -6,11 +6,17 @@
 - **CSS fix**: Fixed invalid CSS syntax in `.multi-tap-pips` animations (`-1 * clamp()` not valid in CSS calc)
 
 ### 🎮 QOL Improvements & Bug Fixes
-- **Combo badge formatting** (`App.tsx`) — Changed from raw `2x ×1.2` to cleaner `🔥 x2` and `1.2x pts` format
-- **Combo badge position** (`game.css`) — Moved from center of screen (overlapping grid) to top 18% of screen in HUD area
-- **Rare color mode gating** (`TickProcessor.ts`) — Rare color events now only trigger in Evolve mode, not Classic mode
+- **Combo badge formatting** — Changed from raw `2x ×1.2` to cleaner `🔥 x2` and `1.2x pts` format
+- **Combo badge position** — Moved from center of screen (overlapping grid) to top 18% of screen in HUD area
+- **Rare color mode gating** — Rare color events now only trigger in Evolve mode, not Classic mode
 - **Language selector moved** — Removed from header, now in Settings drawer for cleaner UI
 - **WhatsNew for new players** — Now only shows after player has played at least one game, not on first load
+- **Unlock toast hints** — Show toast messages when trying locked features (Evolve mode, Duo mode) instead of silent ignore
+
+### ✨ Polish Improvements
+- **Feature unlock feedback** — Toast messages guide players: "Score 500+ in Classic to unlock ∞ Evolve!", "Win 3 Classic games to unlock Duo mode!"
+- **Loading screen polish** — Animated orbs, gradient background, progress bar with percentage
+- **Spring animations** — Smooth `--ease-spring` transitions throughout UI for AAA feel
 
 ## [7.5.0] - 2026-05-09
 ### 🐛 Bug Fixes
