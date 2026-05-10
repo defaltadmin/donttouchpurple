@@ -668,9 +668,9 @@ body.damage-pulse::after {
 .btn-link:hover { color: var(--text); }
 
 /* ── Options ── */
-.opt-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-.opt-section { display: flex; flex-direction: column; gap: 6px; }
-.opt-label { font-family: var(--font-ui); font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.opt-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.opt-section { display: flex; flex-direction: column; gap: 4px; }
+.opt-label { display: none; } /* Hide for cleaner minimalist look */
 .opt-row { display: flex; gap: 6px; }
 .opt-btn {
   flex: 1; padding: 9px 6px; background: var(--bg2); border: 2px solid var(--glass-border);
@@ -3709,17 +3709,18 @@ input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px;
 
 /* ─── Resume Button ─── */
 .dtp-btn-resume {
-  background: linear-gradient(135deg, #065f46, #059669);
-  color: #ecfdf5; border: 1px solid #34d399;
-  padding: 0.8rem 1.5rem; border-radius: 10px;
+  background: rgba(30, 30, 40, 0.85);
+  backdrop-filter: blur(12px);
+  color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12);
+  padding: 0.8rem 1.5rem; border-radius: 12px;
   font-weight: 600; margin: 0.5rem 0 1.5rem; width: 100%;
   display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  transition: transform 0.15s, box-shadow 0.2s;
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   cursor: pointer;
 }
-.dtp-btn-resume:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(5,150,105,0.4); }
+.dtp-btn-resume:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); background: rgba(40, 40, 55, 0.9); }
 .dtp-btn-resume:active { transform: translateY(0); }
-.dtp-resume-meta { font-size: 0.8rem; opacity: 0.8; background: rgba(0,0,0,0.2); padding: 0.2rem 0.5rem; border-radius: 4px; }
+.dtp-resume-meta { font-size: 0.75rem; opacity: 0.65; color: #94a3b8; }
 @media (prefers-reduced-motion: reduce) { .dtp-btn-resume { animation: none !important; } }
 
 /* ─── Thumb-zone root variable ─── */

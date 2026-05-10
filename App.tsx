@@ -1895,7 +1895,7 @@ export default function App() {
       <div className="orb orb-2" />
       <div className="orb orb-3" />
 
-      {showFps && (
+      {showFps && devMode && (
         <div className="dtp-fps-monitor" aria-live="off" aria-label="Performance Monitor">
           <span className={`dtp-fps-value ${fps < 30 ? 'dtp-fps-low' : fps < 50 ? 'dtp-fps-med' : 'dtp-fps-good'}`}>
             {fps} FPS
