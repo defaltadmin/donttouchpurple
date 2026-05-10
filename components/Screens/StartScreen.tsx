@@ -223,111 +223,91 @@ export function StartScreen({
       </div>
 
       <div className="menu-header">
-        <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
-        <p className="menu-sub">⚡ Tap fast. Avoid purple. Survive.</p>
+        <h1 className="menu-title"><span className="txt-p">◉</span></h1>
         {dailyObjective?.completed && (
-          <div className="obj-streak-badge">🔥 {getObjectiveStreak()} day streak</div>
+          <div className="obj-streak-badge">🔥</div>
         )}
       </div>
 
       <div className="opt-grid">
-        <div className="opt-section">
-          <div className="opt-label">
-            🎮 Game Mode
-            {!isFeatureUnlocked('evolve_mode') && <span className="lock-hint" title="Score 500 in Classic to unlock">🔒</span>}
-          </div>
+        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
           <PillRow<GameMode>
             options={[
-              { value: "classic", label: "⊞ Classic" },
-              { value: "evolve", label: "∞ Evolve" }
+              { value: "classic", label: "⊞" },
+              { value: "evolve", label: "∞" }
             ]}
             value={gameMode}
             onChange={(m) => {
               if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) {
-                onToast?.("Score 500+ in Classic to unlock ∞ Evolve!");
+                onToast?.("Score 500+ in Classic!");
                 return;
               }
               setGameMode(m);
             }}
           />
         </div>
-        <div className="opt-section">
-          <div className="opt-label">
-            👥 Players
-            {!isFeatureUnlocked('two_player') && <span className="lock-hint" title="Win 3 Classic games to unlock">🔒</span>}
-          </div>
+        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
           <PillRow<NumPlayers>
             options={[
-              { value: 1, label: "Solo" },
-              { value: 2, label: "Duo" }
+              { value: 1, label: "①" },
+              { value: 2, label: "②" }
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
             onChange={(n) => {
               if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) {
-                onToast?.("Win 3 Classic games to unlock Duo mode!");
+                onToast?.("Win 3 games!");
                 return;
               }
               setNumPlayers(n);
             }}
           />
         </div>
-        <div className="opt-section">
-          <div className="opt-label">🕹 Input</div>
+        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
           <PillRow<InputMode>
-            options={[{ value: "touch", label: "👆 Touch" }, { value: "keyboard", label: "⌨ Keys" }]}
+            options={[{ value: "touch", label: "👆" }, { value: "keyboard", label: "⌨" }]}
             value={inputMode} onChange={setInputMode} />
         </div>
-        <div className="opt-section">
-          <div className="opt-label">🎯 Practice Mode</div>
+        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "∞ Unlimited" }, { value: "off", label: "⚡ Normal" }]}
+            options={[{ value: "on", label: "∞" }, { value: "off", label: "⚡" }]}
             value={practiceMode ? "on" : "off"}
             onChange={(v) => setPracticeMode(v === "on")} />
         </div>
       </div>
 
       {(devMode || energyCount > 0) ? (
-        <button className="btn-play" onClick={onPlay} aria-label="Start new game">
-          ▶ PLAY!{devMode ? " 🔧" : ""}
+        <button className="btn-play btn-play--pulse" onClick={onPlay} aria-label="Play">
+          ▶
         </button>
       ) : (
-        <div className="no-energy-block" role="status" aria-label="No energy available">
-          <div className="no-energy-txt">⚡ No energy</div>
+        <div className="no-energy-block" role="status">
           <EnergyCountdown energyLastRegen={energyLastRegen} />
-          <button className="btn-ghost" style={{ marginTop: 8, fontSize: 13 }}
+          <button className="btn-ghost"
             onClick={onRefillEnergy}
             disabled={dust < GAME.DUST_PER_ENERGY}
-            aria-label={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} dust to refill energy` : "Spend dust to refill energy"}
-            title={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} 💜 dust` : ""}>
-            💜 Spend {GAME.DUST_PER_ENERGY} dust to refill
-          </button>
+            aria-label="Refill energy">💜</button>
         </div>
       )}
 
       {dailyObjective && (
         <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}
              role="status"
-             aria-label={`Daily objective: ${dailyObjective.description}, reward ${dailyObjective.reward} dust${dailyObjective.completed ? ', completed' : ''}`}>
+             aria-label={`Daily: ${dailyObjective.description}`}>
           🎯 {dailyObjective.description} → +{dailyObjective.reward} 💜
           {dailyObjective.completed && " ✓"}
         </div>
       )}
 
-      <div className="menu-links" role="navigation" aria-label="Menu options">
-        <button className="btn-link" onClick={onHowTo} aria-label="How to play instructions">❓ How to Play</button>
-        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}
-                aria-label={!isFeatureUnlocked('leaderboard') && !devMode ? "Leaderboard locked - score higher to unlock" : "View leaderboard"}>
-          🏆 Leaderboard {!isFeatureUnlocked('leaderboard') && "🔒"}
+      <div className="menu-links" role="navigation">
+        <button className="btn-icon-sm" onClick={onHowTo} aria-label="How to play">❓</button>
+        <button className="btn-icon-sm" onClick={onOpenRewardsHub}
+          disabled={!isFeatureUnlocked('daily_challenges') && !devMode} aria-label="Rewards">
+          🎁{(rewardsBadgeCount ?? 0) > 0 && <span className="badge-dot">{rewardsBadgeCount}</span>}
         </button>
-        <button className="btn-link" onClick={onShop} aria-label="Open shop">🛒 Shop</button>
-        <button className="rewards-hub-btn" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}
-                aria-label={!isFeatureUnlocked('daily_challenges') && !devMode ? "Rewards hub locked" : `Rewards hub${(rewardsBadgeCount ?? 0) > 0 ? `, ${rewardsBadgeCount} rewards available` : ''}`}>
-          🎁 {!isFeatureUnlocked('daily_challenges') && "🔒"}
-          {(rewardsBadgeCount ?? 0) > 0 && isFeatureUnlocked('daily_challenges') && (
-            <span className="rewards-hub-badge">{rewardsBadgeCount}</span>
-          )}
-        </button>
-        {isKbd && <button className="btn-link" onClick={onKeybind} aria-label="Configure keyboard bindings">⌨ Keys</button>}
+        <button className="btn-icon-sm" onClick={onShop} aria-label="Shop">🛒</button>
+        <button className="btn-icon-sm" onClick={onLeaderboard}
+          disabled={!isFeatureUnlocked('leaderboard') && !devMode} aria-label="Leaderboard">🏆</button>
+        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} aria-label="Keys">⌨</button>}
       </div>
 
       {/* Screen reader instructions */}

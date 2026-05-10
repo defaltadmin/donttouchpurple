@@ -2236,7 +2236,8 @@ export default function App() {
           </span>
         </span>
         {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
-        <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
+        <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:4}}>
+          <button className="btn-icon-sm" onClick={() => setShowWhatsNew(true)} title="Patch Notes">📜</button>
           <div className="dust-counter"><DustWidget dust={dust} /></div>
           {isPlaying && screen === "playing"
             ? <button className="btn-icon btn-icon--pause" onClick={pauseGame} title="Pause">⏸</button>
