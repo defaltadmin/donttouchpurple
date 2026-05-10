@@ -1,5 +1,15 @@
 # Don't Touch Purple — Changelog
 
+## [7.5.1] - 2026-05-10
+### 🧹 Cleanup
+- **Create junk folder for stale files** — Moved deprecated folders and files to `junk/` for safekeeping instead of deleting:
+  - Old version directories: `5.5/`, `5.5.0/`, `coverage/`, `sonnet-eval/`, `dtp-session-tools/`, `files/`, `test-results/`
+  - Deprecated zip packs: `dist.zip`, `dtp-9-5.zip`, `dtp-bugfix*.zip`, `dtp-claude-handoff*.zip`, `dtp-review-packet.zip`, `dtp-v6.1-fixes.zip`, `htdocs.zip`
+  - Stale docs/logs: `DTP-v6.2-roadmap.md`, `FIXES_CODE_EXAMPLES.tsx`, `COMMIT_CONVENTION.md`, `OPENCODE_PACKET_PREP.md`, `RELEASE-CHECKLIST.md`, `QWEN.md`
+  - Build artifacts: `index-BAMt8Opt.js`, `lighthouse.json`, `lighthouse.pdf`, all `vite-*.log` files
+  - Duplicate source: `src/` (identical copy of root files)
+- **CSS fix**: Fixed invalid CSS syntax in `.multi-tap-pips` animations (`-1 * clamp()` not valid in CSS calc)
+
 ## [7.5.0] - 2026-05-09
 ### 🐛 Bug Fixes
 - **Wrong score submission endpoint** (`utils/score-sync.ts`) — `_submit` was posting to `/api/leaderboard` instead of `/api/submit-score`, causing all online score submissions to silently fail with HTTP 404. Fixed to use the correct Cloudflare Worker endpoint

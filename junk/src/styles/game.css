@@ -689,51 +689,224 @@ body.damage-pulse::after {
 .pill-opt--on { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
 /* ── HUD ── */
+/* ═══════════════════════════════════════
+   HUD — Polished v7.6
+   ═══════════════════════════════════════ */
 .hud {
-  width: 100%; display: flex; gap: 7px; align-items: stretch;
-}
-.hud-card {
-  flex: 1; background: linear-gradient(145deg, rgba(45,16,96,0.6), rgba(13,8,32,0.7));
-  border: 2px solid rgba(192,38,211,0.2); border-radius: 14px; padding: 8px 10px;
-  display: flex; flex-direction: column; gap: 1px;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
-  transition: border-color 0.3s;
-}
-.hud-card--hearts { display: flex; flex-direction: column; justify-content: center; gap: 3px; flex: none; }
-.hud-lbl { font-family: var(--font-ui); font-size: 8px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-.hud-val {
-  font-family: var(--font-game); font-size: 24px; line-height: 1; letter-spacing: -0.5px;
-  font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, #f0eaff 0%, #c084fc 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.hud-val--sm { font-size: 18px; }
-.hud-card--score .hud-val {
-  background: linear-gradient(135deg, #f5f5f5 0%, #e879f9 40%, #c026d3 70%, #a21caf 100%);
-  -webkit-background-clip: text; background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 1px 2px rgba(192,38,211,0.3));
+  width: 100%;
+  display: flex;
+  gap: 5px;
+  align-items: stretch;
+  padding: 0 2px;
 }
 
-/* ── HUD score row — combo inline ── */
+/* Base card */
+.hud-card {
+  flex: 1;
+  background: linear-gradient(145deg, rgba(45,16,96,0.62), rgba(13,8,32,0.78));
+  border: 1.5px solid rgba(192,38,211,0.22);
+  border-radius: 12px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-shadow:
+    0 2px 0 rgba(0,0,0,0.5),
+    0 4px 16px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle top-edge glow line */
+.hud-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(192,38,211,0.4), transparent);
+  border-radius: 1px;
+}
+
+/* Score card — strongest accent */
+.hud-card--score {
+  gap: 2px;
+  min-width: 78px;
+  border-color: rgba(192,38,211,0.38);
+  box-shadow:
+    0 2px 0 rgba(0,0,0,0.5),
+    0 4px 18px rgba(192,38,211,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.09);
+}
+.hud-card--score::before {
+  background: linear-gradient(90deg, transparent, rgba(192,38,211,0.6), transparent);
+}
+
+/* Hearts card — compact */
+.hud-card--hearts {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+/* ── Combo HUD card — fire gold ── */
+.hud-card--combo {
+  flex: none;
+  min-width: 58px;
+  border-color: rgba(251,191,36,0.5);
+  background: linear-gradient(145deg, rgba(80,44,10,0.72), rgba(13,8,32,0.78));
+  box-shadow:
+    0 2px 0 rgba(0,0,0,0.5),
+    0 4px 18px rgba(251,191,36,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  animation: comboCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.hud-card--combo::before {
+  background: linear-gradient(90deg, transparent, rgba(251,191,36,0.55), transparent);
+}
+@keyframes comboCardIn {
+  0%   { transform: scale(0.55) translateY(-6px); opacity: 0; }
+  65%  { transform: scale(1.06) translateY(1px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.hud-combo-val {
+  font-family: var(--font-game);
+  font-size: 16px;
+  line-height: 1;
+  color: #fbbf24;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  filter: drop-shadow(0 0 5px rgba(251,191,36,0.55));
+}
+.hud-combo-count {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+/* Labels and values */
+.hud-lbl {
+  font-family: var(--font-ui);
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hud-val {
+  font-family: var(--font-game);
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #f0eaff 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hud-val--sm { font-size: 17px; }
+.hud-card--score .hud-val {
+  font-size: 26px;
+  background: linear-gradient(135deg, #fff 0%, #f0abfc 40%, #c026d3 75%, #a21caf 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 1px 3px rgba(192,38,211,0.35));
+}
+
+/* ── HUD score row — streak inline ── */
 .hud-score-row { display: flex; align-items: center; gap: 6px; line-height: 1; flex-wrap: nowrap; }
-.hud-card--score { gap: 2px; min-width: 80px; }
-.hud-card--score .hud-val { font-size: 26px; }
 .combo-wrap { flex-shrink: 0; }
 
 /* ── Speed bar ── */
-.spd-wrap { width: 100%; padding: 0 2px; }
-.spd-track { width: 100%; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+.spd-wrap {
+  width: 100%;
+  padding: 2px 2px 0;
+}
+.spd-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 99px;
+  overflow: hidden;
+}
 .spd-fill {
-  height: 100%; border-radius: 99px;
-  background: linear-gradient(90deg, #c026d3, #f0abfc, #fbbf24);
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: 0 0 10px rgba(192,38,211,0.7);
-  animation: spdGlow 2s ease-in-out infinite;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #7e22ce, #c026d3, #f0abfc, #fbbf24);
+  background-size: 200% 100%;
+  transition: width 0.55s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 8px rgba(192,38,211,0.65);
+  animation: spdGlow 2.4s ease-in-out infinite, spdSlide 3s linear infinite;
 }
 @keyframes spdGlow {
-  0%,100% { box-shadow: 0 0 8px rgba(192,38,211,0.6); }
-  50%      { box-shadow: 0 0 18px rgba(240,171,252,0.9), 0 0 6px rgba(251,191,36,0.5); }
+  0%,100% { box-shadow: 0 0 6px rgba(192,38,211,0.55); }
+  50%      { box-shadow: 0 0 14px rgba(240,171,252,0.85), 0 0 5px rgba(251,191,36,0.45); }
+}
+@keyframes spdSlide {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ── Lock hint text beneath locked pill rows ── */
+.lock-hint-text {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(240,234,255,0.5);
+  text-align: center;
+  margin-top: 5px;
+  padding: 4px 8px;
+  background: rgba(192,38,211,0.08);
+  border: 1px solid rgba(192,38,211,0.14);
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+  animation: lockHintIn 0.25s ease both;
+}
+@keyframes lockHintIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Settings language grid ── */
+.settings-lang-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.settings-lang-btn {
+  flex: 1;
+  min-width: 54px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(192,38,211,0.2);
+  background: rgba(45,16,96,0.4);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.12s;
+  text-align: center;
+}
+.settings-lang-btn:hover {
+  border-color: rgba(192,38,211,0.5);
+  background: rgba(192,38,211,0.15);
+  color: var(--text);
+}
+.settings-lang-btn--active {
+  border-color: rgba(192,38,211,0.8);
+  background: linear-gradient(135deg, rgba(126,34,206,0.55), rgba(192,38,211,0.35));
+  color: var(--text);
+  box-shadow: 0 0 10px rgba(192,38,211,0.3);
+  transform: scale(1.03);
 }
 
 /* ── Game area ── */
@@ -1981,8 +2154,8 @@ body { background-color: var(--bg); }
   animation: scoreCardFire 1.2s ease-in-out infinite !important;
 }
 @keyframes scoreCardFire {
-  0%,100% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 16px rgba(239,68,68,0.25); }
-  50%     { box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 28px rgba(251,146,60,0.5), 0 0 0 1px rgba(251,146,60,0.15) inset; }
+  0%,100% { box-shadow: 0 2px 0 rgba(0,0,0,0.5), 0 4px 18px rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.45); }
+  50%     { box-shadow: 0 2px 0 rgba(0,0,0,0.5), 0 4px 28px rgba(251,146,60,0.5), inset 0 1px 0 rgba(255,255,255,0.09); border-color: rgba(251,146,60,0.6); }
 }
 @keyframes hudScoreBump {
   0%   { transform: scale(1); }
@@ -2287,13 +2460,7 @@ body { background-color: var(--bg); }
   75% { transform: translate(calc(-1px * var(--shake-intensity)), calc(2px * var(--shake-intensity))); }
 }
 
-.dtp-combo-badge {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  pointer-events: none; z-index: 9998; text-align: center;
-  animation: comboPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.dtp-combo-count { font-size: calc(3rem * var(--combo-scale)); font-weight: 900; color: #fbbf24; text-shadow: 0 2px 8px rgba(0,0,0,0.6); display: block; }
-.dtp-combo-mult { font-size: 1.2rem; color: #fff; opacity: 0.9; }
+/* .dtp-combo-badge removed — combo now renders in .hud-card--combo */
 
 /* Graceful degradation for low-end/older browsers */
 .no-webgl .particle-layer { display: none; }
@@ -2368,10 +2535,10 @@ body { background-color: var(--bg); }
   background: #f8fafc;
   box-shadow: 0 0 8px rgba(255,255,255,0.9);
 }
-.multi-tap-pips span:nth-child(1) { transform: rotate(0deg) translateY(-18px); }
-.multi-tap-pips span:nth-child(2) { transform: rotate(90deg) translateY(-18px); }
-.multi-tap-pips span:nth-child(3) { transform: rotate(180deg) translateY(-18px); }
-.multi-tap-pips span:nth-child(4) { transform: rotate(270deg) translateY(-18px); }
+.multi-tap-pips span:nth-child(1) { transform: rotate(0deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(2) { transform: rotate(90deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(3) { transform: rotate(180deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
+.multi-tap-pips span:nth-child(4) { transform: rotate(270deg) translateY(calc(-1 * clamp(14px, calc(var(--cell) * 0.28), 25px))); }
 @keyframes multiTapOrbit {
   to { transform: rotate(360deg); }
 }
@@ -3212,10 +3379,12 @@ body { background-color: var(--bg); }
     gap: 4px;
   }
   .hdr { min-height: 36px; }
-  .hud { gap: 6px; }
-  .hud-card { padding: 4px 8px; }
-  .hud-val { font-size: 20px; }
-  .hud-card--score .hud-val { font-size: 22px; }
+  .hud { gap: 4px; }
+  .hud-card { padding: 4px 7px; border-radius: 10px; }
+  .hud-val { font-size: 19px; }
+  .hud-card--score .hud-val { font-size: 21px; }
+  .hud-combo-val { font-size: 14px; }
+  .hud-combo-count { font-size: 16px; }
   .game-area { margin: 0; }
   .go-overlay { padding: 12px; }
   .menu-card { padding: 14px; gap: 10px; }
@@ -3359,9 +3528,11 @@ body { background-color: var(--bg); }
   .root { padding: 4px 10px 6px; gap: 4px; }
   .hdr { min-height: 32px; }
   .hud-lbl { display: none; }
-  .hud-val { font-size: 20px; }
-  .hud-card { padding: 4px 10px; }
-  .spd-wrap { display: none; } /* hide speed bar on tiny landscape */
+  .hud-val { font-size: 19px; }
+  .hud-card { padding: 4px 9px; border-radius: 9px; }
+  .hud-combo-val { font-size: 13px; }
+  .hud-combo-count { font-size: 15px; }
+  .spd-wrap { display: none; }
   :root {
     --cell-1p: min(clamp(44px, 11vw, 68px), clamp(44px, 14vh, 68px));
   }
@@ -3603,15 +3774,9 @@ input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px;
   75% { transform: translate(calc(-1px * var(--shake-intensity)), calc(2px * var(--shake-intensity))); }
 }
 
-/* ─── Combo Badge ─── */
-.dtp-combo-badge {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  pointer-events: none; z-index: 9998; text-align: center;
-  animation: comboPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.dtp-combo-count { font-size: calc(3rem * var(--combo-scale)); font-weight: 900; color: #fbbf24; text-shadow: 0 2px 8px rgba(0,0,0,0.6); display: block; }
-.dtp-combo-mult { font-size: 1.2rem; color: #fff; opacity: 0.9; }
-@keyframes comboPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 60% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+/* ─── Combo HUD Card ─── */
+/* .dtp-combo-badge replaced — see .hud-card--combo in HUD section */
+@keyframes comboPop { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
 
 /* ─── Graceful degradation for low-end browsers ─── */
 .no-webgl .particle-layer { display: none; }

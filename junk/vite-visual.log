@@ -1,0 +1,322 @@
+Re-optimizing dependencies because lockfile has changed
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m485[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m4:52:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:08:41 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:08:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:09:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:09:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:09:26 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:09:33 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:09:40 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:09:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:09:55 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:10:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:10:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:10:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:11:32 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:11:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:12:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:12:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:12:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:12:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:12:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:12:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:12:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Settings/DevOverlay.tsx[22m
+[2m5:12:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:12:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:12:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:19:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:19:53 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:20:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:20:07 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:20:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:22:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:22:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:23:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx, /components/HUD/Hearts.tsx, /components/HUD/EnergyBar.tsx, /components/Settings/BuildDeploySection.tsx, /components/Animations/ShieldDrop.tsx, /components/Screens/StartScreen.tsx[22m
+[2m5:23:26 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:24:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:31:41 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:31:44 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:31:49 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:31:58 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:32:01 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:32:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:32:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:32:44 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:32:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:32:55 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:32:58 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:33:10 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:33:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:33:19 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:33:21 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:33:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx[22m
+[2m5:34:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:39:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:39:36 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:40:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:40:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/Cell/index.tsx[22m
+[2m5:40:47 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:40:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:41:15 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/HUD/PlayerPanel.tsx[22m
+[2m5:41:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:42:01 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/styles/game.css[22m
+[2m5:45:51 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:46:03 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:46:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:27 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:32 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:38 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:40 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:45 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:53 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:55 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m5:48:59 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/App.tsx, /components/Screens/RewardsHub.tsx[22m
+[2m6:00:07 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m6:00:10 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+Re-optimizing dependencies because vite config has changed
+[2m6:00:10 PM[22m [36m[1m[vite][22m[39m server restarted.
+[2m6:00:13 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m6:00:13 PM[22m [36m[1m[vite][22m[39m server restarted.
+[2m6:00:17 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m6:00:17 PM[22m [36m[1m[vite][22m[39m server restarted.
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/App.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/DifficultyScaler.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/GameEngine.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/difficulty.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/difficultyOverrides.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/dailyObjective.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/gridPatterns.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/keybindings.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/powerupWeights.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useGameEngine.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useInputHandler.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/main.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/firebase.ts.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/EnergyDrop.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/FreezeDrop.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/ShieldDrop.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/GridPulse.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/ParticleWeb.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/Plasma.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/StarWarp.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/VoidTunnel.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Cell/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Cell/index.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/BuildDeploySection.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/DevOverlay.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/KeyBinder.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/PillRow.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/SettingsDrawer.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/DustWidget.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/EnergyBar.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/Hearts.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PlayerPanel.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PwrBadges.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PwrBar.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/ScoreDisplay.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/Toasts.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Leaderboard/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Leaderboard/LeaderboardPanel.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/EvolveTutorial.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/GameOver.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/HowToPlay.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/LoadingScreen.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/PrivacyBanner.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/StartScreen.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/WhatsNew.tsx.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Shop/index.html[22m
+[2m7:22:46 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Shop/ShopPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/App.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/FIXES_CODE_EXAMPLES.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/index-BAMt8Opt.js.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/index-BAMt8Opt.js.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/lint-staged.config.js.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/main.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/playwright.config.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5/RewardsHub.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/App.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/GameEngine.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/LeaderboardPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/RewardsHub.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/5.5.0/useGameEngine.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/LazyPanels.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase f/GameOver.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase f/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase f/LeaderboardPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase jl/AmbientFlow.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase jl/GlitchGrid.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase jl/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/.agents/phases/phase jl/PulseField.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/AmbientFlow.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/BlockOrbit.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/CellBreath.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/cleanup-pattern.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/DataStream.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/GlitchGrid.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/GridPulse.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/ParticleWeb.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/Plasma.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/PulseField.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/PurpleCascade.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/PurpleRain.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/StarWarp.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/VoidTunnel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Backgrounds/WarpGate.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/EnergyDrop.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/FreezeDrop.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Animations/ShieldDrop.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Cell/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Cell/index.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/DustWidget.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/EnergyBar.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/GridErrorBoundary.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/Hearts.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PlayerPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PwrBadges.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/PwrBar.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/ScoreDisplay.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/HUD/Toasts.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Layout/BackgroundController.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Layout/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Leaderboard/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Leaderboard/LeaderboardPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/DailyChallengesPopup.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/EvolveTutorial.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/FirstRunOverlay.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/GameOver.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/HowToPlay.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/LoadingScreen.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/LoginStreakPopup.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/PrivacyBanner.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/RewardsHub.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/StartScreen.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Screens/WhatsNew.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/BuildDeploySection.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/DevOverlay.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/KeyBinder.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/PillRow.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Settings/SettingsDrawer.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Shop/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/components/Shop/ShopPanel.tsx.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/dailyObjective.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/difficulty.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/difficultyOverrides.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/gameBalance.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/gridPatterns.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/keybindings.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/powerupWeights.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/config/tutorial.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/DifficultyScaler.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/GameEngine.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useBackground.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useGameEngine.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useInputHandler.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useOffsetCursor.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useScreenStateMachine.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/hooks/useZeroLatencyInput.ts.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/scripts/check-bundle-size.mjs.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/scripts/gen-og-image.mjs.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/scripts/gen-screenshot.mjs.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/scripts/index.html[22m
+[2m7:22:51 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/clarity.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/firebase.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/gameanalytics.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/services/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/achievements.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/analytics.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/asset-hydrator.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/audio.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/boss-engine.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/challenge-link.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/cleanup-pattern.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/dda.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/devLog.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/dustAnimation.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/error-tracker.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/featureGates.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/feedback-rhythm.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/game-config.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/gamepad.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/gestures.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/haptics.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/i18n.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/idb.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/input-smoothing.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/lazy-hydrate.tsx.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/logger.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/orientation.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/pendingScoresDb.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/perf-monitor.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/preloader-v2.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/preloader.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/privacy.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/score-card.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/score-sync.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/seed-challenge.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/seed-manager.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/session.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/settings.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/state-guard.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/storage.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/utils/visual-a11y.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/workers/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/workers/score-validator.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/BotController.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/CellLifecycle.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/EventOrchestrator.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/ScoreTracker.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/SessionPersistor.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/engine/subsystems/TickProcessor.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/App.tsx.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/engine/GameEngine.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/engine/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/hooks/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/hooks/useGameEngine.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/config/dailyObjective.ts.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/config/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/components/Screens/GameOver.tsx.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/components/Screens/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/components/Cell/index.html[22m
+[2m7:22:52 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcoverage/deploy-ready/files/dtp-v5.7.0-patch/components/Cell/index.tsx.html[22m
+[2m7:33:34 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m7:33:34 PM[22m [36m[1m[vite][22m[39m server restarted.

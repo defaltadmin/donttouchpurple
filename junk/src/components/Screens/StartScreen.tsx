@@ -1,0 +1,337 @@
+import React from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { GameMode, NumPlayers } from "../../engine/types";
+import { GAME } from "../../config/difficulty";
+import { getObjectiveStreak } from "../../config/dailyObjective";
+
+// ─── Types local to menu ──────────────────────────────────────────
+type InputMode = "touch" | "keyboard";
+
+// ─── PillRow ──────────────────────────────────────────────────────
+function PillRow<T extends string | number>({
+  options, value, onChange,
+}: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  const selIdx   = options.findIndex(o => o.value === value);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const rowRef   = useRef<HTMLDivElement>(null);
+
+  const reposition = useCallback(() => {
+    const row   = rowRef.current;
+    const thumb = thumbRef.current;
+    if (!row || !thumb) return;
+    const btns = row.querySelectorAll<HTMLButtonElement>(".pill-opt");
+    const btn  = btns[selIdx];
+    if (!btn) return;
+    thumb.style.left  = btn.offsetLeft + "px";
+    thumb.style.width = btn.offsetWidth + "px";
+  }, [selIdx]);
+
+  useEffect(() => {
+    reposition();
+    let raf1: number, raf2: number;
+    raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(reposition); });
+    const row = rowRef.current;
+    if (!row || typeof ResizeObserver === "undefined")
+      return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+    const ro = new ResizeObserver(() => { reposition(); requestAnimationFrame(reposition); });
+    ro.observe(row);
+    if (row.parentElement) ro.observe(row.parentElement);
+    return () => { ro.disconnect(); cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+  }, [reposition, selIdx]);
+
+  return (
+    <div className="pill-row" ref={rowRef}>
+      <div className="pill-thumb" ref={thumbRef} />
+      {options.map((o, i) => (
+        <button key={String(o.value)}
+          className={`pill-opt${i === selIdx ? " pill-opt--on" : ""}`}
+          onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Energy countdown ──────────────────────────────────────────────
+function getNextRegenMs(energyLastRegen: number): number {
+  const elapsed   = Date.now() - energyLastRegen;
+  const remaining = GAME.ENERGY_REGEN_MS - (elapsed % GAME.ENERGY_REGEN_MS);
+  return remaining;
+}
+
+function EnergyCountdown({ energyLastRegen }: { energyLastRegen: number }) {
+  const [ms, setMs] = useState(() => getNextRegenMs(energyLastRegen));
+  useEffect(() => {
+    const id = setInterval(() => setMs(getNextRegenMs(energyLastRegen)), 250);
+    return () => clearInterval(id);
+  }, [energyLastRegen]);
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+  return <div className="no-energy-timer">Next energy in {mins}:{String(secs).padStart(2, "0")}</div>;
+}
+
+// ─── Props ────────────────────────────────────────────────────────
+export interface StartScreenProps {
+  gameMode:        GameMode;
+  setGameMode:     (m: GameMode) => void;
+  numPlayers:      NumPlayers;
+  setNumPlayers:   (n: NumPlayers) => void;
+  inputMode:       InputMode;
+  setInputMode:    (m: InputMode) => void;
+  practiceMode:    boolean;
+  setPracticeMode: (v: boolean) => void;
+  energyCount:     number;
+  energyLastRegen: number;
+  dust:            number;
+  devMode:         boolean;
+  playerName:      string | null;
+  isFeatureUnlocked: (id: import('../../utils/featureGates').FeatureId) => boolean;
+  onPlay:          () => void;
+  onHowTo:         () => void;
+  onLeaderboard:   () => void;
+  onShop:          () => void;
+  onKeybind:       () => void;
+  onRefillEnergy:  () => void;
+  onSwitchPlayer:  () => void;
+  onOpenRewardsHub: () => void;
+  rewardsBadgeCount?: number;
+  dustWidget:      React.ReactNode;
+  energyBar:       React.ReactNode;
+  dailyObjective?: import("../../config/dailyObjective").DailyObjective;
+  pendingReplaySeed?: string | null;
+  onClearReplaySeed?: () => void;
+  resumeReady?: boolean;
+  resumeData?: Record<string, unknown> | null;
+  onResumeGame?: () => void;
+}
+
+// ─── StartScreen ──────────────────────────────────────────────────
+export function StartScreen({
+  gameMode, setGameMode,
+  numPlayers, setNumPlayers,
+  inputMode, setInputMode,
+  practiceMode, setPracticeMode,
+  energyCount, energyLastRegen,
+  dust, devMode,
+  playerName,
+  isFeatureUnlocked,
+  onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
+  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
+  dustWidget, energyBar,
+  dailyObjective,
+  pendingReplaySeed, onClearReplaySeed,
+  resumeReady, resumeData, onResumeGame,
+}: StartScreenProps) {
+  const isKbd = inputMode === "keyboard";
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle navigation when not in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          onPlay();
+          break;
+        case 'h':
+        case 'H':
+          e.preventDefault();
+          onHowTo();
+          break;
+        case 'l':
+        case 'L':
+          e.preventDefault();
+          onLeaderboard();
+          break;
+        case 's':
+        case 'S':
+          e.preventDefault();
+          onShop();
+          break;
+        case 'k':
+        case 'K':
+          e.preventDefault();
+          onKeybind();
+          break;
+        case 'r':
+        case 'R':
+          if (resumeReady && onResumeGame) {
+            e.preventDefault();
+            onResumeGame();
+          }
+          break;
+        case '1':
+          e.preventDefault();
+          setGameMode('classic');
+          break;
+        case '2':
+          if (isFeatureUnlocked('evolve_mode') || devMode) {
+            e.preventDefault();
+            setGameMode('evolve');
+          }
+          break;
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          e.preventDefault();
+          setNumPlayers(numPlayers === 1 ? 2 : 1);
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          setInputMode('touch');
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+          e.preventDefault();
+          setInputMode(inputMode === 'touch' ? 'keyboard' : 'touch');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame]);
+
+  return (
+    <div className="menu-card screen-slide" role="main" aria-label="Game menu">
+      {pendingReplaySeed && (
+        <div className="replay-banner">
+          <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
+          <button className="btn-ghost btn-sm" onClick={onClearReplaySeed}>Clear</button>
+        </div>
+      )}
+      {resumeReady && resumeData && onResumeGame && (
+        <button onClick={onResumeGame} className="dtp-btn-resume" aria-label="Resume saved game">
+          🔄 Resume Game
+          <span className="dtp-resume-meta">Score: {resumeData.score as number} | ❤️ {resumeData.hearts as number}</span>
+        </button>
+      )}
+      {/* Top row: player pill + energy pips */}
+      <div className="menu-top-row">
+        <button className="player-pill" onClick={onSwitchPlayer}>
+          <span className="player-pill-icon">{devMode ? "🔧" : "👤"}</span>
+          <span className="player-pill-name">{playerName || "Guest"}{devMode ? " [DEV]" : ""}</span>
+          <span className="player-pill-edit">✎</span>
+        </button>
+        <div className="energy-inline">{energyBar}</div>
+      </div>
+
+      <div className="menu-header">
+        <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
+        <p className="menu-sub">⚡ Tap fast. Avoid purple. Survive.</p>
+        {dailyObjective?.completed && (
+          <div className="obj-streak-badge">🔥 {getObjectiveStreak()} day streak</div>
+        )}
+      </div>
+
+      <div className="opt-grid">
+        <div className="opt-section">
+          <div className="opt-label">
+            🎮 Game Mode
+          </div>
+          <PillRow<GameMode>
+            options={[
+              { value: "classic", label: "⊞ Classic" }, 
+              { value: "evolve", label: isFeatureUnlocked('evolve_mode') ? "∞ Evolve" : "🔒 Evolve" }
+            ]}
+            value={gameMode} 
+            onChange={(m) => {
+              if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) return;
+              setGameMode(m);
+            }} 
+          />
+          {!isFeatureUnlocked('evolve_mode') && !devMode && (
+            <div className="lock-hint-text">🔒 Play 5 Classic games to unlock Evolve Mode</div>
+          )}
+        </div>
+        <div className="opt-section">
+          <div className="opt-label">
+            👥 Players
+          </div>
+          <PillRow<NumPlayers>
+            options={[
+              { value: 1, label: "Solo" }, 
+              { value: 2, label: isFeatureUnlocked('two_player') ? "Duo" : "🔒 Duo" }
+            ] as { value: NumPlayers; label: string }[]}
+            value={numPlayers} 
+            onChange={(n) => {
+              if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) return;
+              setNumPlayers(n);
+            }} 
+          />
+          {!isFeatureUnlocked('two_player') && !devMode && (
+            <div className="lock-hint-text">🔒 Win 1 Classic game to unlock Duo Mode</div>
+          )}
+        </div>
+        <div className="opt-section">
+          <div className="opt-label">🕹 Input</div>
+          <PillRow<InputMode>
+            options={[{ value: "touch", label: "👆 Touch" }, { value: "keyboard", label: "⌨ Keys" }]}
+            value={inputMode} onChange={setInputMode} />
+        </div>
+        <div className="opt-section">
+          <div className="opt-label">🎯 Practice Mode</div>
+          <PillRow<"on" | "off">
+            options={[{ value: "on", label: "∞ Unlimited" }, { value: "off", label: "⚡ Normal" }]}
+            value={practiceMode ? "on" : "off"}
+            onChange={(v) => setPracticeMode(v === "on")} />
+        </div>
+      </div>
+
+      {(devMode || energyCount > 0) ? (
+        <button className="btn-play" onClick={onPlay} aria-label="Start new game">
+          ▶ PLAY!{devMode ? " 🔧" : ""}
+        </button>
+      ) : (
+        <div className="no-energy-block" role="status" aria-label="No energy available">
+          <div className="no-energy-txt">⚡ No energy</div>
+          <EnergyCountdown energyLastRegen={energyLastRegen} />
+          <button className="btn-ghost" style={{ marginTop: 8, fontSize: 13 }}
+            onClick={onRefillEnergy}
+            disabled={dust < GAME.DUST_PER_ENERGY}
+            aria-label={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} dust to refill energy` : "Spend dust to refill energy"}
+            title={dust < GAME.DUST_PER_ENERGY ? `Need ${GAME.DUST_PER_ENERGY} 💜 dust` : ""}>
+            💜 Spend {GAME.DUST_PER_ENERGY} dust to refill
+          </button>
+        </div>
+      )}
+
+      {dailyObjective && (
+        <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}
+             role="status"
+             aria-label={`Daily objective: ${dailyObjective.description}, reward ${dailyObjective.reward} dust${dailyObjective.completed ? ', completed' : ''}`}>
+          🎯 {dailyObjective.description} → +{dailyObjective.reward} 💜
+          {dailyObjective.completed && " ✓"}
+        </div>
+      )}
+
+      <div className="menu-links" role="navigation" aria-label="Menu options">
+        <button className="btn-link" onClick={onHowTo} aria-label="How to play instructions">❓ How to Play</button>
+        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}
+                aria-label={!isFeatureUnlocked('leaderboard') && !devMode ? "Leaderboard locked - score higher to unlock" : "View leaderboard"}>
+          🏆 Leaderboard {!isFeatureUnlocked('leaderboard') && "🔒"}
+        </button>
+        <button className="btn-link" onClick={onShop} aria-label="Open shop">🛒 Shop</button>
+        <button className="rewards-hub-btn" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}
+                aria-label={!isFeatureUnlocked('daily_challenges') && !devMode ? "Rewards hub locked" : `Rewards hub${(rewardsBadgeCount ?? 0) > 0 ? `, ${rewardsBadgeCount} rewards available` : ''}`}>
+          🎁 {!isFeatureUnlocked('daily_challenges') && "🔒"}
+          {(rewardsBadgeCount ?? 0) > 0 && isFeatureUnlocked('daily_challenges') && (
+            <span className="rewards-hub-badge">{rewardsBadgeCount}</span>
+          )}
+        </button>
+        {isKbd && <button className="btn-link" onClick={onKeybind} aria-label="Configure keyboard bindings">⌨ Keys</button>}
+      </div>
+
+      {/* Screen reader instructions */}
+      <div className="sr-only" aria-live="polite">
+        Use keyboard shortcuts: Enter/Space to play, H for help, L for leaderboard, S for shop, K for keys.
+        Use 1/2 to switch game modes, arrow keys to change players and input mode.
+        {resumeReady ? ' Press R to resume saved game.' : ''}
+      </div>
+    </div>
+  );
+}
