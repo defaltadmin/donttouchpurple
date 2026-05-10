@@ -222,10 +222,6 @@ export function StartScreen({
         <div className="energy-inline">{energyBar}</div>
       </div>
 
-      <div className="menu-header">
-        <h1 className="menu-title"><span className="txt-p">◉</span></h1>
-      </div>
-
       <div className="opt-grid">
         <div className="opt-section">
           <div className="opt-label">Game</div>
