@@ -124,6 +124,7 @@ export class GameEngine {
     }).catch(e => logError('Settings module failed', e));
     window.addEventListener('dtp:boss:complete', () => { this._bossActive = false; });
     window.addEventListener('dtp:difficulty:emergency', () => {
+      if (!this.p1) return;
       const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
       this.p1.score += bonus;
       this.emit({ type: "toast", message: `ΓÜû∩╕Å Difficulty adjusted! +${bonus} pts` });

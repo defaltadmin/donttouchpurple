@@ -591,14 +591,13 @@ body.damage-pulse::after {
 
 /* ── Menu card ── */
 .menu-card {
-  width: 100%;
-  max-width: 360px;
-  min-height: 80vh;
-  background: linear-gradient(145deg, rgba(45,16,96,0.7), rgba(13,8,32,0.8));
-  border: 2px solid rgba(192,38,211,0.25); border-radius: 28px; padding: 20px 18px 28px;
-  backdrop-filter: blur(var(--panel-blur)) saturate(160%);
-  display: flex; flex-direction: column; gap: 12px;
-  justify-content: space-between;
+  width: 90vw;
+  max-width: 420px;
+  background: linear-gradient(145deg, rgba(45,16,96,0.75), rgba(13,8,32,0.85));
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 28px; padding: 20px 18px 28px;
+  backdrop-filter: blur(20px) saturate(160%);
+  display: flex; flex-direction: column; gap: 14px;
+  justify-content: center;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.5), 0 0 40px rgba(192,38,211,0.08);
 }
 .menu-header { display: flex; flex-direction: column; gap: 4px; text-align: center; }
@@ -610,7 +609,7 @@ body.damage-pulse::after {
 .btn-play {
   width: 100%;
   background: linear-gradient(135deg, #a21caf, #c026d3, #7c3aed);
-  color: var(--text); border: none; border-radius: 16px; padding: 16px;
+  color: var(--text); border: none; border-radius: 16px; padding: 18px 16px;
   font-family: var(--font-game); font-size: 18px; letter-spacing: 1px;
   cursor: pointer; transition: all 0.18s;
   box-shadow: 0 6px 0 #6b21a8, 0 8px 24px rgba(192,38,211,0.4);
@@ -670,9 +669,9 @@ body.damage-pulse::after {
 .btn-link:hover { color: var(--text); }
 
 /* ── Options ── */
-.opt-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; flex: 1; }
-.opt-section { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.opt-label { display: none; } /* Hide for cleaner minimalist look */
+.opt-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.opt-section { display: flex; flex-direction: column; gap: 6px; }
+.opt-label { display: none; }
 .opt-row { display: flex; gap: 6px; }
 .opt-btn {
   flex: 1; padding: 9px 6px; background: var(--bg2); border: 2px solid var(--glass-border);
@@ -3711,14 +3710,16 @@ input[type="range"] { accent-color: var(--theme-primary, #8a2be2); width: 120px;
 
 /* ─── Resume Button ─── */
 .dtp-btn-resume {
+  width: 100%;
   background: rgba(30, 30, 40, 0.85);
   backdrop-filter: blur(12px);
   color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12);
-  padding: 0.8rem 1.5rem; border-radius: 12px;
-  font-weight: 600; margin: 0.5rem 0 1.5rem; width: 100%;
+  padding: 14px 16px; border-radius: 14px;
+  font-weight: 600; margin: 0 0 12px;
   display: flex; align-items: center; justify-content: center; gap: 0.5rem;
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   cursor: pointer;
+  font-size: 15px;
 }
 .dtp-btn-resume:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); background: rgba(40, 40, 55, 0.9); }
 .dtp-btn-resume:active { transform: translateY(0); }
