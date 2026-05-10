@@ -583,6 +583,7 @@ export default function App() {
   const pbFlashedRef = useRef(false);
   const [gameOverProgress, setGameOverProgress] = useState(0);
   const [liveMessage, setLiveMessage] = useState('');
+  const [hasSeenHowTo, setHasSeenHowTo] = useState(() => localStorage.getItem('dtp:howto-seen') === 'true');
 
   const saveShopDataState = useCallback((data: ShopData) => {
     saveShopData(data);
@@ -2293,7 +2294,7 @@ export default function App() {
           practiceMode={practiceMode}
           setPracticeMode={setPracticeMode}
           onPlay={startGame}
-          onHowTo={() => setScreen("howto")}
+          onHowTo={() => { if (!hasSeenHowTo) { localStorage.setItem('dtp:howto-seen', 'true'); setHasSeenHowTo(true); } setScreen("howto"); }}
           onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
           onShop={() => setScreen("shop")}
           onKeybind={() => setScreen("keybind")}
