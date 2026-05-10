@@ -223,15 +223,16 @@ export function StartScreen({
       </div>
 
       <div className="menu-header">
-        <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
+        <h1 className="menu-title"><span className="txt-p">◉</span></h1>
       </div>
 
       <div className="opt-grid">
         <div className="opt-section">
+          <div className="opt-label">Game</div>
           <PillRow<GameMode>
             options={[
-              { value: "classic", label: "Classic" },
-              { value: "evolve", label: "Evolve" }
+              { value: "classic", label: "⊞ Classic" },
+              { value: "evolve", label: "∞ Evolve" }
             ]}
             value={gameMode}
             onChange={(m) => {
@@ -244,10 +245,11 @@ export function StartScreen({
           />
         </div>
         <div className="opt-section">
+          <div className="opt-label">Players</div>
           <PillRow<NumPlayers>
             options={[
-              { value: 1, label: "Solo" },
-              { value: 2, label: "Duo" }
+              { value: 1, label: "① Solo" },
+              { value: 2, label: "② Duo" }
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
             onChange={(n) => {
@@ -260,13 +262,15 @@ export function StartScreen({
           />
         </div>
         <div className="opt-section">
+          <div className="opt-label">Input</div>
           <PillRow<InputMode>
-            options={[{ value: "touch", label: "Touch" }, { value: "keyboard", label: "Keys" }]}
+            options={[{ value: "touch", label: "👆 Touch" }, { value: "keyboard", label: "⌨ Keys" }]}
             value={inputMode} onChange={setInputMode} />
         </div>
         <div className="opt-section">
+          <div className="opt-label">Mode</div>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "Practice" }, { value: "off", label: "Normal" }]}
+            options={[{ value: "on", label: "∞ Practice" }, { value: "off", label: "⚡ Normal" }]}
             value={practiceMode ? "on" : "off"}
             onChange={(v) => setPracticeMode(v === "on")} />
         </div>
@@ -283,21 +287,12 @@ export function StartScreen({
         </div>
       )}
 
-      {dailyObjective && (
-        <div className={`daily-obj-chip${dailyObjective.completed ? " daily-obj-chip--done" : ""}`}
-             role="status"
-             aria-label={`Daily: ${dailyObjective.description}`}>
-          🎯 {dailyObjective.description} → +{dailyObjective.reward} 💜
-          {dailyObjective.completed && " ✓"}
-        </div>
-      )}
-
       <div className="menu-links">
-        <button className="btn-link" onClick={onHowTo}>How to Play</button>
-        <button className="btn-link" onClick={onShop}>Shop</button>
-        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}>Leaderboard</button>
-        <button className="btn-link" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}>Rewards</button>
-        {isKbd && <button className="btn-link" onClick={onKeybind}>Keys</button>}
+        <button className="btn-icon-sm" onClick={onHowTo} title="How to Play">❓</button>
+        <button className="btn-icon-sm" onClick={onShop} title="Shop">🛒</button>
+        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title="Leaderboard">🏆</button>
+        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title="Rewards">🎁</button>
+        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title="Keys">⌨</button>}
       </div>
 
       {/* Screen reader instructions */}

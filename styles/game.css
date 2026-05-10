@@ -592,16 +592,17 @@ body.damage-pulse::after {
 /* ── Menu card ── */
 .menu-card {
   width: 100%;
+  max-width: 360px;
   background: linear-gradient(145deg, rgba(45,16,96,0.7), rgba(13,8,32,0.8));
   border: 2px solid rgba(192,38,211,0.25); border-radius: 28px; padding: 24px;
   backdrop-filter: blur(var(--panel-blur)) saturate(160%);
   display: flex; flex-direction: column; gap: 14px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.5), 0 0 40px rgba(192,38,211,0.08);
 }
-.menu-header { display: flex; flex-direction: column; gap: 4px; }
+.menu-header { display: flex; flex-direction: column; gap: 4px; text-align: center; }
 /* menu-title defined below with shimmer animation */
-.menu-sub { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; }
-.menu-links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.menu-sub { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; text-align: center; }
+.menu-links { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Buttons ── */
 .btn-play {
