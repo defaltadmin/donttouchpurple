@@ -2,13 +2,13 @@
 
 ## [7.5.1] - 2026-05-10
 ### 🧹 Cleanup
-- **Create junk folder for stale files** — Moved deprecated folders and files to `junk/` for safekeeping instead of deleting:
-  - Old version directories: `5.5/`, `5.5.0/`, `coverage/`, `sonnet-eval/`, `dtp-session-tools/`, `files/`, `test-results/`
-  - Deprecated zip packs: `dist.zip`, `dtp-9-5.zip`, `dtp-bugfix*.zip`, `dtp-claude-handoff*.zip`, `dtp-review-packet.zip`, `dtp-v6.1-fixes.zip`, `htdocs.zip`
-  - Stale docs/logs: `DTP-v6.2-roadmap.md`, `FIXES_CODE_EXAMPLES.tsx`, `COMMIT_CONVENTION.md`, `OPENCODE_PACKET_PREP.md`, `RELEASE-CHECKLIST.md`, `QWEN.md`
-  - Build artifacts: `index-BAMt8Opt.js`, `lighthouse.json`, `lighthouse.pdf`, all `vite-*.log` files
-  - Duplicate source: `src/` (identical copy of root files)
+- **Create junk folder for stale files** — Moved deprecated folders and files to `junk/` for safekeeping instead of deleting
 - **CSS fix**: Fixed invalid CSS syntax in `.multi-tap-pips` animations (`-1 * clamp()` not valid in CSS calc)
+
+### 🎮 QOL Improvements & Bug Fixes
+- **Combo badge formatting** (`App.tsx`) — Changed from raw `2x ×1.2` to cleaner `🔥 x2` and `1.2x pts` format
+- **Combo badge position** (`game.css`) — Moved from center of screen (overlapping grid) to top 18% of screen in HUD area
+- **Rare color mode gating** (`TickProcessor.ts`) — Rare color events now only trigger in Evolve mode, not Classic mode
 
 ## [7.5.0] - 2026-05-09
 ### 🐛 Bug Fixes

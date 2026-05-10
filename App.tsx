@@ -1920,8 +1920,8 @@ export default function App() {
       {/* Combo Counter */}
       {combo.count > 1 && screen === "playing" && (
         <div className="dtp-combo-badge" style={{ '--combo-scale': Math.min(combo.multiplier, 2.5) } as any}>
-          <span className="dtp-combo-count">{combo.count}x</span>
-          <span className="dtp-combo-mult">×{combo.multiplier}</span>
+          <span className="dtp-combo-count">🔥 x{combo.count}</span>
+          <span className="dtp-combo-mult">{combo.multiplier.toFixed(1)}x pts</span>
         </div>
       )}
 

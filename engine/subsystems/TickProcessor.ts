@@ -79,7 +79,11 @@ export class TickProcessor {
           ctx.emit({ type: "toast", message: "🟣 Back to Purple!" });
         }
       } else {
-        const s1 = ctx.p1.score;
+        const mode = ctx.config.mode;
+        // Rare color events only trigger in Evolve mode
+        if (mode !== "evolve") { ctx.rareMode = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" }; }
+        else {
+          const s1 = ctx.p1.score;
         const { triggerInterval, warnThreshold, minScore, modCheck, chance, minTurns, bonusTurns } = BALANCE.rare;
         if (
           s1 > 0 &&
@@ -94,6 +98,7 @@ export class TickProcessor {
           ctx.emit({ type: "sound", name: "rareStart" });
           ctx.emit({ type: "toast", message: `⚠️ Don't Touch ${pick.color.toUpperCase()}!` });
         }
+      }
       }
     }
 
