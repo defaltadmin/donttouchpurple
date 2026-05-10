@@ -1918,13 +1918,7 @@ export default function App() {
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
       {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}
 
-      {/* Combo Counter */}
-      {combo.count > 1 && screen === "playing" && (
-        <div className="dtp-combo-badge" style={{ '--combo-scale': Math.min(combo.multiplier, 2.5) } as any}>
-          <span className="dtp-combo-count">🔥 x{combo.count}</span>
-          <span className="dtp-combo-mult">{combo.multiplier.toFixed(1)}x pts</span>
-        </div>
-      )}
+      {/* Combo Counter - removed from center, no longer distracts */}
 
       {/* Boss Banner */}
       {snapshot?.bossEvent && screen === "playing" && (
@@ -2325,7 +2319,6 @@ export default function App() {
           resumeData={resumeData}
           onResumeGame={handleResumeGame}
           onToast={toast$}
-          onPatchNotes={() => setShowWhatsNew(true)}
         />
       )}
 

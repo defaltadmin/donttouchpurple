@@ -92,7 +92,6 @@ export interface StartScreenProps {
   onLeaderboard:   () => void;
   onShop:          () => void;
   onKeybind:       () => void;
-  onPatchNotes?:   () => void;
   onRefillEnergy:  () => void;
   onSwitchPlayer:  () => void;
   onOpenRewardsHub: () => void;
@@ -118,7 +117,7 @@ export function StartScreen({
   dust, devMode,
   playerName,
   isFeatureUnlocked,
-  onPlay, onHowTo, onLeaderboard, onShop, onKeybind, onPatchNotes,
+  onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
   onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
   dustWidget, energyBar,
   dailyObjective,
@@ -224,19 +223,15 @@ export function StartScreen({
       </div>
 
       <div className="menu-header">
-        <h1 className="menu-title"><span className="txt-p">◉</span></h1>
-        {dailyObjective?.completed && (
-          <div className="obj-streak-badge">🔥</div>
-        )}
+        <h1 className="menu-title">Don't Touch the <span className="txt-p">Purple</span></h1>
       </div>
 
       <div className="opt-grid">
-        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
-          <span className="opt-icon">🎮</span>
+        <div className="opt-section">
           <PillRow<GameMode>
             options={[
-              { value: "classic", label: "⊞" },
-              { value: "evolve", label: "∞" }
+              { value: "classic", label: "Classic" },
+              { value: "evolve", label: "Evolve" }
             ]}
             value={gameMode}
             onChange={(m) => {
@@ -248,12 +243,11 @@ export function StartScreen({
             }}
           />
         </div>
-        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
-          <span className="opt-icon">👥</span>
+        <div className="opt-section">
           <PillRow<NumPlayers>
             options={[
-              { value: 1, label: "①" },
-              { value: 2, label: "②" }
+              { value: 1, label: "Solo" },
+              { value: 2, label: "Duo" }
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
             onChange={(n) => {
@@ -265,31 +259,27 @@ export function StartScreen({
             }}
           />
         </div>
-        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
-          <span className="opt-icon">🕹</span>
+        <div className="opt-section">
           <PillRow<InputMode>
-            options={[{ value: "touch", label: "👆" }, { value: "keyboard", label: "⌨" }]}
+            options={[{ value: "touch", label: "Touch" }, { value: "keyboard", label: "Keys" }]}
             value={inputMode} onChange={setInputMode} />
         </div>
-        <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
+        <div className="opt-section">
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "∞" }, { value: "off", label: "⚡" }]}
+            options={[{ value: "on", label: "Practice" }, { value: "off", label: "Normal" }]}
             value={practiceMode ? "on" : "off"}
             onChange={(v) => setPracticeMode(v === "on")} />
         </div>
       </div>
 
       {(devMode || energyCount > 0) ? (
-        <button className="btn-play btn-play--pulse" onClick={onPlay} aria-label="Play">
-          ▶
+        <button className="btn-play" onClick={onPlay}>
+          PLAY
         </button>
       ) : (
-        <div className="no-energy-block" role="status">
+        <div className="no-energy-block">
           <EnergyCountdown energyLastRegen={energyLastRegen} />
-          <button className="btn-ghost"
-            onClick={onRefillEnergy}
-            disabled={dust < GAME.DUST_PER_ENERGY}
-            aria-label="Refill energy">💜</button>
+          <button className="btn-ghost" onClick={onRefillEnergy} disabled={dust < GAME.DUST_PER_ENERGY}>Refill</button>
         </div>
       )}
 
@@ -302,17 +292,12 @@ export function StartScreen({
         </div>
       )}
 
-      <div className="menu-links" role="navigation">
-        <button className="btn-icon-sm" onClick={onHowTo} aria-label="How to play">❓</button>
-        <button className="btn-icon-sm" onClick={onOpenRewardsHub}
-          disabled={!isFeatureUnlocked('daily_challenges') && !devMode} aria-label="Rewards">
-          🎁{(rewardsBadgeCount ?? 0) > 0 && <span className="badge-dot">{rewardsBadgeCount}</span>}
-        </button>
-        <button className="btn-icon-sm" onClick={onShop} aria-label="Shop">🛒</button>
-        <button className="btn-icon-sm" onClick={onLeaderboard}
-          disabled={!isFeatureUnlocked('leaderboard') && !devMode} aria-label="Leaderboard">🏆</button>
-        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} aria-label="Keys">⌨</button>}
-        <button className="btn-icon-sm" onClick={onPatchNotes} aria-label="Patch Notes">📜</button>
+      <div className="menu-links">
+        <button className="btn-link" onClick={onHowTo}>How to Play</button>
+        <button className="btn-link" onClick={onShop}>Shop</button>
+        <button className="btn-link" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode}>Leaderboard</button>
+        <button className="btn-link" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode}>Rewards</button>
+        {isKbd && <button className="btn-link" onClick={onKeybind}>Keys</button>}
       </div>
 
       {/* Screen reader instructions */}

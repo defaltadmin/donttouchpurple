@@ -243,24 +243,22 @@ export const PlayerPanel = memo(function PlayerPanel({
         </div>
       </div>
       {showBotAssist && !practiceMode && onToggleBotAssist && (
-        <div className={`bot-assist-row${isBotActive ? " bot-assist-row--active" : ""}`}>
-          <button
-            ref={botBtnRef}
-            className={`bot-assist-btn${isBotActive ? " bot-assist-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-assist-btn--disabled" : ""}`}
-            onClick={() => {
-              if ((dust ?? 0) >= 30 && !isBotActive && botBtnRef.current) {
-                animateDustClaim(botBtnRef.current, '.dust-counter', 30, true);
-              }
-              if ((dust ?? 0) >= 30) {
-                onToggleBotAssist();
-              }
-            }}
-            title={(dust ?? 0) < 30 ? "Need 30+ dust to activate" : isBotActive ? "Bot ON — click to deactivate" : "Activate bot assist"}
-          >
-            <span className="bot-assist-dot" aria-hidden="true" />
-            🤖 {isBotActive ? `ON · marking taps` : `OFF`}
-          </button>
-        </div>
+        <button
+          ref={botBtnRef}
+          className={`bot-icon-btn${isBotActive ? " bot-icon-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-icon-btn--disabled" : ""}`}
+          onClick={() => {
+            if ((dust ?? 0) >= 30 && !isBotActive && botBtnRef.current) {
+              animateDustClaim(botBtnRef.current, '.dust-counter', 30, true);
+            }
+            if ((dust ?? 0) >= 30) {
+              onToggleBotAssist();
+            }
+          }}
+          title={(dust ?? 0) < 30 ? "Need 30+ dust" : isBotActive ? "Bot ON" : "Bot OFF"}
+          aria-label={isBotActive ? "Bot active" : "Bot inactive"}
+        >
+          🤖
+        </button>
       )}
     </div>
   );
