@@ -340,6 +340,8 @@ export class GameEngine {
     this.paused = true;
     this.phase  = "paused";
     if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    if (this._sessionAutoSaveInterval) { clearInterval(this._sessionAutoSaveInterval); this._sessionAutoSaveInterval = null; }
     this.dirty = true;
     this._pauseListeners.forEach(fn => fn());
     this.emit({ type: "phaseChange", phase: "paused" });
@@ -351,6 +353,7 @@ export class GameEngine {
     this.paused = false;
     this.phase  = "playing";
     this.scheduleTick();
+    this.startSnapshotRaf(); // Restart RAF loop
     this.dirty = true;
     this._resumeListeners.forEach(fn => fn());
     this.emit({ type: "phaseChange", phase: "playing" });
