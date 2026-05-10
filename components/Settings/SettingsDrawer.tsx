@@ -1,5 +1,6 @@
 import React from "react";
 import { PillRow } from "./PillRow";
+import { i18n, type Locale } from "../../utils/i18n";
 
 type ColorblindMode = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
@@ -27,6 +28,8 @@ interface SettingsDrawerProps {
   customSeed?: string;
   onCustomSeedChange?: (v: string) => void;
   onPlayWithSeed?: () => void;
+  currentLocale?: Locale;
+  setCurrentLocale?: (locale: Locale) => void;
 }
 
 export function SettingsDrawer({
@@ -53,7 +56,13 @@ export function SettingsDrawer({
   customSeed,
   onCustomSeedChange,
   onPlayWithSeed,
+  currentLocale,
+  setCurrentLocale,
 }: SettingsDrawerProps) {
+  const handleLocaleChange = (lang: Locale) => {
+    i18n.set(lang);
+    setCurrentLocale?.(lang);
+  };
   return (
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
@@ -143,6 +152,18 @@ export function SettingsDrawer({
             ]}
             value={colorblindMode}
             onChange={setColorblindMode}
+          />
+        </div>
+
+        <div className="opt-section">
+          <div className="opt-label">🌐 Language</div>
+          <PillRow<Locale>
+            options={i18n.getAvailable().map(lang => ({
+              value: lang,
+              label: lang === 'en' ? 'English' : lang === 'es' ? 'Español' : lang === 'ja' ? '日本語' : lang === 'pt' ? 'Português' : 'Français'
+            }))}
+            value={currentLocale ?? i18n.current}
+            onChange={handleLocaleChange}
           />
         </div>
 

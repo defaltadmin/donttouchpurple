@@ -349,7 +349,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (shouldShowWhatsNew()) setShowWhatsNew(true);
+    const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
+    if (gamesEver > 0 && shouldShowWhatsNew()) setShowWhatsNew(true);
   }, []);
 
   // Login streak check — show popup if not claimed today
@@ -2092,6 +2093,8 @@ export default function App() {
             setShowSettings(false);
             startGame();
           }}
+          currentLocale={currentLocale}
+          setCurrentLocale={setCurrentLocale}
         />
         </Suspense>
       )}
@@ -2232,22 +2235,6 @@ export default function App() {
             {snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop" ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
           </span>
         </span>
-        <div className="dtp-locale-wrapper">
-          <button className="dtp-locale-btn" onClick={() => setShowLangMenu(!showLangMenu)} aria-haspopup="true" aria-expanded={showLangMenu}>
-            🌐 {currentLocale.toUpperCase()}
-          </button>
-          {showLangMenu && (
-            <ul className="dtp-locale-list" role="menu">
-              {(i18n.getAvailable() as Locale[]).map(lang => (
-                <li key={lang} role="menuitem">
-                  <button onClick={() => { i18n.set(lang); setShowLangMenu(false); }}>
-                    {lang === 'en' ? 'English' : lang === 'es' ? 'Español' : lang === 'ja' ? '日本語' : lang === 'pt' ? 'Português' : 'Français'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
         {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:8}}>
           <div className="dust-counter"><DustWidget dust={dust} /></div>

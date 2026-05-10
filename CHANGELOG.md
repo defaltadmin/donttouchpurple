@@ -9,6 +9,8 @@
 - **Combo badge formatting** (`App.tsx`) — Changed from raw `2x ×1.2` to cleaner `🔥 x2` and `1.2x pts` format
 - **Combo badge position** (`game.css`) — Moved from center of screen (overlapping grid) to top 18% of screen in HUD area
 - **Rare color mode gating** (`TickProcessor.ts`) — Rare color events now only trigger in Evolve mode, not Classic mode
+- **Language selector moved** — Removed from header, now in Settings drawer for cleaner UI
+- **WhatsNew for new players** — Now only shows after player has played at least one game, not on first load
 
 ## [7.5.0] - 2026-05-09
 ### 🐛 Bug Fixes
