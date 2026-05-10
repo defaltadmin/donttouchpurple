@@ -92,6 +92,7 @@ export interface StartScreenProps {
   onLeaderboard:   () => void;
   onShop:          () => void;
   onKeybind:       () => void;
+  onPatchNotes?:   () => void;
   onRefillEnergy:  () => void;
   onSwitchPlayer:  () => void;
   onOpenRewardsHub: () => void;
@@ -117,7 +118,7 @@ export function StartScreen({
   dust, devMode,
   playerName,
   isFeatureUnlocked,
-  onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
+  onPlay, onHowTo, onLeaderboard, onShop, onKeybind, onPatchNotes,
   onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
   dustWidget, energyBar,
   dailyObjective,
@@ -231,6 +232,7 @@ export function StartScreen({
 
       <div className="opt-grid">
         <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
+          <span className="opt-icon">🎮</span>
           <PillRow<GameMode>
             options={[
               { value: "classic", label: "⊞" },
@@ -247,6 +249,7 @@ export function StartScreen({
           />
         </div>
         <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
+          <span className="opt-icon">👥</span>
           <PillRow<NumPlayers>
             options={[
               { value: 1, label: "①" },
@@ -263,6 +266,7 @@ export function StartScreen({
           />
         </div>
         <div className="opt-section" style={{flexDirection:'row',gap:8,justifyContent:'center'}}>
+          <span className="opt-icon">🕹</span>
           <PillRow<InputMode>
             options={[{ value: "touch", label: "👆" }, { value: "keyboard", label: "⌨" }]}
             value={inputMode} onChange={setInputMode} />
@@ -308,6 +312,7 @@ export function StartScreen({
         <button className="btn-icon-sm" onClick={onLeaderboard}
           disabled={!isFeatureUnlocked('leaderboard') && !devMode} aria-label="Leaderboard">🏆</button>
         {isKbd && <button className="btn-icon-sm" onClick={onKeybind} aria-label="Keys">⌨</button>}
+        <button className="btn-icon-sm" onClick={onPatchNotes} aria-label="Patch Notes">📜</button>
       </div>
 
       {/* Screen reader instructions */}

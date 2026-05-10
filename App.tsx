@@ -568,7 +568,7 @@ export default function App() {
     const [showEnergyPopup, setShowEnergyPopup] = useState(false);
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('dtp:onboard-seen'));
+  const [showOnboarding, setShowOnboarding] = useState(() => false); // Disable persistent onboarding overlay during gameplay
   const [shareToast, setShareToast] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showOffset, setShowOffset] = useState(() => settingsManager.get().offsetPointer ?? false);
@@ -2237,7 +2237,6 @@ export default function App() {
         </span>
         {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
         <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:4}}>
-          <button className="btn-icon-sm" onClick={() => setShowWhatsNew(true)} title="Patch Notes">📜</button>
           <div className="dust-counter"><DustWidget dust={dust} /></div>
           {isPlaying && screen === "playing"
             ? <button className="btn-icon btn-icon--pause" onClick={pauseGame} title="Pause">⏸</button>
@@ -2326,6 +2325,7 @@ export default function App() {
           resumeData={resumeData}
           onResumeGame={handleResumeGame}
           onToast={toast$}
+          onPatchNotes={() => setShowWhatsNew(true)}
         />
       )}
 
@@ -2530,8 +2530,6 @@ export default function App() {
           ))}
         </div>
       )}
-
-      {dailyComplete && <div className="dtp-daily-badge" title="Daily Challenge Complete">✅ Daily Done</div>}
 
       {showRotatePrompt && (
         <div className="dtp-rotate-overlay" role="alert" aria-live="polite">
