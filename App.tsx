@@ -1038,13 +1038,24 @@ export default function App() {
 
   const handleResumeGame = useCallback(() => {
     if (!resumeData) return;
-    const success = restoreSessionSnapshot(resumeData);
-    if (success) {
-      setScreen("playing");
-      setPaused(false);
+    try {
+      const success = restoreSessionSnapshot(resumeData);
+      if (success) {
+        setScreen("playing");
+        setPaused(false);
+        setResumeReady(false);
+        setResumeData(null);
+        toast$("📦 Game restored! Score: " + (resumeData.score as number));
+      } else {
+        toast$("Failed to restore game");
+        setResumeReady(false);
+        setResumeData(null);
+      }
+    } catch (e) {
+      console.error('Resume failed:', e);
+      toast$("Cannot resume - start a new game");
       setResumeReady(false);
       setResumeData(null);
-      toast$("📦 Game restored! Score: " + (resumeData.score as number));
     }
   }, [resumeData, restoreSessionSnapshot, toast$]);
 

@@ -830,6 +830,11 @@ destroy(): void {
   restoreSessionSnapshot(data: Record<string, unknown>): boolean {
     try {
       if (!data || !data.gameSeed) return false;
+      // Ensure p1/p2 exist before restoring
+      if (!this.p1 || !this.p2) {
+        logError('Session restore failed: engine not initialized');
+        return false;
+      }
       this.gameSeed = data.gameSeed as number;
       this.rng = mulberry32(this.gameSeed);
       this.tickCount = (data.tickCount as number) ?? 0;
