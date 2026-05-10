@@ -496,17 +496,24 @@ destroy(): void {
     const dmg = this.config.mode === "evolve" ? 0.5 : 1;
     if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
       cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
-      if (cell.type === "medpack") ref.health = Math.min(GAME.MAX_HEARTS, ref.health + 1);
+      if (cell.type === "medpack") {
+        if (ref.health >= GAME.MAX_HEARTS) {
+          // Overheal → gain shield instead
+          ref.shieldCount += 1; ref.shield = true;
+          this.emit({ type: "pwrToast", message: `🛡 Overheal! +1 Shield`, player });
+        } else {
+          ref.health += 1;
+          this.emit({ type: "toast", message: "♥ +1 Heart!" });
+        }
+      }
       if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; }
       if (cell.type === "freeze") ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
       if (cell.type === "shield") {
         this.emit({ type: "pwrToast", message: `≡ƒ¢í Shield ├ù${ref.shieldCount}!`, player });
-      } else if (cell.type === "medpack") {
-        this.emit({ type: "toast", message: "ΓÖÑ +1 Heart!" });
       } else if (cell.type === "multiplier") {
         this.emit({ type: "pwrToast", message: "ΓÜí multiplier ├ù2!", player });
-      } else {
+      } else if (cell.type === "freeze") {
         this.emit({ type: "pwrToast", message: "Γ¥ä Freeze activated!", player });
       }
     } else {
