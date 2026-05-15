@@ -106,10 +106,10 @@ type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "
 
 // ─── Safe Sentry wrapper (deferred load + ad-blocker safe) ───
 const safeSentry = {
-  addBreadcrumb: (...args: Parameters<typeof Sentry.addBreadcrumb>) => { try { Sentry.addBreadcrumb(...args); } catch {} },
-  captureException: (...args: Parameters<typeof Sentry.captureException>) => { try { Sentry.captureException(...args); } catch {} },
-  setTags: (...args: Parameters<typeof Sentry.setTags>) => { try { Sentry.setTags(...args); } catch {} },
-  setContext: (...args: Parameters<typeof Sentry.setContext>) => { try { Sentry.setContext(...args); } catch {} },
+  addBreadcrumb: (...args: Parameters<typeof Sentry.addBreadcrumb>) => { try { Sentry.addBreadcrumb(...args); } catch { /* Sentry unavailable */ } },
+  captureException: (...args: Parameters<typeof Sentry.captureException>) => { try { Sentry.captureException(...args); } catch { /* Sentry unavailable */ } },
+  setTags: (...args: Parameters<typeof Sentry.setTags>) => { try { Sentry.setTags(...args); } catch { /* Sentry unavailable */ } },
+  setContext: (...args: Parameters<typeof Sentry.setContext>) => { try { Sentry.setContext(...args); } catch { /* Sentry unavailable */ } },
 };
 
 // ─── Lazy-loaded Firebase ────────────────────────────────────────
@@ -128,11 +128,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Capture error in Sentry
-    Sentry.captureException(error, { 
-      contexts: { 
+    Sentry.captureException(error, {
+      contexts: {
         react: {
           componentStack: errorInfo.componentStack,
-        } as any,
+        } as Record<string, unknown>,
       },
     });
     console.error('[DTP] Error caught by boundary:', error, errorInfo);
@@ -212,7 +212,7 @@ function loadShopData() {
         equippedBackground: data.equippedBackground || "default"
       };
     }
-  } catch {}
+  } catch { /* invalid JSON, return defaults */ }
   return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default", unlockedBackgrounds: ["default"], equippedBackground: "default" };
 }
 
@@ -224,7 +224,7 @@ type ShopData = {
 };
 
 function saveShopData(d: ShopData) {
-  try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch {}
+  try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch { /* storage full or unavailable */ }
 }
 
 // --- Tutorial ---
@@ -240,7 +240,8 @@ export default function App() {
   const [currentLocale, setCurrentLocale] = useState<Locale>(i18n.current);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [gamepadActive, setGamepadActive] = useState(false);
-  const [achievementQueue, setAchievementQueue] = useState<any[]>([]);
+  interface AchievementToast { id: string; icon: string; name: string; desc: string; }
+  const [achievementQueue, setAchievementQueue] = useState<AchievementToast[]>([]);
   const [dailyComplete, setDailyComplete] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -280,7 +281,7 @@ export default function App() {
     deaths
   });
   const screen = machine.current;
-  const setScreen = useCallback((s: any) => machine.transition(s), [machine]);
+  const setScreen = useCallback((s: string) => machine.transition(s as any), [machine]);
 
   useEffect(() => {
     // 1. Init i18n
@@ -335,21 +336,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    getFirebase().then(fb =>
-      fb.fbGetStreak({ clientDate: new Date().toISOString().split("T")[0] })
-    ).then(streak => {
-      const safeStreak = typeof streak === 'number' && isFinite(streak) ? streak : 1;
-      setLoginStreakCount(safeStreak);
-      try {
-        localStorage.setItem("dtp_login_streak", JSON.stringify({
-          count: safeStreak,
-          lastDate: new Date().toDateString()
-        }));
-      } catch {}
-    }).catch(e => logger.warn('Firebase streak fetch failed', e));
-  }, []);
-
-  useEffect(() => {
     const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
     if (gamesEver > 0 && shouldShowWhatsNew()) setShowWhatsNew(true);
   }, []);
@@ -366,26 +352,7 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handleMove);
   }, []);
 
-  // Login streak check — show popup if not claimed today
-  useEffect(() => {
-    const LOGIN_CLAIMED_KEY = 'dtp-login-claimed';
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const lastClaimed = localStorage.getItem(LOGIN_CLAIMED_KEY);
-    if (lastClaimed !== todayStr) {
-      const streak = getObjectiveStreak();
-      const reward = getStreakReward(streak);
-      setLoginStreakCount(streak);
-      setLoginStreakReward(reward);
-      const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
-      if (gamesEver > 0) {
-        setShouldShowRewardsOnLogin(true);
-      }
-    }
-
-    // Build daily challenges from seeded pool
-    setDailyChallenges(buildDailyChallenges(todayStr));
-  }, []);
-
+  
   const [gameMode, setGameMode]      = useState<GameMode>("classic");
   const [numPlayers, setNumPlayers]  = useState<NumPlayers>(1);
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
@@ -594,6 +561,41 @@ export default function App() {
   const [gameOverProgress, setGameOverProgress] = useState(0);
   const [liveMessage, setLiveMessage] = useState('');
   const [hasSeenHowTo, setHasSeenHowTo] = useState(() => localStorage.getItem('dtp:howto-seen') === 'true');
+
+  // Login streak check — show popup if not claimed today (moved after useState declarations)
+  useEffect(() => {
+    const LOGIN_CLAIMED_KEY = 'dtp-login-claimed';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastClaimed = localStorage.getItem(LOGIN_CLAIMED_KEY);
+    if (lastClaimed !== todayStr) {
+      const streak = getObjectiveStreak();
+      const reward = getStreakReward(streak);
+      setLoginStreakCount(streak);
+      setLoginStreakReward(reward);
+
+      // Fetch latest streak from Firebase
+      getFirebase().then(fb =>
+        fb.fbGetStreak({ clientDate: todayStr })
+      ).then(fbStreak => {
+        const safeStreak = typeof fbStreak === 'number' && isFinite(fbStreak) ? fbStreak : streak;
+        setLoginStreakCount(safeStreak);
+        try {
+          localStorage.setItem("dtp_login_streak", JSON.stringify({
+            count: safeStreak,
+            lastDate: new Date().toDateString()
+          }));
+        } catch {}
+      }).catch(e => logger.warn('Firebase streak fetch failed', e));
+
+      const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
+      if (gamesEver > 0) {
+        setShouldShowRewardsOnLogin(true);
+      }
+    }
+
+    // Build daily challenges from seeded pool
+    setDailyChallenges(buildDailyChallenges(todayStr));
+  }, []);
 
   const saveShopDataState = useCallback((data: ShopData) => {
     saveShopData(data);
