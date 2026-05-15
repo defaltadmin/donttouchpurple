@@ -25,6 +25,10 @@
 - **Menu UI refinements** — Better icons with text labels, max-width constraints, visual polish for cleaner look
 
 ### 🔧 Technical Improvements
+- **Architectural Cleanup** — Moved legacy scripts (`CLICK_TO_BUILD.bat`, `start-dev.bat`, etc.) and redundant patch folders (`dtp_stability_patch`) to `junk/` to streamline the root directory.
+- **System Architecture Map** (`PROJECT_MAP_FOR_AI.md`) — Created a high-signal guide for other AI assistants to instantly grasp the engine and UI structure for faster audits.
+- **GameEvent Type Safety** (`engine/types.ts`) — Refactored events into a strict Discriminated Union, removing all `as any` casts and ensuring 100% type safety in the game loop.
+- **Performance Feedback Toasts** — The engine now notifies players when it automatically enters "Performance Mode" to maintain high FPS.
 - **Magnetic Button Mobile Fix** (`components/Screens/StartScreen.tsx`) — Added pointer media query check so magnetic effect only applies on devices with fine pointer (mouse). Added touchstart listener to reset transform and prevent laggy feel on mobile. Added haptic vibrate(2) when cursor snaps to button
 - **MouseTrail Object Pool** (`components/Backgrounds/MouseTrail.tsx`) — Replaced dynamic array with pre-allocated pool of 100 particles to prevent GC micro-stutters during long play sessions
 - **Dynamic Title Glow** (`styles/game.css`) — Added `.logo--shimmer` class with animated gradient that sweeps across the title. Creates dynamic, modern feel
