@@ -10,12 +10,12 @@ class AudioEngine {
   private activeSources: Map<string, AudioBufferSourceNode> = new Map();
   private _initialized = false;
 
-  async init() {
+  async init(): Promise<void> {
     if (this._initialized) return;
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) { logger.warn('Web Audio not supported'); return; }
-      this.ctx = new AudioCtx();
+      const WebAudioContext = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!WebAudioContext) { logger.warn('Web Audio not supported'); return; }
+      this.ctx = new WebAudioContext();
 
       (['sfx', 'music', 'ambient'] as SoundType[]).forEach(type => {
         this.gainNodes[type] = this.ctx!.createGain();
@@ -29,7 +29,7 @@ class AudioEngine {
     }
   }
 
-  async load(id: string, url: string) {
+  async load(id: string, url: string): Promise<void> {
     if (!this.ctx || !this._initialized) await this.init();
     if (!this.ctx || this.buffers.has(id)) return;
     // Only allow same-origin or relative URLs to prevent SSRF
@@ -51,7 +51,7 @@ class AudioEngine {
     } catch (e) { logger.warn(`Failed to load audio: ${id}`, e); }
   }
 
-  play(id: string, opts: AudioOptions = {}) {
+  play(id: string, opts: AudioOptions = {}): string | null {
     if (!this.ctx || !this.buffers.has(id)) return null;
     if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -61,7 +61,7 @@ class AudioEngine {
     source.loop = opts.loop ?? false;
 
     const type = id.includes('music') || id.includes('bgm') ? 'music' : 'sfx';
-    const gain = opts.volume ?? (type === 'music' ? 0.4 : 0.7);
+    const _gain = opts.volume ?? (type === 'music' ? 0.4 : 0.7);
 
     source.connect(this.gainNodes[type]);
     source.start();
@@ -72,14 +72,14 @@ class AudioEngine {
     return cleanId;
   }
 
-  stop(id: string) {
+  stop(id: string): void {
     const source = this.activeSources.get(id);
     if (source) { source.onended = null; source.stop(); this.activeSources.delete(id); }
   }
 
-  stopAll() { Array.from(this.activeSources.keys()).forEach(k => this.stop(k)); }
+  stopAll(): void { Array.from(this.activeSources.keys()).forEach(k => this.stop(k)); }
 
-  setVolume(type: SoundType, level: number) {
+  setVolume(type: SoundType, level: number): void {
     const clamped = Math.max(0, Math.min(1, level));
     if (this.gainNodes[type]) {
       this.gainNodes[type].gain.setTargetAtTime(clamped, this.ctx!.currentTime, 0.05);
@@ -87,14 +87,14 @@ class AudioEngine {
     }
   }
 
-  restoreVolumes() {
+  restoreVolumes(): void {
     (['sfx', 'music', 'ambient'] as SoundType[]).forEach(type => {
       const saved = parseFloat(localStorage.getItem(`dtp:vol:${type}`) || '1');
       this.setVolume(type, isNaN(saved) ? 0.7 : saved);
     });
   }
 
-  get initialized() { return this._initialized; }
+  get initialized(): boolean { return this._initialized; }
 }
 
 export const audioEngine = new AudioEngine();
