@@ -120,10 +120,12 @@ export const featureGates = {
   },
 
   // Check if a feature is unlocked
-  isUnlocked(id: FeatureId, progress: PlayerProgress): boolean {
+  isUnlocked(id: FeatureId, progress: PlayerProgress, devMode = false): boolean {
+    if (devMode) return true; // All features unlocked in dev mode
+
     const def = FEATURE_DEFINITIONS[id];
     if (!def.requirement) return true; // Always unlocked if no requirement
-    
+
     switch (def.requirement.type) {
       case 'score': return progress.bestScore >= def.requirement.value;
       case 'wins': return progress.wins >= def.requirement.value;
@@ -134,11 +136,11 @@ export const featureGates = {
   },
 
   // Get all features with current unlock status
-  getAll(progress: PlayerProgress): FeatureGate[] {
+  getAll(progress: PlayerProgress, devMode = false): FeatureGate[] {
     const unlocks = this.load();
     return (Object.values(FEATURE_DEFINITIONS) as FeatureGate[]).map(def => ({
       ...def,
-      unlocked: unlocks[def.id] || this.isUnlocked(def.id, progress),
+      unlocked: devMode || unlocks[def.id] || this.isUnlocked(def.id, progress),
     }));
   },
 

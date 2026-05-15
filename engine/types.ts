@@ -155,5 +155,7 @@ export type GameEvent =
   | { type: "gameOver";    winner: Winner }
   | { type: "phaseChange"; phase: "playing" | "paused" | "gameover" | "humanlimit" }
   | { type: "dustConsumed"; amount: number }
-   | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number }
-   | { type: "cellShuffle"; player: 1 | 2; fromIdx: number; toIdx: number }; // K5
+  | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number }
+  | { type: "cellShuffle"; player: 1 | 2; fromIdx: number; toIdx: number }
+  | { type: "qualityDowngrade"; reason: "fps-drop"; avgFps: number }
+  | { type: "qualityUpgrade"; avgFps: number };

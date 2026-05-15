@@ -571,6 +571,8 @@ export default function App() {
 
   const [paused, setPaused]         = useState(false);
   const [devMode, setDevMode]       = useState(false);
+  // Give 99999 dust when dev mode is enabled
+  useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode]);
   const [showDevUnlock, setShowDevUnlock] = useState(false);
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
@@ -1075,8 +1077,11 @@ export default function App() {
 
   const resumeGame = useCallback(() => {
     Sentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
-    resumeEngine();
     setPaused(false);
+    // Small delay to ensure React state updates before engine fully resumes
+    setTimeout(() => {
+      resumeEngine();
+    }, 16);
   }, [resumeEngine]);
 
   const pauseGame = useCallback(() => {
@@ -2195,7 +2200,7 @@ export default function App() {
       {screen === "menu" && (
         <StartScreen
           playerName={playerName}
-          isFeatureUnlocked={machine.isFeatureUnlocked}
+          isFeatureUnlocked={(f) => machine.isFeatureUnlocked(f, devMode)}
           dailyObjective={dailyObjective}
           energyCount={energyData.count}
           energyLastRegen={energyData.lastRegen}

@@ -22,12 +22,19 @@ export function loadStoredPwr(): StoredPowerups {
       const d = JSON.parse(r);
       return { freeze: d.freeze ?? 0, shield: d.shield ?? 0, mult: d.mult ?? 0, heart: d.heart ?? 0 };
     }
-  } catch {}
+  } catch (e) {
+    // Fix #8: Add logging for storage failures
+    logger.error('Failed to load stored powerups', e);
+  }
   return { freeze: 0, shield: 0, mult: 0, heart: 0 };
 }
 
 export function saveStoredPwr(d: StoredPowerups): void {
-  try { localStorage.setItem(LS_KEYS.STORED_PWR, JSON.stringify(d)); } catch {}
+  try { 
+    localStorage.setItem(LS_KEYS.STORED_PWR, JSON.stringify(d)); 
+  } catch (e) {
+    logger.error('Failed to save stored powerups', e);
+  }
 }
 
 // ─── Bot FX type ──────────────────────────────────────────────────
@@ -263,12 +270,20 @@ export function useGameEngine(
         case "bombDefused":
           onBombDefused?.();
           break;
+        case "qualityDowngrade":
+          toast$("📉 Performance mode: Particles disabled");
+          break;
+        case "qualityUpgrade":
+          toast$("📈 Standard mode restored");
+          break;
       }
     });
 
     const handleVisibility = () => {
       if (!engineRef.current) return;
-      if (document.hidden) {
+      // Fix #4: Check phase to prevent pausing during gameover
+      const snap = engineRef.current.getSnapshot?.();
+      if (document.hidden && snap?.phase === 'playing') {
         engineRef.current.pause();
       }
     };
@@ -292,6 +307,7 @@ export function useGameEngine(
       if (shake1TimerRef.current)     clearTimeout(shake1TimerRef.current);
       if (shake2TimerRef.current)     clearTimeout(shake2TimerRef.current);
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
+      // Fix #9: Cap botTapTimersRef cleanup to prevent unbounded growth
       botTapTimersRef.current.forEach(clearTimeout);
       botTapTimersRef.current = [];
     };

@@ -226,7 +226,7 @@ export class GameEngine {
   }
 
   start(forceSeed?: number): void {
-    this._isDisposed = false;
+    if (this._isDisposed) return; // Fix #2: Uninitialized/Disposed guard
     this.stop();
     rhythmFeedback.reset();
     sessionStorage.removeItem(this.SESSION_KEY);
@@ -281,6 +281,7 @@ export class GameEngine {
   private lastFrameTime = 0;
 
   private startSnapshotRaf(): void {
+    if (this.rafId !== null) cancelAnimationFrame(this.rafId); // Fix #1: Prevent RAF leak
     this.lastFrameTime = performance.now();
     const loop = (timestamp: number) => {
       if (this.rafId === null) return;
@@ -356,6 +357,7 @@ export class GameEngine {
 
   resume(): void {
     if (this.phase !== "paused") return;
+    if (!this.p1?.alive) return; // Fix #7: Validation
     this.paused = false;
     this.phase  = "playing";
     this.scheduleTick();
@@ -409,7 +411,6 @@ destroy(): void {
     this.activeBomb = null;
     rhythmFeedback.reset();
     this.dda.reset(1200);
-    this._bot.dispose();
 
     if (!keepSettings) this._settingsUnsub?.();
   }
@@ -436,7 +437,12 @@ destroy(): void {
   }
 
   private processTick(): void {
-    this._tickProcessor.processTick(this._tickCtx);
+    try {
+      this._tickProcessor.processTick(this._tickCtx);
+    } catch (e) {
+      // Fix #6: Error handling to prevent engine lockup
+      this.handleError(e as Error, "processTick");
+    }
   }
 
   handleTap(player: 1 | 2, idx: number): void {
@@ -723,12 +729,12 @@ destroy(): void {
       this.autoLowQuality = true;
       document.documentElement.style.setProperty('--particles-enabled', '0');
       document.documentElement.style.setProperty('--motion-scale', '0.5');
-      this.emit({ type: "qualityDowngrade", reason: "fps-drop", avgFps } as any);
+      this.emit({ type: "qualityDowngrade", reason: "fps-drop", avgFps });
     } else if (this.autoLowQuality && avgFps > 50) {
       this.autoLowQuality = false;
       document.documentElement.style.setProperty('--particles-enabled', '1');
       document.documentElement.style.setProperty('--motion-scale', '1');
-      this.emit({ type: "qualityUpgrade", avgFps } as any);
+      this.emit({ type: "qualityUpgrade", avgFps });
     }
   }
 

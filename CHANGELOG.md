@@ -29,6 +29,11 @@
 - **MouseTrail Object Pool** (`components/Backgrounds/MouseTrail.tsx`) — Replaced dynamic array with pre-allocated pool of 100 particles to prevent GC micro-stutters during long play sessions
 - **Dynamic Title Glow** (`styles/game.css`) — Added `.logo--shimmer` class with animated gradient that sweeps across the title. Creates dynamic, modern feel
 - **Energy Store Hook** (`hooks/useEnergyStore.ts`) — Extracted energy management logic into custom hook to reduce App.tsx bloat. Manages regen, spending, and refill in one place
+- **Pause/Resume Race Condition Fix** (`App.tsx`) — Fixed issue where resuming from pause menu would freeze the game. Now setPaused(false) is called before resumeEngine() with a 16ms delay to ensure React state updates before engine loop restarts
+- **Dev Mode Full Unlock** (`utils/featureGates.ts`, `hooks/useScreenStateMachine.ts`, `App.tsx`) — When entering dev mode (type //dev// in name or press d-d-p), all features are now unlocked and you get 99999 dust to test everything
+
+### 🎨 UI Improvements
+- **Better Touch Cursor** (`hooks/useOffsetCursor.ts`, `styles/game.css`) — Cursor now has smooth easing animation (lags behind finger with 0.18 ease factor) and enhanced glowing design with pulsing purple halo effect
 
 ## [7.5.1] - 2026-05-10
 ### 🧹 Cleanup

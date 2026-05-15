@@ -22,7 +22,7 @@ export interface ScreenState {
   previous: Screen | null;
   canTransition: (to: Screen) => boolean;
   transition: (to: Screen, payload?: any) => void;
-  isFeatureUnlocked: (feature: FeatureId) => boolean;
+  isFeatureUnlocked: (feature: FeatureId, devMode?: boolean) => boolean;
   progress: PlayerProgress;
   updateProgress: (partial: Partial<PlayerProgress>) => void;
 }
@@ -80,8 +80,8 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
     setCurrent(to);
   }, [current, canTransition]);
 
-  const isFeatureUnlocked = useCallback((feature: FeatureId) => {
-    return unlocks[feature] || featureGates.isUnlocked(feature, progress);
+  const isFeatureUnlocked = useCallback((feature: FeatureId, devMode = false) => {
+    return devMode || unlocks[feature] || featureGates.isUnlocked(feature, progress);
   }, [unlocks, progress]);
 
   return {
