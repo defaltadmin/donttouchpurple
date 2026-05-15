@@ -15,7 +15,7 @@ export const stateGuard = {
     }
   },
 
-  safeStore(key: string, data: unknown) {
+  safeStore(key: string, data: unknown): void {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
@@ -27,10 +27,10 @@ export const stateGuard = {
     }
   },
 
-  sanitize<T extends Record<string, any>>(raw: unknown, defaults: T): T {
+  sanitize<T extends Record<string, unknown>>(raw: unknown, defaults: T): T {
     if (!raw || typeof raw !== 'object') return defaults;
-    const clean: Record<string, any> = {};
-    for (const k of Object.keys(defaults)) clean[k] = (raw as any)[k] ?? defaults[k];
+    const clean: Record<string, unknown> = {};
+    for (const k of Object.keys(defaults)) clean[k] = (raw as Record<string, unknown>)[k] ?? defaults[k];
     return clean as T;
   }
 };
