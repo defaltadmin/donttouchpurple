@@ -168,7 +168,9 @@ export function DevOverlay({
   const [spawnIdx, setSpawnIdx] = useState<number | "">("");
   const [botTapIdx, setBotTapIdx] = useState<number | "">("");
   const [botTapPlayer, setBotTapPlayer] = useState<1 | 2>(1);
-  const lastTickRef = useRef(Date.now());
+  const lastTickRef = useRef<number>(0);
+
+  useEffect(() => { lastTickRef.current = Date.now(); }, []);
 
   useEffect(() => {
     if (tuningOpen) document.body.setAttribute("data-tuning-open", "true");
@@ -357,7 +359,7 @@ export function DevOverlay({
           <div className="dev-control-group">
             <label>Force Spawn Cell</label>
             <div className="dev-row">
-              <select value={spawnType} onChange={e => setSpawnType(e.target.value as any)}>
+              <select value={spawnType} onChange={e => setSpawnType(e.target.value as "ice" | "hold" | "bomb" | "rare")}>
                 <option value="ice">❄️ Ice</option>
                 <option value="hold">🤲 Hold</option>
                 <option value="bomb">💣 Bomb</option>

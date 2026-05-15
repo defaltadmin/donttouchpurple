@@ -1,11 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useScreenStateMachine, Screen } from "./useScreenStateMachine";
-import { LS_KEYS, GAME } from "../config/difficulty";
-import { logger } from "../utils/logger";
-import * as Sentry from "@sentry/react";
+import { useState, useCallback, useRef } from "react";
+import { useScreenStateMachine } from "./useScreenStateMachine";
+import { LS_KEYS } from "../config/difficulty";
 import { getDailyObjective, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "../config/dailyObjective";
 import { getMessage } from "../components/Screens/GameOver";
-import { addPendingScore } from "../utils/pendingScoresDb";
 import { speedLabel } from "../engine/DifficultyScaler";
 import { type EnergyData } from "./useAppResources";
 
@@ -18,15 +15,12 @@ export interface GameStats {
 }
 
 export function useAppOrchestrator(params: {
-  playerName: string;
-  dust: number;
   addDust: (amount: number, source: string) => number;
   energyData: EnergyData;
   setEnergyData: (data: EnergyData) => void;
-  shopData: any;
   toast$: (msg: string) => void;
 }) {
-  const { playerName, dust, addDust, energyData, setEnergyData, shopData, toast$ } = params;
+  const { addDust, energyData, setEnergyData, toast$ } = params;
 
   const [gameMode, setGameMode] = useState<"classic" | "evolve">("classic");
   const [numPlayers, setNumPlayers] = useState<1 | 2>(1);
@@ -61,7 +55,7 @@ export function useAppOrchestrator(params: {
   const scoreSubmittedRef = useRef(false);
   const peakStreakRef = useRef(0);
 
-  const updateProgress = useCallback((engineWinner: any, p1Score: number, p2Score: number, tick: number, bossCounters: BossObjectiveCounters) => {
+  const updateProgress = useCallback((engineWinner: string | null, p1Score: number, p2Score: number, tick: number, bossCounters: BossObjectiveCounters) => {
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
     
     const newWins = wins + (engineWinner === "p1" ? 1 : 0);

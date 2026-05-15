@@ -53,7 +53,7 @@ export function GameOver({
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
 
   useEffect(() => {
-    if (is2P || p1Score === 0) { setDisplayScore(p1Score); return; }
+    if (is2P || p1Score === 0) { setTimeout(() => setDisplayScore(p1Score), 0); return; }
     let start: number | null = null;
     const duration = Math.min(1200, 400 + p1Score * 8);
     const step = (ts: number) => {
@@ -95,7 +95,7 @@ export function GameOver({
             <div className={`go-num go-num--anim${isNewBest ? " hud-val--pb" : ""}`}>{displayScore}</div>
             {(dustEarned ?? 0) > 0 && <div className="go-dust-inline">+{dustEarned} 💜</div>}
           </div>
-          <div className="go-msg">"{shareMsg}"</div>
+          <div className="go-msg">&ldquo;{shareMsg}&rdquo;</div>
           <div className="go-objective-progress">
             <div className="go-objective-header">
               <span>Daily Objective</span>
@@ -161,7 +161,7 @@ export function GameOver({
                   a.href = canvas.toDataURL("image/png");
                   a.download = `dtp-score-${p1Score}.png`;
                   a.click();
-                } catch {}
+                } catch { /* canvas not available */ }
               }}>🖼️ Save Card</button>
               <button className="btn-ghost" onClick={() => setShowShareModal(false)}>Cancel</button>
             </div>

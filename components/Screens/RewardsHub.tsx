@@ -157,7 +157,7 @@ function CheckinTab({ streak, reward, claimed, onClaim }: {
       )}
 
       <div className="hub-claim-row">
-        <span className="hub-today-reward">Today's reward: <strong>+{reward} 💜</strong></span>
+        <span className="hub-today-reward">Today&apos;s reward: <strong>+{reward} 💜</strong></span>
         <button
           className="btn-primary"
           disabled={claimed}

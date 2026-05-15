@@ -5,6 +5,7 @@ import { useSafeRaf } from '../../utils/cleanup-pattern';
 const GRID = 5;
 const SAFE_COLORS = ['#3b82f6','#22c55e','#f97316','#eab308','#06b6d4','#ec4899'];
 const PURPLE = '#c026d3';
+const MOUSE_RADIUS = 120;
 
 interface GridCell {
   color: string;
@@ -12,12 +13,15 @@ interface GridCell {
   phase: 'appearing' | 'hold' | 'disappearing' | 'empty';
   timer: number;
   size: number;
+  x: number;
+  y: number;
 }
 
 export default function GridPulse() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cellsRef = useRef<GridCell[]>([]);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
   const { register } = useBackgroundController(true);
 
   const { start, stop } = useSafeRaf(() => {
@@ -41,6 +45,8 @@ export default function GridPulse() {
       const row = Math.floor(i / GRID);
       const x = startX + col * (cellW + gap) + cellW / 2;
       const y = startY + row * (cellW + gap) + cellW / 2;
+      c.x = x;
+      c.y = y;
 
       c.timer--;
       if (c.timer <= 0) {
@@ -69,7 +75,13 @@ export default function GridPulse() {
 
       if (c.opacity < 0.02) continue;
 
-      const s = cellW * c.size * 0.88;
+      // Mouse interaction: scale up cells near mouse
+      const dx = mouseRef.current.x - c.x;
+      const dy = mouseRef.current.y - c.y;
+      const dist = Math.hypot(dx, dy);
+      const mouseScale = dist < MOUSE_RADIUS ? 1 + (1 - dist / MOUSE_RADIUS) * 0.6 : 1;
+
+      const s = cellW * c.size * 0.88 * mouseScale;
       ctx.globalAlpha = c.opacity * 0.55;
       ctx.fillStyle = c.color;
 
@@ -111,16 +123,24 @@ export default function GridPulse() {
     resize();
     window.addEventListener('resize', resize);
 
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
     cellsRef.current = Array.from({ length: GRID * GRID }, () => ({
       color: Math.random() > 0.15 ? SAFE_COLORS[Math.floor(Math.random() * SAFE_COLORS.length)] : PURPLE,
       opacity: 0,
       phase: 'empty' as const,
       timer: Math.floor(Math.random() * 80),
       size: 0,
+      x: 0,
+      y: 0,
     }));
 
     return () => {
       window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', handleMouseMove);
       ctxRef.current = null;
     };
   }, []);

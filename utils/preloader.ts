@@ -34,6 +34,7 @@ export class Preloader {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       if (asset.type === 'audio') {
+        // audio assets are preloaded via fetch but not decoded here
       } else {
         await res.arrayBuffer();
       }

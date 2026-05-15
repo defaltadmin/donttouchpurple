@@ -71,7 +71,7 @@ class WebVitalsMonitor {
 
       console.log('[WebVitals] Monitoring started');
     } catch (error) {
-      errorLogger.error('Failed to start Web Vitals monitoring', { error });
+      errorLogger.error('Failed to start Web Vitals monitoring');
     }
   }
 
@@ -110,13 +110,13 @@ class WebVitalsMonitor {
         value,
         rating,
         threshold: threshold.poor
-      });
+      } as Record<string, string | number | boolean | undefined>);
     }
 
     metricsService.recordPerformanceMetric(metric, value, rating);
   }
 
-  private reportMetric(name: string, metric: any): void {
+  private reportMetric(name: string, metric: { value: number; id: string }): void {
     try {
       if (window.gtag) {
         window.gtag('event', 'web_vitals', {
@@ -127,7 +127,7 @@ class WebVitalsMonitor {
         });
       }
     } catch (error) {
-      errorLogger.error('Failed to report Web Vitals metric', { error, name });
+      errorLogger.error('Failed to report Web Vitals metric', { name } as Record<string, string | number | boolean | undefined>);
     }
   }
 

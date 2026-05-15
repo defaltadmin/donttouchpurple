@@ -51,7 +51,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
         </div>
 
         <div className="popup-reward-line">
-          Today's reward: <strong>+{dustReward} 💜</strong>
+          Today&apos;s reward: <strong>+{dustReward} 💜</strong>
         </div>
 
         <button ref={btnRef} className="btn-primary popup-claim-btn" onClick={handleClaim}>

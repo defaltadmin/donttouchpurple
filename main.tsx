@@ -1,6 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App, { ErrorBoundary } from './App'
+import { scoreSync } from './utils/score-sync'
+import { GameProvider } from './contexts/GameContext'
+import { DustProvider } from './contexts/DustContext'
+import { UIProvider } from './contexts/UIContext'
 
 const IS_PROD = window.location.hostname === 'game.mscarabia.com';
 
@@ -27,10 +31,22 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Initialize score sync
+scoreSync.init();
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => scoreSync.destroy());
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      <GameProvider>
+        <DustProvider>
+          <UIProvider>
+            <App />
+          </UIProvider>
+        </DustProvider>
+      </GameProvider>
     </ErrorBoundary>
   </React.StrictMode>,
 )

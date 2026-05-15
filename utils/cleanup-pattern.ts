@@ -10,17 +10,20 @@ export function useSafeRaf(callback: (time: number) => void) {
     callbackRef.current = callback;
   }, [callback]);
 
-  const loop = useCallback((time: number) => {
-    callbackRef.current(time);
-    rafRef.current = requestAnimationFrame(loop);
-  }, []);
+  const loopRef = useRef<((time: number) => void) | null>(null);
 
   const start = useCallback(() => {
     if (!rafRef.current) {
+      // Define the loop function once, using callbackRef for the callback
+      const loop = (time: number) => {
+        callbackRef.current(time);
+        rafRef.current = requestAnimationFrame(loopRef.current!);
+      };
+      loopRef.current = loop;
       rafRef.current = requestAnimationFrame(loop);
       logger.debug('🎬 RAF started');
     }
-  }, [loop]);
+  }, []);
 
   const stop = useCallback(() => {
     if (rafRef.current) {

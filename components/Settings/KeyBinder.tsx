@@ -17,7 +17,7 @@ export function KeyBinder({ initP1, initP2, numPlayers, onSave, onCancel }: KeyB
   const [sel, setSel] = useState<number | null>(null);
   const selRef = useRef<number | null>(null);
 
-  selRef.current = sel;
+  useEffect(() => { selRef.current = sel; }, [sel]);
 
   const draft = ap === 1 ? d1 : d2;
   const setDraft = ap === 1 ? setD1 : setD2;

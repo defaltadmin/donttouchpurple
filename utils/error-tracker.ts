@@ -4,7 +4,7 @@ interface TrackedError { id: string; msg: string; stack: string; ts: number; con
 const QUEUE_KEY = 'dtp:errors';
 
 function cleanStack(stack: string): string {
-  return stack.replace(/(webpack|vite|react|node_modules|chunk-)[\w\-\.\/]+/g, '[bundled]');
+  return stack.replace(/(webpack|vite|react|node_modules|chunk-)[\w\-./@]+/g, '[bundled]');
 }
 
 export const errorTracker = {
@@ -28,6 +28,6 @@ export const errorTracker = {
     try {
       logger.debug('Error batch flushed', queue.length);
       localStorage.setItem(QUEUE_KEY, '[]');
-    } catch { logger.warn('Error flush failed'); }
+    } catch (_) { logger.warn('Error flush failed'); }
   }
 };

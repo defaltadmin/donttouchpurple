@@ -47,14 +47,20 @@ export class UnifiedInputHandler {
 
   // Stop listening
   stop(): void {
-    Object.values(this.boundHandlers).forEach(handler => {
-      // Remove event listeners (implementation would depend on where they're attached)
-    });
+    window.removeEventListener('keydown', this.boundHandlers.keydown);
+    window.removeEventListener('keyup', this.boundHandlers.keyup);
+    window.removeEventListener('touchstart', this.boundHandlers.touchstart);
+    window.removeEventListener('touchmove', this.boundHandlers.touchmove);
+    window.removeEventListener('touchend', this.boundHandlers.touchend);
+    window.removeEventListener('mousedown', this.boundHandlers.mousedown);
+    window.removeEventListener('mouseup', this.boundHandlers.mouseup);
+    window.removeEventListener('mousemove', this.boundHandlers.mousemove);
     this.listeners.clear();
     if (this.gamepadPolling) {
       cancelAnimationFrame(this.gamepadPolling);
+      this.gamepadPolling = undefined;
     }
-    this.repeatTimers.forEach(timer => clearTimeout(timer));
+    this.repeatTimers.forEach(clearTimeout);
     this.repeatTimers.clear();
   }
 

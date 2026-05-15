@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS } from "../../config/powerupWeights";
 
 interface StoredPowerups {
@@ -51,7 +51,9 @@ export function ShopPanel({
       if (saved === "backgrounds" || saved === "themes" || saved === "badges" || saved === "skins" || saved === "powerups") {
         return saved;
       }
-    } catch {}
+    } catch (_) {
+      return "backgrounds";
+    }
     return "backgrounds";
   });
   const [buyAnim, setBuyAnim] = useState<string | null>(null);
@@ -72,19 +74,19 @@ export function ShopPanel({
     }, 10000);
   }, [shopData, saveShopData]);
 
-  const spend = (cost: number): boolean => {
+  const spend = useCallback((cost: number): boolean => {
     if (devMode) return true;
     if (dust < cost) return false;
     const newDust = dust - cost;
     persistDust(newDust);
     onDustChange(newDust);
     return true;
-  };
+  }, [devMode, dust, persistDust, onDustChange]);
 
-  const triggerBuyAnim = (id: string) => {
+  const triggerBuyAnim = useCallback((id: string) => {
     setBuyAnim(id);
     setTimeout(() => setBuyAnim(null), 600);
-  };
+  }, []);
 
   const buyTheme = (themeId: string, cost: number) => {
     if (!spend(cost)) return;
@@ -155,7 +157,7 @@ export function ShopPanel({
     triggerBuyAnim(itemId);
   };
 
-  const stored = loadStoredPowerups();
+  const stored = useMemo(() => loadStoredPowerups(), [loadStoredPowerups]);
 
   useEffect(() => {
     return () => { if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current); };

@@ -82,6 +82,13 @@ export class GameEngine {
   private fpsHistory: number[] = [];
   private autoLowQuality = false;
   private lowQualityThreshold = 40;
+  // Snapshot cache fields
+  private _cachedMask: number[] | null = null;
+  private _cachedMaskSrc: number[] | null = null;
+  private _cachedSpinCfg: { duration: number; direction: 1 | -1 } | null = null;
+  private _cachedSpinLevel = -1;
+  private _cachedSpinSeed = -1;
+  private _cachedRotationSpeed = 1;
   // K1: cell shuffle state
   private nextShuffleTick: number = 0;
   private readonly SHUFFLE_DURATION_MS = 200; // K3: slide animation duration
@@ -124,7 +131,7 @@ export class GameEngine {
     }).catch(e => logError('Settings module failed', e));
     window.addEventListener('dtp:boss:complete', () => { this._bossActive = false; });
     window.addEventListener('dtp:difficulty:emergency', () => {
-      if (!this.p1) return;
+      if (!this.p1 || this.phase !== 'playing') return;
       const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
       this.p1.score += bonus;
       this.emit({ type: "toast", message: `ΓÜû∩╕Å Difficulty adjusted! +${bonus} pts` });
@@ -137,6 +144,7 @@ export class GameEngine {
       if (btn === 'a' || btn === 'dpad_up') this.handleTap(1, parseInt(this._lastFocusedCell) || 0);
       if (btn === 'start') this.paused ? this.resume() : this.pause();
     });
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this._tickCtx = {
       get config() { return self.config; },
@@ -187,8 +195,6 @@ export class GameEngine {
   private _applySettings(s: { reducedMotion?: boolean; liteMode?: boolean }) {
     if (s.liteMode !== undefined) {
       this.skipParticles = s.liteMode;
-      // Cap engine tick rate if needed, but computeMs already handles difficulty.
-      // We mainly want to reduce visual load.
     }
     if (s.reducedMotion !== undefined) {
       this.devRotationSpeed = s.reducedMotion ? 0.5 : 1;
@@ -336,7 +342,7 @@ export class GameEngine {
   clearAllDeltaTimers() { this._deltaTimers = []; }
 
   pause(): void {
-    if (this.phase !== "playing") return;
+    if (this.phase !== "playing" || !this.p1 || !this.p2) return;
     this.paused = true;
     this.phase  = "paused";
     if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
@@ -374,6 +380,8 @@ destroy(): void {
     this.clearAllDeltaTimers();
     this.stop();
     this.listeners.clear();
+    this._pauseListeners = [];
+    this._resumeListeners = [];
   }
 
   safeReset(keepSettings = false) {
@@ -762,8 +770,44 @@ destroy(): void {
   }
 
   getSnapshot(): GameSnapshot {
+    // Guard against uninitialized engine
+    if (!this.p1 || !this.p2) {
+      return {
+        tick: 0, evolveTick: 0, gameSeed: 0,
+        p1: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0 },
+        p2: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0 },
+        cellShape: 'square', rareMode: { active: false, color: '', cssColor: '', turnsLeft: 0, shape: 'circle', emoji: '' },
+        spinLevel: 0, paused: false, phase: 'playing',
+        grid: { cols: 3, rows: 3, mask: null }, spinCfg: null, devRotationSpeed: 1,
+        bossEvent: null, activeBomb: null, isInverted: false, isBlackout: false,
+      } as GameSnapshot;
+    }
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const cloneActive = (active: ActiveCell[]): ActiveCell[] => active.map(c => ({ ...c }));
+
+    // Cache mask array — only re-copy when the source reference changes
+    if (pat.mask !== this._cachedMaskSrc) {
+      this._cachedMaskSrc = pat.mask ?? null;
+      this._cachedMask = pat.mask ? [...pat.mask] : null;
+    }
+
+    // Memoize spinCfg — only recompute when spinLevel or gameSeed changes
+    let spinCfg: { duration: number; direction: 1 | -1 } | null = null;
+    if (this.config.mode === "evolve" && this.spinLevel >= 3) {
+      if (this._cachedSpinLevel !== this.spinLevel || this._cachedSpinSeed !== this.gameSeed || this._cachedRotationSpeed !== this.devRotationSpeed) {
+        const cfg = getSpinConfig(this.spinLevel, this.gameSeed);
+        this._cachedSpinCfg = { ...cfg, duration: cfg.duration * this.devRotationSpeed };
+        this._cachedSpinLevel = this.spinLevel;
+        this._cachedSpinSeed = this.gameSeed;
+        this._cachedRotationSpeed = this.devRotationSpeed;
+      }
+      spinCfg = this._cachedSpinCfg;
+    } else {
+      this._cachedSpinCfg = null;
+      this._cachedSpinLevel = -1;
+      this._cachedSpinSeed = -1;
+    }
+
     return {
       tick:       this.tickCount,
       evolveTick: this.evolveTick,
@@ -775,8 +819,8 @@ destroy(): void {
       spinLevel:  this.spinLevel,
       paused:     this.paused,
       phase:      this.phase,
-      grid: { cols: pat.cols, rows: pat.rows, mask: pat.mask ? [...pat.mask] : null },
-      spinCfg: (this.config.mode === "evolve" && this.spinLevel >= 3) ? ((): typeof cfg => { const cfg = getSpinConfig(this.spinLevel, this.gameSeed); return { ...cfg, duration: cfg.duration * this.devRotationSpeed }; })() : null,
+      grid: { cols: pat.cols, rows: pat.rows, mask: this._cachedMask },
+      spinCfg,
       devRotationSpeed: this.devRotationSpeed,
       bossEvent:  this.bossEvent ? { ...this.bossEvent } : null,
       activeBomb: this.activeBomb ? { ...this.activeBomb } : null,
@@ -787,9 +831,11 @@ destroy(): void {
 
   getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
 
+  private static readonly SESSION_SNAPSHOT_VERSION = 2;
+
   getSessionSnapshot(): Record<string, unknown> {
     return {
-      version: 1,
+      version: GameEngine.SESSION_SNAPSHOT_VERSION,
       ts: Date.now(),
       gameSeed: this.gameSeed,
       tickCount: this.tickCount,
@@ -834,6 +880,12 @@ destroy(): void {
   restoreSessionSnapshot(data: Record<string, unknown>): boolean {
     try {
       if (!data || !data.gameSeed) return false;
+      // Reject snapshots from incompatible versions to avoid silent state corruption
+      const snapshotVersion = typeof data.version === 'number' ? data.version : 1;
+      if (snapshotVersion < GameEngine.SESSION_SNAPSHOT_VERSION) {
+        logError(`[GameEngine] Session snapshot version ${snapshotVersion} < current ${GameEngine.SESSION_SNAPSHOT_VERSION}, discarding`);
+        return false;
+      }
       // Ensure p1/p2 exist before restoring
       if (!this.p1 || !this.p2) {
         logError('Session restore failed: engine not initialized');
@@ -906,7 +958,7 @@ destroy(): void {
     if (this.phase !== "playing" || this.paused) return;
     try {
       sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(this.getSessionSnapshot()));
-    } catch {}
+    } catch (e) { logError('autoSaveSession failed', e); }
   }
 
 private triggerGameOver(winner: Winner): void {

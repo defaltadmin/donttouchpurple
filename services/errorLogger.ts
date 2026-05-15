@@ -7,7 +7,7 @@ export interface ErrorContext {
   score?: number;
   sessionId?: string;
   feature?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export class ErrorLogger {

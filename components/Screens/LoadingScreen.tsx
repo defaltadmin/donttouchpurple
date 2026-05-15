@@ -42,7 +42,7 @@ export function LoadingScreen({
       <div className="loading-logo" style={{ textShadow: "0 0 40px rgba(192,38,211,0.8)" }}>
         Don't Touch the <span className="loading-purple">Purple</span>
       </div>
-      <div className="loading-sub">Get your fingers ready...</div>
+      <div className="loading-sub">Get your fingers ready&hellip;</div>
 
       {!done ? (
         <div style={{ width: "min(280px, 80vw)", marginTop: 20 }}>
@@ -79,7 +79,7 @@ export function LoadingScreen({
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           />
           <button className="btn-primary" style={{ width: "100%", padding: "12px" }} onClick={handleSubmit}>
-            Let's Go!
+            Let&apos;s Go!
           </button>
           {nameError && <div style={{ color: "#f87171", fontSize: 12, marginTop: 8, fontFamily: "var(--font-ui)" }}>{nameError}</div>}
         </div>

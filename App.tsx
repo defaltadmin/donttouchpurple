@@ -25,6 +25,7 @@ import { orientationMonitor } from "./utils/orientation";
 import { TouchGesture } from "./utils/gestures";
 import { visualA11y } from "./utils/visual-a11y";
 import { useOffsetCursor } from "./hooks/useOffsetCursor";
+import { useEnergyStore } from "./hooks/useEnergyStore";
 
 declare const __APP_VERSION__: string;
 import * as Sentry from "@sentry/react";
@@ -75,6 +76,8 @@ const WarpGate      = lazy(() => import("./components/Backgrounds/WarpGate"));
 const PulseField    = lazy(() => import("./components/Backgrounds/PulseField"));
 const GlitchGrid    = lazy(() => import("./components/Backgrounds/GlitchGrid"));
 const AmbientFlow   = lazy(() => import("./components/Backgrounds/AmbientFlow"));
+import { MouseFollower } from "./components/Backgrounds/MouseFollower";
+import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
 // Daily Objective
 import { getDailyObjective, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "./config/dailyObjective";
@@ -226,6 +229,7 @@ function saveShopData(d: ShopData) {
 
 // --- Tutorial ---
 import { MAX_TUTORIAL_GAMES } from './config/tutorial';
+import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 
 // --- App Component ---
 export default function App() {
@@ -322,13 +326,7 @@ export default function App() {
   useEffect(() => { dustRef.current = dust; }, [dust]);
   const scoreSubmittedRef = useRef(false);
 
-  const [energyData, setEnergyData] = useState(() => {
-    try {
-      const r = localStorage.getItem(LS_KEYS.ENERGY);
-      if (r) return JSON.parse(r);
-    } catch {}
-    return { count: GAME.MAX_ENERGY, lastRegen: Date.now() };
-  });
+  const { energyData, refillEnergy, spendEnergy } = useEnergyStore();
 
   const [shopData, setShopDataState] = useState(() => loadShopData());
 
@@ -351,6 +349,18 @@ export default function App() {
   useEffect(() => {
     const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
     if (gamesEver > 0 && shouldShowWhatsNew()) setShowWhatsNew(true);
+  }, []);
+
+  // Spotlight effect - update CSS vars for card hover glow
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      document.documentElement.style.setProperty('--mx', `${x}%`);
+      document.documentElement.style.setProperty('--my', `${y}%`);
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
   }, []);
 
   // Login streak check — show popup if not claimed today
@@ -435,13 +445,19 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);
 
   // A/B Testing Foundation (ready for Cloudflare Worker routing)
-  const abTestVariant = React.useMemo(() => {
-    const saved = localStorage.getItem('dtp_ab_variant');
-    if (saved) return saved;
-    const variant = Math.random() > 0.5 ? 'A' : 'B';
-    localStorage.setItem('dtp_ab_variant', variant);
-    return variant;
-  }, []);
+  // IMPORTANT: must be pure during render. Derive variant in an initializer.
+  const _abTestVariant = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('dtp_ab_variant');
+      if (saved) return saved;
+      const variant = Math.random() > 0.5 ? 'A' : 'B';
+      localStorage.setItem('dtp_ab_variant', variant);
+      return variant;
+    } catch {
+      return 'A';
+    }
+  })[0];
+
 
   // Aggressive preload on menu (Shop + default background)
   useEffect(() => {
@@ -551,8 +567,6 @@ export default function App() {
   const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
   const [showRewardsHub, setShowRewardsHub]           = useState(false);
   const [weeklyTasks, setWeeklyTasks]                 = useState<WeeklyTask[]>([]);
-  const [best1_old, setBest1_old]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_CLASSIC) || "0"));
-  const [best2_old, setBest2_old]           = useState(() => parseInt(localStorage.getItem(LS_KEYS.BEST_EVOLVE) || "0"));
   const [prevBest, setPrevBest]     = useState(0);
 
   const [paused, setPaused]         = useState(false);
@@ -1329,39 +1343,6 @@ export default function App() {
     document.documentElement.style.setProperty("--text", t.colors.text);
   }, [shopData.equippedTheme]);
 
-  // Task 5: Natural Energy Regeneration
-  const energyDataRef = useRef(energyData);
-  useEffect(() => { energyDataRef.current = energyData; }, [energyData]);
-
-  const energyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const ed = energyDataRef.current;
-      if (ed.count >= GAME.MAX_ENERGY) {
-        clearInterval(id);
-        energyIntervalRef.current = null;
-        return;
-      }
-      const now = Date.now();
-      const elapsed = now - ed.lastRegen;
-      if (elapsed >= GAME.ENERGY_REGEN_MS) {
-        const gained = Math.floor(elapsed / GAME.ENERGY_REGEN_MS);
-
-        const newCount = Math.min(GAME.MAX_ENERGY, ed.count + gained);
-        const newLastRegen = ed.lastRegen + gained * GAME.ENERGY_REGEN_MS;
-        const newEd = { count: newCount, lastRegen: newLastRegen };
-        setEnergyData(newEd);
-        localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-        if (newCount >= GAME.MAX_ENERGY) {
-          clearInterval(id);
-          energyIntervalRef.current = null;
-        }
-      }
-    }, 10000);
-    energyIntervalRef.current = id;
-    return () => clearInterval(id);
-  }, []);
-
   useEffect(() => {
     const gate = assetGateRef.current;
     gate.setProgress(setGateLoadPct);
@@ -1531,11 +1512,7 @@ export default function App() {
       setShowTutorial(true);
       return;
     }
-    if (!practiceMode) {
-      const newEd = { ...energyData, count: energyData.count - 1 };
-      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-      setEnergyData(newEd);
-    }
+    if (!practiceMode) spendEnergy();
     setScreen("playing");
     setPaused(false);
     scoreSubmittedRef.current = false;
@@ -1586,11 +1563,7 @@ export default function App() {
       // Show rewards hub after game-over, not during active play — set a flag
       localStorage.setItem('dtp-show-rewards-after-first-game', '1');
     }
-    if (!practiceMode) {
-      const newEd = { ...energyData, count: energyData.count - 1 };
-      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-      setEnergyData(newEd);
-    }
+    if (!practiceMode) spendEnergy();
     setScreen("playing");
     setPaused(false);
     scoreSubmittedRef.current = false;
@@ -1647,70 +1620,6 @@ export default function App() {
     setDailyChallenges(buildDailyChallenges(todayStr));
   };
 
-  // Build daily challenges from date string
-  function buildDailyChallenges(dateStr: string): DailyChallenge[] {
-    const CHALLENGES_KEY = `dtp-challenges-${dateStr}`;
-    const PROGRESS_KEY   = `dtp-challenge-progress-${dateStr}`;
-
-    const pool = [
-      { id:'play3',    description:'Play 3 games',         reward:30,  target:3  },
-      { id:'score50',  description:'Score 50+ in one game', reward:40,  target:50 },
-      { id:'streak5',  description:'Reach a 5-tap streak', reward:35,  target:5  },
-      { id:'survive60',description:'Survive 60 ticks',      reward:45,  target:60 },
-      { id:'dustspend',description:'Spend 20 dust in shop', reward:25,  target:20 },
-    ];
-
-    // Pick 3 deterministically by date
-    const seed = dateStr.split('').reduce((h,c)=>h*31+c.charCodeAt(0)|0, 0);
-    const picked = [
-      pool[Math.abs(seed) % pool.length],
-      pool[Math.abs(seed * 7) % pool.length],
-      pool[Math.abs(seed * 13) % pool.length],
-    ].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i).slice(0,3);
-
-    // Load progress and claimed state
-    let progress: Record<string,number> = {};
-    let claimedIds: string[] = [];
-    try {
-      progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}');
-      claimedIds = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
-    } catch {}
-
-    return picked.map(c => ({
-      ...c,
-      progress: progress[c.id] ?? 0,
-      claimed: claimedIds.includes(c.id),
-      completed: (progress[c.id] ?? 0) >= c.target,
-    }));
-  }
-
-  function buildWeeklyTasks(): WeeklyTask[] {
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    const weekKey = weekStart.toISOString().slice(0, 10);
-    const WEEKLY_PROGRESS_KEY = `dtp-weekly-progress-${weekKey}`;
-    const WEEKLY_CLAIMED_KEY  = `dtp-weekly-claimed-${weekKey}`;
-    let progress: Record<string, number> = {};
-    let claimedIds: string[] = [];
-    try {
-      progress   = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY) ?? '{}');
-      claimedIds = JSON.parse(localStorage.getItem(WEEKLY_CLAIMED_KEY) ?? '[]');
-    } catch {}
-    const tasks = [
-      { id: 'top10',    description: 'Reach top 10 leaderboard this week', reward: 200, target: 1 },
-      { id: 'bothmode', description: 'Play both Classic and Evolve mode',   reward: 100, target: 2 },
-      { id: 'play10',   description: 'Complete 10 rounds',                  reward: 80,  target: 10 },
-      { id: 'score100', description: 'Reach score 100 in one game',         reward: 150, target: 1 },
-    ];
-    return tasks.map(t => ({
-      ...t,
-      progress: progress[t.id] ?? 0,
-      completed: (progress[t.id] ?? 0) >= t.target,
-      claimed: claimedIds.includes(t.id),
-    }));
-  }
-
   // L7: Auto-check top-10 leaderboard achievement
   const checkTop10Achievement = useCallback((entries: { score: number; initials: string }[]) => {
     const inTop10 = entries
@@ -1722,13 +1631,13 @@ export default function App() {
     weekStart2.setDate(now2.getDate() - now2.getDay());
     const weekKey2 = weekStart2.toISOString().slice(0, 10);
     const WPK = `dtp-weekly-progress-${weekKey2}`;
-    let wp: Record<string, number> = safeGetJSON(WPK, {});
+    const wp: Record<string, number> = safeGetJSON(WPK, {});
     if ((wp['top10'] ?? 0) < 1) {
       wp['top10'] = 1;
       safeSet(WPK, JSON.stringify(wp));
       setWeeklyTasks(buildWeeklyTasks());
     }
-  }, [playerName, lbMode, best1, best2, buildWeeklyTasks]);
+  }, [playerName, lbMode, best1, best2]);
 
   const handleClaimWeekly = (taskId: string, reward: number) => {
     const now = new Date();
@@ -1777,26 +1686,6 @@ export default function App() {
     localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
     setWeeklyTasks(buildWeeklyTasks());
   };
-
-  const refillEnergy = useCallback(() => {
-    if (energyData.count >= GAME.MAX_ENERGY) {
-      toast$("⚡ Energy already full!");
-      return;
-    }
-    if (dustRef.current >= GAME.DUST_PER_ENERGY) {
-      const newDust = dustRef.current - GAME.DUST_PER_ENERGY;
-      const newEd = { count: energyData.count + 1, lastRegen: energyData.lastRegen };
-      setDust(newDust);
-      localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-      setEnergyData(newEd);
-      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-      Sentry.addBreadcrumb({ category: "economy", message: "energy_refill", level: "info", data: { cost: GAME.DUST_PER_ENERGY } });
-      fbLogEvent("energy_refill", { cost: GAME.DUST_PER_ENERGY, energy: newEd.count });
-      toast$("⚡ Energy refilled!");
-    } else {
-      toast$("💜 Not enough dust!");
-    }
-  }, [energyData, toast$]);
 
   const submitScore = useCallback(async () => {
     const score = numPlayers === 1
@@ -1916,16 +1805,32 @@ export default function App() {
       )}
 
       <ColorblindFilters />
-      
+
+      {/* SVG Filters for Gooey/Liquid Effects */}
+      <svg style={{ position: "absolute", width: 0, height: 0 }}>
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+            <feBlend in="SourceGraphic" in2="goo" />
+          </filter>
+        </defs>
+      </svg>
+
       {/* Background Layer - Controlled by pause/visibility/reducedMotion */}
       {shouldAnimateBackground && equippedBackground?.component && (
         <Suspense fallback={null}>
-          <equippedBackground.component 
+          <equippedBackground.component
             key={`bg-${shopData.equippedBackground || 'default'}`}
-            reducedMotion={reducedMotion} 
+            reducedMotion={reducedMotion}
           />
         </Suspense>
       )}
+
+      {/* Mouse Follower Blob - adds glassmorphism feel */}
+      <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={70} opacity={0.5} delay={0.12} />
+      {/* Mouse Trail - subtle particle effect during gameplay */}
+      {screen === "playing" && <MouseTrail enabled={!reducedMotion} />}
 
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
       {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}
@@ -2232,7 +2137,7 @@ export default function App() {
       )}
 
       <header className={`hdr${isFS ? " hdr--hidden" : ""}`}>
-        <span className="logo" style={{cursor: screen !== "menu" && screen !== "playing" && screen !== "gameover" ? "pointer" : "default"}}
+        <span className="logo logo--shimmer" style={{cursor: screen !== "menu" && screen !== "playing" && screen !== "gameover" ? "pointer" : "default"}}
           onClick={() => { if (screen !== "menu" && screen !== "playing" && screen !== "gameover") setScreen("menu"); }}>
           Don't Touch the{" "}
           <span className="txt-p" style={snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop"
@@ -2309,20 +2214,18 @@ export default function App() {
           onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
           onShop={() => setScreen("shop")}
           onKeybind={() => setScreen("keybind")}
-          onRefillEnergy={refillEnergy}
+          onRefillEnergy={() => refillEnergy(1, GAME.DUST_PER_ENERGY)}
           onSwitchPlayer={switchPlayer}
           onOpenRewardsHub={() => setShowRewardsHub(true)}
           rewardsBadgeCount={rewardsBadgeCount}
           dustWidget={<DustWidget dust={dust} />}
-          energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={refillEnergy} onRefillFull={() => {
+          energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={() => refillEnergy(1, GAME.DUST_PER_ENERGY)} onRefillFull={() => {
              const needed = GAME.MAX_ENERGY - energyData.count;
              if (needed <= 0) return;
              const cost = needed * GAME.DUST_PER_ENERGY;
              if (dustRef.current < cost) { toast$("💜 Not enough dust!"); return; }
-             const newDust = dustRef.current - cost;
-             const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
-             setDust(newDust); localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-             setEnergyData(newEd); localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+             spendDust(cost);
+             refillEnergy(needed, cost);
              toast$("⚡ Energy full!");
            }} onEnergyIconClick={() => setShowEnergyPopup(true)} dust={dust} />}
           pendingReplaySeed={pendingReplaySeed}
@@ -2619,29 +2522,29 @@ export default function App() {
                 Refills 1 every {Math.round(GAME.ENERGY_REGEN_MS / 60000)} min
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button className="btn-ghost" style={{ width: "100%" }}
-                disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < GAME.DUST_PER_ENERGY}
-                onClick={() => { refillEnergy(); }}>
-                Refill 1 game — {GAME.DUST_PER_ENERGY} 💜
-              </button>
-              <button className="btn-primary" style={{ width: "100%" }}
-                disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < (GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY}
-                onClick={() => {
-                  const needed = GAME.MAX_ENERGY - energyData.count;
-                  if (needed <= 0) return;
-                  const cost = needed * GAME.DUST_PER_ENERGY;
-                  if (dustRef.current < cost) { toast$("💜 Not enough dust!"); return; }
-                  const newDust = dustRef.current - cost;
-                  const newEd = { count: GAME.MAX_ENERGY, lastRegen: energyData.lastRegen };
-                  setDust(newDust); localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-                  setEnergyData(newEd); localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
-                  toast$("⚡ Energy full!");
-                  setShowEnergyPopup(false);
-                }}>
-                Refill to Full — {(GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY} 💜
-              </button>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button className="btn-ghost" style={{ width: "100%" }}
+              disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < GAME.DUST_PER_ENERGY}
+              onClick={() => {
+                spendDust(GAME.DUST_PER_ENERGY);
+                refillEnergy(1, GAME.DUST_PER_ENERGY);
+                toast$("⚡ Energy refilled!");
+              }}>
+              Refill 1 game — {GAME.DUST_PER_ENERGY} 💜
+            </button>
+            <button className="btn-primary" style={{ width: "100%" }}
+              disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < (GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY}
+              onClick={() => {
+                const needed = GAME.MAX_ENERGY - energyData.count;
+                const cost = needed * GAME.DUST_PER_ENERGY;
+                spendDust(cost);
+                refillEnergy(needed, cost);
+                toast$("⚡ Energy full!");
+                setShowEnergyPopup(false);
+              }}>
+              Refill to Full — {(GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY} 💜
+            </button>
+          </div>
           </div>
         </div>
       )}

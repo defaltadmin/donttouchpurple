@@ -22,7 +22,7 @@ export const scoreSync = {
     }
   },
 
-  async _submit(item: any): Promise<boolean> {
+  async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number }): Promise<boolean> {
     try {
       const res = await fetch('/api/submit-score', {
         method: 'POST',
@@ -50,17 +50,38 @@ export const scoreSync = {
 
     logger.info(`🔄 Flushing ${pending.length} offline scores`);
 
+    const now = Date.now();
     for (const item of pending) {
+      // Exponential backoff: skip items not yet due for retry
+      const nextRetry = item.nextRetry ?? 0;
+      if (nextRetry > now) {
+        await idb.enqueue(item); // re-queue as-is, not yet time
+        continue;
+      }
+
       const success = await this._submit(item);
       if (!success) {
-        await idb.enqueue({ ...item, attempts: (item.attempts || 0) + 1 });
+        const attempts = (item.attempts || 0) + 1;
+        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
+        await idb.enqueue({ ...item, attempts, nextRetry: Date.now() + backoffMs });
       }
     }
   },
 
+  _onlineHandler: (null as (() => void) | null),
+
   async init() {
     if (typeof window === 'undefined') return;
-    window.addEventListener('online', () => this.flush());
+    if (this._onlineHandler) return; // prevent double-registration
+    this._onlineHandler = () => this.flush();
+    window.addEventListener('online', this._onlineHandler);
     await this.flush();
+  },
+
+  destroy() {
+    if (this._onlineHandler) {
+      window.removeEventListener('online', this._onlineHandler);
+      this._onlineHandler = null;
+    }
   },
 };

@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { LS_KEYS, GAME } from "../config/difficulty";
-import { logger } from "../utils/logger";
 import { logResourceEvent } from "../services/gameanalytics";
 
 export type ShopData = {
@@ -31,12 +30,12 @@ function loadShopData(): ShopData {
         equippedBackground: data.equippedBackground || "default"
       };
     }
-  } catch {}
+  } catch (_) {}
   return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default", unlockedBackgrounds: ["default"], equippedBackground: "default" };
 }
 
 function saveShopData(d: ShopData) {
-  try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch {}
+  try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch (_) {}
 }
 
 export function useAppResources() {
@@ -50,7 +49,7 @@ export function useAppResources() {
         return 0;
       }
       return parsed;
-    } catch { return 0; }
+    } catch (_) { return 0; }
   });
   const dustRef = useRef(dust);
   useEffect(() => { dustRef.current = dust; }, [dust]);
@@ -59,7 +58,7 @@ export function useAppResources() {
     try {
       const r = localStorage.getItem(LS_KEYS.ENERGY);
       if (r) return JSON.parse(r);
-    } catch {}
+    } catch (_) {}
     return { count: GAME.MAX_ENERGY, lastRegen: Date.now() };
   });
 
@@ -76,7 +75,7 @@ export function useAppResources() {
   }, []);
 
   const getLifetimeDustSpent = useCallback(() => {
-    try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch { return 0; }
+    try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch (_) { return 0; }
   }, []);
 
   const addDust = useCallback((amount: number, source: string): number => {
@@ -101,10 +100,10 @@ export function useAppResources() {
     const raw = dustRef.current - amount;
     const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
     const spent = getLifetimeDustSpent() + amount;
-    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {}
+    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch (_) {}
     setDust(newDust);
     dustRef.current = newDust;
-    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}
+    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch (_) {}
     logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
   }, [getLifetimeDustSpent]);
 

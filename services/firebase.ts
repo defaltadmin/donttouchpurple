@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FirebaseAppInstance = { name: string; options: Record<string, unknown>; automaticDataCollectionEnabled: boolean };
+
 const FIREBASE_CONFIG = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -8,7 +11,7 @@ const FIREBASE_CONFIG = {
   measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const dbInstance: any = null;
+
 
 const IS_PROD =
   typeof window !== "undefined" &&
@@ -50,18 +53,17 @@ export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreE
   return safe;
 }
 
-export async function getDB(): Promise<any> {
+export async function getDB(): Promise<unknown> {
   if (!IS_PROD) return null;
   return await ensureFirestore();
 }
 
 // Lazy Firebase initialization - only load when first Firebase operation is needed
-let firebaseApp: any = null;
-let firestoreDb: any = null;
-const analyticsInstance: any = null;
-let firebaseModules: any = null;
+let firebaseApp: unknown = null;
+let firestoreDb: unknown = null;
+let firebaseModules: Record<string, Function> | null = null;
 
-async function ensureFirebaseApp(): Promise<any> {
+async function ensureFirebaseApp(): Promise<unknown> {
   if (firebaseApp) return firebaseApp;
 
   const { initializeApp, getApps } = await import("firebase/app");
@@ -69,7 +71,7 @@ async function ensureFirebaseApp(): Promise<any> {
   return firebaseApp;
 }
 
-async function ensureFirestore(): Promise<any> {
+async function ensureFirestore(): Promise<unknown> {
   if (firestoreDb) return firestoreDb;
 
   const app = await ensureFirebaseApp();
@@ -78,7 +80,7 @@ async function ensureFirestore(): Promise<any> {
   return firestoreDb;
 }
 
-async function ensureFirebaseModules(): Promise<any> {
+async function ensureFirebaseModules(): Promise<Record<string, Function>> {
   if (firebaseModules) return firebaseModules;
 
   const [firestoreMod, analyticsMod] = await Promise.all([
@@ -117,10 +119,10 @@ export async function fbAddScoreGlobal(
   await modules.addDoc(modules.collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: modules.serverTimestamp() });
 }
 
-/** @deprecated Use scoreSync.queue() instead. This function now routes to the unified queue. */
+/** @deprecated Use scoreSync.queue() instead. */
 export async function fbAddScoreViaWorker(score: number, mode: 'classic' | 'evolve' = 'evolve'): Promise<void> {
-  import('../utils/score-sync').then(({ scoreSync }) => scoreSync.queue(score, mode));
-  console.warn('[Firebase] fbAddScoreViaWorker is deprecated. Route to scoreSync.queue() directly.');
+  const { scoreSync } = await import('../utils/score-sync');
+  await scoreSync.queue(score, mode);
 }
 
 export async function fbLogEvent(name: string, params: Record<string, string | number | boolean | null | undefined> = {}): Promise<void> {
@@ -136,7 +138,7 @@ export async function fbLogEvent(name: string, params: Record<string, string | n
         .map(([key, value]) => [key.slice(0, 40), typeof value === "string" ? value.slice(0, 100) : value])
     );
     modules.logEvent(analytics, name.slice(0, 40), safeParams);
-  } catch {}
+  } catch (_) {}
 }
 
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
@@ -145,8 +147,8 @@ export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
   const modules = await ensureFirebaseModules();
   const q = modules.query(modules.collection(db, "lb_global"), modules.orderBy("score", "desc"), modules.limit(20));
   const snap = await modules.getDocs(q);
-  return snap.docs.map((doc: any) => {
-    const data = doc.data();
+  return snap.docs.map((doc: { data: () => Record<string, unknown> }) => {
+    const data = doc.data() as Record<string, unknown>;
     return {
       score: data.score ?? 0,
       initials: data.initials ?? "???",
@@ -186,20 +188,20 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
       limit(50)
     );
     const snap = await getDocs(q);
-    const entries = snap.docs.map((doc: any) => doc.data());
-    return entries.slice(0, 3).some((entry: any) => entry.initials === safeName) ? 500 : 0;
-  } catch {
+    const entries = snap.docs.map((doc: { data: () => Record<string, unknown> }) => doc.data() as Record<string, unknown>);
+    return entries.slice(0, 3).some((entry: Record<string, unknown>) => entry.initials === safeName) ? 500 : 0;
+  } catch (_) {
     return 0;
   }
 }
 
-let appInstance: any = null;
+let appInstance: FirebaseAppInstance | null = null;
 
-async function getAppInstance(): Promise<any> {
+async function getAppInstance(): Promise<FirebaseAppInstance> {
   if (appInstance) return appInstance;
   const { getApps, initializeApp } = await import("firebase/app");
-  if (getApps().length) { appInstance = getApps()[0]; return appInstance; }
-  appInstance = initializeApp(FIREBASE_CONFIG);
+  if (getApps().length) { appInstance = getApps()[0] as FirebaseAppInstance; return appInstance; }
+  appInstance = initializeApp(FIREBASE_CONFIG) as unknown as FirebaseAppInstance;
   return appInstance;
 }
 
@@ -224,8 +226,8 @@ export async function fbGetStreak(opts?: { clientDate?: string }): Promise<numbe
     const { getFunctions, httpsCallable } = await import("firebase/functions");
     const func = httpsCallable(getFunctions(app), "updateStreak");
     const result = await func({ clientDate: opts?.clientDate, deviceId: getDeviceId() });
-    return (result.data as any).streak;
-  } catch {
+    return (result.data as { streak: number }).streak;
+  } catch (_) {
     return getLocalStreakFallback();
   }
 }

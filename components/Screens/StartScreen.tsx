@@ -2,18 +2,20 @@ import React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
-import { getObjectiveStreak } from "../../config/dailyObjective";
+import { getObjectiveStreak as _getObjectiveStreak } from "../../config/dailyObjective";
 
 // ─── Types local to menu ──────────────────────────────────────────
 type InputMode = "touch" | "keyboard";
 
 // ─── PillRow ──────────────────────────────────────────────────────
 function PillRow<T extends string | number>({
-  options, value, onChange,
-}: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  options, value, onChange, disabledOptions = [], onDisabledClick,
+}: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; disabledOptions?: T[]; onDisabledClick?: (v: T) => void }) {
   const selIdx   = options.findIndex(o => o.value === value);
   const thumbRef = useRef<HTMLDivElement>(null);
   const rowRef   = useRef<HTMLDivElement>(null);
+
+  const isDisabled = (optValue: T) => disabledOptions.includes(optValue);
 
   const reposition = useCallback(() => {
     const row   = rowRef.current;
@@ -28,8 +30,8 @@ function PillRow<T extends string | number>({
 
   useEffect(() => {
     reposition();
-    let raf1: number, raf2: number;
-    raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(reposition); });
+    let raf2: number;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(reposition); });
     const row = rowRef.current;
     if (!row || typeof ResizeObserver === "undefined")
       return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
@@ -42,14 +44,88 @@ function PillRow<T extends string | number>({
   return (
     <div className="pill-row" ref={rowRef}>
       <div className="pill-thumb" ref={thumbRef} />
-      {options.map((o, i) => (
-        <button key={String(o.value)}
-          className={`pill-opt${i === selIdx ? " pill-opt--on" : ""}`}
-          onClick={() => onChange(o.value)}>
-          {o.label}
-        </button>
-      ))}
+      {options.map((o, i) => {
+        const locked = isDisabled(o.value);
+        return (
+          <button key={String(o.value)}
+            className={`pill-opt${i === selIdx ? " pill-opt--on" : ""}${locked ? " pill-opt--locked" : ""}`}
+            onClick={() => locked && onDisabledClick ? onDisabledClick(o.value) : onChange(o.value)}
+            title={locked ? "Tap for hint" : undefined}>
+            {o.label}{locked && " 🔒"}
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+// ─── Magnetic Button ───────────────────────────────────────────────
+function MagneticButton({ children, onClick, className = "", disabled = false }: {
+  children: React.ReactNode; onClick: () => void; className?: string; disabled?: boolean;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const posRef = useRef({ x: 0, y: 0 });
+  const isFinePointer = useRef(false);
+
+  useEffect(() => {
+    // Check if device has fine pointer (mouse) vs coarse (touch)
+    isFinePointer.current = window.matchMedia("(pointer: fine)").matches;
+    const mq = window.matchMedia("(pointer: fine)");
+    const handleMediaChange = (e: MediaQueryListEvent) => { isFinePointer.current = e.matches; };
+    mq.addEventListener("change", handleMediaChange);
+
+    const btn = btnRef.current;
+    if (!btn) return;
+
+    const getRect = () => btn.getBoundingClientRect();
+
+    const handleMove = (e: MouseEvent) => {
+      if (!isFinePointer.current) return; // Skip on touch devices
+      const rect = getRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = e.clientX - centerX;
+      const dy = e.clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 80) {
+        const pull = (1 - dist / 80) * 0.25;
+        posRef.current = { x: dx * pull, y: dy * pull };
+        // Haptic feedback on snap
+        if (dist < 40 && navigator.vibrate) navigator.vibrate(2);
+      } else {
+        posRef.current = { x: 0, y: 0 };
+      }
+      btn.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
+    };
+
+    const handleLeave = () => {
+      posRef.current = { x: 0, y: 0 };
+      btn.style.transform = "";
+    };
+
+    const handleTouchStart = () => {
+      // Reset transform immediately on touch to prevent laggy feel
+      posRef.current = { x: 0, y: 0 };
+      btn.style.transform = "";
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    btn.addEventListener("mouseleave", handleLeave);
+    btn.addEventListener("touchstart", handleTouchStart, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      btn.removeEventListener("mouseleave", handleLeave);
+      btn.removeEventListener("touchstart", handleTouchStart);
+      mq.removeEventListener("change", handleMediaChange);
+    };
+  }, []);
+
+  return (
+    <button ref={btnRef} className={className} onClick={onClick} disabled={disabled}
+      style={{ transition: "transform 0.1s ease-out" }}>
+      {children}
+    </button>
   );
 }
 
@@ -231,13 +307,9 @@ export function StartScreen({
               { value: "evolve", label: "∞ Evolve" }
             ]}
             value={gameMode}
-            onChange={(m) => {
-              if (m === "evolve" && !isFeatureUnlocked('evolve_mode') && !devMode) {
-                onToast?.("Score 500+ in Classic!");
-                return;
-              }
-              setGameMode(m);
-            }}
+            disabledOptions={(!isFeatureUnlocked('evolve_mode') && !devMode) ? ['evolve'] : []}
+            onDisabledClick={(m) => onToast?.("Score 500+ in Classic to unlock ∞ Evolve!")}
+            onChange={(m) => setGameMode(m)}
           />
         </div>
         <div className="opt-section">
@@ -248,13 +320,9 @@ export function StartScreen({
               { value: 2, label: "② Duo" }
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
-            onChange={(n) => {
-              if (n === 2 && !isFeatureUnlocked('two_player') && !devMode) {
-                onToast?.("Win 3 games!");
-                return;
-              }
-              setNumPlayers(n);
-            }}
+            disabledOptions={(!isFeatureUnlocked('two_player') && !devMode) ? [2] : []}
+            onDisabledClick={(n) => onToast?.("Win 3 Classic games to unlock Duo mode!")}
+            onChange={(n) => setNumPlayers(n)}
           />
         </div>
         <div className="opt-section">
@@ -273,9 +341,9 @@ export function StartScreen({
       </div>
 
       {(devMode || energyCount > 0) ? (
-        <button className="btn-play" onClick={onPlay}>
+        <MagneticButton className="btn-play" onClick={onPlay}>
           PLAY
-        </button>
+        </MagneticButton>
       ) : (
         <div className="no-energy-block">
           <EnergyCountdown energyLastRegen={energyLastRegen} />

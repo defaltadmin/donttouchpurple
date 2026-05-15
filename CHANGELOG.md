@@ -1,5 +1,35 @@
 # Don't Touch Purple — Changelog
 
+## [7.5.2] - 2026-05-15
+### 🐛 Bug Fixes
+- **Pause fully stops game loop** (`engine/GameEngine.ts`) — The `pause()` method now cancels both the animation frame (`rafId`) AND the tick timeout (`tickTimer`) AND the session auto-save interval. Previously, only one was being cancelled, allowing the game loop to continue running while paused
+- **p1 undefined crash on session restore** (`engine/GameEngine.ts`) — Resume from session storage now properly checks if `p1` exists before accessing its properties, preventing crashes when session data is malformed
+- **Resume session crash** (`hooks/useAppOrchestrator.ts`) — Added better error handling around session restoration, with try/catch around JSON parsing and null checks
+- **Remove unused menu-header** (`App.tsx`) — Removed the old `menu-header` element with mystery dot that was causing visual clutter
+- **Heart overfill mechanic** (`engine/GameEngine.ts`, `components/HUD/Hearts.tsx`) — Extra hearts beyond MAX_HEARTS now convert to shields (up to 3 max), adding strategic depth
+- **Locked feature pills show 🔒 and hint on tap** (`components/Screens/StartScreen.tsx`) — The PillRow component now supports `disabledOptions` prop. Evolve and Duo mode pills show "🔒" icon, have `cursor: help`, and tapping shows the unlock hint toast instead of silently failing
+
+### ✨ New UI Features
+- **Mouse-Follower Blob** (`components/Backgrounds/MouseFollower.tsx`) — Added a glassmorphism blob that follows the mouse with inertia/lag. Soft purple radial gradient with 70px blur, fades in when mouse moves and fades out when stationary. Renders above background but below UI
+- **Precise Spotlight Border Glow** (`App.tsx`, `styles/game.css`) — Cards (`.hud-card`, `.menu-card`) now have a `::after` radial gradient that follows the mouse position in real-time. CSS variables `--mx` and `--my` are updated on `mousemove`, creating a "flashlight" effect on hover
+- **Mouse Trail Particles** (`components/Backgrounds/MouseTrail.tsx`) — Subtle particle trail during gameplay. Spawns small cyan/purple particles where mouse moves, with gravity and fade. Only active during "playing" state and respects reducedMotion preference
+- **Interactive Dot Grid** (`components/Backgrounds/GridPulse.tsx`) — Grid cells now react to mouse proximity. When mouse is within 120px of a cell, it scales up by up to 60%. Uses `Math.hypot()` for distance calculation
+- **Magnetic Buttons** (`components/Screens/StartScreen.tsx`) — PLAY button now has magnetic effect: when cursor is within 80px, button subtly pulls toward cursor (up to 25% pull). Creates tactile, responsive feel
+- **Gooey/Liquid Transitions** (`App.tsx`, `styles/game.css`) — Added SVG filter (`<filter id="goo">`) with blur + color matrix for liquid merging effect. CSS class `.btn-gooey` applies filter to button containers for gooey transitions
+- **Text Scramble Effect** (`components/UI/ScrambleText.tsx`) — New component that cycles through random symbols (■□◆◇▲△ etc.) before settling on final text. 500ms duration with progressive character locking. Use for Game Over and score displays
+- **Digital Glitch Overlay** (`styles/game.css`) — Enhanced `damage-pulse` with cyberpunk effects: scanline overlay (repeating linear gradient), RGB hue rotation, contrast boost, and subtle X-offset shake. Makes damage feel more impactful
+
+### 🎮 QOL Improvements
+- **UI polish** — Hide unnecessary labels, add glassmorphism effects to resume screen, dev-only FPS counter
+- **Tutorial improvements** — Prevent tutorial popup from showing on every game start (now only once per session)
+- **Menu UI refinements** — Better icons with text labels, max-width constraints, visual polish for cleaner look
+
+### 🔧 Technical Improvements
+- **Magnetic Button Mobile Fix** (`components/Screens/StartScreen.tsx`) — Added pointer media query check so magnetic effect only applies on devices with fine pointer (mouse). Added touchstart listener to reset transform and prevent laggy feel on mobile. Added haptic vibrate(2) when cursor snaps to button
+- **MouseTrail Object Pool** (`components/Backgrounds/MouseTrail.tsx`) — Replaced dynamic array with pre-allocated pool of 100 particles to prevent GC micro-stutters during long play sessions
+- **Dynamic Title Glow** (`styles/game.css`) — Added `.logo--shimmer` class with animated gradient that sweeps across the title. Creates dynamic, modern feel
+- **Energy Store Hook** (`hooks/useEnergyStore.ts`) — Extracted energy management logic into custom hook to reduce App.tsx bloat. Manages regen, spending, and refill in one place
+
 ## [7.5.1] - 2026-05-10
 ### 🧹 Cleanup
 - **Create junk folder for stale files** — Moved deprecated folders and files to `junk/` for safekeeping instead of deleting

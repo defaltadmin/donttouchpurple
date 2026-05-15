@@ -14,7 +14,8 @@ export default function EvolveTutorial({ isOpen, onClose, currentStep = 0 }: Evo
 
   useEffect(() => {
     if (!isOpen) return;
-    setStep(0);
+    const id = setTimeout(() => setStep(0), 0);
+    return () => clearTimeout(id);
   }, [isOpen]);
 
   useEffect(() => {

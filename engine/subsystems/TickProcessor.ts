@@ -193,7 +193,7 @@ export class TickProcessor {
       for (const c of newActive) {
         if (["medpack", "shield", "freeze", "multiplier"].includes(c.type)) {
           ref.anim[c.idx] = "pwr-drop";
-          setTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") { ref.anim = { ...ref.anim }; delete ref.anim[c.idx]; } }, 600);
+          ctx.scheduleTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") { ref.anim = { ...ref.anim }; delete ref.anim[c.idx]; } }, 600);
         }
       }
     }
@@ -437,7 +437,7 @@ export class TickProcessor {
     ctx.emit({ type: "bossStart", bossType: type });
     ctx.emit({ type: "sound", name: "bossStart" });
     ctx.emit({ type: "toast", message: getBossLabel(type) });
-    setTimeout(() => {
+    ctx.scheduleTimeout(() => {
       if (ctx.bossEvent?.type === type) {
         ctx.bossEvent = null;
         ctx.dirty = true;

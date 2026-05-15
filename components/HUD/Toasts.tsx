@@ -24,7 +24,7 @@ export function RareSplash({ splash }: RareSplashProps) {
           color:      splash.cssColor,
           textShadow: `0 0 60px ${splash.cssColor}, 0 0 120px ${splash.cssColor}66`,
         }}>
-        DON'T<br />TOUCH<br />{splash.color.toUpperCase()}!
+        DON&apos;T<br />TOUCH<br />{splash.color.toUpperCase()}!
       </span>
     </div>
   );
