@@ -60,7 +60,7 @@ export function useWeeklyTasks(
   ) => {
     const wk = getWeekKey();
     const key = `dtp-weekly-progress-${wk}`;
-    let wp: Record<string, number> = safeGetJSON(key, {});
+    const wp: Record<string, number> = safeGetJSON(key, {});
 
     wp["play5"]    = (wp["play5"]    ?? 0) + 1;
     wp["dust200"]  = (wp["dust200"]  ?? 0) + dustEarned;
@@ -86,7 +86,7 @@ export function useWeeklyTasks(
   ) => {
     const wk  = getWeekKey();
     const key = `dtp-weekly-progress-${wk}`;
-    let wp: Record<string, number> = safeGetJSON(key, {});
+    const wp: Record<string, number> = safeGetJSON(key, {});
     const best = lbMode === "classic" ? best1 : best2;
     const inTop10 = entries
       .slice(0, 10)
