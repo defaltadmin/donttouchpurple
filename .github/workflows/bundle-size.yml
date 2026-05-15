@@ -39,6 +39,9 @@ jobs:
     - name: Comment PR with bundle size
       if: github.event_name == 'pull_request' && always()
       uses: actions/github-script@v7
+      env:
+        REPO: ${{ github.repository }}
+        RUN_ID: ${{ github.run_id }}
       with:
         script: |
           const fs = require('fs');
@@ -67,7 +70,7 @@ ${report.files.map(formatFile).join('\n')}
 - **Total:** ${Math.round(report.totals.total / 1024)}KB (limit: ${Math.round(600)}KB)
 ${recommendations}
 
-[View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+[View detailed report](https://github.com/${process.env.REPO}/actions/runs/${process.env.RUN_ID})`;
 
           github.rest.issues.createComment({
             issue_number: context.issue.number,

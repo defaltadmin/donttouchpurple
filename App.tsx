@@ -338,12 +338,15 @@ export default function App() {
     getFirebase().then(fb =>
       fb.fbGetStreak({ clientDate: new Date().toISOString().split("T")[0] })
     ).then(streak => {
-      setLoginStreakCount(streak);
-      localStorage.setItem("dtp_login_streak", JSON.stringify({
-        count: streak,
-        lastDate: new Date().toDateString()
-      }));
-    }).catch(e => logger.warn('Firebase operation failed', e));
+      const safeStreak = typeof streak === 'number' && isFinite(streak) ? streak : 1;
+      setLoginStreakCount(safeStreak);
+      try {
+        localStorage.setItem("dtp_login_streak", JSON.stringify({
+          count: safeStreak,
+          lastDate: new Date().toDateString()
+        }));
+      } catch {}
+    }).catch(e => logger.warn('Firebase streak fetch failed', e));
   }, []);
 
   useEffect(() => {
@@ -467,15 +470,6 @@ export default function App() {
     }
   }, [screen]);
 
-  // Version sync safety
-  useEffect(() => {
-    const pkgVersion: string = (window as any).__APP_VERSION__ ?? "5.8.17";
-    if (pkgVersion !== "5.8.17") {
-      console.warn(`[DTP] Version mismatch: package=${pkgVersion}`);
-      safeSentry.addBreadcrumb({ category: "deploy", message: "version_mismatch", data: { pkg: pkgVersion } });
-    }
-  }, []);
-
   // PWA Install Prompt (One-time + iOS fallback)
   useEffect(() => {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -491,7 +485,7 @@ export default function App() {
     const gamesPlayed = parseInt(localStorage.getItem('dtp-games-played') || '0', 10);
     const promptAlreadyShown = localStorage.getItem('dtp-install-prompt-shown') === 'true';
 
-    if (!promptAlreadyShown && (gamesPlayed >= 3 || screen === "menu")) {
+    if (!promptAlreadyShown && gamesPlayed >= 3) {
       setTimeout(() => setShowInstallBanner(true), 2200);
     }
 
@@ -849,7 +843,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, best1, best2, gameMode]);
+  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {
@@ -922,7 +916,7 @@ export default function App() {
       bossCountersRef.current = next;
       setBossCounters(next);
       safeSentry.addBreadcrumb({ category: "game", message: "boss_survived", level: "info", data: { type: bossType } });
-      if (snapshotRef.current && snapshotRef.current.p1.score >= 100) {
+      if (snapshotRef.current && snapshotRef.current.p1?.score >= 100) {
         const bonus = bossType === "inversion" ? 20 : 15;
         addDust(bonus, `boss_${bossType}`);
         toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
@@ -1112,7 +1106,7 @@ export default function App() {
           const snap = snapshotRef.current;
           stateGuard.safeStore('dtp:session', {
             ts: Date.now(),
-            engineSnapshot: { hearts: snap.p1.health, score: snap.p1.score, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
+            engineSnapshot: { hearts: snap.p1?.health ?? 1, score: snap.p1?.score ?? 0, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
           });
         }
       } else if (document.visibilityState === 'visible') {
