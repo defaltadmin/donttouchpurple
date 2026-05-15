@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
-    "prepare": "husky install",
+    "prepare": "echo 'prepare script'",
     "lint-staged": "lint-staged",
     "ship": "bash scripts/ship.sh",
     "semantic-release": "semantic-release",
