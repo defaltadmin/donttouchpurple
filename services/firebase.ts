@@ -61,7 +61,24 @@ export async function getDB(): Promise<unknown> {
 // Lazy Firebase initialization - only load when first Firebase operation is needed
 let firebaseApp: unknown = null;
 let firestoreDb: unknown = null;
-let firebaseModules: Record<string, Function> | null = null;
+
+type FirebaseModuleFunctions = {
+  collection: (db: unknown, path: string) => unknown;
+  addDoc: (ref: unknown, data: Record<string, unknown>) => Promise<void>;
+  serverTimestamp: () => Record<string, unknown>;
+  query: (...args: unknown[]) => unknown;
+  orderBy: (field: string, direction: string) => unknown;
+  limit: (n: number) => unknown;
+  getDocs: (query: unknown) => Promise<{ docs: Array<{ data: () => Record<string, unknown> }> }>;
+  doc: (db: unknown, collection: string, id: string) => unknown;
+  setDoc: (ref: unknown, data: Record<string, unknown>) => Promise<void>;
+  where: (field: string, op: string, value: unknown) => unknown;
+  getAnalytics: (app: unknown) => unknown;
+  isSupported: () => Promise<boolean>;
+  logEvent: (analytics: unknown, name: string, data: Record<string, unknown>) => void;
+};
+
+let firebaseModules: FirebaseModuleFunctions | null = null;
 
 async function ensureFirebaseApp(): Promise<unknown> {
   if (firebaseApp) return firebaseApp;
@@ -80,7 +97,7 @@ async function ensureFirestore(): Promise<unknown> {
   return firestoreDb;
 }
 
-async function ensureFirebaseModules(): Promise<Record<string, Function>> {
+async function ensureFirebaseModules(): Promise<FirebaseModuleFunctions> {
   if (firebaseModules) return firebaseModules;
 
   const [firestoreMod, analyticsMod] = await Promise.all([
@@ -90,21 +107,21 @@ async function ensureFirebaseModules(): Promise<Record<string, Function>> {
 
   firebaseModules = {
     // Firestore
-    collection: firestoreMod.collection,
-    addDoc: firestoreMod.addDoc,
-    serverTimestamp: firestoreMod.serverTimestamp,
-    query: firestoreMod.query,
-    orderBy: firestoreMod.orderBy,
-    limit: firestoreMod.limit,
-    getDocs: firestoreMod.getDocs,
-    doc: firestoreMod.doc,
-    setDoc: firestoreMod.setDoc,
-    where: firestoreMod.where,
+    collection: (firestoreMod as { collection: unknown }).collection as FirebaseModuleFunctions['collection'],
+    addDoc: (firestoreMod as { addDoc: unknown }).addDoc as FirebaseModuleFunctions['addDoc'],
+    serverTimestamp: (firestoreMod as { serverTimestamp: unknown }).serverTimestamp as FirebaseModuleFunctions['serverTimestamp'],
+    query: (firestoreMod as { query: unknown }).query as FirebaseModuleFunctions['query'],
+    orderBy: (firestoreMod as { orderBy: unknown }).orderBy as FirebaseModuleFunctions['orderBy'],
+    limit: (firestoreMod as { limit: unknown }).limit as FirebaseModuleFunctions['limit'],
+    getDocs: (firestoreMod as { getDocs: unknown }).getDocs as FirebaseModuleFunctions['getDocs'],
+    doc: (firestoreMod as { doc: unknown }).doc as FirebaseModuleFunctions['doc'],
+    setDoc: (firestoreMod as { setDoc: unknown }).setDoc as FirebaseModuleFunctions['setDoc'],
+    where: (firestoreMod as { where: unknown }).where as FirebaseModuleFunctions['where'],
 
     // Analytics
-    getAnalytics: analyticsMod.getAnalytics,
-    isSupported: analyticsMod.isSupported,
-    logEvent: analyticsMod.logEvent,
+    getAnalytics: (analyticsMod as { getAnalytics: unknown }).getAnalytics as FirebaseModuleFunctions['getAnalytics'],
+    isSupported: (analyticsMod as { isSupported: unknown }).isSupported as FirebaseModuleFunctions['isSupported'],
+    logEvent: (analyticsMod as { logEvent: unknown }).logEvent as FirebaseModuleFunctions['logEvent'],
   };
 
   return firebaseModules;
@@ -138,7 +155,9 @@ export async function fbLogEvent(name: string, params: Record<string, string | n
         .map(([key, value]) => [key.slice(0, 40), typeof value === "string" ? value.slice(0, 100) : value])
     );
     modules.logEvent(analytics, name.slice(0, 40), safeParams);
-  } catch (_) {}
+  } catch {
+    // Silently fail if logging fails
+  }
 }
 
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
@@ -190,7 +209,7 @@ export async function fbCheckWeeklyBonus(name: string): Promise<number> {
     const snap = await getDocs(q);
     const entries = snap.docs.map((doc: { data: () => Record<string, unknown> }) => doc.data() as Record<string, unknown>);
     return entries.slice(0, 3).some((entry: Record<string, unknown>) => entry.initials === safeName) ? 500 : 0;
-  } catch (_) {
+  } catch {
     return 0;
   }
 }
@@ -227,7 +246,7 @@ export async function fbGetStreak(opts?: { clientDate?: string }): Promise<numbe
     const func = httpsCallable(getFunctions(app), "updateStreak");
     const result = await func({ clientDate: opts?.clientDate, deviceId: getDeviceId() });
     return (result.data as { streak: number }).streak;
-  } catch (_) {
+  } catch {
     return getLocalStreakFallback();
   }
 }
