@@ -135,7 +135,7 @@ export class TickProcessor {
               ctx.dda.recordAttempt(false, 0, true);
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
               ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
-              if (ref.health <= 0) {
+              if (ref.health < 1) {
                 ref.alive = false;
                 const other = ctx.numPlayers === 2 ? (pi === 0 ? ctx.p2.alive : ctx.p1.alive) : false;
                 ctx.triggerGameOver(ctx.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
@@ -166,7 +166,7 @@ export class TickProcessor {
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
               ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
               ctx.emit({ type: "toast", message: "⏳ Hold expired!" });
-              if (ref.health <= 0) {
+              if (ref.health < 1) {
                 ref.alive = false;
                 const other = ctx.numPlayers === 2 ? (pi === 0 ? ctx.p2.alive : ctx.p1.alive) : false;
                 ctx.triggerGameOver(ctx.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
@@ -369,7 +369,7 @@ export class TickProcessor {
           const dmg = ctx.config.mode === "evolve" ? 0.5 : 1;
           ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
           ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
-          if (ref.health <= 0) {
+          if (ref.health < 1) {
             ref.alive = false;
             ctx.triggerGameOver(ctx.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1"));
           }

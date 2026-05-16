@@ -551,7 +551,7 @@ destroy(): void {
             ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
             this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
             this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-            if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
+            if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
           }
         } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
       } else {
