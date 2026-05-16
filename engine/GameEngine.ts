@@ -143,7 +143,10 @@ export class GameEngine {
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
       if (btn === 'a' || btn === 'dpad_up') this.handleTap(1, parseInt(this._lastFocusedCell) || 0);
-      if (btn === 'start') this.paused ? this.resume() : this.pause();
+      if (btn === 'start') {
+        if (this.paused) this.resume();
+        else this.pause();
+      }
     });
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
@@ -217,6 +220,7 @@ export class GameEngine {
   isDailyComplete() { return this.daily.isTodayComplete(); }
 
   async generateScoreCard(score: number): Promise<string> {
+    if (this._isDisposed) return "";
     return scoreCardGen.generate({
       score,
       hearts: this.p1?.health ?? 0,
@@ -399,14 +403,14 @@ destroy(): void {
     this._tickSoundCounter = 0;
     this._isInverted = false;
 
-    this.p1.health = GAME.MAX_HEARTS;
-    this.p1.score = 0;
-    this.p1.streak = 0;
-    this.p1.active = [];
-    this.p2.health = GAME.MAX_HEARTS;
-    this.p2.score = 0;
-    this.p2.streak = 0;
-    this.p2.active = [];
+    const storedForReset = {
+      freeze: this.p1.storedFreezeCharges ?? 0,
+      shield: this.p1.storedShieldCharges ?? 0,
+      mult: 0,
+      heart: 0,
+    };
+    this.p1 = makePS(0, false, storedForReset);
+    this.p2 = makePS(0, false, storedForReset);
     this.tickCount = 0;
     this.evolveTick = 0;
     this.activeBomb = null;
@@ -426,8 +430,8 @@ destroy(): void {
   }
 
   private emitSnapshot(): void {
-    this.dirty = false;
     this.emit({ type: "tick", snapshot: this.getSnapshot() });
+    this.dirty = false;
   }
 
   private _currentTickMs(): number {
@@ -447,6 +451,7 @@ destroy(): void {
   }
 
   handleTap(player: 1 | 2, idx: number): void {
+    if (this._isDisposed) return;
     if (this.phase !== "playing") return;
     const cellId = `p${player}-${idx}`;
     if (!this.inputBuffer.register(cellId)) return;
@@ -586,6 +591,7 @@ destroy(): void {
   }
 
   handleHoldStart(player: 1 | 2, idx: number): void {
+    if (this._isDisposed) return;
     if (this.phase !== "playing") return;
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive) return;
@@ -613,6 +619,7 @@ destroy(): void {
   }
 
   handleHoldEnd(player: 1 | 2, idx: number): void {
+    if (this._isDisposed) return;
     if (this.phase !== "playing") return;
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive) return;
@@ -819,8 +826,8 @@ destroy(): void {
       tick:       this.tickCount,
       evolveTick: this.evolveTick,
       gameSeed:   this.gameSeed,
-      p1:         { ...this.p1, active: cloneActive(this.p1.active), anim: { ...this.p1.anim } },
-      p2:         { ...this.p2, active: cloneActive(this.p2.active), anim: { ...this.p2.anim } },
+      p1:         { ...this.p1, cells: [...this.p1.cells], active: cloneActive(this.p1.active), anim: { ...this.p1.anim } },
+      p2:         { ...this.p2, cells: [...this.p2.cells], active: cloneActive(this.p2.active), anim: { ...this.p2.anim } },
       cellShape:  this.cellShape,
       rareMode:   { ...this.rareMode },
       spinLevel:  this.spinLevel,

@@ -198,51 +198,6 @@ export class TickProcessor {
       }
     }
 
-    // Bot Assist
-    const botCfg = ctx.config.botAssist;
-    if (botCfg) {
-      const botPlayers: Array<{ ref: PlayerState; player: 1 | 2 }> = [
-        { ref: ctx.p1, player: 1 },
-        ...(ctx.numPlayers === 2 ? [{ ref: ctx.p2, player: 2 as const }] : []),
-      ];
-      for (const { ref, player } of botPlayers) {
-        if (!ctx.botAssistActive[player] || !ref.alive) continue;
-        const dust = botCfg.getDust();
-        if (dust < BALANCE.bot.minDustToStart) { ctx.botAssistActive[player] = false; ctx.emit({ type: "toast", message: "🤖 Bot off — low dust!" }); continue; }
-        const accuracy = botCfg.getAccuracy();
-        const dangerColor = ctx.rareMode.active ? ctx.rareMode.color : "purple";
-        const botInverted = ctx.bossEvent?.type === "inversion" && Date.now() < (ctx.bossEvent?.endsAt ?? 0);
-        const missedCells = ref.active.filter(c =>
-          !c.clicked &&
-          (botInverted ? c.type === dangerColor : c.type !== dangerColor) &&
-          (c.type as string) !== "void" &&
-          c.type !== "hold" &&
-          c.type !== "ice"
-        );
-        for (const cell of missedCells) {
-          if (ctx.rng() > accuracy) continue;
-          const costPerTap = BALANCE.bot.baseCostPerTap;
-          const currentDust = botCfg.getDust();
-          if (currentDust < costPerTap) break;
-          botCfg.spendDust(costPerTap);
-          ctx.emit({ type: "botTap", player, idx: cell.idx, dustCost: costPerTap });
-          cell.clicked = true;
-          const mult = Date.now() < ref.multiplierEnd ? 2 : 1;
-          const nextStreak = ref.streak + 1;
-          ref.score += mult + calculateStreakBonus(nextStreak);
-          ref.streak = nextStreak;
-          ref.stageProgress += 1;
-          ctx.checkStageProgress(player);
-        }
-        if (missedCells.length > 0) {
-          const pat = mode === "evolve"
-            ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0])
-            : { cols: 3, rows: 3, mask: null as number[] | null };
-          ref.cells = activeToCellsP(ref.active, pat);
-        }
-      }
-    }
-
     // Cell shuffle + boss event + bomb spawn
     if (mode === "evolve") {
       const stormActive = ctx.bossEvent?.type === "storm" && Date.now() < (ctx.bossEvent?.endsAt ?? 0);
