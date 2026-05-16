@@ -87,7 +87,7 @@ import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
 import { initGA, logProgressionEvent, logDesignEvent, logResourceEvent, logErrorEvent } from "./services/gameanalytics";
 import { safeGetJSON, safeSet } from "./utils/storage";
 import { addPendingScore } from "./utils/pendingScoresDb";
-import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachine";
+import { useScreenStateMachine } from "./hooks/useScreenStateMachine";
 import { featureGates } from "./utils/featureGates";
 
 // Components - Settings & Shop

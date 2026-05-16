@@ -1,5 +1,36 @@
 # Don't Touch Purple — Changelog
 
+## [7.5.0] — 2026-05-16
+
+### Fixed
+- **Build:** `GameEngine.ts` — TS2740/TS2345 in `stateGuard.sanitize` session restore; bridged
+  `RareColorMode` ↔ `Record<string,unknown>` with `as unknown as` casts on both arguments.
+- **Build:** `firebase.ts` — TS2322 in `fbFetchTop20Global`; replaced `?? 0` on `unknown` fields
+  with `typeof` guards; `mode` now validates the `"classic" | "evolve"` union.
+- **Lint:** `App.tsx` — `setScreen` typed `(s: string)` requiring `s as any`; parameter now typed
+  directly as `Screen`.
+- **Lint:** `App.tsx` — Empty `catch {}` on `localStorage.setItem` calls suppressed inline
+  (`// eslint-disable-line no-empty`); intentional silent guard for private-mode / QuotaExceeded.
+- **Bug:** `useEnergyStore` — `spendEnergy` guard read stale `energyData.count` from outer
+  closure; now reads `energyDataRef.current.count` consistent with the regen timer.
+- **Bug:** `GameEngine.ts` — `as any` on `bossEvent`/`activeBomb` sub-fields in session restore
+  replaced with `Record<string,unknown>` intermediary + typed property access.
+
+### Changed
+- `useScreenStateMachine` — Removed unused `payload` parameter from `transition()` and the
+  `ScreenState` interface.
+
+### Removed
+- `@sentry/tracing` v7 package removed; it was a deprecated re-export that conflicted with
+  `@sentry/react` v10 already in use. Tracing is included in v10 automatically.
+
+### Chore
+- `vite.config.ts` — Removed duplicate `manualChunks` block (second copy was dead code; Rollup
+  matches only the first branch per module ID).
+- `tsconfig.json` — Added `services/**/*.ts` and `utils/**/*.ts` to `include` for explicit
+  directory coverage.
+- `bundle-size.yml` — Updated `node-version` from `'18'` (EOL April 2025) to `'20'`.
+
 ## [7.5.2] - 2026-05-15
 ### 🐛 Bug Fixes
 - **Pause fully stops game loop** (`engine/GameEngine.ts`) — The `pause()` method now cancels both the animation frame (`rafId`) AND the tick timeout (`tickTimer`) AND the session auto-save interval. Previously, only one was being cancelled, allowing the game loop to continue running while paused

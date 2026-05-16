@@ -57,17 +57,6 @@ export default defineConfig({
           // Game engine and core logic
           if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
           if (id.includes('utils/')) return 'game-utils';
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
-            if (id.includes('lucide') || id.includes('icon')) return 'ui-icons';
-            // Other vendor libraries in smaller chunks
-            if (id.includes('date-fns') || id.includes('lodash')) return 'utils-vendor';
-            return 'vendor';
-          }
-
-          // Game engine and core logic
-          if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
-          if (id.includes('utils/')) return 'game-utils';
 
           // UI components by feature
           if (id.includes('Backgrounds/')) return 'bg-effects';

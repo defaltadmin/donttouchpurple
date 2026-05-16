@@ -21,7 +21,7 @@ export interface ScreenState {
   current: Screen;
   previous: Screen | null;
   canTransition: (to: Screen) => boolean;
-  transition: (to: Screen, payload?: unknown) => void;
+  transition: (to: Screen) => void;
   isFeatureUnlocked: (feature: FeatureId, devMode?: boolean) => boolean;
   progress: PlayerProgress;
   updateProgress: (partial: Partial<PlayerProgress>) => void;
@@ -72,7 +72,7 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
     return true; 
   }, [current]);
 
-  const transition = useCallback((to: Screen, payload?: unknown) => {
+  const transition = useCallback((to: Screen) => {
     if (!canTransition(to)) return;
     
     logger.debug(`🖥️ Transition: ${current} -> ${to}`);

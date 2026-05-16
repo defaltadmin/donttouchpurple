@@ -24,6 +24,8 @@
     "config/**/*.ts",
     "engine/**/*.ts",
     "hooks/**/*.ts",
+    "services/**/*.ts",
+    "utils/**/*.ts",
     "__tests__/**/*.ts",
     "test/**/*.ts",
     "*.d.ts"

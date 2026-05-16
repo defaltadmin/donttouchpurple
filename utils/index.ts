@@ -3,8 +3,7 @@
 
 // ─── Analytics & Telemetry ──────────────────────────────────
 export { analytics } from './analytics';
-export { gameanalytics } from '../services/gameanalytics';
-export { clarity } from '../services/clarity';
+// Note: gameanalytics and clarity export functions, not modules - import directly from services/
 
 // ─── State Management ──────────────────────────────────────
 export { sessionManager } from './session';
@@ -20,7 +19,8 @@ export { InputBuffer } from './input-smoothing';
 export { haptics } from './haptics';
 
 // ─── UI & Experience ──────────────────────────────────────
-export { Preloader, AssetGate } from './preloader';
+export { Preloader } from './preloader';
+// AssetGate is in preloader-v2.ts - import directly if needed
 export { AssetHydrator } from './asset-hydrator';
 export { LazyHydrate } from './lazy-hydrate';
 export { orientationMonitor } from './orientation';
@@ -42,14 +42,11 @@ export { errorTracker } from './error-tracker';
 export { logger } from './logger';
 
 // ─── Storage & Persistence ────────────────────────────────
-export { pendingScoresDb } from './pendingScoresDb';
 export { idb } from './idb';
-export { storage } from './storage';
+// pendingScoresDb and storage are function exports, not objects - import directly if needed
 
 // ─── Utilities ────────────────────────────────────────────
-export { devLog } from './devLog';
-export { cleanupPattern } from './cleanup-pattern';
-export { dustAnimation } from './dustAnimation';
+// devLog, cleanupPattern, dustAnimation are function exports - import directly if needed
 export { scoreSync } from './score-sync';
 export { scoreCardGen } from './score-card';
 export { privacyManager } from './privacy';
@@ -58,4 +55,4 @@ export { featureGates } from './featureGates';
 
 // ─── Internationalization ──────────────────────────────────
 export { i18n, type Locale } from './i18n';
-export { i18nKeys } from './i18n-keys';
+export type { I18nKey } from './i18n-keys';

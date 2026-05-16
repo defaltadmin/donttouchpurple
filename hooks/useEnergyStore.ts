@@ -41,7 +41,7 @@ export function useEnergyStore() {
   }, []);
 
   const spendEnergy = useCallback(() => {
-    if (energyData.count <= 0) return false;
+    if (energyDataRef.current.count <= 0) return false;
     setEnergyData(prev => {
       const newEd = { ...prev, count: prev.count - 1 };
       localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
