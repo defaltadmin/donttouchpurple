@@ -58,8 +58,8 @@ import { GameOver, getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
 import EvolveTutorial from "./components/Screens/EvolveTutorial";
 import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
-import LoginStreakPopup, { getStreakReward } from "./components/Screens/LoginStreakPopup";
-import DailyChallengesPopup, { type DailyChallenge } from "./components/Screens/DailyChallengesPopup";
+import { getStreakReward } from "./components/Screens/LoginStreakPopup";
+import { type DailyChallenge } from "./components/Screens/DailyChallengesPopup";
 import { RewardsHub, countUnclaimedRewards, type WeeklyTask } from "./components/Screens/RewardsHub";
 import { getObjectiveStreak } from "./config/dailyObjective";
 

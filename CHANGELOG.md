@@ -1,5 +1,19 @@
 # Don't Touch Purple — Changelog
 
+## [7.5.1] — 2026-05-16
+
+### Fixed
+- **Types:** `engine/GameEngine.ts` — Declared missing `private _currentThemeId = 'default'`
+  field; eliminates `as any` cast at session persistence call (`GameEngine.ts:752`).
+- **Lint:** `App.tsx` — Removed unused imports: `LoginStreakPopup`, `DailyChallengesPopup`
+  component (kept `getStreakReward` function and `DailyChallenge` type as they're used).
+
+### Note
+- `GameEvent` union in `engine/types.ts` already includes `botTap`, `dustConsumed`,
+  `qualityDowngrade`, `qualityUpgrade`, `bombDefused`. The `as any` cast at line 189
+  remains because BotController callback has generic `{ type: string; [k: string]: unknown }`
+  type - requires BotController type update to remove.
+
 ## [7.5.0] — 2026-05-16
 
 ### Fixed

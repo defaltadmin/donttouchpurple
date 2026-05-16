@@ -72,6 +72,7 @@ export class GameEngine {
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
+  private _currentThemeId = 'default';
   private botAssistActive: { 1: boolean; 2: boolean } = { 1: false, 2: false };
 
   private listeners: Set<(e: GameEvent) => void> = new Set();
@@ -749,7 +750,7 @@ destroy(): void {
           score: this.p1.score,
           timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
           isPaused: this.paused
-        }, { theme: (this as any)._currentThemeId, difficulty: this.config.mode });
+        }, { theme: this._currentThemeId, difficulty: this.config.mode });
       }
     }, 5000);
   }
