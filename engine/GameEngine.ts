@@ -1,6 +1,5 @@
-import { DIFFICULTY, GAME, LS_KEYS } from "../config/difficulty";
-import { STAGES, EVOLVE_PATTERNS, getRareModeConfig } from "../config/gridPatterns";
-import { POWERUP_TABLE } from "../config/powerupWeights";
+import { GAME } from "../config/difficulty";
+import { STAGES, EVOLVE_PATTERNS } from "../config/gridPatterns";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
 import { logError } from "../utils/devLog";
 import { InputBuffer } from "../utils/input-smoothing";
@@ -22,9 +21,9 @@ import { perfMonitor } from "../utils/perf-monitor";
 import { scoreCardGen } from "../utils/score-card";
 import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
-  ActiveCell, CellType, CellShape, GameConfig, GameEvent,
-  GameMode, GameSnapshot, NumPlayers, PlayerState, RareColorMode, Winner,
-  BombCell, BossEvent, BossEventType, HoldCell,
+  ActiveCell, CellShape, GameConfig, GameEvent,
+  GameSnapshot, PlayerState, RareColorMode, Winner,
+  BossEvent, HoldCell,
 } from "./types";
 import {
   activeToCellsP, spawnActive,
@@ -645,6 +644,7 @@ destroy(): void {
   }
 
   activateStoredFreeze(player: 1 | 2): void {
+    if (this._isDisposed) return;
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive || ref.storedFreezeCharges <= 0) return;
     ref.storedFreezeCharges -= 1;
@@ -656,6 +656,7 @@ destroy(): void {
   }
 
   activateStoredShield(player: 1 | 2): void {
+    if (this._isDisposed) return;
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref.alive || ref.storedShieldCharges <= 0) return;
     ref.storedShieldCharges -= 1;
@@ -776,6 +777,7 @@ destroy(): void {
   }
 
   submitScoreToLeaderboard(score: number): void {
+    if (this._isDisposed) return;
     scoreSync.queue(score);
   }
 
