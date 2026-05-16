@@ -214,5 +214,202 @@
 
 ---
 
-**Issues 1–12 from Gemini CLI. Issues 13–25 from Amazon Q. Issues 26–31 added from current session code review.**
+## 🔴 Deep Engine & React Bridge Analysis (Claude Review, continues from #32)
+
+### 32. `setTimeout` Tick Loop Fires React State Outside Batching
+- **Files:** `engine/GameEngine.ts:314` → `processTick()` → `emit()` → `hooks/useGameEngine.ts:172`
+- **Error:** Game loop uses `setTimeout` chain. Each tick calls `ctx.emit()` → subscriber calls `setSnapshot()`. In React 17/legacy mode this runs **outside React's batching** — each `setSnapshot` triggers a synchronous re-render before the next statement.
+- **Impact:** Multiple synchronous re-renders per tick; performance degradation on low-end devices.
+- **Fix:** Wrap subscriber state updates in `unstable_batchedUpdates` (React 17) or ensure React 18 concurrent mode (automatic batching).
+
+### 33. RAF + setTimeout Dirty-Flag Race Can Lose Snapshots
+- **Files:** `engine/GameEngine.ts:284-305` (`startSnapshotRaf`), `307-319` (`scheduleTick`)
+- **Error:** RAF loop emits snapshots when `dirty === true`. If two ticks process before an RAF cycle fires (frame drop), first snapshot is overwritten. Also `emitSnapshot()` sets `dirty = false` at start (line 429), but the RAF guard `dirty && phase !== "gameover"` passes before the check — if `gameOver` fires between guard and emit, stale "playing" snapshot is emitted.
+- **Impact:** UI skips frames; React receives stale phase data on game-over transition.
+- **Fix:** Set `dirty = false` at end of `emitSnapshot()` not start. Add `phase === "playing"` guard inside RAF body.
+
+### 34. `_isDisposed` Missing on resume/handleTap/handleHoldStart
+- **File:** `engine/GameEngine.ts:375` (`destroy` sets `_isDisposed = true`)
+- **Error:** Only `start()` (line 230) checks `_isDisposed`. `resume()` (359), `handleTap()` (449), `handleHoldStart()` (588), `handleHoldEnd()` (615), dev methods don't. Can be called after `destroy()` from unmounted component's async callback.
+- **Impact:** Silent writes to dead engine state; hard-to-trace bugs on unmount.
+- **Fix:** Add `if (this._isDisposed) return;` to all public entry points.
+
+### 35. Tap Buffer Not Cleared on Pause — Stale Tap Fires After Resume
+- **File:** `engine/GameEngine.ts:346-357` (`pause()`)
+- **Error:** `pause()` clears tick timer but NOT `this.tapBuffer`. Buffered tap (within 50ms window) survives pause. On `resume()` → next `processTick()` → `_flushTapBuffer()` fires it against new cells.
+- **Impact:** Phantom tap on resume; player may take unintended damage or score.
+- **Fix:** Reset `this.tapBuffer = { 1: null, 2: null }` in `pause()`.
+
+### 36. `_tickCtx` Getters Return Stale State After Destroy
+- **File:** `engine/GameEngine.ts:150-185`
+- **Error:** `_tickCtx` created once in constructor with getters wrapping `this` via `const self = this`. After `destroy()`, all getters return frozen/dead state. `processTick()` checks `ctx.phase !== "playing"` but after destroy the phase may still be `"playing"`.
+- **Impact:** Logic executes on dead engine; `emit()` calls on empty listener set; `triggerGameOver()` on dead state.
+- **Fix:** Add `_isDisposed` getter to `_tickCtx` and check at start of `processTick()`.
+
+### 37. Session Restore Uses Unsafe Type Assertions — Silent Corruption
+- **File:** `engine/GameEngine.ts:887-962`
+- **Error:** Dozens of `as number`, `as boolean`, `as any` from `Record<string, unknown>`. Malformed data silently produces `undefined` → `NaN` → `?? 0` kicks in restoring wrong state. No validation between JSON parse and assignment.
+- **Impact:** Silent state corruption on corrupted or version-mismatched session data.
+- **Fix:** Use runtime schema validation (zod/io-ts) or add `typeof`/`isFinite` guards before every cast with `logger.warn` on failure.
+
+### 38. Energy `spendEnergy` Double-Spend Race on Rapid Calls (related to #2)
+- **File:** `hooks/useEnergyStore.ts:43-51`
+- **Error:** `spendEnergy` reads `energyDataRef.current.count` to check if energy available, then calls `setEnergyData(prev => ...)`. Between reading the ref and flushing the update, a second concurrent `spendEnergy` call can also pass the guard. Two games can start on 1 energy.
+- **Impact:** Energy economy corruption; player starts more games than they have energy for.
+- **Note:** Related to #2 (#2 was about stale closure reading `energyData` directly — that was the `useCallback` issue. This is a race condition on the ref-based guard.)
+- **Fix:** Use `setEnergyData(prev => { if (prev.count <= 0) return prev; ... })` — check INSIDE the updater, not before it.
+
+### 39. BotController Interval Accumulation on Rapid Pause/Resume (distinct from #13)
+- **File:** `engine/subsystems/BotController.ts`
+- **Error:** #13 covers dual bot PATH (two code paths running simultaneously). This issue: `startBot()` creates `setInterval(1000ms)` via `bot.start()`, `stopBot()` clears it. If `pause()`/`resume()` cycles rapidly with `setBotAssist()` in between, intervals can orphan if disposal timing slips.
+- **Impact:** Bot taps accumulate; dust double-spent; phantom taps beyond what #13 describes.
+- **Fix:** Integrate bot lifecycle into pause/resume using `_pauseListeners`/`_resumeListeners`.
+
+---
+
+## 🐛 Gameplay & Logic Bugs (Claude Review)
+
+### 40. App.tsx Monolith — 2557 Lines, 170+ State Vars, 50+ `useEffect`
+- **File:** `App.tsx`
+- **Error:** Single component with tightly coupled side effects. `resumeEngine()` called from both manual resume AND visibility handler — can double-resume. `startGame()` and `handleTutorialClose()` share ~80% identical code (lines 1504-1589).
+- **Impact:** Impossible to test or maintain; every change risks unrelated breakage.
+- **Fix:** Split into `GameController`, `SettingsProvider`, `ScreenRouter`, `ScoreManager`, `ProgressTracker`.
+
+### 41. Incomplete `useGameEngine` Dependency Array
+- **File:** `hooks/useGameEngine.ts:314`
+- **Error:** Deps `[config.mode, config.numPlayers, config.speedMult]`. Changes to `config.inputMode`, `config.godMode`, `config.storage`, or `config.botAssist` never recreate the engine. `godMode` is handled via separate `devSetGodMode()` effect, but `inputMode`/`storage` changes are silently ignored.
+- **Impact:** Engine uses stale config for some properties; `inputMode` toggle requires page reload.
+- **Fix:** Add all config properties to dep array, or use mutable ref-based config the engine reads on each access.
+
+### 42. Custom DOM Events (`dtp:*`) Bypass React Data Flow
+- **Files:** `App.tsx` (6+ `window.addEventListener` for `dtp:*`), `engine/GameEngine.ts:133-141`
+- **Error:** Events like `dtp:boss:update`, `dtp:combo`, `dtp:daily-complete`, `dtp:feature-unlocked` dispatched on `window` for cross-component state. Bypasses React's prop/context system.
+- **Impact:** Data flow untraceable; stale closure risk; manual cleanup required; components mount after dispatch miss events.
+- **Fix:** Replace with React Context for UI state and a typed event bus for cross-cutting concerns.
+
+### 43. `safeSentry` Silently Swallows All Errors
+- **File:** `App.tsx:108-113`
+- **Error:** Every `safeSentry` method wraps in `try { Sentry.method() } catch { /* Sentry unavailable */ }` with empty catch. If Sentry SDK throws at init, all subsequent calls also silently fail.
+- **Impact:** Sentry can be broken for weeks without any signal; debugging Sentry issues impossible.
+- **Fix:** At minimum `console.warn` inside catch. Better: use optional chaining `Sentry.addBreadcrumb?.()` instead of try-catch.
+
+### 44. `startGame` / `handleTutorialClose` ~80% Code Duplication
+- **File:** `App.tsx:1504-1546` vs `1549-1589`
+- **Error:** Both contain identical logic: validate energy → set gamesPlayed → reset scoreSubmittedRef → startEngine → handle replay seed. ~25 lines duplicated verbatim. Any fix to one must be manually replicated.
+- **Impact:** Bug-fix asymmetry; one path gets fixed, the other doesn't.
+- **Fix:** Extract shared game-start logic into single `launchGame(forceSeed?)` function called by both.
+
+### 45. No `React.memo` on PlayerPanel/HUD/Grid Components
+- **Files:** `components/HUD/PlayerPanel.tsx`, `components/HUD/Hearts.tsx`, etc.
+- **Error:** Every engine tick calls `setSnapshot()` creating new object → re-renders entire game tree. None of the game-area components use `React.memo` to bail out on unchanged props.
+- **Impact:** Full VDOM diff of game tree 3-4+ times/second; dropped frames on low-end devices.
+- **Fix:** Add `React.memo` to `PlayerPanel`, HUD, grid cells with custom `areEqual` for snapshot props.
+
+### 46. Visibility Change + Manual Pause Race
+- **File:** `App.tsx:1102-1131`
+- **Error:** Visibility handler calls `pauseEngine()` on hidden, `resumeEngine()` on visible. If user pauses manually, then hides tab and returns, auto-resume fires and overrides user's pause intent.
+- **Impact:** Game auto-resumes when tab returns even if user explicitly paused.
+- **Fix:** Track whether last pause was manual vs. auto. Only auto-resume if pause was auto-triggered by previous visibility change.
+
+---
+
+## 🧹 Technical Debt (Claude Review)
+
+### 47. `_cachedMask` Identity Check Fails on Mutated Source Arrays
+- **File:** `engine/GameEngine.ts:796-799`
+- **Error:** Cache key is `pat.mask !== this._cachedMaskSrc` — reference identity check. If any code mutates the `pat.mask` array in place (reference unchanged but content changed), cache returns stale mask data.
+- **Impact:** Stale grid layout rendered after pattern mutation.
+- **Fix:** Add content hash or version alongside reference check. Deep-clone mask on write to ensure immutability.
+
+### 48. `devForcedPwr` Reset Logic Depends on Player Index — Skips If Dead
+- **File:** `engine/subsystems/TickProcessor.ts:189`
+- **Error:** Consumed only when `pi === (numPlayers === 1 ? 0 : 1)` (second player). If P2 is dead and skipped, `devForcedPwr` never cleared — persists forever across ticks.
+- **Impact:** Dev-forced powerup never consumed if P2 dead; dev tools behave unpredictably.
+- **Fix:** Always consume `devForcedPwr` after first successful spawn, regardless of which player gets it.
+
+### 49. Boss Event `scheduleTimeout` Can Fire on Disposed Engine
+- **File:** `engine/subsystems/TickProcessor.ts:440-446`
+- **Error:** `ctx.scheduleTimeout(cb, durationMs)` fires after boss duration. `clearAllTimeouts()` on destroy() normally prevents this — but only if `destroy()` runs before the timeout. If user navigates away fast, callback writes to dead `_tickCtx`.
+- **Impact:** Write to dead engine state; possible React warning on unmounted component.
+- **Fix:** Add `_isDisposed` check inside the timeout callback before mutating ctx state.
+
+### 50. Gamepad Callbacks Stale After Engine Destroy
+- **File:** `engine/GameEngine.ts:143-147`
+- **Error:** Gamepad listener captured in constructor closure. `_gamepadUnsub` stored for cleanup. If `destroy()` misses the unsub call (e.g. hot-reload), stale callbacks fire on dead engine.
+- **Impact:** Gamepad events on dead engine; hard crash if `this.p1` is undefined.
+- **Fix:** Add `_isDisposed` check at top of gamepad callback.
+
+### 51. `restoreFromSession` No Bounds Validation
+- **File:** `engine/GameEngine.ts:765-769`
+- **Error:** Direct assignment of `data.hearts`, `data.score`, `data.timeLeft` with no clamping. `hearts: -100` or `score: NaN` propagate directly into game state.
+- **Impact:** Negative health, NaN scores cascade into UI crashes and analytics corruption.
+- **Fix:** Clamp values: `hearts = Math.max(0, Math.min(GAME.MAX_HEARTS, data.hearts ?? GAME.MAX_HEARTS))`.
+
+### 52. Constructor Starts Side-Effects Before `start()` Call
+- **File:** `engine/GameEngine.ts:120-194`
+- **Error:** Constructor inits audio engine, subscribes to gamepad, registers DOM event listeners, imports settings module. If `start()` is never called (e.g. page load without game start), these persist entire page lifetime.
+- **Impact:** Memory leak on SPA navigation without game start; unnecessary gamepad polling and audio init.
+- **Fix:** Defer gamepad/audio/analytics init to `start()`. Constructor only sets up tick context and state.
+
+### 53. `_sessionAutoSaveInterval` Timer Fires During Pause
+- **File:** `engine/GameEngine.ts:744-756`
+- **Error:** Auto-save interval every 5s is not cleared on `pause()`. Guard `if (!this.paused)` inside callback works, but the timer itself keeps firing and re-checking.
+- **Impact:** Unnecessary timer wakeups during pause (minor but wasteful).
+- **Fix:** Clear interval in `pause()`, re-create in `resume()`.
+
+### 54. `pause()` Emits `phaseChange` Before `emitSnapshot()`
+- **File:** `engine/GameEngine.ts:355-356`
+- **Error:** Order: emit `phaseChange: "paused"` → then `emitSnapshot()`. React processes `phaseChange` immediately, but snapshot emitted still carries `phase: "playing"` briefly.
+- **Impact:** Brief phase inconsistency; UI flicker between playing and paused states.
+- **Fix:** Swap order: `emitSnapshot()` first, then `phaseChange`.
+
+### 55. No Error Recovery in `start()` — Mid-Init Exception Leaks Engine
+- **File:** `engine/GameEngine.ts:229-268`
+- **Error:** If any line between `this.stop()` and `this.scheduleTick()` throws (e.g. `localStorage.setItem` quota exceeded), engine is left with `phase = "playing"` but no timers running.
+- **Impact:** Dead engine; game appears stuck with no feedback to user.
+- **Fix:** Wrap `start()` body in try-catch, reset to safe state on failure, emit error toast.
+
+### 56. `useGameEngine` `dustCallbacks` Stale Closure (confirm #18)
+- **File:** `hooks/useGameEngine.ts:152-163,314`
+- **Error:** Already logged as #18. Confirmed: `dustCallbacks` captured in engine constructor closure at mount time. Dep array doesn't include `dustCallbacks`, so stale references for `getDust`/`spendDust`/`getAccuracy` persist across renders.
+- **Fix:** Store `dustCallbacks` in `useRef` and read from `.current` inside engine config callbacks.
+
+---
+
+## ⚙️ Configuration & Build (Claude Review)
+
+### 57. Module-Level `TEMP_CELLS` Buffer is Shared Mutable State (confirm #20)
+- **File:** `engine/subsystems/CellLifecycle.ts:11,33-48`
+- **Error:** Already logged as #20. Module-level `const` array reused across all `activeToCellsP()` calls. Mutated in place, `.slice()` returned. Safe in sync JS but latent hazard — if async path is added or caller doesn't slice, callers share mutable reference.
+- **Fix:** Allocate fresh array per call instead of reusing shared buffer.
+
+### 58. Duplicate `toastTimer` Refs in App.tsx
+- **File:** `App.tsx:252` and `App.tsx:652`
+- **Error:** Two `useRef<ReturnType<typeof setTimeout> | null>` for toast timers (`toastTimer` + `toastRef`). One is unused/duplicate.
+- **Impact:** Minor maintenance overhead; confusion about which timer is authoritative.
+- **Fix:** Keep one, remove the other.
+
+---
+
+## 🔮 Duplicate/Overlap Index (save Sonnet reading time)
+
+| My # | Maps to Existing # | Relationship |
+|------|-------------------|--------------|
+| 29 | 17 (triggerCellAnim timeout) | **DUPLICATE** — same issue, skip |
+| 33 | 24 (triggerGameOver stop before snapshot) | **DUPLICATE** — same issue, skip |
+| 34 | 14 (safeReset leaves state) | **DUPLICATE** — same root cause, skip |
+| 35 | 16 (RNG out of sync) | **DUPLICATE** — same root cause, skip |
+| 38 | 4 (scoreSubmittedRef never reset) | **DUPLICATE** — same root cause, skip |
+| 39 | 13 (dual bot path) | **RELATED** — distinct issue: interval accumulation, not dual path |
+| 47 | 22 (DDA running average) | **DUPLICATE** — same root cause, skip |
+| 48 | 23 (clock mismatch) | **DUPLICATE** — same root cause, skip |
+| 49 | 25 (version check) | **DUPLICATE** — same root cause, skip |
+| 51 | 19 (botTapTimersRef) | **DUPLICATE** — same root cause, skip |
+| 56 | 18 (dustCallbacks closure) | **DUPLICATE** — confirm only, skip |
+| 57 | 20 (TEMP_CELLS mutable) | **DUPLICATE** — confirm only, skip |
+| 58 | 66 sync with #58 below | Keep separate |
+| 61-67 | 11, 12, 8, 9, 10 | Already in file above |
+
+**Issues 1–12 from Gemini CLI. Issues 13–25 from Amazon Q. Issues 26–31 from Claude Code session. Issues 32–58 from Claude review deduplicated against above.**
+
 **Status: ✅ FIXED = Already resolved in v7.5.0 or v7.5.1**
