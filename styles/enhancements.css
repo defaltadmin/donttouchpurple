@@ -564,6 +564,50 @@
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
+/* ── Liquid Glass Button Effect (21st.dev inspired) ── */
+.btn-play {
+  position: relative;
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(138, 43, 226, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden;
+}
+.btn-play::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  animation: glassShine 3s ease-in-out infinite;
+}
+@keyframes glassShine {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(5%, 5%); }
+}
+.btn-play:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 8px 32px rgba(138, 43, 226, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+}
+.btn-play:active {
+  transform: scale(0.97) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
 /* ── Powerup Screen Effects ── */
 /* Freeze: blue tint vignette on screen edges */
 .fx-freeze-active::before {
