@@ -1796,8 +1796,14 @@ export default function App() {
     );
   }
 
+  // Screen effect classes based on active powerups
+  const now = Date.now();
+  const freezeActive = snapshot?.p1.freezeEnd > now;
+  const multActive = snapshot?.p1.multiplierEnd > now;
+  const shieldActive = (snapshot?.p1.shieldCount ?? 0) > 0;
+
   return (
-    <div ref={containerRef} className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}`}
+    <div ref={containerRef} className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
       <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
