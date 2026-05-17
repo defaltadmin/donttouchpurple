@@ -1,5 +1,6 @@
 // components/Cell/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 import { settingsManager } from '../../utils/settings';
@@ -86,7 +87,7 @@ export default function Cell({
 }: CellProps) {
 
   const isBomb = cell.type === 'bomb';
-  const bombUrgent = isBomb && (bombFuse ?? Date.now() > (cell as any).expiresAt - 700); // last 700ms = urgent
+  const bombUrgent = isBomb && (bombFuse !== undefined ? bombFuse < 700 : Date.now() > (cell as import('../../engine/types').BombCell).expiresAt - 700); // last 700ms = urgent
   const isClicked = cell.clicked;
   const shape = cell.shape || 'circle';
   const shapeClass = `cell-shape--${shape}`;
@@ -97,6 +98,9 @@ export default function Cell({
 
   const isHold = cell.type === 'hold';
   const isIce = cell.type === 'ice';
+
+  // ── Touch feedback: immediate visual response on pointer down ──
+  const [isTouched, setIsTouched] = useState(false);
 
   // ── Ice hit flash tracking ──
   const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
@@ -113,7 +117,7 @@ export default function Cell({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isClicked) return;
-    
+    setIsTouched(true); // Instant visual feedback
     if (isHold && onHoldStart) {
       onHoldStart(cell.idx);
     } else {
@@ -122,30 +126,34 @@ export default function Cell({
   };
 
   const handlePointerUp = () => {
+    setIsTouched(false);
     if (isHold && onHoldEnd) {
       onHoldEnd(cell.idx);
     }
   };
 
-  const isCB = settingsManager.get().colorblindMode;
-  const cbClass = isCB ? `cb-pattern cb-${cell.type}` : '';
+  const cbClass = colorblindMode ? `cb-pattern cb-${cell.type}` : '';
 
   return (
     <div
       className={`
-        cell 
-        ${cell.type || ''} 
-        ${isClicked ? 'clicked inactive' : ''} 
+        cell
+        ${cell.type || ''}
+        ${isClicked ? 'clicked inactive' : ''}
         ${shapeClass}
         ${cell.shape ? 'rare-danger' : ''}
-        ${isPressing ? 'pressing' : ''}
+        ${isPressing || isTouched ? 'pressing' : ''}
         ${botPulse ? 'bot-assisted' : ''}
         ${bombUrgent ? 'bomb--urgent' : ''}
         ${cbClass}
       `.trim()}
+      role="button"
+      tabIndex={-1}
+      aria-label={`${cell.type === 'purple' ? 'Danger: purple cell' : cell.type === 'bomb' ? 'Bomb cell' : `Tap ${cell.type} cell`}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      onPointerCancel={() => setIsTouched(false)}
       data-shape={shape}
       style={{ '--cb-type': cell.type } as any}
     >
@@ -157,10 +165,18 @@ export default function Cell({
 
       {/* Powerup / Special icons */}
       <div className="cell-icon">
-        {cell.type === 'medpack' && '❤️'}
-        {cell.type === 'shield' && '🛡️'}
-        {cell.type === 'freeze' && '❄️'}
-        {cell.type === 'multiplier' && '×2'}
+        {(cell.type === 'medpack' || cell.type === 'shield' || cell.type === 'freeze' || cell.type === 'multiplier') ? (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20, mass: 0.5 }}
+          >
+            {cell.type === 'medpack' && '❤️'}
+            {cell.type === 'shield' && '🛡️'}
+            {cell.type === 'freeze' && '❄️'}
+            {cell.type === 'multiplier' && '×2'}
+          </motion.span>
+        ) : null}
         {isHold && '⏳'}
         {isIce && (
           <div className="multi-tap-visual" aria-hidden="true">
