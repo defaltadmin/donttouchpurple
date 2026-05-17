@@ -49,7 +49,7 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
       <span key={i} className={[
         "heart",
         isFull ? (isShieldHeart ? "heart--shield" : "heart--full") : "heart--empty",
-        anim && i === Math.ceil(displayHealth) - 1 ? "heart--loss" : "",
+        anim && i === Math.floor(displayHealth) ? "heart--loss" : "",
         gainIdx === i ? "heart--gain" : "",
       ].filter(Boolean).join(" ")}
       aria-hidden="true">
