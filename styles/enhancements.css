@@ -552,6 +552,11 @@
   50% { color: #f97316; text-shadow: 0 0 8px rgba(249,115,22,0.5); }
 }
 
+/* Score bump on increment */
+.hud-val--bump {
+  transform: scale(1.08);
+}
+
 /* Heart at low health — danger pulse */
 .heart--full.heart--danger {
   animation: heartDangerV2 0.7s ease-in-out infinite;
