@@ -564,6 +564,12 @@
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
+/* ── Gold shimmer for NewBestBanner ── */
+@keyframes goldShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* ── Liquid Glass Button Effect (21st.dev inspired) ── */
 .btn-play {
   position: relative;

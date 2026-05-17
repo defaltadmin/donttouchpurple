@@ -22,14 +22,24 @@ export function getMessage(score: number): string {
 
 function NewBestBanner() {
   return (
-    <div style={{
-      fontFamily: "var(--font-game)",
-      fontSize: 12, letterSpacing: 3, textTransform: "uppercase" as const,
-      color: "#fbbf24", textShadow: "0 0 12px rgba(251,191,36,0.8)",
-      animation: "humanLimitPulse 1s ease-in-out infinite",
-    }}>
-      ✨ New Personal Best!
-    </div>
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.3 }}
+      style={{
+        fontFamily: "var(--font-game)",
+        fontSize: 14, letterSpacing: 3, textTransform: "uppercase" as const,
+        background: "linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24)",
+        backgroundClip: "text",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        filter: "drop-shadow(0 0 12px rgba(251,191,36,0.8))",
+        animation: "humanLimitPulse 1s ease-in-out infinite, goldShimmer 2s linear infinite",
+        backgroundSize: "200% 100%",
+      }}
+    >
+      ✨ New Personal Best! ✨
+    </motion.div>
   );
 }
 
