@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { GAME } from "../../config/difficulty";
 
 const MAX_HEARTS = GAME.MAX_HEARTS;
@@ -25,6 +25,20 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
   const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
   const overflow      = actualHealth > MAX_DISPLAY;
 
+  // Track health gain for animation
+  const prevHealth = useRef(actualHealth);
+  const [gainIdx, setGainIdx] = useState<number | null>(null);
+  useEffect(() => {
+    if (actualHealth > prevHealth.current) {
+      // The newly filled heart is at index actualHealth - 1
+      setGainIdx(actualHealth - 1);
+      const t = setTimeout(() => setGainIdx(null), 500);
+      prevHealth.current = actualHealth;
+      return () => clearTimeout(t);
+    }
+    prevHealth.current = actualHealth;
+  }, [actualHealth]);
+
   const healthLabel = `Health: ${actualHealth}${overflow ? '+' : ''} hearts${sc > 0 ? `, ${sc} shielded` : ''}`;
 
   const renderHeart = (i: number) => {
@@ -36,6 +50,7 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
         "heart",
         isFull ? (isShieldHeart ? "heart--shield" : "heart--full") : "heart--empty",
         anim && i === Math.ceil(displayHealth) - 1 ? "heart--loss" : "",
+        gainIdx === i ? "heart--gain" : "",
       ].filter(Boolean).join(" ")}
       aria-hidden="true">
         {isLastDisplayed ? "♥+" : "♥"}
