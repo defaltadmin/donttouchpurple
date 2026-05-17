@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import "./styles/game.css";
 import "./styles/enhancements.css";
 import { logger } from "./utils/logger";
@@ -58,6 +59,7 @@ import { GameOver, getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
 import EvolveTutorial from "./components/Screens/EvolveTutorial";
 import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
+import { GameMaster } from "./components/Screens/GameMaster";
 import { getStreakReward } from "./components/Screens/LoginStreakPopup";
 import { type DailyChallenge } from "./components/Screens/DailyChallengesPopup";
 import { RewardsHub, countUnclaimedRewards, type WeeklyTask } from "./components/Screens/RewardsHub";
@@ -378,30 +380,30 @@ export default function App() {
   });
   const setScreenShakePersisted = useCallback((v: boolean) => {
     setScreenShake(v);
-    try { localStorage.setItem("dtp_screen_shake", v.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp_screen_shake", v.toString()); } catch {}  
     fbLogEvent("setting_changed", { setting: "screen_shake", enabled: v });
   }, []);
   const setReducedMotion = useCallback((v: boolean) => {
     setReducedMotionState(v);
     if (v) setScreenShakePersisted(false);
-    try { localStorage.setItem("dtp_reduced_motion", v.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp_reduced_motion", v.toString()); } catch {}  
     fbLogEvent("setting_changed", { setting: "reduced_motion", enabled: v });
   }, [setScreenShakePersisted]);
   const backgroundFPS = reducedMotion ? 30 : 60;
   const setVolume = useCallback((v: number) => {
     setVolumeState(v);
-    try { localStorage.setItem("dtp_volume", v.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp_volume", v.toString()); } catch {}  
     setAudioVolume(v);
     playVolumeChime();
   }, []);
   const toggleMuted = useCallback((m: boolean) => {
     setMuted(m);
-    try { localStorage.setItem("dtp_muted", m.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp_muted", m.toString()); } catch {}  
     setAudioMuted(m);
   }, []);
   const setHaptics = useCallback((enabled: boolean) => {
     setHapticsState(enabled);
-    try { localStorage.setItem("dtp_haptics", enabled.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp_haptics", enabled.toString()); } catch {}  
     setHapticsEnabled(enabled);
     fbLogEvent("setting_changed", { setting: "haptics", enabled });
   }, []);
@@ -603,7 +605,7 @@ export default function App() {
   }, []);
 
   const persistDust = useCallback((d: number) => {
-    try { localStorage.setItem(LS_KEYS.DUST, d.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem(LS_KEYS.DUST, d.toString()); } catch {}  
   }, []);
 
   const switchPlayer = useCallback(() => {
@@ -639,10 +641,10 @@ export default function App() {
     const raw = dustRef.current - amount;
     const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
     const spent = getLifetimeDustSpent() + amount;
-    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {}  
     setDust(newDust);
     dustRef.current = newDust;
-    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {} // eslint-disable-line no-empty
+    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}  
     logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
   }, []);
 
@@ -845,7 +847,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust, logProgressionEvent]);
+  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust, setScreen]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {
@@ -900,7 +902,7 @@ export default function App() {
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
     startBot, stopBot, isBotActive,
-    setBotAssist, botAssistActive, botTapHighlights,
+    setBotAssist, botAssistActive, botTapHighlights, scoreFloats,
     lastGameScore,
     getAutoLowQuality,
     submitScoreToLeaderboard,
@@ -1385,8 +1387,15 @@ export default function App() {
     const handler = (e: ErrorEvent) => {
       errorTracker.capture(e.error || new Error(e.message), { source: e.filename, line: e.lineno });
     };
+    const rejectionHandler = (e: PromiseRejectionEvent) => {
+      errorTracker.capture(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), { source: 'unhandledrejection' });
+    };
     window.addEventListener('error', handler);
-    return () => window.removeEventListener('error', handler);
+    window.addEventListener('unhandledrejection', rejectionHandler);
+    return () => {
+      window.removeEventListener('error', handler);
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+    };
   }, []);
 
   useEffect(() => {
@@ -1543,7 +1552,7 @@ export default function App() {
     if (forceSeed !== undefined) {
       clearReplaySeed();
     }
-  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, dust, numPlayers, inputMode]);
+  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, numPlayers, inputMode, evolveTutorialSeen, spendEnergy, setScreen]);
 
   // Tutorial close handler
   const handleTutorialClose = () => {
@@ -1600,7 +1609,7 @@ export default function App() {
     setShareMsg("");
     // Clear snapshot so rare badge and other game-specific UI don't persist on menu
     snapshotRef.current = null as any;
-  }, [pauseEngine, playerName]);
+  }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
   const handleLoginStreakClaim = () => {
@@ -1655,7 +1664,7 @@ export default function App() {
   };
 
   // Update challenge progress from game over
-  const updateChallengeProgress = (p1Score: number, finalTick: number) => {
+  const updateChallengeProgress = useCallback((p1Score: number, finalTick: number) => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
     let progress: Record<string,number> = {};
@@ -1849,13 +1858,33 @@ export default function App() {
 
       {/* Shield Boss UI */}
       {bossUi.active && (
-        <div className="dtp-boss-bar" aria-label="Boss Shield Health">
+        <motion.div
+          className="dtp-boss-bar"
+          aria-label="Boss Shield Health"
+          initial={{ opacity: 0, y: -20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        >
           <div className="dtp-boss-label">⚔️ BOSS PHASE {bossUi.phase}</div>
-          <div className="dtp-boss-track"><div className="dtp-boss-fill" style={{ width: `${(bossUi.shieldHits / bossUi.maxShield) * 100}%` }} /></div>
+          <div className="dtp-boss-track">
+            <motion.div
+              className="dtp-boss-fill"
+              style={{ width: `${(bossUi.shieldHits / bossUi.maxShield) * 100}%` }}
+              animate={{ width: `${(bossUi.shieldHits / bossUi.maxShield) * 100}%` }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            />
+          </div>
           <div className="dtp-boss-hp">{bossUi.shieldHits}/{bossUi.maxShield}</div>
-        </div>
+        </motion.div>
       )}
-      {comboPop && <div className="dtp-combo-popup">⚡ COMBO x2 ⚡</div>}
+      {comboPop && <motion.div
+        className="dtp-combo-popup"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 20 }}
+      >⚡ COMBO x2 ⚡</motion.div>}
 
       {showPrivacy && (
         <PrivacyBanner onDismiss={() => {
@@ -2193,6 +2222,8 @@ export default function App() {
         </Suspense>
       )}
 
+      {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
+
       {screen === "menu" && (
         <StartScreen
           playerName={playerName}
@@ -2218,6 +2249,7 @@ export default function App() {
           onRefillEnergy={() => refillEnergy(1, GAME.DUST_PER_ENERGY)}
           onSwitchPlayer={switchPlayer}
           onOpenRewardsHub={() => setShowRewardsHub(true)}
+          onGameMaster={() => setScreen("gamemaster")}
           rewardsBadgeCount={rewardsBadgeCount}
           dustWidget={<DustWidget dust={dust} />}
           energyBar={<EnergyBar energy={energyData.count} energyLastRegen={energyData.lastRegen} onRefill={() => refillEnergy(1, GAME.DUST_PER_ENERGY)} onRefillFull={() => {
@@ -2397,7 +2429,8 @@ export default function App() {
             showBotAssist={screen === "playing"}
             isBotActive={botAssistActive[1]}
             botTapHighlights={botTapHighlights[1]}
-            dust={dust} />
+            dust={dust}
+            scoreFloats={scoreFloats.filter(f => f.player === 1)} />
            {is2P && (
              <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
                onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
