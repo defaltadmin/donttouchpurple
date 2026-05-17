@@ -1,5 +1,6 @@
 import React from "react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import type { GameMode, Winner } from "../../engine/types";
 
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
@@ -108,17 +109,36 @@ export function GameOver({
         </>
       )}
 
-      <div className="go-actions">
-        <button className="btn-primary btn-large" onClick={onAgain}>▶ AGAIN</button>
-        <button className="btn-ghost" onClick={() => setShowShareModal(true)}>🔗 SHARE</button>
-        <div className="go-small-actions">
+      <motion.div
+        className="go-actions"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.08 } },
+        }}
+      >
+        <motion.button
+          className="btn-primary btn-large"
+          onClick={onAgain}
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
+        >▶ AGAIN</motion.button>
+        <motion.button
+          className="btn-ghost"
+          onClick={() => setShowShareModal(true)}
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
+        >🔗 SHARE</motion.button>
+        <motion.div
+          className="go-small-actions"
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
+        >
           <button className="btn-icon" onClick={onLeaderboard}>🏆</button>
           <button className="btn-icon" onClick={onMenu}>☰</button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {showShareModal && (
-        <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label="Share your run" tabIndex={-1}>
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
             <div style={{ fontFamily: "var(--font-ui)", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Share Your Run</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
