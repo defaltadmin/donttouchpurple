@@ -1695,7 +1695,7 @@ export default function App() {
     weeklyProgress['bothmode'] = modesPlayed.size;
     localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
     setWeeklyTasks(buildWeeklyTasks());
-  };
+  }, [gameMode, buildDailyChallenges, buildWeeklyTasks, addDust]);
 
   const submitScore = useCallback(async () => {
     const score = numPlayers === 1
