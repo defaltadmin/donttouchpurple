@@ -557,6 +557,13 @@
   transform: scale(1.08);
 }
 
+/* PwrBar fade-out on expiry */
+.pwr-bar--fading {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
 /* Heart at low health — danger pulse */
 .heart--full.heart--danger {
   animation: heartDangerV2 0.7s ease-in-out infinite;

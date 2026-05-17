@@ -1,20 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import type { PlayerState } from "../../engine/types";
 
 interface PwrBarProps { ps: PlayerState; rareMode?: import('../../engine/types').RareColorMode }
 
 export function PwrBar({ ps, rareMode }: PwrBarProps) {
   const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 200);
-    return () => clearInterval(id);
-  }, []);
+  const [fading, setFading] = useState(false);
+  const wasActive = useRef(false);
 
   const freezeLeft = Math.max(0, ps.freezeEnd - now);
   const multLeft   = Math.max(0, ps.multiplierEnd - now);
   const freezeTotal = 15000, multTotal = 24000;
 
-  if (freezeLeft <= 0 && multLeft <= 0 && ps.shieldCount <= 0 && !rareMode?.active) return null;
+  const hasActivePower = freezeLeft > 0 || multLeft > 0 || ps.shieldCount > 0 || !!rareMode?.active;
+
+  // Track active→inactive transition for fade-out
+  useEffect(() => {
+    if (wasActive.current && !hasActivePower) {
+      setFading(true);
+      const t = setTimeout(() => setFading(false), 300);
+      return () => clearTimeout(t);
+    }
+    wasActive.current = hasActivePower;
+  }, [hasActivePower]);
+
+  // Tick at 50ms for smoother progress drain
+  useEffect(() => {
+    if (!hasActivePower && !fading) return;
+    const id = setInterval(() => setNow(Date.now()), 50);
+    return () => clearInterval(id);
+  }, [hasActivePower, fading]);
+
+  if (!hasActivePower && !fading) return null;
 
   const activePowers = [];
   if (rareMode?.active) activePowers.push(`Rare mode: ${rareMode.turnsLeft} turns left`);
@@ -25,7 +42,7 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
   const powerLabel = `Active powers: ${activePowers.join(', ')}`;
 
   return (
-    <div className="pwr-bar" role="status" aria-label={powerLabel}>
+    <div className={`pwr-bar${fading ? ' pwr-bar--fading' : ''}`} role="status" aria-label={powerLabel}>
       {rareMode?.active && (
         <div className="pwr-pill pwr-pill--rare" aria-label={`Rare mode active: ${rareMode.turnsLeft} turns remaining`}>
           <div className="pwr-progress" style={{ width: `${(rareMode.turnsLeft / 9) * 100}%` }} aria-hidden="true" />
