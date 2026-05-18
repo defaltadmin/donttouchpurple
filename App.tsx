@@ -103,6 +103,7 @@ import { QuickSettings } from "./components/Settings/QuickSettings";
 import { BossOverlay } from "./components/HUD/BossOverlay";
 import { ShareModal } from "./components/Screens/ShareModal";
 import { GameHeader } from "./components/HUD/GameHeader";
+import { GameArea } from "./components/HUD/GameArea";
 
 // Components - Settings & Shop
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -2219,93 +2220,58 @@ export default function App() {
       )}
 
         {isPlaying && snapshot && (
-          <div className="game-area">
-           <GridErrorBoundary onRestart={() => { goMenu(); setTimeout(startGame, 100); }}>
-           {snapshot?.isBlackout && screen === "playing" && (
-            <div className="blackout-overlay" />
-          )}
-          <PwrBar ps={snapshot.p1} rareMode={snapshot.rareMode} />
-          
-          {screen === "gameover" && (
-            <div className="go-overlay">
-              <GameOver
-                p1Score={snapshot.p1.score}
-                p2Score={snapshot.p2?.score || 0}
-                best={gameMode === "classic" ? best1 : best2}
-                winner={engineWinner}
-                mode={gameMode}
-                is2P={numPlayers === 2}
-                shareMsg={shareMsg}
-                gameSeed={gameSeedState || 0}
-                tick={snapshot.tick}
-                p1={snapshot.p1}
-                onAgain={startGame}
-                onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
-                onMenu={goMenu}
-                spinLevel={snapshot.spinLevel}
-                isHumanLimit={snapshot.phase === "humanlimit"}
-                dustEarned={isNaN(dust - dustAtStartRef.current) ? 0 : dust - dustAtStartRef.current}
-                objectiveProgress={gameOverProgress}
-                />
-              <button className="dtp-icon-btn" onClick={() => handleShareScore(snapshot.p1.score, snapshot.p1.health, snapshot.tick)} title="Share Score" style={{marginTop:8}}>Share Score</button>
-              <button className="dtp-icon-btn" onClick={handleCopyChallenge} title="Copy challenge link" aria-label="Share score & challenge friends" style={{marginTop:8}}>Challenge</button>
-            </div>
-          )}
-          
-          <ShieldDrop active={pwrToastP1?.includes("Shield") ?? false} />
-          <FreezeDrop active={pwrToastP1?.includes("Freeze") ?? false} />
-          <EnergyDrop active={pwrToastP1?.includes("⚡") ?? false} />
-          {is2P && <ShieldDrop active={pwrToastP2?.includes("Shield") ?? false} />}
-          {is2P && <FreezeDrop active={pwrToastP2?.includes("Freeze") ?? false} />}
-          {is2P && <EnergyDrop active={pwrToastP2?.includes("⚡") ?? false} />}
-
-          <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim}
-            onTap={i => { handleTap(1, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
-            onHoldStart={i => handleHoldStart(1,i)} onHoldEnd={i => handleHoldEnd(1,i)}
-            keyLabels={p1Keys} showKeys={inputMode === "keyboard"} pressing={pressing1}
-            label={is2P ? "P1" : null} heartAnim={heartAnimP1} mode={gameMode}
-            colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid1}
-            cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
-            onPause={pauseGame} isFS={isFS}
-            equippedSkin={shopData.equippedSkin} snapshot={snapshot}
-            pwrToast={pwrToastP1}
-            levelUpBadge={levelUpBadge}
-            storedFreezeCharges={snapshot.p1.storedFreezeCharges}
-            storedShieldCharges={snapshot.p1.storedShieldCharges}
-            onActivateFreeze={() => activateStoredFreeze(1)}
-            onActivateShield={() => activateStoredShield(1)}
-            showStoredPwr={screen === "playing"}
-            practiceMode={practiceMode}
-            onToggleBotAssist={() => handleBotToggle(1)}
-            showBotAssist={screen === "playing"}
-            isBotActive={botAssistActive[1]}
-            botTapHighlights={botTapHighlights[1]}
+          <GameArea
+            snapshot={snapshot}
+            screen={screen}
+            gameMode={gameMode}
+            is2P={is2P}
+            numPlayers={numPlayers}
+            isPlaying={isPlaying}
+            reducedMotion={reducedMotion}
+            screenShake={screenShake}
+            shakeGrid1={shakeGrid1}
+            shakeGrid2={shakeGrid2}
+            heartAnimP1={heartAnimP1}
+            heartAnimP2={heartAnimP2}
+            best1={best1}
+            best2={best2}
+            engineWinner={engineWinner}
+            shareMsg={shareMsg}
+            gameSeedState={gameSeedState}
             dust={dust}
-            scoreFloats={scoreFloats.filter(f => f.player === 1)} />
-           {is2P && (
-             <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
-               onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
-              onHoldStart={i => handleHoldStart(2,i)} onHoldEnd={i => handleHoldEnd(2,i)}
-              keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={pressing2}
-              label="P2" heartAnim={heartAnimP2} mode={gameMode}
-              colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid2}
-              cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
-              onPause={pauseGame} isFS={isFS}
-              equippedSkin={shopData.equippedSkin} snapshot={snapshot}
-              pwrToast={pwrToastP2}
-              storedFreezeCharges={snapshot.p2.storedFreezeCharges}
-              storedShieldCharges={snapshot.p2.storedShieldCharges}
-              onActivateFreeze={() => activateStoredFreeze(2)}
-              onActivateShield={() => activateStoredShield(2)}
-              showStoredPwr={screen === "playing"}
-              practiceMode={practiceMode}
-              onToggleBotAssist={() => handleBotToggle(2)}
-              showBotAssist={screen === "playing" && is2P}
-              isBotActive={botAssistActive[2]}
-              botTapHighlights={botTapHighlights[2]}
-              dust={dust} />
-          )}
-          </GridErrorBoundary>        </div>
+            dustAtStart={dustAtStartRef.current}
+            gameOverProgress={gameOverProgress}
+            p1Keys={p1Keys}
+            p2Keys={p2Keys}
+            inputMode={inputMode}
+            pressing1={pressing1}
+            pressing2={pressing2}
+            cbActive={cbActive}
+            cbFilter={cbFilter}
+            shopData={shopData}
+            pwrToastP1={pwrToastP1}
+            pwrToastP2={pwrToastP2}
+            levelUpBadge={levelUpBadge}
+            practiceMode={practiceMode}
+            botAssistActive={botAssistActive}
+            botTapHighlights={botTapHighlights}
+            scoreFloats={scoreFloats}
+            isFS={isFS}
+            devHeatmap={devHeatmap}
+            onRestart={() => { goMenu(); setTimeout(startGame, 100); }}
+            onStartGame={startGame}
+            onTap={(p, i) => { handleTap(p, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
+            onHoldStart={handleHoldStart}
+            onHoldEnd={handleHoldEnd}
+            onPause={pauseGame}
+            onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
+            onMenu={goMenu}
+            onShare={handleShareScore}
+            onCopyChallenge={handleCopyChallenge}
+            onActivateFreeze={activateStoredFreeze}
+            onActivateShield={activateStoredShield}
+            onToggleBot={handleBotToggle}
+          />
       )}
 
       {gamepadActive && <div className="dtp-gamepad-badge">🎮 Gamepad Active</div>}
