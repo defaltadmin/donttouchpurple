@@ -347,16 +347,26 @@ export default function App() {
     if (gamesEver > 0 && shouldShowWhatsNew()) setShowWhatsNew(true);
   }, []);
 
-  // Spotlight effect - update CSS vars for card hover glow
+  // Spotlight effect - update CSS vars for card hover glow (throttled via RAF)
   useEffect(() => {
+    let rafId: number | null = null;
+    let lastX = 0, lastY = 0;
     const handleMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100;
-      const y = (e.clientY / window.innerHeight) * 100;
-      document.documentElement.style.setProperty('--mx', `${x}%`);
-      document.documentElement.style.setProperty('--my', `${y}%`);
+      lastX = (e.clientX / window.innerWidth) * 100;
+      lastY = (e.clientY / window.innerHeight) * 100;
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          document.documentElement.style.setProperty('--mx', `${lastX}%`);
+          document.documentElement.style.setProperty('--my', `${lastY}%`);
+          rafId = null;
+        });
+      }
     };
     window.addEventListener('mousemove', handleMove);
-    return () => window.removeEventListener('mousemove', handleMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   
