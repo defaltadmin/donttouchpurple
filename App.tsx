@@ -1257,17 +1257,16 @@ export default function App() {
     p1Keys,
     p2Keys,
     p1State: snapshot?.p1 ?? null,
-  });
-
-  // Memoize pressing Sets to prevent unnecessary re-renders
-  const pressing1 = React.useMemo(() => new Set(pressP1), [pressP1]);
-  const pressing2 = React.useMemo(() => new Set(pressP2), [pressP2]);
     p2State: numPlayers === 2 ? snapshot?.p2 ?? null : null,
     onTap: handleTap,
     onHoldStart: handleHoldStart,
     onHoldEnd: handleHoldEnd,
     onPause: () => { pauseEngine(); setPaused(true); },
   });
+
+  // Memoize pressing Sets to prevent unnecessary re-renders
+  const pressing1 = React.useMemo(() => new Set(pressP1), [pressP1]);
+  const pressing2 = React.useMemo(() => new Set(pressP2), [pressP2]);
 
   useEffect(() => { setAudioMuted(muted); }, [muted]);
   useEffect(() => { setAudioVolume(volume); }, [volume]);
@@ -1820,8 +1819,8 @@ export default function App() {
 
   // Screen effect classes based on active powerups
   const now = Date.now();
-  const freezeActive = snapshot?.p1.freezeEnd > now;
-  const multActive = snapshot?.p1.multiplierEnd > now;
+  const freezeActive = (snapshot?.p1.freezeEnd ?? 0) > now;
+  const multActive = (snapshot?.p1.multiplierEnd ?? 0) > now;
   const shieldActive = (snapshot?.p1.shieldCount ?? 0) > 0;
 
   return (
