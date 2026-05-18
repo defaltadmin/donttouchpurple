@@ -12,7 +12,25 @@
 @keyframes safeSlide { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
 
 /* Reduced motion — kill decorative animations, preserve functional transitions */
-@media (prefers-reduced-motion: reduce), .root--reduced-motion {
+@media (prefers-reduced-motion: reduce) {
+  /* Kill decorative/looping animations */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  /* Preserve functional transitions (screen changes, modals, state changes) */
+  .screen-slide, .modal-card, .panel-skeleton, .go-wrap {
+    transition-duration: 0.2s !important;
+  }
+  /* But kill decorative transitions (glows, pulses, shakes) */
+  .heart--loss, .heart--gain, .dust--gained, .hud-val--speed-high,
+  .pwr-pill, .cell--pop, .cell--shake, .shake-anim {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+.root--reduced-motion {
   /* Kill decorative/looping animations */
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
