@@ -262,7 +262,48 @@
 | F4 | Dependabot: vite 5.4→7.3 upgrade | vite.config.ts, vitest.config.ts, package.json | ✅ FIXED |
 | F5 | App.tsx split: 7 memoized components extracted | App.tsx + 7 new files | ✅ DONE — 2617→2364 lines (-253) |
 
-**Final: 136/136 tests passing. 31 commits ahead of main. All pushed.**
+---
+
+## Full Overhaul (2026-05-18 comprehensive audit)
+
+### Visual Fixes (HIGH priority)
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| V1 | visibility: hidden kills cell exit transitions | styles/game.css | ✅ FIXED |
+| V2 | Cell transform transition too fast (80ms→200ms) | styles/game.css | ✅ FIXED |
+| V3 | :active and .pressing transform conflict | styles/game.css | ✅ FIXED |
+| V4 | Grid gap not transitioned | styles/game.css | ✅ FIXED |
+| V5 | Grid panel lacks glass backdrop | styles/game.css | ✅ FIXED |
+| V6 | Backgrounds excluded from menu screen | BackgroundController.tsx | ✅ FIXED |
+| V7 | MouseTrail only active during gameplay | App.tsx | ✅ FIXED |
+| V8 | MouseTrail particle quality (too few, wrong colors) | MouseTrail.tsx | ✅ FIXED |
+| V9 | MouseFollower invisible when stationary | MouseFollower.tsx | ✅ FIXED |
+| V10 | MouseFollower blur too heavy (70px→30px) | App.tsx | ✅ FIXED |
+
+### Security Fixes
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| S1 | Dust economy: cap to 50000 (was 999999) | firebase.ts | ✅ FIXED |
+| S2 | Score formula: tick*4+100 with tick cap 600 | firestore.rules | ✅ FIXED |
+| S3 | Config bounds validation with clamp() | game-config.ts | ✅ FIXED |
+| S4 | Player name sanitization at write time | useAppResources.ts | ✅ FIXED |
+| S5 | IndexedDB queue cap (100 entries) | idb.ts | ✅ FIXED |
+
+### Performance Fixes
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| P1 | framer-motion split into separate chunk | vite.config.ts | ✅ FIXED |
+| P2 | Font preloading for faster FCP | index.html | ✅ FIXED |
+
+### Game Mechanics
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| M1 | Removed storm and blackout bosses | EventOrchestrator.ts | ✅ DONE |
+| M2 | Inversion reduced from 6s to 4s | EventOrchestrator.ts | ✅ DONE |
+| M3 | Removed hold cells (contradict tap core) | CellLifecycle.ts, TickProcessor.ts | ✅ DONE |
+| M4 | Special cells start at stage 2 (was 3) | CellLifecycle.ts | ✅ DONE |
+
+**Final: 136/136 tests passing. 35 commits ahead of main. All pushed.**
 
 ### App.tsx Components Extracted (2026-05-18)
 | Component | File | Lines Saved |
