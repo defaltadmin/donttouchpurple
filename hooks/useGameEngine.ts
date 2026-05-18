@@ -78,6 +78,7 @@ export interface UseGameEngineReturn {
   botAssistActive: { 1: boolean; 2: boolean };
   botTapHighlights: { 1: Record<number, number>; 2: Record<number, number> };
   botTapFx: BotTapFx[];
+  scoreFloats: { id: number; player: 1 | 2; idx: number; amount: number }[];
   lastGameScore: number | null;
   getAutoLowQuality: () => boolean;
   submitScoreToLeaderboard: (score: number) => void;
@@ -123,6 +124,8 @@ export function useGameEngine(
   const [botAssistActive, setBotAssistActiveState] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
   const [botTapHighlights, setBotTapHighlights] = useState<{ 1: Record<number, number>; 2: Record<number, number> }>({ 1: {}, 2: {} });
   const [botTapFx, setBotTapFx] = useState<BotTapFx[]>([]);
+  const [scoreFloats, setScoreFloats] = useState<{ id: number; player: 1 | 2; idx: number; amount: number }[]>([]);
+  const scoreFloatIdRef = useRef(0);
 
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -178,7 +181,13 @@ export function useGameEngine(
           }
           break;
         }
-        case "sound": playSound(event.name); break;
+        case "sound": playSound(event.name, event.pitchMult); break;
+        case "scoreFloat": {
+          const id = ++scoreFloatIdRef.current;
+          setScoreFloats(prev => [...prev, { id, player: event.player, idx: event.idx, amount: event.amount }]);
+          setTimeout(() => setScoreFloats(prev => prev.filter(f => f.id !== id)), 800);
+          break;
+        }
         case "toast": toast$(event.message); break;
         case "pwrToast":
           if (event.player === 1) {
@@ -381,7 +390,7 @@ export function useGameEngine(
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
-    startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights, botTapFx,
+    startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights, botTapFx, scoreFloats,
     getAutoLowQuality, submitScoreToLeaderboard, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
   };
 }

@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { featureGates, PlayerProgress, FeatureId } from '../utils/featureGates';
 import { logger } from '../utils/logger';
 
-export type Screen = 
+export type Screen =
   | 'loading'
   | 'onboarding'
   | 'menu'
@@ -15,7 +15,8 @@ export type Screen =
   | 'settings'
   | 'changelog'
   | 'howto'
-  | 'keybind';
+  | 'keybind'
+  | 'gamemaster';
 
 export interface ScreenState {
   current: Screen;

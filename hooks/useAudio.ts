@@ -39,7 +39,7 @@ export function playSoundEffect(name: "shuffle" | "rareStart" | "claim" | "bomb"
   playSound(name);
 }
 
-export function playSound(type: SoundType): void {
+export function playSound(type: SoundType, pitchMult: number = 1): void {
   try {
     if (_haptics && navigator.vibrate) {
       if (type === "bad") navigator.vibrate(50);
@@ -55,7 +55,9 @@ export function playSound(type: SoundType): void {
     o.connect(g); g.connect(_masterGain!);
     const t = ctx.currentTime;
     if (type === "ok") {
-      o.type = "sine"; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+      const baseFreq = 880 * pitchMult;
+      const endFreq = 1320 * pitchMult;
+      o.type = "sine"; o.frequency.setValueAtTime(baseFreq, t); o.frequency.exponentialRampToValueAtTime(endFreq, t + 0.08);
       g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
       o.start(); o.stop(t + 0.12);
     } else if (type === "bad") {

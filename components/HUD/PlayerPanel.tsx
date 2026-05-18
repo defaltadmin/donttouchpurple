@@ -59,6 +59,7 @@ export interface PlayerPanelProps {
   onToggleBotAssist?: () => void;
   showBotAssist?: boolean;
   dust?:         number;
+  scoreFloats?: { id: number; player: 1 | 2; idx: number; amount: number }[];
 }
 
 // ─── PlayerPanel ──────────────────────────────────────────────────

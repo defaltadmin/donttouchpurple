@@ -105,9 +105,6 @@ export function spawnActive(
     if (i === 0 && evolveSpecial === "ice") {
       return { idx, clicked: false, type: "ice", iceCount: 2 + Math.floor(rng() * 3) };
     }
-    if (i === 0 && evolveSpecial === "hold") {
-      return { idx, clicked: false, type: "hold", holdRequired: 700 + rng() * 500, spawnedAt: Date.now() };
-    }
     const baseType = randCell(rng, tick, !isEvolve);
     if (rareColor && baseType === "purple") return { idx, clicked: false, type: rareColor, shape: rareShape } as ActiveCell;
     return { idx, clicked: false, type: baseType } as ActiveCell;

@@ -171,6 +171,7 @@ export interface StartScreenProps {
   onRefillEnergy:  () => void;
   onSwitchPlayer:  () => void;
   onOpenRewardsHub: () => void;
+  onGameMaster?: () => void;
   rewardsBadgeCount?: number;
   dustWidget:      React.ReactNode;
   energyBar:       React.ReactNode;
@@ -194,7 +195,7 @@ export function StartScreen({
   playerName,
   isFeatureUnlocked,
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
-  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, rewardsBadgeCount,
+  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, onGameMaster, rewardsBadgeCount,
   dustWidget, energyBar,
   dailyObjective,
   pendingReplaySeed, onClearReplaySeed,

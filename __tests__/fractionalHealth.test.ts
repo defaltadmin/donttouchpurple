@@ -11,7 +11,6 @@ describe('Fractional Health Bug Fix', () => {
       mode: 'evolve',
       speedMult: 1,
       numPlayers: 1,
-      grid: { cols: 3, rows: 3, spawnRateMs: 1000 }
     });
   });
 

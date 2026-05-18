@@ -39,7 +39,7 @@ interface GameAreaProps {
   shopData: any;
   pwrToastP1: string | null;
   pwrToastP2: string | null;
-  levelUpBadge: boolean;
+  levelUpBadge: string | null;
   practiceMode: boolean;
   botAssistActive: { 1: boolean; 2: boolean };
   botTapHighlights: { 1: Record<number, number>; 2: Record<number, number> };
