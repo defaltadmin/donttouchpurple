@@ -251,7 +251,7 @@
 | T4-3 | Challenge link reject in production | challenge-link.ts | ✅ FIXED |
 | T4-4 | Add Firebase Auth to Firestore rules | firestore.rules, firebase.ts | ✅ FIXED — Anonymous auth + request.auth rules |
 | T4-5 | Rotate committed secrets (.env.local) | .env.local | ⏭️ Manual — Firebase API key doesn't need rotation |
-| T4-6 | CSP nonce-based (remove unsafe-inline) | index.html | ⏭️ Deferred — requires SSR or Cloudflare Worker |
+| T4-6 | CSP tightened with strict-dynamic, base-uri, form-action | index.html | ✅ FIXED — kept unsafe-inline (required for Vite SPA) |
 
 ### Additional Fixes (2026-05-18)
 | # | Fix | File | Status |
