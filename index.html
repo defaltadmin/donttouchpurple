@@ -33,6 +33,11 @@
     <!-- Microsoft Clarity: initialized via services/clarity.ts -->
     <!-- Set VITE_CLARITY_PROJECT_ID in .env or InfinityFree env vars -->
 
+    <!-- Preconnect to font CDN for faster FCP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" />
+
     <link rel="preload" as="image" href="/og-image.png" type="image/png" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
