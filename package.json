@@ -25,18 +25,23 @@
     "release:minor": "npm version minor && git push && git push --tags",
     "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",
     "release": "bash scripts/release-v7.sh",
-    "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
+    "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh",
+    "ai:dev": "wrangler dev workers/ai-worker/index.ts --config workers/ai-worker/wrangler.toml",
+    "ai:deploy": "wrangler deploy workers/ai-worker/index.ts --config workers/ai-worker/wrangler.toml"
   },
   "dependencies": {
     "@microsoft/clarity": "^1.0.2",
     "@sentry/react": "^10.51.0",
-    "firebase": "^12.12.0",
+    "firebase": "^12.13.0",
+    "framer-motion": "^12.38.0",
     "gameanalytics": "^4.4.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "web-vitals": "^4.2.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260517.1",
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
@@ -48,15 +53,17 @@
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
     "@typescript-eslint/parser": "^8.59.2",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "1.6.1",
+    "ai": "^6.0.184",
     "autoprefixer": "^10.5.0",
     "cssnano": "^8.0.1",
-    "eslint": "8",
+    "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react": "7",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.5.0",
     "jimp": "^1.6.1",
     "jsdom": "^29.0.2",
     "postcss": "^8.5.14",
@@ -64,9 +71,12 @@
     "semantic-release": "^23.0.8",
     "terser": "^5.47.1",
     "typescript": "^5.2.2",
-    "vite": "^5.3.4",
+    "typescript-eslint": "^8.59.3",
+    "vite": "^7.3.3",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-purgecss": "^0.2.13",
-    "vitest": "^1.6.1"
+    "vitest": "^1.6.1",
+    "workers-ai-provider": "^3.1.14",
+    "wrangler": "^4.92.0"
   }
 }

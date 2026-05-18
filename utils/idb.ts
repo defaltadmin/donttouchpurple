@@ -1,8 +1,21 @@
+export interface QueuedScore {
+  score: number;
+  initials: string;
+  mode: string;
+  tick?: number;
+  attempts?: number;
+  nextRetry?: number;
+  queuedAt?: number;
+  [key: string]: unknown;
+}
+
 export const idb = {
   DB_NAME: 'dtp-offline-queue',
   STORE: 'scores',
+  _db: null as IDBDatabase | null,
 
   async open(): Promise<IDBDatabase> {
+    if (this._db) return this._db;
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(this.DB_NAME, 1);
       req.onupgradeneeded = (e) => {
@@ -11,12 +24,16 @@ export const idb = {
           db.createObjectStore(this.STORE, { keyPath: 'id', autoIncrement: true });
         }
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        this._db = req.result;
+        this._db.onclose = () => { this._db = null; };
+        resolve(req.result);
+      };
       req.onerror = () => reject(req.error);
     });
   },
 
-  async enqueue(score: any): Promise<void> {
+  async enqueue(score: QueuedScore): Promise<void> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.STORE, 'readwrite');
@@ -26,15 +43,14 @@ export const idb = {
     });
   },
 
-  async dequeueAll(): Promise<any[]> {
+  async dequeueAll(): Promise<QueuedScore[]> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.STORE, 'readwrite');
       const store = tx.objectStore(this.STORE);
       const req = store.getAll();
       req.onsuccess = () => {
-        const items = req.result || [];
-        // Clear after getAll resolves, within the same transaction
+        const items = (req.result || []) as QueuedScore[];
         store.clear();
         tx.oncomplete = () => resolve(items);
         tx.onerror = () => reject(tx.error);
@@ -51,5 +67,10 @@ export const idb = {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
+  },
+
+  close() {
+    this._db?.close();
+    this._db = null;
   }
 };
