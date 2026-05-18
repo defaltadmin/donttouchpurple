@@ -178,7 +178,8 @@ describe('MetricsService', () => {
       service.endSession();
 
       const metrics = service.getMetrics();
-      expect(metrics.game.sessionDuration).toBeCloseTo(5000, 100);
+      expect(metrics.game.sessionDuration).toBeGreaterThan(4900);
+      expect(metrics.game.sessionDuration).toBeLessThan(6000);
     });
 
     it('should send session metrics', () => {

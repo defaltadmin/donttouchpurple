@@ -8,11 +8,11 @@ interface HowToPlayProps {
 const container = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.06 } },
-};
+} as const;
 
 const row = {
   hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  visible: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } },
 };
 
 export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {

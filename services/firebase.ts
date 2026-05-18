@@ -68,8 +68,8 @@ async function ensureAuth(): Promise<void> {
   authReady = (async () => {
     try {
       const app = await ensureFirebaseApp();
-      const { getAuth, signInAnonymously, onAuthStateChanged } = await import("firebase/auth");
-      const auth = getAuth(app);
+      const { getAuth, signInAnonymously } = await import("firebase/auth");
+      const auth = getAuth(app as any);
       if (auth.currentUser) return; // Already signed in
       await signInAnonymously(auth);
     } catch (e) {
