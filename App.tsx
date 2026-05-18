@@ -96,6 +96,10 @@ import { safeGetJSON, safeSet } from "./utils/storage";
 import { addPendingScore } from "./utils/pendingScoresDb";
 import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachine";
 import { featureGates } from "./utils/featureGates";
+import { PauseOverlay } from "./components/Screens/PauseOverlay";
+import { EnergyPopup } from "./components/Screens/EnergyPopup";
+import { InstallBanner } from "./components/Screens/InstallBanner";
+import { QuickSettings } from "./components/Settings/QuickSettings";
 
 // Components - Settings & Shop
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -1956,71 +1960,12 @@ export default function App() {
       {showWhatsNew && <WhatsNew onClose={() => { markWhatsNewSeen(); setShowWhatsNew(false); }} />}
 
       {settingsOpen && (
-        <div className="dtp-modal-backdrop" onClick={() => setSettingsOpen(false)} aria-hidden="true">
-          <div className="dtp-modal" role="dialog" aria-modal="true" aria-label="Game Settings" onClick={e => e.stopPropagation()}>
-            <h2>Settings</h2>
-            <div className="dtp-setting-row">
-              <label>Master Volume</label>
-              <input type="range" min="0" max="1" step="0.1" value={settings.masterVolume}
-                     onChange={e => settingsManager.set({ masterVolume: parseFloat(e.target.value) })} />
-            </div>
-            <div className="dtp-setting-row">
-              <label>Haptics</label>
-              <button onClick={() => settingsManager.set({ hapticsEnabled: !settings.hapticsEnabled })}
-                      className={`dtp-toggle ${settings.hapticsEnabled ? 'on' : 'off'}`}>
-                {settings.hapticsEnabled ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label>Show FPS</label>
-              <button onClick={() => settingsManager.set({ showFps: !settings.showFps })}
-                      className={`dtp-toggle ${settings.showFps ? 'on' : 'off'}`}>
-                {settings.showFps ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label>Reduced Motion</label>
-              <button onClick={() => settingsManager.set({ reducedMotion: !settings.reducedMotion })}
-                      className={`dtp-toggle ${settings.reducedMotion ? 'on' : 'off'}`}>
-                {settings.reducedMotion ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label>Offset Touch Cursor</label>
-              <button onClick={() => setShowOffset(v => !v)}
-                      className={`dtp-toggle ${showOffset ? 'on' : 'off'}`}
-                      aria-label="Toggle offset touch cursor for mobile visibility"
-                      aria-pressed={showOffset}>
-                {showOffset ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label><span className="dtp-text-label">{visualA11y.icons.colorblind} Colorblind Patterns</span></label>
-              <button onClick={() => settingsManager.set({ colorblindMode: !settings.colorblindMode })}
-                      className={`dtp-toggle ${settings.colorblindMode ? 'on' : 'off'}`}
-                      data-icon={visualA11y.icons.colorblind}>
-                {settings.colorblindMode ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label><span className="dtp-text-label">{visualA11y.icons.iconMode} Icon-Only UI</span></label>
-              <button onClick={() => settingsManager.set({ iconOnlyMode: !settings.iconOnlyMode })}
-                      className={`dtp-toggle ${settings.iconOnlyMode ? 'on' : 'off'}`}
-                      data-icon={visualA11y.icons.iconMode}>
-                {settings.iconOnlyMode ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <div className="dtp-setting-row">
-              <label><span className="dtp-text-label">{visualA11y.icons.lite} Lite Mode (Low-End)</span></label>
-              <button onClick={() => settingsManager.set({ liteMode: !settings.liteMode })}
-                      className={`dtp-toggle ${settings.liteMode ? 'on' : 'off'}`}
-                      data-icon={visualA11y.icons.lite}>
-                {settings.liteMode ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            <button className="dtp-btn dtp-btn-secondary" onClick={() => setSettingsOpen(false)}>Close</button>
-          </div>
-        </div>
+        <QuickSettings
+          showOffset={showOffset}
+          onToggleOffset={() => setShowOffset(v => !v)}
+          visualA11y={visualA11y}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
 
       {showShare && shareUrl && (
@@ -2104,74 +2049,19 @@ export default function App() {
       </div>
 
       {paused && (
-        <div className="pause-overlay" ref={focusTrapRef}>
-          <div className="pause-card">
-            <div className="pause-title">⏸ PAUSED</div>
-            <div className="pause-hud-grid">
-              <div className="pause-hud-item">
-                <span className="pause-hud-label">Score</span>
-                <span className="pause-hud-value">{snapshot?.p1.score ?? 0}</span>
-              </div>
-              {is2P && (
-                <div className="pause-hud-item">
-                  <span className="pause-hud-label">P2 Score</span>
-                  <span className="pause-hud-value">{snapshot?.p2?.score ?? 0}</span>
-                </div>
-              )}
-              <div className="pause-hud-item">
-                <span className="pause-hud-label">Stage</span>
-                <span className="pause-hud-value">{(snapshot?.p1.gridStage ?? 0) + 1}</span>
-              </div>
-              <div className="pause-hud-item">
-                <span className="pause-hud-label">Streak</span>
-                <span className="pause-hud-value pause-hud-streak">{(snapshot?.p1.streak ?? 0) > 0 ? `🔥 ${snapshot?.p1.streak}` : "—"}</span>
-              </div>
-              <div className="pause-hud-item">
-                <span className="pause-hud-label">Speed</span>
-                <span className="pause-hud-value">{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</span>
-              </div>
-              {snapshot && snapshot.p1.freezeEnd > Date.now() && (
-                <div className="pause-hud-item">
-                  <span className="pause-hud-label">Freeze</span>
-                  <span className="pause-hud-value pause-hud-freeze">❄ {Math.ceil((snapshot.p1.freezeEnd - Date.now()) / 1000)}s</span>
-                </div>
-              )}
-              {snapshot && snapshot.p1.multiplierEnd > Date.now() && (
-                <div className="pause-hud-item">
-                  <span className="pause-hud-label">Multiplier</span>
-                  <span className="pause-hud-value pause-hud-mult">⚡ {Math.ceil((snapshot.p1.multiplierEnd - Date.now()) / 1000)}s</span>
-                </div>
-              )}
-              {snapshot && snapshot.p1.shieldCount > 0 && (
-                <div className="pause-hud-item">
-                  <span className="pause-hud-label">Shield</span>
-                  <span className="pause-hud-value pause-hud-shield">🛡 ×{snapshot.p1.shieldCount}</span>
-                </div>
-              )}
-            </div>
-            <button className="btn-play" onClick={resumeGame}>▶ RESUME</button>
-            <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => {
-              resumeEngine();
-              setPaused(false);
-              setTimeout(() => { startEngine(); }, 50);
-            }}>↺ Restart</button>
-            <div className="pause-settings-row">
-              <button
-                className={`pause-setting-btn${muted ? " pause-setting-btn--active-mute" : " pause-setting-btn--active-sound"}`}
-                onClick={() => setMuted(m => !m)} title="Sound">
-                {muted ? "🔇" : "🔊"}<span>{muted ? "Muted" : "Sound"}</span>
-              </button>
-              <button className="pause-setting-btn" onClick={toggleFS} title="Fullscreen">
-                {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : "Full"}</span>
-              </button>
-              <button className="pause-setting-btn" onClick={() => { setSettingsFromPause(true); setShowSettings(true); }} title="Settings">
-                ⚙️<span>Settings</span>
-              </button>
-            </div>
-              <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={() => setShowExitConfirm(true)}>🏠 Exit to Menu</button>
-            <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>Esc to resume · Exiting ends your game</div>
-          </div>
-        </div>
+        <PauseOverlay
+          snapshot={snapshot}
+          is2P={is2P}
+          muted={muted}
+          isFS={isFS}
+          onResume={resumeGame}
+          onRestart={() => { resumeEngine(); setPaused(false); setTimeout(() => { startEngine(); }, 50); }}
+          onExit={() => setShowExitConfirm(true)}
+          onToggleMute={() => setMuted(m => !m)}
+          onToggleFS={toggleFS}
+          onOpenSettings={() => { setSettingsFromPause(true); setShowSettings(true); }}
+          focusTrapRef={focusTrapRef}
+        />
       )}
 
       {showOffset && cursorPos.visible && (
@@ -2512,34 +2402,12 @@ export default function App() {
 
       {/* PWA Install Banner */}
       {showInstallBanner && (
-        <div className="install-banner">
-          <div className="install-content">
-            {isIOS ? (
-              <>
-                <strong>Play instantly from your home screen</strong>
-                <div className="ios-instructions">
-                  1. Tap the <strong>Share</strong> button <span style={{fontSize:"22px"}}>⎙</span><br/>
-                  2. Scroll and tap <strong>"Add to Home Screen"</strong>
-                </div>
-              </>
-            ) : (
-              <>
-                <strong>Want the full arcade experience?</strong>
-                <span>Add to Home Screen for lightning-fast access</span>
-              </>
-            )}
-
-            {!isIOS && deferredPrompt && (
-              <button className="btn-primary" onClick={handleInstallClick}>
-                📲 Add to Home Screen
-              </button>
-            )}
-
-            <button className="btn-ghost" onClick={dismissInstallBanner}>
-              Not Now
-            </button>
-          </div>
-        </div>
+        <InstallBanner
+          isIOS={isIOS}
+          hasDeferredPrompt={!!deferredPrompt}
+          onInstall={handleInstallClick}
+          onDismiss={dismissInstallBanner}
+        />
       )}
 
       {screen === "menu" && (
@@ -2569,45 +2437,24 @@ export default function App() {
       )}
 
       {showEnergyPopup && (
-        <div className="modal-overlay" onClick={() => setShowEnergyPopup(false)}>
-          <div className="modal-panel energy-popup" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">⚡ Energy</span>
-              <button className="btn-icon" onClick={() => setShowEnergyPopup(false)}>✕</button>
-            </div>
-            <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
-              <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-score)" }}>
-                {energyData.count} / {GAME.MAX_ENERGY}
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.55, fontFamily: "var(--font-ui)", marginTop: 4 }}>
-                Refills 1 every {Math.round(GAME.ENERGY_REGEN_MS / 60000)} min
-              </div>
-            </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button className="btn-ghost" style={{ width: "100%" }}
-              disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < GAME.DUST_PER_ENERGY}
-              onClick={() => {
-                spendDust(GAME.DUST_PER_ENERGY);
-                refillEnergy(1, GAME.DUST_PER_ENERGY);
-                toast$("⚡ Energy refilled!");
-              }}>
-              Refill 1 game — {GAME.DUST_PER_ENERGY} 💜
-            </button>
-            <button className="btn-primary" style={{ width: "100%" }}
-              disabled={energyData.count >= GAME.MAX_ENERGY || dustRef.current < (GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY}
-              onClick={() => {
-                const needed = GAME.MAX_ENERGY - energyData.count;
-                const cost = needed * GAME.DUST_PER_ENERGY;
-                spendDust(cost);
-                refillEnergy(needed, cost);
-                toast$("⚡ Energy full!");
-                setShowEnergyPopup(false);
-              }}>
-              Refill to Full — {(GAME.MAX_ENERGY - energyData.count) * GAME.DUST_PER_ENERGY} 💜
-            </button>
-          </div>
-          </div>
-        </div>
+        <EnergyPopup
+          energyCount={energyData.count}
+          dust={dust}
+          onClose={() => setShowEnergyPopup(false)}
+          onRefill1={() => {
+            spendDust(GAME.DUST_PER_ENERGY);
+            refillEnergy(1, GAME.DUST_PER_ENERGY);
+            toast$("⚡ Energy refilled!");
+          }}
+          onRefillFull={() => {
+            const needed = GAME.MAX_ENERGY - energyData.count;
+            const cost = needed * GAME.DUST_PER_ENERGY;
+            spendDust(cost);
+            refillEnergy(needed, cost);
+            toast$("⚡ Energy full!");
+            setShowEnergyPopup(false);
+          }}
+        />
       )}
     </div>
   );
