@@ -28,18 +28,19 @@ export interface TickContext {
   bossEvent: BossEvent | null;
   _bossActive: boolean;
   _isInverted: boolean;
+  _isBlackout: boolean;
   nextShuffleTick: number;
   nextBossTriggerScore: number;
   activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null;
   dirty: boolean;
   _tickSoundCounter: number;
   _lastTickTs: number;
+  now: number; // Cached Date.now() for the current tick
   numPlayers: NumPlayers;
   _deltaTimers: Array<{ id: string; remaining: number; duration: number; callback: () => void }>;
   devGodMode: boolean;
   devFreezeTime: boolean;
   devForcedPwr: "shield" | "freeze" | "heart" | null;
-  botAssistActive: { 1: boolean; 2: boolean };
   dda: { recordAttempt(success: boolean, reaction: number, miss: boolean): void; spawnRate: number };
 
   emit(event: GameEvent): void;
@@ -60,11 +61,20 @@ export class TickProcessor {
     const now = performance.now();
     const delta = Math.min(now - ctx._lastTickTs, 100);
     ctx._lastTickTs = now;
-    ctx._deltaTimers = ctx._deltaTimers.filter(timer => {
+    // Snapshot current timers; callbacks may add new ones via addDeltaTimer()
+    const snapshot = [...ctx._deltaTimers];
+    const kept = snapshot.filter(timer => {
       timer.remaining -= delta;
       if (timer.remaining <= 0) { timer.callback(); return false; }
       return true;
     });
+    // Preserve any timers added during callbacks (they were pushed after snapshot)
+    const added = ctx._deltaTimers.slice(snapshot.length);
+    ctx._deltaTimers = [...kept, ...added];
+
+    // If a delta timer callback triggered game over, bail out of the rest of the tick
+    if (ctx.phase !== "playing") return;
+
     const mode = ctx.config.mode;
     ctx._flushTapBuffer(1);
     if (ctx.numPlayers === 2) ctx._flushTapBuffer(2);
@@ -119,7 +129,8 @@ export class TickProcessor {
       if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
       const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
       const dangerColor = ctx.rareMode.active ? ctx.rareMode.color : "purple";
-      ctx._isInverted = ctx.bossEvent?.type === "inversion" && Date.now() < (ctx.bossEvent?.endsAt ?? 0);
+      ctx._isInverted = ctx.bossEvent?.type === "inversion" && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
+      ctx._isBlackout  = ctx.bossEvent?.type === "blackout"  && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
 
       const player = (pi + 1) as 1 | 2;
 
@@ -149,14 +160,13 @@ export class TickProcessor {
       });
       if (!ref.alive) continue;
 
-      const now2 = Date.now();
       ref.active.forEach(c => {
         if (c.clicked || c.type !== "hold") return;
         const hold = c as import("../types").HoldCell;
         const deadline = hold.holdStart
           ? hold.holdStart + hold.holdRequired + 500
           : hold.spawnedAt + hold.holdRequired + 1500;
-        if (now2 > deadline) {
+        if (ctx.now > deadline) {
           hold.clicked = true;
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!ctx.devGodMode) {
@@ -200,7 +210,7 @@ export class TickProcessor {
 
     // Cell shuffle + boss event + bomb spawn
     if (mode === "evolve") {
-      const stormActive = ctx.bossEvent?.type === "storm" && Date.now() < (ctx.bossEvent?.endsAt ?? 0);
+      const stormActive = ctx.bossEvent?.type === "storm" && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
       const shufflePat = EVOLVE_PATTERNS[ctx.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
       if (stormActive) {
         ctx.nextShuffleTick = 0;
@@ -377,8 +387,9 @@ export class TickProcessor {
       }
       ctx.emit({ type: "bombExplode", player });
       ctx.emit({ type: "toast", message: "💥 Bomb exploded!" });
-      const pat2 = ctx.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
-      ref.cells = activeToCellsP(ref.active, pat2);
+      // Use the pattern captured at spawn time (pat), not the current one,
+      // because the grid may have changed during the fuse delay.
+      ref.cells = activeToCellsP(ref.active, pat);
       ctx.dirty = true;
     });
   }

@@ -54,7 +54,7 @@ export class GameEngine {
   private iMult      = 1;
   private paused     = false;
   private phase: GameSnapshot["phase"] = "playing";
-  private holdTimers = new Map<string, { timer: NodeJS.Timeout, cell: ActiveCell, player: 1 | 2 }>();
+  private holdTimers = new Map<string, { cell: ActiveCell, player: 1 | 2 }>();
   private dirty      = true;
 
   private rng: () => number = () => Math.random();
@@ -99,6 +99,9 @@ export class GameEngine {
   private activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null = null;
   private _settingsUnsub: (() => void) | null = null;
   private _gamepadUnsub: (() => void) | null = null;
+  private _bossCompleteHandler: (() => void) | null = null;
+  private _bossShieldBreakHandler: (() => void) | null = null;
+  private _difficultyEmergencyHandler: (() => void) | null = null;
   private _lastFocusedCell = '0';
   private _config = configManager.get();
   private dda = new DynamicDifficulty(1200);
@@ -107,10 +110,15 @@ export class GameEngine {
   private _sessionStartTime = performance.now();
   private _isDisposed = false;
   private _isInverted = false;
+  private _isBlackout = false;
   private _timeouts: ReturnType<typeof setTimeout>[] = [];
   private _tickSoundCounter = 0;
   private _deltaTimers: Array<{ id: string; remaining: number; duration: number; callback: () => void }> = [];
   private _lastTickTs = performance.now();
+  private _hitPauseUntil = 0; // Hit pause: freeze game briefly on impactful moments
+  private _deathSlowdown = false; // Slow-motion on death before game over
+  private _deathCleanupTimer: ReturnType<typeof setTimeout> | null = null; // Track death cleanup timeout
+  private _cachedNow = Date.now(); // Cached Date.now() per tick — avoids 10+ syscalls per frame
   private _bossActive = false;
   private _tickProcessor = new TickProcessor();
   private _tickCtx!: TickContext;
@@ -129,15 +137,19 @@ export class GameEngine {
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
     }).catch(e => logError('Settings module failed', e));
-    window.addEventListener('dtp:boss:complete', () => { this._bossActive = false; });
-    window.addEventListener('dtp:difficulty:emergency', () => {
+    this._bossCompleteHandler = () => { this._bossActive = false; };
+    this._bossShieldBreakHandler = () => { this.hitPause(80); this.emit({ type: "shake", player: 1 }); this.emit({ type: "sound", name: "powerup" }); };
+    this._difficultyEmergencyHandler = () => {
       if (!this.p1 || this.phase !== 'playing') return;
       const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
       this.p1.score += bonus;
-      this.emit({ type: "toast", message: `ΓÜû∩╕Å Difficulty adjusted! +${bonus} pts` });
+      this.emit({ type: "toast", message: ` Difficulty adjusted! +${bonus} pts` });
       document.documentElement.setAttribute('data-dda-emergency', 'true');
       setTimeout(() => document.documentElement.removeAttribute('data-dda-emergency'), 2200);
-    });
+    };
+    window.addEventListener('dtp:boss:complete', this._bossCompleteHandler);
+    window.addEventListener('dtp:boss:shield-break', this._bossShieldBreakHandler);
+    window.addEventListener('dtp:difficulty:emergency', this._difficultyEmergencyHandler);
     gamepadManager.init();
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
@@ -162,18 +174,19 @@ export class GameEngine {
       get bossEvent() { return self.bossEvent; }, set bossEvent(v) { self.bossEvent = v; },
       get _bossActive() { return self._bossActive; }, set _bossActive(v) { self._bossActive = v; },
       get _isInverted() { return self._isInverted; }, set _isInverted(v) { self._isInverted = v; },
+      get _isBlackout() { return self._isBlackout; }, set _isBlackout(v) { self._isBlackout = v; },
       get nextShuffleTick() { return self.nextShuffleTick; }, set nextShuffleTick(v) { self.nextShuffleTick = v; },
       get nextBossTriggerScore() { return self.nextBossTriggerScore; }, set nextBossTriggerScore(v) { self.nextBossTriggerScore = v; },
       get activeBomb() { return self.activeBomb; }, set activeBomb(v) { self.activeBomb = v; },
       get dirty() { return self.dirty; }, set dirty(v) { self.dirty = v; },
       get _tickSoundCounter() { return self._tickSoundCounter; }, set _tickSoundCounter(v) { self._tickSoundCounter = v; },
       get _lastTickTs() { return self._lastTickTs; }, set _lastTickTs(v) { self._lastTickTs = v; },
+      get now() { return self._cachedNow; },
       get numPlayers() { return self.config.numPlayers; },
       get _deltaTimers() { return self._deltaTimers; }, set _deltaTimers(v) { self._deltaTimers = v; },
       get devGodMode() { return self.devGodMode; }, set devGodMode(v) { self.devGodMode = v; },
       get devFreezeTime() { return self.devFreezeTime; }, set devFreezeTime(v) { self.devFreezeTime = v; },
       get devForcedPwr() { return self.devForcedPwr; }, set devForcedPwr(v) { self.devForcedPwr = v; },
-      get botAssistActive() { return self.botAssistActive; }, set botAssistActive(v) { self.botAssistActive = v; },
       get dda() { return self.dda; },
       emit: (e) => self.emit(e),
       _flushTapBuffer: (p) => self._flushTapBuffer(p),
@@ -245,6 +258,8 @@ export class GameEngine {
     this._lastTickTs = performance.now();
     this._deltaTimers = [];
     this._bossActive = false;
+    this._deathSlowdown = false;
+    if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
     this._bot.setRng(this.rng);
@@ -257,8 +272,12 @@ export class GameEngine {
     const stored = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
     const bonusHearts = (this.config.mode === "evolve" && stored.heart > 0) ? stored.heart : 0;
     const hasMult = (this.config.mode === "evolve" && (stored.mult ?? 0) > 0);
-    if (hasMult) this.config.storage?.saveStoredPowerups({ ...stored, mult: (stored.mult ?? 1) - 1 });
-    if (bonusHearts > 0) this.config.storage?.saveStoredPowerups({ ...stored, heart: 0 });
+    if (hasMult || bonusHearts > 0) {
+      const updated = { ...stored };
+      if (hasMult) updated.mult = (stored.mult ?? 1) - 1;
+      if (bonusHearts > 0) updated.heart = 0;
+      this.config.storage?.saveStoredPowerups(updated);
+    }
     this.p1 = makePS(bonusHearts, hasMult, stored);
     this.p2 = makePS(bonusHearts, hasMult, stored);
     this.tapBuffer  = { 1: null, 2: null };
@@ -314,11 +333,15 @@ export class GameEngine {
     const tickForCalc = this.devFreezeTime ? 0 : this.tickCount;
     const ddaFactor = Math.max(0.75, Math.min(1.25, this.dda.compute() / 1200));
     const ms = computeMs(tickForCalc, frozen ? 1.4 : 1) * this.iMult * ddaFactor;
+    // Add hit pause delay if active, and apply death slowdown
+    const hitPauseRemaining = Math.max(0, this._hitPauseUntil - performance.now());
+    const slowdownMult = this._deathSlowdown ? 3 : 1;
+    const delay = (ms * slowdownMult) + hitPauseRemaining;
     this.tickTimer = setTimeout(() => {
       if (this.phase !== "playing") return;
       this.processTick();
       this.scheduleTick();
-    }, ms);
+    }, delay);
   }
 
   private scheduleTimeout(cb: () => void, ms: number): ReturnType<typeof setTimeout> {
@@ -375,11 +398,23 @@ export class GameEngine {
   onPause(cb: () => void): void { this._pauseListeners.push(cb); }
   onResume(cb: () => void): void { this._resumeListeners.push(cb); }
 
+  /** Hit pause: briefly freeze the game on impactful moments (damage, boss, milestones) */
+  hitPause(ms: number): void {
+    this._hitPauseUntil = performance.now() + ms;
+  }
+
+  /** Check if currently in hit pause */
+  get isHitPaused(): boolean {
+    return performance.now() < this._hitPauseUntil;
+  }
+
 destroy(): void {
     this._isDisposed = true;
     this._settingsUnsub?.();
     this._gamepadUnsub?.();
-    this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
+    if (this._bossCompleteHandler) window.removeEventListener('dtp:boss:complete', this._bossCompleteHandler);
+    if (this._bossShieldBreakHandler) window.removeEventListener('dtp:boss:shield-break', this._bossShieldBreakHandler);
+    if (this._difficultyEmergencyHandler) window.removeEventListener('dtp:difficulty:emergency', this._difficultyEmergencyHandler);
     this.holdTimers.clear();
     this.tapBuffer = { 1: null, 2: null };
     this.clearAllTimeouts();
@@ -391,32 +426,15 @@ destroy(): void {
   }
 
   safeReset(keepSettings = false) {
-    this.paused = false;
-    this.phase = "playing";
-    this.clearAllTimeouts();
-    this.clearAllDeltaTimers();
-    this.stop();
-    sessionStorage.removeItem(this.SESSION_KEY);
-    this._sessionStartTime = performance.now();
-    this._lastTapTime = 0;
-    this._tickSoundCounter = 0;
-    this._isInverted = false;
-
-    const storedForReset = {
-      freeze: this.p1.storedFreezeCharges ?? 0,
-      shield: this.p1.storedShieldCharges ?? 0,
-      mult: 0,
-      heart: 0,
-    };
-    this.p1 = makePS(0, false, storedForReset);
-    this.p2 = makePS(0, false, storedForReset);
-    this.tickCount = 0;
-    this.evolveTick = 0;
-    this.activeBomb = null;
-    rhythmFeedback.reset();
-    this.dda.reset(1200);
-
-    if (!keepSettings) this._settingsUnsub?.();
+    if (!keepSettings) {
+      this._settingsUnsub?.();
+      this._settingsUnsub = null;
+      // Re-subscribe to settings after reset
+      import('../utils/settings').then(m => {
+        this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
+      }).catch(e => logError('Settings module failed', e));
+    }
+    this.start();
   }
 
   subscribe(fn: (e: GameEvent) => void): () => void {
@@ -442,6 +460,7 @@ destroy(): void {
 
   private processTick(): void {
     try {
+      this._cachedNow = Date.now(); // Cache once per tick
       this._tickProcessor.processTick(this._tickCtx);
     } catch (e) {
       // Fix #6: Error handling to prevent engine lockup
@@ -506,7 +525,8 @@ destroy(): void {
       this.triggerCellAnim(player, idx, "pop");
       this.emit({ type: "sound", name: "powerup" });
       this.emit({ type: "bombDefused", player });
-      this.emit({ type: "toast", message: "≡ƒÆúΓ£ô Defused! +3" });
+      this.emit({ type: "toast", message: "💣 Defused! +3" });
+      this.hitPause(30);
       const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
       const nextStreak = ref.streak + 1;
       ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
@@ -544,24 +564,27 @@ destroy(): void {
       if (tappedIsDanger) {
         cell.clicked = true;
         if (!this.devGodMode) {
-          if (ref.shieldCount > 0) { this.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+          if (ref.shieldCount > 0) { this.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop"); }
           else {
             this.dda.recordAttempt(false, 0, true);
-            if (ref.streak >= 5) this.emit({ type: "toast", message: `≡ƒÆö ${ref.streak} streak lost!` });
+            if (ref.streak >= 5) this.emit({ type: "toast", message: `🔥 ${ref.streak} streak lost!` });
             ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
             this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
             this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
+            this.hitPause(ref.health < 1 ? 200 : 40); // Death: 200ms, damage: 40ms
             if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
           }
-        } else { this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop"); }
+        } else { this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop"); }
       } else {
-      cell.clicked = true; this.emit({ type: "sound", name: "ok" }); this.triggerCellAnim(player, idx, "pop");
+      cell.clicked = true; this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop");
       if (this._bossActive) bossEngine.onSafeTap();
       rhythmFeedback.recordTap();
       const { mult, bossMult } = calculateTapScore(Date.now() < ref.multiplierEnd, this._bossActive, bossEngine.combo.multiplier);
       const nextStreak = ref.streak + 1;
-      ref.score += (mult * bossMult) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
-      if (checkStreakMilestone(ref.streak)) this.emit({ type: "toast", message: `≡ƒöÑ ${ref.streak} Streak!` });
+      const tapScore = (mult * bossMult) + calculateStreakBonus(nextStreak);
+      ref.score += tapScore; ref.streak = nextStreak; ref.stageProgress += 1;
+      this.emit({ type: "scoreFloat", player, idx, amount: tapScore });
+      if (checkStreakMilestone(ref.streak)) { this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` }); this.hitPause(25); }
       if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "Γ¥ñ∩╕Å Last heart!" });
       this.checkStageProgress(player);
       const now = performance.now();
@@ -586,7 +609,7 @@ destroy(): void {
     const ref = player === 1 ? this.p1 : this.p2;
     ref.anim[idx] = anim;
     this.emit({ type: "cellAnim", player, idx, anim });
-    setTimeout(() => { if (ref.anim[idx] === anim) { ref.anim = { ...ref.anim }; delete ref.anim[idx]; } }, GAME.CELL_ANIM_MS);
+    this.scheduleTimeout(() => { if (ref.anim[idx] === anim) { ref.anim = { ...ref.anim }; delete ref.anim[idx]; } }, GAME.CELL_ANIM_MS);
   }
 
   handleHoldStart(player: 1 | 2, idx: number): void {
@@ -599,7 +622,6 @@ destroy(): void {
     (cell as HoldCell).holdStart = Date.now();
     const key = `${player}_${idx}`;
     if (this.holdTimers.has(key)) {
-      clearTimeout(this.holdTimers.get(key)!.timer);
       this.removeDeltaTimer(`hold_${key}`);
       this.holdTimers.delete(key);
     }
@@ -612,7 +634,7 @@ destroy(): void {
       this.emitSnapshot();
       this.holdTimers.delete(key);
     });
-    this.holdTimers.set(key, { timer: null as unknown as NodeJS.Timeout, cell, player });
+    this.holdTimers.set(key, { cell, player });
     this.dirty = true;
     this.emitSnapshot();
   }
@@ -626,7 +648,7 @@ destroy(): void {
     if (!cell || cell.type !== "hold") return;
     const key = `${player}_${idx}`;
     const entry = this.holdTimers.get(key);
-    if (entry) { clearTimeout(entry.timer); this.removeDeltaTimer(`hold_${key}`); this.holdTimers.delete(key); }
+    if (entry) { this.removeDeltaTimer(`hold_${key}`); this.holdTimers.delete(key); }
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const elapsed = Date.now() - ((cell as HoldCell).holdStart ?? Date.now());
     if (elapsed >= (cell as HoldCell).holdRequired) {
@@ -840,13 +862,16 @@ destroy(): void {
       devRotationSpeed: this.devRotationSpeed,
       bossEvent:  this.bossEvent ? { ...this.bossEvent } : null,
       activeBomb: this.activeBomb ? { ...this.activeBomb } : null,
-      isInverted: this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0),
-      isBlackout: this.bossEvent?.type === "blackout"  && Date.now() < (this.bossEvent?.endsAt ?? 0),
+      isInverted: this._isInverted,
+      isBlackout: this._isBlackout,
     };
   }
 
   getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
 
+  // SESSION_SNAPSHOT_VERSION — bump ONLY for breaking schema changes (field rename/removal/type change).
+  // Adding new optional fields with ?? defaults is NOT a breaking change and must NOT bump this.
+  // Current breaking changes from v1→v2: added `p1.active`, `p2.active`, `bossEvent`, `activeBomb`.
   private static readonly SESSION_SNAPSHOT_VERSION = 2;
 
   getSessionSnapshot(): Record<string, unknown> {
@@ -908,8 +933,12 @@ destroy(): void {
         return false;
       }
       this.gameSeed = data.gameSeed as number;
+      // #16 fix: fast-forward RNG to match tickCount so post-restore spawns
+      // use the correct position in the seed sequence.
       this.rng = mulberry32(this.gameSeed);
-      this.tickCount = (data.tickCount as number) ?? 0;
+      const rngStepsToSkip = Math.min((data.tickCount as number) ?? 0, GAME.HUMAN_LIMIT_TICK + 100); // Cap to prevent infinite loop from tampered data
+      for (let i = 0; i < rngStepsToSkip; i++) this.rng();
+      this.tickCount = rngStepsToSkip;
       this.evolveTick = (data.evolveTick as number) ?? 0;
       this.cellShape = (data.cellShape as CellShape) ?? "square";
       this.spinLevel = (data.spinLevel as number) ?? 0;
@@ -978,22 +1007,33 @@ destroy(): void {
   }
 
 private triggerGameOver(winner: Winner): void {
-    // Clear pending taps, hold timers, and delta timers
-    this.tapBuffer = { 1: null, 2: null };
-    this.holdTimers.forEach(({ timer }) => clearTimeout(timer));
-    this.holdTimers.clear();
-    this.clearAllDeltaTimers();
-
-    this.stop(); this.phase = "gameover";
-    const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
-    this.config.storage?.saveStoredPowerups({
-      freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0),
-      shield: Math.max(0, this.p1.storedShieldCharges ?? 0),
-      mult: cur.mult,
-      heart: cur.heart,
-    });
+    // Prevent double game over
+    if (this._deathSlowdown || this.phase === "gameover") return;
+    // Immediately set phase and emit game over events (logical end)
+    this._deathSlowdown = true;
+    this.hitPause(200); // Brief freeze on death
+    this.phase = "gameover";
+    this.emitSnapshot();
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver", winner });
+
+    // Death slow-motion: visually slow for 600ms before cleanup
+    if (this._deathCleanupTimer) clearTimeout(this._deathCleanupTimer);
+    this._deathCleanupTimer = setTimeout(() => {
+      this._deathCleanupTimer = null;
+      this._deathSlowdown = false;
+      this.tapBuffer = { 1: null, 2: null };
+      this.holdTimers.clear();
+      this.clearAllDeltaTimers();
+      this.stop();
+      const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
+      this.config.storage?.saveStoredPowerups({
+        freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0),
+        shield: Math.max(0, this.p1.storedShieldCharges ?? 0),
+        mult: cur.mult,
+        heart: cur.heart,
+      });
+    }, 600);
     analytics.track('game_over', { score: this.p1.score, mode: this.config.mode, winner });
     this.dda.reset(this._config.grid.spawnRateMs);
     if (!this.daily.isTodayComplete()) {
