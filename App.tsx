@@ -102,6 +102,7 @@ import { InstallBanner } from "./components/Screens/InstallBanner";
 import { QuickSettings } from "./components/Settings/QuickSettings";
 import { BossOverlay } from "./components/HUD/BossOverlay";
 import { ShareModal } from "./components/Screens/ShareModal";
+import { GameHeader } from "./components/HUD/GameHeader";
 
 // Components - Settings & Shop
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -2024,25 +2025,17 @@ export default function App() {
         </div>
       )}
 
-      <header className={`hdr${isFS ? " hdr--hidden" : ""}`}>
-        <span className="logo logo--shimmer" style={{cursor: screen !== "menu" && screen !== "playing" && screen !== "gameover" ? "pointer" : "default"}}
-          onClick={() => { if (screen !== "menu" && screen !== "playing" && screen !== "gameover") setScreen("menu"); }}>
-          Don't Touch the{" "}
-          <span className="txt-p" style={snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop"
-            ? { color: snapshot.rareMode.cssColor, textShadow: `0 0 20px ${snapshot.rareMode.cssColor}99`, transition:"color 0.5s, text-shadow 0.5s" }
-            : {}}>
-            {snapshot?.rareMode.active && screen !== "menu" && screen !== "leaderboard" && screen !== "shop" ? snapshot.rareMode.color.charAt(0).toUpperCase() + snapshot.rareMode.color.slice(1) : "Purple"}
-          </span>
-        </span>
-        {screen === "playing" && practiceMode && <span className="practice-badge">∞ PRACTICE</span>}
-        <div className="hdr-right" style={{display:"flex",alignItems:"center",gap:4}}>
-          <div className="dust-counter"><DustWidget dust={dust} /></div>
-          {isPlaying && screen === "playing"
-            ? <button className="btn-icon btn-icon--pause" onClick={pauseGame} title="Pause">⏸</button>
-            : <button className="btn-icon" onClick={() => setShowSettings(s => !s)} title="Settings">⚙</button>
-          }
-        </div>
-      </header>
+      <GameHeader
+        screen={screen}
+        isFS={isFS}
+        isPlaying={isPlaying}
+        practiceMode={practiceMode}
+        snapshot={snapshot}
+        dust={dust}
+        onPause={pauseGame}
+        onToggleSettings={() => setShowSettings(s => !s)}
+        onLogoClick={() => { if (screen !== "menu" && screen !== "playing" && screen !== "gameover") setScreen("menu"); }}
+      />
 
       {(screen === "leaderboard" || screen === "howto" || screen === "shop") && (
         <button className="universal-back-btn" onClick={() => setScreen("menu")}>← Back</button>
