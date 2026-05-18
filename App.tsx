@@ -1040,20 +1040,22 @@ export default function App() {
     });
   }, [screen, gameMode, inputMode, numPlayers, practiceMode, colorblindMode, reducedMotion]);
 
+  // Only update Sentry context on screen/gameMode changes, not every tick
   useEffect(() => {
-    if (!snapshot) return;
+    const s = snapshotRef.current;
+    if (!s) return;
     safeSentry.setContext("game", {
-      seed: snapshot.gameSeed,
-      tick: snapshot.tick,
-      phase: snapshot.phase,
-      score: snapshot.p1.score,
-      streak: snapshot.p1.streak,
-      health: snapshot.p1.health,
-      gridStage: snapshot.p1.gridStage,
-      patternIdx: snapshot.p1.patternIdx,
-      rareMode: snapshot.rareMode.active ? snapshot.rareMode.color : "purple",
+      seed: s.gameSeed,
+      tick: s.tick,
+      phase: s.phase,
+      score: s.p1.score,
+      streak: s.p1.streak,
+      health: s.p1.health,
+      gridStage: s.p1.gridStage,
+      patternIdx: s.p1.patternIdx,
+      rareMode: s.rareMode.active ? s.rareMode.color : "purple",
     });
-  }, [snapshot]);
+  }, [screen, gameMode]);
 
   const handleResumeGame = useCallback(() => {
     if (!resumeData) return;
