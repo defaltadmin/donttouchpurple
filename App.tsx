@@ -29,7 +29,12 @@ import { useOffsetCursor } from "./hooks/useOffsetCursor";
 import { useEnergyStore } from "./hooks/useEnergyStore";
 
 declare const __APP_VERSION__: string;
-import * as Sentry from "@sentry/react";
+// Lazy-loaded Sentry (~50-80KB savings from main bundle)
+let _sentry: typeof import("@sentry/react") | null = null;
+async function getSentry() {
+  if (!_sentry) _sentry = await import("@sentry/react");
+  return _sentry;
+}
 import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
@@ -108,10 +113,10 @@ type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "
 
 // ─── Safe Sentry wrapper (deferred load + ad-blocker safe) ───
 const safeSentry = {
-  addBreadcrumb: (...args: Parameters<typeof Sentry.addBreadcrumb>) => { try { Sentry.addBreadcrumb(...args); } catch { /* Sentry unavailable */ } },
-  captureException: (...args: Parameters<typeof Sentry.captureException>) => { try { Sentry.captureException(...args); } catch { /* Sentry unavailable */ } },
-  setTags: (...args: Parameters<typeof Sentry.setTags>) => { try { Sentry.setTags(...args); } catch { /* Sentry unavailable */ } },
-  setContext: (...args: Parameters<typeof Sentry.setContext>) => { try { Sentry.setContext(...args); } catch { /* Sentry unavailable */ } },
+  addBreadcrumb: (...args: unknown[]) => { try { _sentry?.addBreadcrumb(...args as [any]); } catch { /* Sentry unavailable */ } },
+  captureException: (...args: unknown[]) => { try { _sentry?.captureException(...args as [any]); } catch { /* Sentry unavailable */ } },
+  setTags: (...args: unknown[]) => { try { _sentry?.setTags(...args as [any]); } catch { /* Sentry unavailable */ } },
+  setContext: (...args: unknown[]) => { try { _sentry?.setContext(...args as [any, any]); } catch { /* Sentry unavailable */ } },
 };
 
 // ─── Lazy-loaded Firebase ────────────────────────────────────────
@@ -130,7 +135,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Capture error in Sentry
-    Sentry.captureException(error, {
+    safeSentry.captureException(error, {
       contexts: {
         react: {
           componentStack: errorInfo.componentStack,
@@ -711,7 +716,7 @@ export default function App() {
   }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
 
   const handleEngineGameOver = useCallback(async (engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
-    Sentry.addBreadcrumb({
+    safeSentry.addBreadcrumb({
       category: "game",
       message: "game_over",
       level: "info",
@@ -1024,7 +1029,7 @@ export default function App() {
   }, [snapshot]);
 
   useEffect(() => {
-    Sentry.setTags({
+    safeSentry.setTags({
       screen,
       gameMode,
       inputMode,
@@ -1037,7 +1042,7 @@ export default function App() {
 
   useEffect(() => {
     if (!snapshot) return;
-    Sentry.setContext("game", {
+    safeSentry.setContext("game", {
       seed: snapshot.gameSeed,
       tick: snapshot.tick,
       phase: snapshot.phase,
@@ -1074,7 +1079,7 @@ export default function App() {
   }, [resumeData, restoreSessionSnapshot, toast$]);
 
   const resumeGame = useCallback(() => {
-    Sentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
+    safeSentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
     setPaused(false);
     // Small delay to ensure React state updates before engine fully resumes
     setTimeout(() => {
@@ -1083,7 +1088,7 @@ export default function App() {
   }, [resumeEngine]);
 
   const pauseGame = useCallback(() => {
-    Sentry.addBreadcrumb({ category: "game", message: "pause", level: "info" });
+    safeSentry.addBreadcrumb({ category: "game", message: "pause", level: "info" });
     pauseEngine();
     setPaused(true);
   }, [pauseEngine]);
@@ -1534,7 +1539,7 @@ export default function App() {
     localStorage.setItem('dtp-games-played', String(next));
     setGamesPlayed(next);
     const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
-    Sentry.addBreadcrumb({
+    safeSentry.addBreadcrumb({
       category: "game",
       message: "game_start",
       level: "info",
