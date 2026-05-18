@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type FirebaseAppInstance = { name: string; options: Record<string, unknown>; automaticDataCollectionEnabled: boolean };
 
 const FIREBASE_CONFIG = {
@@ -15,11 +15,9 @@ const FIREBASE_CONFIG = {
 
 const IS_PROD =
   typeof window !== "undefined" &&
-  (window.location.hostname === "game.mscarabia.com" || 
+  (window.location.hostname === "game.mscarabia.com" ||
    window.location.hostname === "dont-touch-purple.web.app" ||
-   window.location.hostname === "dont-touch-purple.firebaseapp.com" ||
-   window.location.hostname === "localhost" ||
-   window.location.hostname === "127.0.0.1");
+   window.location.hostname === "dont-touch-purple.firebaseapp.com");
 
 export interface GlobalScoreEntry {
   score: number;
@@ -44,7 +42,7 @@ export function todayISODate(now = new Date()): string {
 export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreEntry {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(entry.date) ? entry.date : todayISODate();
   const safe: GlobalScoreEntry = {
-    score: Math.max(0, Math.min(99999, Math.floor(entry.score))),
+    score: Math.max(0, Math.min(9999, Math.floor(entry.score))),
     initials: entry.initials.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8) || "Player",
     date,
     mode: entry.mode === "evolve" ? "evolve" : "classic",
@@ -55,12 +53,32 @@ export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreE
 
 export async function getDB(): Promise<unknown> {
   if (!IS_PROD) return null;
+  await ensureAuth(); // Sign in anonymously before any Firestore operations
   return await ensureFirestore();
 }
 
 // Lazy Firebase initialization - only load when first Firebase operation is needed
 let firebaseApp: unknown = null;
 let firestoreDb: unknown = null;
+let authReady: Promise<void> | null = null;
+
+/** Sign in anonymously so Firestore rules can verify request.auth != null */
+async function ensureAuth(): Promise<void> {
+  if (authReady) return authReady;
+  authReady = (async () => {
+    try {
+      const app = await ensureFirebaseApp();
+      const { getAuth, signInAnonymously, onAuthStateChanged } = await import("firebase/auth");
+      const auth = getAuth(app);
+      if (auth.currentUser) return; // Already signed in
+      await signInAnonymously(auth);
+    } catch (e) {
+      // Auth failure is non-fatal — Firestore rules will reject unauthenticated writes
+      authReady = null; // Allow retry
+    }
+  })();
+  return authReady;
+}
 
 type FirebaseModuleFunctions = {
   collection: (db: unknown, path: string) => unknown;

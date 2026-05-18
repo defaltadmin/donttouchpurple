@@ -4,12 +4,12 @@ service cloud.firestore {
 
     function validScore() {
       let s = request.resource.data.score;
-      return s is int && s >= 0 && s <= 9999; // O1: hard cap at 9999
+      return s is int && s >= 0 && s <= 9999;
     }
 
     function validInitials() {
       let ini = request.resource.data.initials;
-      return ini is string && ini.size() >= 1 && ini.size() <= 8; // O2: confirmed
+      return ini is string && ini.size() >= 1 && ini.size() <= 8;
     }
 
     function validBadge() {
@@ -23,32 +23,34 @@ service cloud.firestore {
     }
 
     function hasRequiredFields() {
-      // O3: required fields must all be present
       return request.resource.data.keys().hasAll(['score', 'initials', 'date', 'mode']);
     }
 
+    // Leaderboard — requires authentication, write-once
     match /lb_global/{docId} {
       allow read: if true;
       allow create: if
-        hasRequiredFields() &&      // O3
-        validScore() &&             // O1
-        validInitials() &&          // O2
+        request.auth != null &&
+        hasRequiredFields() &&
+        validScore() &&
+        validInitials() &&
         validBadge() &&
         validDate() &&
         request.resource.data.mode in ['classic', 'evolve'] &&
-        // score-per-tick guard
         (!('tick' in request.resource.data) ||
           (request.resource.data.tick is int &&
            request.resource.data.tick >= 0 &&
            request.resource.data.score <= request.resource.data.tick * 3 + 50)) &&
         request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick']) &&
-        request.resource.data.ts == request.time; // O4: ts must match server time — prevents client clock manipulation
-      allow update, delete: if false; // O5: write-once
+        request.resource.data.ts == request.time;
+      allow update, delete: if false;
     }
 
+    // Dust wallet — requires authentication, owner-only writes
     match /dust_wallet/{docId} {
       allow read: if true;
-      allow create, update: if
+      allow create: if
+        request.auth != null &&
         request.resource.data.keys().hasOnly(['name', 'dust', 'ts']) &&
         request.resource.data.ts == request.time &&
         request.resource.data.name == docId &&
@@ -58,8 +60,19 @@ service cloud.firestore {
         request.resource.data.dust is int &&
         request.resource.data.dust >= 0 &&
         request.resource.data.dust < 1000000;
+      allow update: if
+        request.auth != null &&
+        resource.data.name == docId &&
+        request.resource.data.keys().hasOnly(['name', 'dust', 'ts']) &&
+        request.resource.data.ts == request.time &&
+        request.resource.data.name == docId &&
+        request.resource.data.dust is int &&
+        request.resource.data.dust >= 0 &&
+        request.resource.data.dust < 1000000;
+      allow delete: if false;
     }
 
+    // Catch-all — deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
