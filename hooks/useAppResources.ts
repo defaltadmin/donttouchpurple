@@ -65,8 +65,10 @@ export function useAppResources() {
   const [shopData, setShopDataState] = useState<ShopData>(() => loadShopData());
 
   const setPlayerName = useCallback((name: string) => {
-    localStorage.setItem(LS_KEYS.PLAYER_NAME, name);
-    setPlayerNameState(name);
+    // Sanitize at write time — prevent XSS and excessive length
+    const safe = name.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 20) || 'Player';
+    localStorage.setItem(LS_KEYS.PLAYER_NAME, safe);
+    setPlayerNameState(safe);
   }, []);
 
   const saveShopDataState = useCallback((data: ShopData) => {
@@ -96,10 +98,10 @@ export function useAppResources() {
   }, [playerName]);
 
   const spendDust = useCallback((amount: number) => {
-    if (amount === 0) return;
     const raw = dustRef.current - amount;
     const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
-    const spent = getLifetimeDustSpent() + amount;
+    const actualSpent = dustRef.current - newDust; // actual amount deducted (respects floor at 0)
+    const spent = getLifetimeDustSpent() + actualSpent;
     try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch (_) {}
     setDust(newDust);
     dustRef.current = newDust;

@@ -201,9 +201,11 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const safeName = name.trim().slice(0, 20);
   if (!db || !safeName) return;
   const modules = await ensureFirebaseModules();
+  // Cap dust to prevent client-side manipulation — max realistic lifetime dust is ~50000
+  const cappedDust = Math.max(0, Math.min(50000, Math.floor(dust)));
   await modules.setDoc(modules.doc(db, "dust_wallet", safeName), {
     name: safeName,
-    dust: Math.max(0, Math.min(999999, Math.floor(dust))),
+    dust: cappedDust,
     ts: modules.serverTimestamp(),
   });
 }

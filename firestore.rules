@@ -40,7 +40,8 @@ service cloud.firestore {
         (!('tick' in request.resource.data) ||
           (request.resource.data.tick is int &&
            request.resource.data.tick >= 0 &&
-           request.resource.data.score <= request.resource.data.tick * 3 + 50)) &&
+           request.resource.data.tick <= 600 &&
+           request.resource.data.score <= request.resource.data.tick * 4 + 100)) &&
         request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick']) &&
         request.resource.data.ts == request.time;
       allow update, delete: if false;
