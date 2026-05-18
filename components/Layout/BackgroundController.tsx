@@ -35,7 +35,8 @@ interface BackgroundControllerProps {
 }
 
 export function BackgroundController({ equippedBackground, reducedMotion, screen }: BackgroundControllerProps) {
-  const shouldAnimate = !reducedMotion && (screen === "playing" || screen === "gameover");
+  // Backgrounds active on all screens except loading/onboarding
+  const shouldAnimate = !reducedMotion && screen !== "loading" && screen !== "onboarding";
   const BgComponent = useMemo(() => BG_MAP[equippedBackground] || PurpleRain, [equippedBackground]);
 
   if (!shouldAnimate) return null;

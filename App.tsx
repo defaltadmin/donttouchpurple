@@ -1873,9 +1873,9 @@ export default function App() {
       )}
 
       {/* Mouse Follower Blob - adds glassmorphism feel */}
-      <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={70} opacity={0.5} delay={0.12} />
-      {/* Mouse Trail - subtle particle effect during gameplay */}
-      {screen === "playing" && <MouseTrail enabled={!reducedMotion} />}
+      <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={30} opacity={0.5} delay={0.12} />
+      {/* Mouse Trail - subtle particle effect on all screens */}
+      <MouseTrail enabled={!reducedMotion} />
 
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
       {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}

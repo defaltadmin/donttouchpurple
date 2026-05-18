@@ -43,9 +43,9 @@ function resetParticle(p: Particle) {
 }
 
 export function MouseTrail({
-  particleCount = 3,
-  fadeSpeed = 0.015,
-  gravity = 0.08,
+  particleCount = 5,
+  fadeSpeed = 0.02,
+  gravity = 0.02,
   enabled = true,
 }: MouseTrailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -76,7 +76,7 @@ export function MouseTrail({
         const dx = x - lastPosRef.current.x;
         const dy = y - lastPosRef.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 5) return;
+        if (dist < 3) return;
       }
 
       lastPosRef.current = { x, y };
@@ -92,8 +92,8 @@ export function MouseTrail({
         p.vx = Math.cos(angle) * speed - 0.5;
         p.vy = Math.sin(angle) * speed - 0.5;
         p.alpha = 0.8 + Math.random() * 0.2;
-        p.size = Math.random() * 3 + 1;
-        p.hue = Math.random() * 60 + 160;
+        p.size = Math.random() * 4 + 2;
+        p.hue = Math.random() * 80 + 260; // 260-340 = purple/magenta range
       }
     };
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface MouseFollowerProps {
   color?: string;
@@ -15,10 +15,10 @@ export function MouseFollower({
   opacity = 0.6,
   delay = 0.15,
 }: MouseFollowerProps) {
+  const elRef = useRef<HTMLDivElement>(null);
   const posRef = useRef({ x: -size, y: -size });
   const targetRef = useRef({ x: -size, y: -size });
   const rafRef = useRef<number | null>(null);
-  const [style, setStyle] = useState({ left: -size, top: -size, opacity: 0 });
 
   useEffect(() => {
     const handleMove = (e: MouseEvent) => {
@@ -29,19 +29,18 @@ export function MouseFollower({
       const dx = targetRef.current.x - posRef.current.x;
       const dy = targetRef.current.y - posRef.current.y;
 
-      // Ease toward target (lower = more lag/inertia)
       posRef.current.x += dx * delay;
       posRef.current.y += dy * delay;
 
-      // Fade in when moving, fade out when stopped
       const isMoving = Math.abs(dx) > 1 || Math.abs(dy) > 1;
-      const targetOpacity = isMoving ? opacity : 0;
+      const targetOpacity = isMoving ? opacity : opacity * 0.3; // Subtle glow when stationary
 
-      setStyle({
-        left: posRef.current.x - size / 2,
-        top: posRef.current.y - size / 2,
-        opacity: targetOpacity,
-      });
+      // Update DOM directly — no React re-render
+      if (elRef.current) {
+        elRef.current.style.left = `${posRef.current.x - size / 2}px`;
+        elRef.current.style.top = `${posRef.current.y - size / 2}px`;
+        elRef.current.style.opacity = String(targetOpacity);
+      }
 
       rafRef.current = requestAnimationFrame(animate);
     };
@@ -57,17 +56,18 @@ export function MouseFollower({
 
   return (
     <div
+      ref={elRef}
       className="mouse-follower-blob"
       style={{
         position: "fixed",
-        left: style.left,
-        top: style.top,
+        left: -size,
+        top: -size,
         width: size,
         height: size,
         borderRadius: "50%",
         background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
         filter: `blur(${blur}px)`,
-        opacity: style.opacity,
+        opacity: 0,
         pointerEvents: "none",
         zIndex: 1,
         transition: "opacity 0.3s ease",
