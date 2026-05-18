@@ -953,18 +953,19 @@ destroy(): void {
       this.dda.reset((data.ddaSpawnRate as number) ?? 1200);
       const p1 = data.p1 as Record<string, unknown> | undefined;
       if (p1) {
-        this.p1.score = (p1.score as number) ?? 0;
-        this.p1.health = (p1.health as number) ?? GAME.MAX_HEARTS;
-        this.p1.streak = (p1.streak as number) ?? 0;
-        this.p1.gridStage = (p1.gridStage as number) ?? 0;
-        this.p1.stageProgress = (p1.stageProgress as number) ?? 0;
-        this.p1.patternIdx = (p1.patternIdx as number) ?? 0;
+        // Bounds checking — clamp values to prevent tampered session data
+        this.p1.score = Math.max(0, Math.min(9999, (p1.score as number) ?? 0));
+        this.p1.health = Math.max(0, Math.min(GAME.MAX_HEARTS + 2, (p1.health as number) ?? GAME.MAX_HEARTS));
+        this.p1.streak = Math.max(0, Math.min(999, (p1.streak as number) ?? 0));
+        this.p1.gridStage = Math.max(0, Math.min(10, (p1.gridStage as number) ?? 0));
+        this.p1.stageProgress = Math.max(0, Math.min(999, (p1.stageProgress as number) ?? 0));
+        this.p1.patternIdx = Math.max(0, Math.min(EVOLVE_PATTERNS.length - 1, (p1.patternIdx as number) ?? 0));
         this.p1.shield = (p1.shield as boolean) ?? false;
-        this.p1.shieldCount = (p1.shieldCount as number) ?? 0;
-        this.p1.freezeEnd = (p1.freezeEnd as number) ?? 0;
-        this.p1.multiplierEnd = (p1.multiplierEnd as number) ?? 0;
-        this.p1.storedFreezeCharges = (p1.storedFreezeCharges as number) ?? 0;
-        this.p1.storedShieldCharges = (p1.storedShieldCharges as number) ?? 0;
+        this.p1.shieldCount = Math.max(0, Math.min(5, (p1.shieldCount as number) ?? 0));
+        this.p1.freezeEnd = Math.max(0, (p1.freezeEnd as number) ?? 0);
+        this.p1.multiplierEnd = Math.max(0, (p1.multiplierEnd as number) ?? 0);
+        this.p1.storedFreezeCharges = Math.max(0, Math.min(10, (p1.storedFreezeCharges as number) ?? 0));
+        this.p1.storedShieldCharges = Math.max(0, Math.min(10, (p1.storedShieldCharges as number) ?? 0));
         this.p1.alive = (p1.alive as boolean) ?? true;
         this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
         const pat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
