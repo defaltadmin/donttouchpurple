@@ -259,6 +259,19 @@
 | F1 | Flaky metrics test (toBeCloseTo decimal precision) | metrics.test.ts | ✅ FIXED |
 | F2 | Framer-motion variant type narrowing | HowToPlay.tsx | ✅ FIXED |
 | F3 | Firebase auth type cast | firebase.ts | ✅ FIXED |
-| F4 | Dependabot: 2 moderate (vite/esbuild) | — | ⏭️ Requires vite 6.x major upgrade |
+| F4 | Dependabot: vite 5.4→7.3 upgrade | vite.config.ts, vitest.config.ts, package.json | ✅ FIXED |
+| F5 | App.tsx split: 7 memoized components extracted | App.tsx + 7 new files | ✅ DONE — 2617→2364 lines (-253) |
 
-**Final: 136/136 tests passing. 24 commits ahead of main. All pushed.**
+**Final: 136/136 tests passing. 31 commits ahead of main. All pushed.**
+
+### App.tsx Components Extracted (2026-05-18)
+| Component | File | Lines Saved |
+|-----------|------|-------------|
+| PauseOverlay | components/Screens/PauseOverlay.tsx | ~70 |
+| EnergyPopup | components/Screens/EnergyPopup.tsx | ~40 |
+| InstallBanner | components/Screens/InstallBanner.tsx | ~30 |
+| QuickSettings | components/Settings/QuickSettings.tsx | ~66 |
+| BossOverlay | components/HUD/BossOverlay.tsx | ~50 |
+| ShareModal | components/Screens/ShareModal.tsx | ~9 |
+| GameHeader | components/HUD/GameHeader.tsx | ~7 |
+| GameArea | components/HUD/GameArea.tsx | ~34 |
