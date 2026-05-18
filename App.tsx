@@ -101,6 +101,7 @@ import { EnergyPopup } from "./components/Screens/EnergyPopup";
 import { InstallBanner } from "./components/Screens/InstallBanner";
 import { QuickSettings } from "./components/Settings/QuickSettings";
 import { BossOverlay } from "./components/HUD/BossOverlay";
+import { ShareModal } from "./components/Screens/ShareModal";
 
 // Components - Settings & Shop
 import { KeyBinder } from "./components/Settings/KeyBinder";
@@ -1919,17 +1920,7 @@ export default function App() {
       )}
 
       {showShare && shareUrl && (
-        <div className="dtp-modal-backdrop" onClick={() => setShowShare(false)} aria-hidden="true">
-          <div className="dtp-share-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-            <h2>Share Score</h2>
-            <img src={shareUrl} alt="Score card" className="dtp-share-preview" />
-            <div className="dtp-share-actions">
-              <button onClick={() => { navigator.clipboard?.writeText(window.location.href); }} className="dtp-btn dtp-btn-primary">Copy Link</button>
-              <a href={shareUrl} download="donttouchpurple-score.png" className="dtp-btn dtp-btn-secondary">Download PNG</a>
-              <button onClick={() => setShowShare(false)} className="dtp-btn dtp-btn-tertiary">Close</button>
-            </div>
-          </div>
-        </div>
+        <ShareModal shareUrl={shareUrl} onClose={() => setShowShare(false)} />
       )}
 
       {showSettings && (
