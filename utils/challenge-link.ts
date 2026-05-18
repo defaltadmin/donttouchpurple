@@ -1,11 +1,15 @@
 // utils/challenge-link.ts
 import { logger } from './logger';
 
-// HMAC secret loaded from env — falls back to a dev-only placeholder that is
-// intentionally weak so it is obvious when the env var is missing.
+// SECURITY: The HMAC secret MUST be moved server-side (Cloudflare Worker) before production.
+// Client-side secrets are extractable from the JS bundle.
+// For now, we use a dev-only placeholder that disables challenge signing in production
+// unless a real secret is configured.
 const HMAC_SECRET: string =
-  (import.meta as any).env?.VITE_CHALLENGE_SECRET ||
-  'dtp-dev-only-not-secret';
+  (import.meta as any).env?.VITE_CHALLENGE_SECRET || '';
+
+const SIGNING_ENABLED = !!HMAC_SECRET;
+const IS_PROD = typeof window !== "undefined" && window.location.hostname === "game.mscarabia.com";
 
 async function _importKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey(
@@ -38,12 +42,16 @@ async function verifyPayload(score: number, seed: string, hearts: number, sig: s
 
 export const challengeLink = {
   async generate(score: number, seed: string, hearts: number): Promise<string> {
-    const sig = await signPayload(score, seed, hearts);
     const base = window.location.origin + window.location.pathname;
     const params = new URLSearchParams({
       challenge: '1', seed, score: String(score), hearts: String(hearts),
-      ref: navigator.language || 'global', sig,
+      ref: navigator.language || 'global',
     });
+    if (SIGNING_ENABLED) {
+      params.set('sig', await signPayload(score, seed, hearts));
+    } else {
+      logger.warn('Challenge signing disabled — no HMAC secret configured');
+    }
     return `${base}?${params.toString()}`;
   },
 
@@ -67,8 +75,27 @@ export const challengeLink = {
     const ref    = p.get('ref')   || 'global';
 
     if (!sig) {
+      if (!SIGNING_ENABLED) {
+        // Production without signing = reject all challenges
+        if (IS_PROD) {
+          logger.warn('Challenge signing not configured in production — rejecting');
+          return { isChallenge: true, valid: false };
+        }
+        // Dev mode: accept unsigned challenges
+        return { isChallenge: true, valid: true, seed, score, hearts, ref };
+      }
       logger.warn('Challenge URL missing signature — treating as invalid');
       return { isChallenge: true, valid: false };
+    }
+
+    if (!SIGNING_ENABLED) {
+      // Production without signing = reject all challenges
+      if (IS_PROD) {
+        logger.warn('Challenge has signature but no HMAC secret configured in production — rejecting');
+        return { isChallenge: true, valid: false };
+      }
+      logger.warn('Challenge URL has signature but no HMAC secret configured — accepting');
+      return { isChallenge: true, valid: true, seed, score, hearts, ref };
     }
 
     const valid = await verifyPayload(score, seed, hearts, sig);
