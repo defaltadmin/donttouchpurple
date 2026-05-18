@@ -161,32 +161,10 @@ export class TickProcessor {
       if (!ref.alive) continue;
 
       ref.active.forEach(c => {
-        if (c.clicked || c.type !== "hold") return;
-        const hold = c as import("../types").HoldCell;
-        const deadline = hold.holdStart
-          ? hold.holdStart + hold.holdRequired + 500
-          : hold.spawnedAt + hold.holdRequired + 1500;
-        if (ctx.now > deadline) {
-          hold.clicked = true;
-          const dmg = mode === "evolve" ? 0.5 : 1;
-          if (!ctx.devGodMode) {
-            if (ref.shieldCount > 0) { ctx.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; }
-            else {
-              ctx.dda.recordAttempt(false, 0, true);
-              ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
-              ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
-              ctx.emit({ type: "toast", message: "⏳ Hold expired!" });
-              if (ref.health < 1) {
-                ref.alive = false;
-                const other = ctx.numPlayers === 2 ? (pi === 0 ? ctx.p2.alive : ctx.p1.alive) : false;
-                ctx.triggerGameOver(ctx.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
-              }
-            }
-          }
-        }
+        if (c.clicked) return;
       });
 
-      if (ref.active.some(c => !c.clicked && (c.type === "hold" || c.type === "ice"))) { ref.cells = activeToCellsP(ref.active, pat); continue; }
+      if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeToCellsP(ref.active, pat); continue; }
       const nextPatIdx = mode === "evolve" ? pickPattern(ctx.rng, curStage, patIdx, ref.score) : 0;
       ref.patternIdx = nextPatIdx;
       const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };

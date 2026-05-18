@@ -1,10 +1,11 @@
 import type { BossEventType } from "../types";
 
-const BOSS_ROTATION: BossEventType[] = ["storm", "inversion", "blackout"];
+// Only inversion provides genuine skill expression — storm is chaos, blackout contradicts core mechanic
+const BOSS_ROTATION: BossEventType[] = ["inversion"];
 
 const DURATIONS: Record<BossEventType, number> = {
   storm: 8000,
-  inversion: 6000,
+  inversion: 4000, // Reduced from 6s — 4s is enough for brain-rewiring challenge
   blackout: 5000,
 };
 

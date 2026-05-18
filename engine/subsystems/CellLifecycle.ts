@@ -95,10 +95,9 @@ export function spawnActive(
   }
 
   let evolveSpecial: CellType | null = null;
-  if (isEvolve && stage >= 3) {
+  if (isEvolve && stage >= 2) { // Special cells start at stage 2 (was 3 — reduces difficulty spike)
     const r = rng();
-    if (r < 0.10) evolveSpecial = "ice";
-    else if (r < 0.17) evolveSpecial = "hold";
+    if (r < 0.12) evolveSpecial = "ice"; // Only ice — hold cells removed (contradict tap-based core)
   }
 
   return idxs.map((idx, i) => {
