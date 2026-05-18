@@ -46,6 +46,11 @@ export const achievementSystem = {
     try {
       const saved = JSON.parse(localStorage.getItem(ACH_KEY) || '[]');
       this.unlocked = new Set(saved);
+      // Sync registry entries so isUnlocked checks on registry objects work
+      for (const id of this.unlocked) {
+        const ach = this.registry.get(id);
+        if (ach) ach.unlocked = true;
+      }
     } catch {}
   },
 

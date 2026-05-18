@@ -6,7 +6,7 @@ interface ComboState { count: number; windowStart: number; multiplier: number; }
 export const bossEngine = {
   state: { active: false, shieldHits: 0, maxShield: 5, phase: 1 } as BossState,
   combo: { count: 0, windowStart: 0, multiplier: 1 } as ComboState,
-  COMBO_WINDOW_MS: 200,
+  COMBO_WINDOW_MS: 400,
   COMBO_THRESHOLD: 3,
 
   activate(maxHits = 5) {
@@ -58,7 +58,8 @@ export const bossEngine = {
 
     if (this.state.phase <= 3) {
       window.dispatchEvent(new CustomEvent('dtp:boss:shuffle-grid', { detail: {} }));
-      setTimeout(() => this.activate(this.state.maxShield), 800);
+      // Don't call activate() — it resets phase to 1. Just reset combo for next phase.
+      this.resetCombo();
     } else {
       this.deactivate();
     }
@@ -66,6 +67,7 @@ export const bossEngine = {
 
   deactivate() {
     this.state.active = false;
+    this.resetCombo();
     window.dispatchEvent(new CustomEvent('dtp:boss:complete', { detail: {} }));
     logger.info('Boss defeated');
   },
