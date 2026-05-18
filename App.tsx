@@ -1245,6 +1245,11 @@ export default function App() {
     p1Keys,
     p2Keys,
     p1State: snapshot?.p1 ?? null,
+  });
+
+  // Memoize pressing Sets to prevent unnecessary re-renders
+  const pressing1 = React.useMemo(() => new Set(pressP1), [pressP1]);
+  const pressing2 = React.useMemo(() => new Set(pressP2), [pressP2]);
     p2State: numPlayers === 2 ? snapshot?.p2 ?? null : null,
     onTap: handleTap,
     onHoldStart: handleHoldStart,
@@ -2422,7 +2427,7 @@ export default function App() {
           <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim}
             onTap={i => { handleTap(1, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
             onHoldStart={i => handleHoldStart(1,i)} onHoldEnd={i => handleHoldEnd(1,i)}
-            keyLabels={p1Keys} showKeys={inputMode === "keyboard"} pressing={new Set(pressP1)}
+            keyLabels={p1Keys} showKeys={inputMode === "keyboard"} pressing={pressing1}
             label={is2P ? "P1" : null} heartAnim={heartAnimP1} mode={gameMode}
             colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid1}
             cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
@@ -2446,7 +2451,7 @@ export default function App() {
              <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
                onTap={i => { handleTap(2, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
               onHoldStart={i => handleHoldStart(2,i)} onHoldEnd={i => handleHoldEnd(2,i)}
-              keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={new Set(pressP2)}
+              keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={pressing2}
               label="P2" heartAnim={heartAnimP2} mode={gameMode}
               colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid2}
               cellShape={snapshot.cellShape} rareMode={snapshot.rareMode}
