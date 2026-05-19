@@ -303,6 +303,21 @@
 | M3 | Removed hold cells (contradict tap core) | CellLifecycle.ts, TickProcessor.ts | ✅ DONE |
 | M4 | Special cells start at stage 2 (was 3) | CellLifecycle.ts | ✅ DONE |
 
+---
+
+## Critical Bug Fixes (2026-05-19)
+
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| C1 | Game over soft lock — setScreen("gameover") at end of async function, throws prevent reaching it | App.tsx | ✅ FIXED — moved to top before async work |
+| C2 | Pause/Resume breaks game — 16ms delay + visibility handler resumes engine without syncing React state | App.tsx | ✅ FIXED — removed delay, sync setPaused(false) |
+| C3 | Tutorial shows every game — seen flag only set for evolve mode | App.tsx | ✅ FIXED — always mark as seen |
+| C4 | Menu soft lock after quit — unnecessary resume-then-pause | App.tsx | ✅ FIXED — removed resumeEngine() call |
+| C5 | CSS syntax error in performance.css — class selector inside @media | styles/performance.css | ✅ FIXED — split into separate blocks |
+| C6 | Backgrounds not on main menu — shouldAnimateBackground excludes "menu" | App.tsx | ✅ FIXED — added "menu" to condition |
+| C7 | CSP blocks Vite dev server scripts | index.html | ✅ FIXED — removed CSP meta tag |
+| C8 | Test failure — medpack cell doesn't give score | __tests__/GameEngine.test.ts | ✅ FIXED — use rng=0.5, filter out powerups |
+
 **Final: 130/130 tests passing. 0 type errors. Build passes. 0 vulnerabilities. Merged to main. All pushed.**
 
 ### App.tsx Components Extracted (2026-05-18)
