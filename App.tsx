@@ -37,6 +37,8 @@ import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
 import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys, saveKeys, toLabel } from "./config/keybindings";
 import { SHOP_THEMES, SHOP_TRAILS } from "./config/powerupWeights";
 import { setAudioMuted, setAudioVolume, setHapticsEnabled, playVolumeChime, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
+import { useGameSettings } from "./hooks/useGameSettings";
+import { useDustEconomy } from "./hooks/useDustEconomy";
 import { useInputHandler } from "./hooks/useInputHandler";
 import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups, HoldCell } from "./engine/types";
 
@@ -213,19 +215,7 @@ export default function App() {
   }, []);
 
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
-  const [dust, setDust] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEYS.DUST);
-      const parsed = parseInt(raw ?? "0", 10);
-      if (isNaN(parsed) || !isFinite(parsed) || parsed < 0 || parsed > 9_999_999) {
-        localStorage.setItem(LS_KEYS.DUST, "0");
-        return 0;
-      }
-      return parsed;
-    } catch { return 0; }
-  });
-  const dustRef = useRef(dust);
-  useEffect(() => { dustRef.current = dust; }, [dust]);
+  const { dust, dustRef, setDust, addDust, spendDust, persistDust, getLifetimeDustSpent, getBotAccuracy } = useDustEconomy(playerName);
   const scoreSubmittedRef = useRef(false);
 
   const { energyData, refillEnergy, spendEnergy } = useEnergyStore();
@@ -268,54 +258,7 @@ export default function App() {
   const [numPlayers, setNumPlayers]  = useState<NumPlayers>(1);
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
   const [practiceMode, setPracticeMode] = useState(false);
-  const [muted, setMuted]            = useState(() => {
-    try { return localStorage.getItem("dtp_muted") === "true"; } catch { return false; }
-  });
-  const [volume, setVolumeState]     = useState(() => {
-    try { return parseFloat(localStorage.getItem("dtp_volume") || "0.7"); } catch { return 0.7; }
-  });
-  const [haptics, setHapticsState] = useState(() => {
-    try { return localStorage.getItem("dtp_haptics") !== "false"; } catch { return true; }
-  });
-  const [screenShake, setScreenShake] = useState(() => {
-    try { return localStorage.getItem("dtp_screen_shake") !== "false"; } catch { return true; }
-  });
-  const [reducedMotion, setReducedMotionState] = useState(() => {
-    try {
-      const stored = localStorage.getItem("dtp_reduced_motion");
-      if (stored !== null) return stored === "true";
-      return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    } catch { return false; }
-  });
-  const setScreenShakePersisted = useCallback((v: boolean) => {
-    setScreenShake(v);
-    try { localStorage.setItem("dtp_screen_shake", v.toString()); } catch {}  
-    fbLogEvent("setting_changed", { setting: "screen_shake", enabled: v });
-  }, []);
-  const setReducedMotion = useCallback((v: boolean) => {
-    setReducedMotionState(v);
-    if (v) setScreenShakePersisted(false);
-    try { localStorage.setItem("dtp_reduced_motion", v.toString()); } catch {}  
-    fbLogEvent("setting_changed", { setting: "reduced_motion", enabled: v });
-  }, [setScreenShakePersisted]);
-  const backgroundFPS = reducedMotion ? 30 : 60;
-  const setVolume = useCallback((v: number) => {
-    setVolumeState(v);
-    try { localStorage.setItem("dtp_volume", v.toString()); } catch {}  
-    setAudioVolume(v);
-    playVolumeChime();
-  }, []);
-  const toggleMuted = useCallback((m: boolean) => {
-    setMuted(m);
-    try { localStorage.setItem("dtp_muted", m.toString()); } catch {}  
-    setAudioMuted(m);
-  }, []);
-  const setHaptics = useCallback((enabled: boolean) => {
-    setHapticsState(enabled);
-    try { localStorage.setItem("dtp_haptics", enabled.toString()); } catch {}  
-    setHapticsEnabled(enabled);
-    fbLogEvent("setting_changed", { setting: "haptics", enabled });
-  }, []);
+  const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion, backgroundFPS } = useGameSettings();
   const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
@@ -467,48 +410,9 @@ export default function App() {
     setShopDataState(data);
   }, []);
 
-  const persistDust = useCallback((d: number) => {
-    try { localStorage.setItem(LS_KEYS.DUST, d.toString()); } catch {}  
-  }, []);
-
   const switchPlayer = useCallback(() => {
     // Toggle between player names or show name entry
     setShowNameEntry(true);
-  }, []);
-
-  const getLifetimeDustSpent = useCallback(() => {
-    try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch { return 0; }
-  }, []);
-
-  const getBotAccuracy = useCallback(() => {
-    const spent = getLifetimeDustSpent();
-    if (spent >= 2000) return 0.95;
-    if (spent >= 500) return 0.90;
-    return 0.85;
-  }, [getLifetimeDustSpent]);
-
-  const addDust = useCallback((amount: number, source: string): number => {
-    if (isNaN(amount) || !isFinite(amount) || amount <= 0) return dustRef.current;
-    const base = isNaN(dustRef.current) ? 0 : dustRef.current;
-    const newDust = base + amount;
-    setDust(newDust);
-    dustRef.current = newDust;
-    localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-    getFirebase().then(fb => fb.fbSyncDust(playerName, newDust).catch(() => {})).catch(e => logger.warn('Firebase operation failed', e));
-    logResourceEvent("Source", "Dust", source, "earned", amount);
-    return newDust;
-  }, [playerName]);
-
-  const spendDust = useCallback((amount: number) => {
-    if (amount === 0) return;
-    const raw = dustRef.current - amount;
-    const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
-    const spent = getLifetimeDustSpent() + amount;
-    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {}  
-    setDust(newDust);
-    dustRef.current = newDust;
-    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}  
-    logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
   }, []);
 
   const [p1Keys, setP1Keys] = useState(() => loadKeys(LS_KEYS.P1_KEYS, DEFAULT_P1_KEYS));
@@ -1853,7 +1757,7 @@ export default function App() {
           onResume={resumeGame}
           onRestart={() => { resumeEngine(); setPaused(false); setTimeout(() => { startEngine(); }, 50); }}
           onExit={() => setShowExitConfirm(true)}
-          onToggleMute={() => setMuted(m => !m)}
+          onToggleMute={() => toggleMuted(!muted)}
           onToggleFS={toggleFS}
           onOpenSettings={() => { setSettingsFromPause(true); setShowSettings(true); }}
           focusTrapRef={focusTrapRef}
