@@ -367,3 +367,50 @@
 - **TS Fix:** Added PulseField, GlitchGrid, AmbientFlow, Nebula, DigitalRain, AuroraBorealis to ShopBackground component type union.
 
 **Final: 134/134 tests passing. 0 type errors. Build passes.**
+
+---
+
+## Full Optimization Pass (2026-05-19)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Performance — chunk splitting & lazy loading | ✅ DONE |
+| 2 | i18n — StartScreen, GameOver, ShopPanel (39 new keys) | ✅ DONE |
+| 3 | App.tsx quick win extractions (5 files) | ✅ DONE |
+| 4 | Hook extraction — useGameSettings, useDustEconomy, useUIFlags | ✅ DONE |
+| 5 | Hook extraction — large callbacks | ⏭ SKIPPED (complex, low ROI) |
+| 6 | Hook extraction — effects & JSX | ⏭ SKIPPED (complex, low ROI) |
+| 7 | Tech debt fixes | ✅ DONE |
+
+**Phase 1 — Performance:**
+- Reorder manualChunks: framer-motion BEFORE react (fixes chunk merge bug)
+- Add explicit @sentry and firebase chunk rules (vendor 1068KB → 107KB)
+- Lazy-load GameAnalytics SDK (defer 92KB from initial paint)
+- Lazy-load @sentry/react tags (defer 432KB from initial paint)
+
+**Phase 2 — i18n:**
+- 39 new translation keys across 5 locales (en/es/fr/ja/pt)
+- StartScreen: menu labels, pill options, buttons, lock messages
+- GameOver: round/game over, winner announcements, human limit
+- ShopPanel: tab labels, hint texts, equip/locked states
+
+**Phase 3 — Extractions:**
+- services/sentry.ts — lazy Sentry loader + safe wrapper
+- components/ErrorBoundary.tsx — error boundary class
+- components/Settings/NameChangeForm.tsx — name input form
+- components/ColorblindFilters.tsx — SVG filters + getCBFilterStyle
+- utils/shop-storage.ts — loadShopData/saveShopData/ShopData type
+
+**Phase 4 — Hooks:**
+- hooks/useGameSettings.ts — muted, volume, haptics, screenShake, reducedMotion
+- hooks/useDustEconomy.ts — dust state, addDust, spendDust, persistDust, bot accuracy
+- hooks/useUIFlags.ts — 20 boolean UI state flags
+
+**Phase 7 — Tech Debt:**
+- CellLifecycle.ts: allocate cells array inside activeToCellsP() (eliminate shared mutable state)
+- GameEngine.ts: add clock domain convention documentation
+- Cell/index.tsx: remove Date.now() from render path for bomb urgency
+
+**App.tsx: 2323 → 2111 lines (-212, -9.1%)**
+
+**Final: 134/134 tests passing. 0 type errors. Build passes.**
