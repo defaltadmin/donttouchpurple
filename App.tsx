@@ -172,13 +172,10 @@ export default function App() {
   const [dailyComplete, setDailyComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
-  const assetGateRef = useRef({ setProgress: (_fn: (p: number) => void) => {}, loadAll: () => Promise.resolve() });
   const [bossUi, setBossUi] = useState<{ active: boolean; shieldHits: number; maxShield: number; phase: number }>({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
   const [comboPop, setComboPop] = useState(false);
-  const [gateReady, setGateReady] = useState(false);
-  const [gateLoadPct, setGateLoadPct] = useState(0);
 
   // Resume session state
   const [resumeReady, setResumeReady] = useState(false);
@@ -284,21 +281,6 @@ export default function App() {
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
-
-  // A/B Testing Foundation (ready for Cloudflare Worker routing)
-  // IMPORTANT: must be pure during render. Derive variant in an initializer.
-  const _abTestVariant = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem('dtp_ab_variant');
-      if (saved) return saved;
-      const variant = Math.random() > 0.5 ? 'A' : 'B';
-      localStorage.setItem('dtp_ab_variant', variant);
-      return variant;
-    } catch {
-      return 'A';
-    }
-  })[0];
-
 
   // Aggressive preload on menu (Shop + default background)
   useEffect(() => {
@@ -1018,9 +1000,6 @@ export default function App() {
     onPause: () => { pauseEngine(); setPaused(true); },
   });
 
-  // Memoize pressing Sets to prevent unnecessary re-renders
-  const pressing1 = React.useMemo(() => new Set(pressP1), [pressP1]);
-  const pressing2 = React.useMemo(() => new Set(pressP2), [pressP2]);
 
   useEffect(() => { setAudioMuted(muted); }, [muted]);
   useEffect(() => { setAudioVolume(volume); }, [volume]);
@@ -1120,12 +1099,6 @@ export default function App() {
     document.documentElement.style.setProperty("--accent", t.colors.accent);
     document.documentElement.style.setProperty("--text", t.colors.text);
   }, [shopData.equippedTheme]);
-
-  useEffect(() => {
-    const gate = assetGateRef.current;
-    gate.setProgress(setGateLoadPct);
-    gate.loadAll().then(() => setGateReady(true));
-  }, []);
 
   useEffect(() => {
     const pl = preloaderRef.current;
@@ -1230,11 +1203,11 @@ export default function App() {
       if (queue.length > 0) {
         setAchievementQueue(prev => [...prev, queue[0]]);
         localStorage.setItem('dtp:achievement-toasts', JSON.stringify(queue.slice(1)));
-        toastTimer.current = setTimeout(processQueue, 3500);
+        toastTimeoutRef.current = setTimeout(processQueue, 3500);
       }
     };
     processQueue();
-    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
+    return () => { if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current); };
   }, []);
 
   useEffect(() => {
@@ -1285,7 +1258,7 @@ export default function App() {
     return () => { unsub(); gesture.destroy(); };
   }, [paused, resumeGame, pauseGame]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((skipTutorialCheck = false) => {
     resumeCheckedRef.current = false;
     setResumeReady(false);
     setResumeData(null);
@@ -1293,7 +1266,7 @@ export default function App() {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
     }
-    if (!evolveTutorialSeen) {
+    if (!skipTutorialCheck && !evolveTutorialSeen) {
       setShowTutorial(true);
       return;
     }
@@ -1308,6 +1281,9 @@ export default function App() {
     const next = gamesPlayed + 1;
     localStorage.setItem('dtp-games-played', String(next));
     setGamesPlayed(next);
+    if (next === 1) {
+      localStorage.setItem('dtp-show-rewards-after-first-game', '1');
+    }
     const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
     safeSentry.addBreadcrumb({
       category: "game",
@@ -1329,46 +1305,14 @@ export default function App() {
     }
   }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, numPlayers, inputMode, evolveTutorialSeen, spendEnergy, setScreen]);
 
-  // Tutorial close handler
-  const handleTutorialClose = () => {
+  // Tutorial close handler — mark seen, then delegate to startGame
+  const handleTutorialClose = useCallback(() => {
     setShowTutorial(false);
-    // Mark tutorial as seen (always, not just evolve mode)
     localStorage.setItem(EVOLVE_TUTORIAL_SEEN_KEY, '1');
     setEvolveTutorialSeen(true);
-    if (!practiceMode && energyData.count <= 0) {
-      toast$("⚡ No energy! Wait or refill with 💜 dust.");
-      return;
-    }
-    const next = gamesPlayed + 1;
-    localStorage.setItem('dtp-games-played', String(next));
-    setGamesPlayed(next);
-    if (next === 1) {
-      // Show rewards hub after game-over, not during active play — set a flag
-      localStorage.setItem('dtp-show-rewards-after-first-game', '1');
-    }
-    if (!practiceMode) spendEnergy();
-    setScreen("playing");
-    setPaused(false);
-    scoreSubmittedRef.current = false;
-    peakStreakRef.current = 0;
-    dustAtStartRef.current = dustRef.current;
-    pbFlashedRef.current = false;
-    const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
-    safeSentry.addBreadcrumb({ category: "tutorial", message: "tutorial_completed", level: "info", data: { game: next } });
-    getFirebase().then(fb => fb.fbLogEvent("game_start", {
-      mode: gameMode,
-      players: numPlayers,
-      input: inputMode,
-      practice: practiceMode,
-      replay_seed: forceSeed ?? 0,
-      tutorial_completed: true,
-    })).catch(e => logger.warn('Firebase operation failed', e));
-    logProgressionEvent("Start", gameMode, 0, 0);
-    startEngine(forceSeed);
-    if (forceSeed !== undefined) {
-      clearReplaySeed();
-    }
-  };
+    safeSentry.addBreadcrumb({ category: "tutorial", message: "tutorial_completed", level: "info" });
+    startGame(true);
+  }, [startGame, setShowTutorial, setEvolveTutorialSeen, EVOLVE_TUTORIAL_SEEN_KEY]);
 
   const goMenu = useCallback(() => {
     resumeCheckedRef.current = false;
@@ -1987,8 +1931,8 @@ export default function App() {
             p1Keys={p1Keys}
             p2Keys={p2Keys}
             inputMode={inputMode}
-            pressing1={pressing1}
-            pressing2={pressing2}
+            pressing1={pressP1}
+            pressing2={pressP2}
             cbActive={cbActive}
             cbFilter={cbFilter}
             shopData={shopData}
