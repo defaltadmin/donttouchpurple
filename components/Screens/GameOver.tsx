@@ -88,12 +88,12 @@ export function GameOver({
 
   return (
     <>
-      <div className="go-eyebrow">{is2P ? "ROUND OVER" : "GAME OVER"}</div>
+      <div className="go-eyebrow">{is2P ? t('gameover.round_over') : t('gameover.game_over')}</div>
 
       {is2P ? (
         <>
           <div className="go-winner">
-            {winner === "p1" ? "🏆 P1 Wins!" : winner === "p2" ? "🏆 P2 Wins!" : "🤝 Tie!"}
+            {winner === "p1" ? t('gameover.p1_wins') : winner === "p2" ? t('gameover.p2_wins') : t('gameover.tie')}
           </div>
           <div className="go-pair">
             <div className="go-col"><div className="go-plbl" style={{ color: "#60a5fa" }}>P1</div><div className="go-score">{p1Score}</div></div>
@@ -103,7 +103,7 @@ export function GameOver({
         </>
       ) : (
         <>
-          {isHumanLimit && <div className="go-humanlimit">HUMAN LIMIT</div>}
+          {isHumanLimit && <div className="go-humanlimit">{t('gameover.human_limit')}</div>}
           {isNewBest && <NewBestBanner />}
           <div className="go-score-row">
             <div className={`go-num go-num--anim${isNewBest ? " hud-val--pb" : ""}`}>{displayScore}</div>

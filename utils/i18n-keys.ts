@@ -32,4 +32,16 @@ export type I18nKey =
   | 'toast.defused' | 'toast.bomb_exploded' | 'toast.overheal'
   | 'toast.shield_pickup' | 'toast.multiplier_pickup' | 'toast.freeze_pickup'
   | 'toast.heart_pickup' | 'toast.energy_refilled' | 'toast.energy_full' | 'toast.level_up'
-  | 'error.crash' | 'error.copy_debug' | 'error.retry' | 'error.try_again';
+  | 'error.crash' | 'error.copy_debug' | 'error.retry' | 'error.try_again'
+  | 'menu.game' | 'menu.players' | 'menu.input' | 'menu.mode'
+  | 'menu.classic' | 'menu.evolve' | 'menu.solo' | 'menu.duo'
+  | 'menu.touch' | 'menu.practice' | 'menu.normal' | 'menu.play_btn'
+  | 'menu.refill' | 'menu.guest' | 'menu.locked_evolve' | 'menu.locked_duo'
+  | 'gameover.round_over' | 'gameover.game_over'
+  | 'gameover.p1_wins' | 'gameover.p2_wins' | 'gameover.tie' | 'gameover.human_limit'
+  | 'shop.title' | 'shop.bg' | 'shop.themes' | 'shop.badges' | 'shop.skins'
+  | 'shop.powers' | 'shop.trails' | 'shop.equipped' | 'shop.equip'
+  | 'shop.locked' | 'shop.ready' | 'shop.active_badge'
+  | 'shop.hint_themes' | 'shop.hint_badges' | 'shop.hint_skins'
+  | 'shop.hint_powers' | 'shop.hint_backgrounds' | 'shop.hint_trails'
+  | 'shop.evolve_only';

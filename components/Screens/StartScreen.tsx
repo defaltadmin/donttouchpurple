@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
 import { getObjectiveStreak as _getObjectiveStreak } from "../../config/dailyObjective";
+import { useTranslation } from "../../hooks/useTranslation";
 
 // ─── Types local to menu ──────────────────────────────────────────
 type InputMode = "touch" | "keyboard";
@@ -202,6 +203,7 @@ export function StartScreen({
   resumeReady, resumeData, onResumeGame,
   onToast,
 }: StartScreenProps) {
+  const { t } = useTranslation();
   const isKbd = inputMode === "keyboard";
 
   // Keyboard navigation
@@ -285,7 +287,7 @@ export function StartScreen({
       )}
       {resumeReady && resumeData && onResumeGame && (
         <button onClick={onResumeGame} className="dtp-btn-resume" aria-label="Resume saved game">
-          🔄 Resume Game
+          {"🔄 " + t('menu.resume')}
           <span className="dtp-resume-meta">Score: {resumeData.score as number} | ❤️ {resumeData.hearts as number}</span>
         </button>
       )}
@@ -293,7 +295,7 @@ export function StartScreen({
       <div className="menu-top-row">
         <button className="player-pill" onClick={onSwitchPlayer}>
           <span className="player-pill-icon">{devMode ? "🔧" : "👤"}</span>
-          <span className="player-pill-name">{playerName || "Guest"}{devMode ? " [DEV]" : ""}</span>
+          <span className="player-pill-name">{playerName || t('menu.guest')}{devMode ? " [DEV]" : ""}</span>
           <span className="player-pill-edit">✎</span>
         </button>
         <div className="energy-inline">{energyBar}</div>
@@ -301,41 +303,41 @@ export function StartScreen({
 
       <div className="opt-grid">
         <div className="opt-section">
-          <div className="opt-label">Game</div>
+          <div className="opt-label">{t('menu.game')}</div>
           <PillRow<GameMode>
             options={[
-              { value: "classic", label: "⊞ Classic" },
-              { value: "evolve", label: "∞ Evolve" }
+              { value: "classic", label: t('menu.classic') },
+              { value: "evolve", label: t('menu.evolve') }
             ]}
             value={gameMode}
             disabledOptions={(!isFeatureUnlocked('evolve_mode') && !devMode) ? ['evolve'] : []}
-            onDisabledClick={(m) => onToast?.("Score 500+ in Classic to unlock ∞ Evolve!")}
+            onDisabledClick={(m) => onToast?.(t('menu.locked_evolve'))}
             onChange={(m) => setGameMode(m)}
           />
         </div>
         <div className="opt-section">
-          <div className="opt-label">Players</div>
+          <div className="opt-label">{t('menu.players')}</div>
           <PillRow<NumPlayers>
             options={[
-              { value: 1, label: "① Solo" },
-              { value: 2, label: "② Duo" }
+              { value: 1, label: t('menu.solo') },
+              { value: 2, label: t('menu.duo') }
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
             disabledOptions={(!isFeatureUnlocked('two_player') && !devMode) ? [2] : []}
-            onDisabledClick={(n) => onToast?.("Win 3 Classic games to unlock Duo mode!")}
+            onDisabledClick={(n) => onToast?.(t('menu.locked_duo'))}
             onChange={(n) => setNumPlayers(n)}
           />
         </div>
         <div className="opt-section">
-          <div className="opt-label">Input</div>
+          <div className="opt-label">{t('menu.input')}</div>
           <PillRow<InputMode>
-            options={[{ value: "touch", label: "👆 Touch" }, { value: "keyboard", label: "⌨ Keys" }]}
+            options={[{ value: "touch", label: t('menu.touch') }, { value: "keyboard", label: t('menu.keys') }]}
             value={inputMode} onChange={setInputMode} />
         </div>
         <div className="opt-section">
-          <div className="opt-label">Mode</div>
+          <div className="opt-label">{t('menu.mode')}</div>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "∞ Practice" }, { value: "off", label: "⚡ Normal" }]}
+            options={[{ value: "on", label: t('menu.practice') }, { value: "off", label: t('menu.normal') }]}
             value={practiceMode ? "on" : "off"}
             onChange={(v) => setPracticeMode(v === "on")} />
         </div>
@@ -343,21 +345,21 @@ export function StartScreen({
 
       {(devMode || energyCount > 0) ? (
         <MagneticButton className="btn-play" onClick={onPlay}>
-          PLAY
+          {t('menu.play_btn')}
         </MagneticButton>
       ) : (
         <div className="no-energy-block">
           <EnergyCountdown energyLastRegen={energyLastRegen} />
-          <button className="btn-ghost" onClick={onRefillEnergy} disabled={dust < GAME.DUST_PER_ENERGY}>Refill</button>
+          <button className="btn-ghost" onClick={onRefillEnergy} disabled={dust < GAME.DUST_PER_ENERGY}>{t('menu.refill')}</button>
         </div>
       )}
 
       <div className="menu-links">
-        <button className="btn-icon-sm" onClick={onHowTo} title="How to Play">❓</button>
-        <button className="btn-icon-sm" onClick={onShop} title="Shop">🛒</button>
-        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title="Leaderboard">🏆</button>
-        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title="Rewards">🎁</button>
-        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title="Keys">⌨</button>}
+        <button className="btn-icon-sm" onClick={onHowTo} title={t('menu.how_to_play')}>❓</button>
+        <button className="btn-icon-sm" onClick={onShop} title={t('menu.shop')}>🛒</button>
+        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title={t('menu.leaderboard')}>🏆</button>
+        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')}>🎁</button>
+        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title={t('menu.keys')}>⌨</button>}
       </div>
 
       {/* Screen reader instructions */}

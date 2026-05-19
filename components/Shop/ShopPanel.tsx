@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS, SHOP_TRAILS } from "../../config/powerupWeights";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface StoredPowerups {
   freeze: number;
@@ -46,6 +47,7 @@ export function ShopPanel({
   saveStoredPowerups,
   persistDust,
 }: ShopPanelProps) {
+  const { t } = useTranslation();
   const [shopData, setShopData] = useState(() => loadShopData());
   const [tab, setTab] = useState<"backgrounds" | "themes" | "badges" | "skins" | "powerups" | "trails">(() => {
     try {
@@ -182,24 +184,24 @@ export function ShopPanel({
   return (
     <div className="lb-wrap screen-slide scrollable-screen">
       <div className="lb-header">
-        <span className="lb-title">🛒 Shop</span>
+        <span className="lb-title">{"🛒 " + t('shop.title')}</span>
         <span style={{ fontSize: 13, color: "var(--accent)", fontWeight: 800, fontFamily: "var(--font-ui)" }}>
           💜 {dust.toLocaleString()}
         </span>
       </div>
 
       <div className="shop-tabs">
-        <button className={`shop-tab${tab === "backgrounds" ? " shop-tab--on" : ""}`} onClick={() => { setTab("backgrounds"); localStorage.setItem("dtp-shop-tab", "backgrounds"); }}>🌌 BG</button>
-        <button className={`shop-tab${tab === "themes" ? " shop-tab--on" : ""}`} onClick={() => { setTab("themes"); localStorage.setItem("dtp-shop-tab", "themes"); }}>🎨 Themes</button>
-        <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => { setTab("badges"); localStorage.setItem("dtp-shop-tab", "badges"); }}>🏅 Badges</button>
-        <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => { setTab("skins"); localStorage.setItem("dtp-shop-tab", "skins"); }}>✨ Skins</button>
-        <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => { setTab("powerups"); localStorage.setItem("dtp-shop-tab", "powerups"); }}>⚡ Powers</button>
-        <button className={`shop-tab${tab === "trails" ? " shop-tab--on" : ""}`} onClick={() => { setTab("trails"); localStorage.setItem("dtp-shop-tab", "trails"); }}>✨ Trails</button>
+        <button className={`shop-tab${tab === "backgrounds" ? " shop-tab--on" : ""}`} onClick={() => { setTab("backgrounds"); localStorage.setItem("dtp-shop-tab", "backgrounds"); }}>{"🌌 " + t('shop.bg')}</button>
+        <button className={`shop-tab${tab === "themes" ? " shop-tab--on" : ""}`} onClick={() => { setTab("themes"); localStorage.setItem("dtp-shop-tab", "themes"); }}>{"🎨 " + t('shop.themes')}</button>
+        <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => { setTab("badges"); localStorage.setItem("dtp-shop-tab", "badges"); }}>{"🏅 " + t('shop.badges')}</button>
+        <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => { setTab("skins"); localStorage.setItem("dtp-shop-tab", "skins"); }}>{"✨ " + t('shop.skins')}</button>
+        <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => { setTab("powerups"); localStorage.setItem("dtp-shop-tab", "powerups"); }}>{"⚡ " + t('shop.powers')}</button>
+        <button className={`shop-tab${tab === "trails" ? " shop-tab--on" : ""}`} onClick={() => { setTab("trails"); localStorage.setItem("dtp-shop-tab", "trails"); }}>{"✨ " + t('shop.trails')}</button>
       </div>
 
       {tab === "themes" && (
         <>
-          <div className="shop-hint">Changes game colors &amp; background</div>
+          <div className="shop-hint">{t('shop.hint_themes')}</div>
           <div className="shop-grid">
             {SHOP_THEMES.map((theme) => {
               const owned = shopData.unlockedThemes.includes(theme.id);
@@ -212,7 +214,7 @@ export function ShopPanel({
                   <div className="shop-name">{theme.name}</div>
                   {theme.cost === 0 || owned ? (
                     <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipTheme(theme.id)}>
-                      {equipped ? "✓ On" : "Equip"}
+                      {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= theme.cost ? 1 : 0.4 }} onClick={() => buyTheme(theme.id, theme.cost)} disabled={dust < theme.cost}>
@@ -236,10 +238,10 @@ export function ShopPanel({
 
       {tab === "badges" && (
         <>
-          <div className="shop-hint">Shown next to your name on the leaderboard</div>
+          <div className="shop-hint">{t('shop.hint_badges')}</div>
           {shopData.equippedBadge && (
             <div className="shop-inventory">
-              <span className="shop-inv-lbl">Active badge:</span>
+              <span className="shop-inv-lbl">{t('shop.active_badge')}</span>
               <span className="shop-inv-chip">
                 {SHOP_BADGES.find((badge) => badge.id === shopData.equippedBadge)?.icon} {SHOP_BADGES.find((badge) => badge.id === shopData.equippedBadge)?.name}
               </span>
@@ -258,7 +260,7 @@ export function ShopPanel({
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{badge.desc}</div>
                   {owned ? (
                     <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipBadge(badge.id)}>
-                      {equipped ? "✓ On" : "Equip"}
+                      {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= badge.cost ? 1 : 0.4 }} onClick={() => buyBadge(badge.id, badge.cost)} disabled={dust < badge.cost}>
@@ -274,7 +276,7 @@ export function ShopPanel({
 
       {tab === "skins" && (
         <>
-          <div className="shop-hint">Changes the look of all grid cells</div>
+          <div className="shop-hint">{t('shop.hint_skins')}</div>
           <div className="shop-grid">
             {SHOP_SKINS.map((skin) => {
               const owned = shopData.unlockedSkins.includes(skin.id);
@@ -288,7 +290,7 @@ export function ShopPanel({
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{skin.desc}</div>
                   {skin.cost === 0 || owned ? (
                     <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipSkin(skin.id)}>
-                      {equipped ? "✓ On" : "Equip"}
+                      {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= skin.cost ? 1 : 0.4 }} onClick={() => buySkin(skin.id, skin.cost)} disabled={dust < skin.cost}>
@@ -304,15 +306,15 @@ export function ShopPanel({
 
       {tab === "powerups" && (
         <>
-          <div className="shop-hint">Charges carry into your next game.</div>
+          <div className="shop-hint">{t('shop.hint_powers')}</div>
           {gameMode !== "evolve" && (
             <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", padding: "8px 16px" }}>
-              🔒 Powerups only work in Evolve mode
+              🔒 {t('shop.evolve_only')}
             </div>
           )}
           {(stored.freeze > 0 || stored.shield > 0 || stored.mult > 0 || stored.heart > 0) ? (
             <div className="shop-inventory">
-              <span className="shop-inv-lbl">Ready:</span>
+              <span className="shop-inv-lbl">{t('shop.ready')}</span>
               {stored.freeze > 0 && <span className="shop-inv-chip">❄ ×{stored.freeze}</span>}
               {stored.shield > 0 && <span className="shop-inv-chip">◈ ×{stored.shield}</span>}
               {stored.mult > 0 && <span className="shop-inv-chip">⚡ ×{stored.mult}</span>}
@@ -333,7 +335,7 @@ export function ShopPanel({
                   </button>
                 ) : (
                   <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: 0.4 }} disabled>
-                    🔒 Locked
+                    {t('shop.locked')}
                   </button>
                 )}
               </div>
@@ -344,7 +346,7 @@ export function ShopPanel({
 
       {tab === "backgrounds" && (
         <>
-          <div className="shop-hint">Animated backgrounds for gameplay</div>
+          <div className="shop-hint">{t('shop.hint_backgrounds')}</div>
           <div className="shop-grid">
             {SHOP_BACKGROUNDS.map((bg) => {
               const owned = shopData.unlockedBackgrounds.includes(bg.id);
@@ -358,7 +360,7 @@ export function ShopPanel({
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{bg.desc}</div>
                   {owned ? (
                     <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipBackground(bg.id)}>
-                      {equipped ? "✓ On" : "Equip"}
+                      {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= bg.cost ? 1 : 0.4 }} onClick={() => buyBackground(bg.id, bg.cost)} disabled={dust < bg.cost}>
@@ -374,7 +376,7 @@ export function ShopPanel({
 
       {tab === "trails" && (
         <>
-          <div className="shop-hint">Mouse cursor particle trail effects</div>
+          <div className="shop-hint">{t('shop.hint_trails')}</div>
           <div className="shop-grid">
             {SHOP_TRAILS.map((trail) => {
               const owned = shopData.unlockedTrails.includes(trail.id);
@@ -388,7 +390,7 @@ export function ShopPanel({
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{trail.desc}</div>
                   {owned ? (
                     <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipTrail(trail.id)}>
-                      {equipped ? "✓ On" : "Equip"}
+                      {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= trail.cost ? 1 : 0.4 }} onClick={() => buyTrail(trail.id, trail.cost)} disabled={dust < trail.cost}>
