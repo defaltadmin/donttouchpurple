@@ -331,3 +331,16 @@
 | ShareModal | components/Screens/ShareModal.tsx | ~9 |
 | GameHeader | components/HUD/GameHeader.tsx | ~7 |
 | GameArea | components/HUD/GameArea.tsx | ~34 |
+
+---
+
+## Polish Pass (2026-05-19)
+
+| # | Feature | Files | Status |
+|---|---------|-------|--------|
+| P1 | i18n translations — useTranslation hook + 100+ keys in 5 locales | hooks/useTranslation.ts, locales/*.json, PauseOverlay, HowToPlay | ✅ DONE |
+| P2 | Remove install banner ("Want full arcade experience") | App.tsx | ✅ DONE |
+| P3 | Clean dead CSS — remove 4 overridden keyframes from game.css | styles/game.css | ✅ DONE |
+| P4 | HowToPlay i18n + remove storm/blackout references | HowToPlay.tsx | ✅ DONE |
+
+**Final: 130/130 tests passing. 0 type errors. Build passes. All pushed to main.**
