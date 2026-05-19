@@ -25,9 +25,7 @@
     "release:minor": "npm version minor && git push && git push --tags",
     "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",
     "release": "bash scripts/release-v7.sh",
-    "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh",
-    "ai:dev": "wrangler dev workers/ai-worker/index.ts --config workers/ai-worker/wrangler.toml",
-    "ai:deploy": "wrangler deploy workers/ai-worker/index.ts --config workers/ai-worker/wrangler.toml"
+    "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
   },
   "dependencies": {
     "@microsoft/clarity": "^1.0.2",
