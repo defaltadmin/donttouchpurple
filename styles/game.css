@@ -1654,6 +1654,8 @@ body[data-tuning-open] .gpanel-wrap {
 .shop-item--equipped { border-color:var(--theme-purple,var(--purple)); background:rgba(192,38,211,0.1); }
 .shop-swatch { width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); }
 .shop-name { font-family:var(--font-ui); font-size:13px; font-weight:800; color:var(--text); }
+.shop-btn { font-size:11px !important; padding:4px 12px !important; }
+.shop-evolve-notice { font-size:11px; color:var(--muted); text-align:center; padding:8px 16px; }
 
 /* ── Loading orbs ── */
 .loading-orb { position:absolute; border-radius:50%; filter:blur(60px); pointer-events:none; }

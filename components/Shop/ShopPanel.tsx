@@ -213,17 +213,16 @@ export function ShopPanel({
                   </div>
                   <div className="shop-name">{theme.name}</div>
                   {theme.cost === 0 || owned ? (
-                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipTheme(theme.id)}>
+                    <button className={`${equipped ? "btn-primary" : "btn-ghost"} btn-sm shop-btn`} onClick={() => equipTheme(theme.id)}>
                       {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
-                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= theme.cost ? 1 : 0.4 }} onClick={() => buyTheme(theme.id, theme.cost)} disabled={dust < theme.cost}>
+                    <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= theme.cost ? 1 : 0.4 }} onClick={() => buyTheme(theme.id, theme.cost)} disabled={dust < theme.cost}>
                       💜 {theme.cost}
                     </button>
                   )}
                   <button
-                    className={`btn-ghost btn-sm${previewId === theme.id ? ' previewing' : ''}`}
-                    style={{ fontSize: 11, padding: "4px 12px" }}
+                    className={`btn-ghost btn-sm shop-btn${previewId === theme.id ? ' previewing' : ''}`}
                     onClick={() => handlePreview(theme.id)}
                     disabled={previewId !== null}
                   >
@@ -259,11 +258,11 @@ export function ShopPanel({
                   <div className="shop-name">{badge.name}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{badge.desc}</div>
                   {owned ? (
-                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipBadge(badge.id)}>
+                    <button className={`${equipped ? "btn-primary" : "btn-ghost"} btn-sm shop-btn`} onClick={() => equipBadge(badge.id)}>
                       {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
-                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= badge.cost ? 1 : 0.4 }} onClick={() => buyBadge(badge.id, badge.cost)} disabled={dust < badge.cost}>
+                    <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= badge.cost ? 1 : 0.4 }} onClick={() => buyBadge(badge.id, badge.cost)} disabled={dust < badge.cost}>
                       💜 {badge.cost}
                     </button>
                   )}
@@ -289,11 +288,11 @@ export function ShopPanel({
                   <div className="shop-name">{skin.name}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{skin.desc}</div>
                   {skin.cost === 0 || owned ? (
-                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipSkin(skin.id)}>
+                    <button className={`${equipped ? "btn-primary" : "btn-ghost"} btn-sm shop-btn`} onClick={() => equipSkin(skin.id)}>
                       {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
-                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= skin.cost ? 1 : 0.4 }} onClick={() => buySkin(skin.id, skin.cost)} disabled={dust < skin.cost}>
+                    <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= skin.cost ? 1 : 0.4 }} onClick={() => buySkin(skin.id, skin.cost)} disabled={dust < skin.cost}>
                       💜 {skin.cost}
                     </button>
                   )}
@@ -308,7 +307,7 @@ export function ShopPanel({
         <>
           <div className="shop-hint">{t('shop.hint_powers')}</div>
           {gameMode !== "evolve" && (
-            <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", padding: "8px 16px" }}>
+            <div className="shop-evolve-notice">
               🔒 {t('shop.evolve_only')}
             </div>
           )}
@@ -330,11 +329,11 @@ export function ShopPanel({
                 <div className="shop-name">{powerup.name}</div>
                 <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{powerup.desc}</div>
                 {gameMode === "evolve" ? (
-                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= powerup.cost ? 1 : 0.4 }} onClick={() => buyPowerup(powerup.id, powerup.cost)} disabled={dust < powerup.cost}>
+                  <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= powerup.cost ? 1 : 0.4 }} onClick={() => buyPowerup(powerup.id, powerup.cost)} disabled={dust < powerup.cost}>
                     💜 {powerup.cost}
                   </button>
                 ) : (
-                  <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: 0.4 }} disabled>
+                  <button className="btn-ghost btn-sm shop-btn" style={{ opacity: 0.4 }} disabled>
                     {t('shop.locked')}
                   </button>
                 )}
@@ -359,11 +358,11 @@ export function ShopPanel({
                   <div className="shop-name">{bg.name}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{bg.desc}</div>
                   {owned ? (
-                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipBackground(bg.id)}>
+                    <button className={`${equipped ? "btn-primary" : "btn-ghost"} btn-sm shop-btn`} onClick={() => equipBackground(bg.id)}>
                       {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
-                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= bg.cost ? 1 : 0.4 }} onClick={() => buyBackground(bg.id, bg.cost)} disabled={dust < bg.cost}>
+                    <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= bg.cost ? 1 : 0.4 }} onClick={() => buyBackground(bg.id, bg.cost)} disabled={dust < bg.cost}>
                       💜 {bg.cost}
                     </button>
                   )}
@@ -389,11 +388,11 @@ export function ShopPanel({
                   <div className="shop-name">{trail.name}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{trail.desc}</div>
                   {owned ? (
-                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipTrail(trail.id)}>
+                    <button className={`${equipped ? "btn-primary" : "btn-ghost"} btn-sm shop-btn`} onClick={() => equipTrail(trail.id)}>
                       {equipped ? t('shop.equipped') : t('shop.equip')}
                     </button>
                   ) : (
-                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= trail.cost ? 1 : 0.4 }} onClick={() => buyTrail(trail.id, trail.cost)} disabled={dust < trail.cost}>
+                    <button className="btn-ghost btn-sm shop-btn" style={{ opacity: dust >= trail.cost ? 1 : 0.4 }} onClick={() => buyTrail(trail.id, trail.cost)} disabled={dust < trail.cost}>
                       💜 {trail.cost}
                     </button>
                   )}
