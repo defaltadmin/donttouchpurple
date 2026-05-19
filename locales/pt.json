@@ -157,5 +157,21 @@
   "shop.hint_powers": "As cargas continuam no próximo jogo.",
   "shop.hint_backgrounds": "Fundos animados para o jogo",
   "shop.hint_trails": "Efeitos de partículas no cursor",
-  "shop.evolve_only": "Powerups só funcionam no modo Evolução"
+  "shop.evolve_only": "Powerups só funcionam no modo Evolução",
+  "onboarding.title": "Como Jogar",
+  "onboarding.welcome": "Toque nas células coloridas para pontuar!",
+  "onboarding.hint_intro": "Este é um tabuleiro 3×3. As células acendem — toque nelas antes que desapareçam!",
+  "onboarding.hint_safe": "Células verdes são SEGURAS — toque para pontuar!",
+  "onboarding.hint_danger": "Células roxas são PERIGOSAS — não toque!",
+  "onboarding.hint_special": "Células ciano são ESPECIAIS —dão efeitos bônus!",
+  "onboarding.special_cells": "Células Especiais:",
+  "onboarding.ready": "Pronto para jogar?",
+  "onboarding.skip": "Pular",
+  "onboarding.start": "Próximo",
+  "onboarding.tap_safe": "Toque em células seguras",
+  "onboarding.avoid_danger": "Evite o roxo!",
+  "onboarding.legend_extra_life": "Vida Extra",
+  "onboarding.legend_shield": "Escudo",
+  "onboarding.legend_speed_boost": "Impulso de Velocidade",
+  "onboarding.legend_double_points": "Pontos Duplos"
 }

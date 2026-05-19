@@ -157,5 +157,21 @@
   "shop.hint_powers": "Charges carry into your next game.",
   "shop.hint_backgrounds": "Animated backgrounds for gameplay",
   "shop.hint_trails": "Mouse cursor particle trail effects",
-  "shop.evolve_only": "Powerups only work in Evolve mode"
+  "shop.evolve_only": "Powerups only work in Evolve mode",
+  "onboarding.title": "How to Play",
+  "onboarding.welcome": "Tap the colored cells to score points!",
+  "onboarding.hint_intro": "This is a 3×3 grid. Cells light up — tap them before they disappear!",
+  "onboarding.hint_safe": "Green cells are SAFE — tap them to score!",
+  "onboarding.hint_danger": "Purple cells are DANGER — don't tap them!",
+  "onboarding.hint_special": "Cyan cells are SPECIAL — they give bonus effects!",
+  "onboarding.special_cells": "Special Cells:",
+  "onboarding.ready": "Ready to play?",
+  "onboarding.skip": "Skip",
+  "onboarding.start": "Next",
+  "onboarding.tap_safe": "Tap safe cells",
+  "onboarding.avoid_danger": "Avoid purple!",
+  "onboarding.legend_extra_life": "Extra Life",
+  "onboarding.legend_shield": "Shield",
+  "onboarding.legend_speed_boost": "Speed Boost",
+  "onboarding.legend_double_points": "Double Points"
 }

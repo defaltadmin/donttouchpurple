@@ -157,5 +157,21 @@
   "shop.hint_powers": "Les charges se reportent dans la prochaine partie.",
   "shop.hint_backgrounds": "Fonds animés pour le gameplay",
   "shop.hint_trails": "Effets de particules sur le curseur",
-  "shop.evolve_only": "Les powerups ne fonctionnent qu'en mode Évolution"
+  "shop.evolve_only": "Les powerups ne fonctionnent qu'en mode Évolution",
+  "onboarding.title": "Comment Jouer",
+  "onboarding.welcome": "Touchez les cellules colorées pour marquer des points!",
+  "onboarding.hint_intro": "C'est une grille 3×3. Les cellules s'allument — touchez-les avant qu'elles disparaissent!",
+  "onboarding.hint_safe": "Les cellules vertes sont SÛRES — touchez-les pour marquer!",
+  "onboarding.hint_danger": "Les cellules violettes sont DANGEREUSES — ne les touchez pas!",
+  "onboarding.hint_special": "Les cellules cyan sont SPÉCIALES — elles donnent des bonus!",
+  "onboarding.special_cells": "Cellules Spéciales:",
+  "onboarding.ready": "Prêt à jouer?",
+  "onboarding.skip": "Passer",
+  "onboarding.start": "Suivant",
+  "onboarding.tap_safe": "Touchez les cellules sûres",
+  "onboarding.avoid_danger": "Évitez le violet!",
+  "onboarding.legend_extra_life": "Vie Supplémentaire",
+  "onboarding.legend_shield": "Bouclier",
+  "onboarding.legend_speed_boost": "Boost de Vitesse",
+  "onboarding.legend_double_points": "Points Doubles"
 }

@@ -27,6 +27,8 @@ export type I18nKey =
   | 'onboarding.hint_safe' | 'onboarding.hint_danger' | 'onboarding.hint_special'
   | 'onboarding.special_cells' | 'onboarding.ready' | 'onboarding.skip'
   | 'onboarding.tap_safe' | 'onboarding.avoid_danger' | 'onboarding.start'
+  | 'onboarding.legend_extra_life' | 'onboarding.legend_shield'
+  | 'onboarding.legend_speed_boost' | 'onboarding.legend_double_points'
   | 'share.copy_link' | 'share.copied'
   | 'toast.game_restored' | 'toast.streak_lost' | 'toast.last_heart'
   | 'toast.defused' | 'toast.bomb_exploded' | 'toast.overheal'

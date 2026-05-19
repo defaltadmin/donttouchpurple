@@ -157,5 +157,21 @@
   "shop.hint_powers": "チャージは次のゲームに持ち越されます。",
   "shop.hint_backgrounds": "ゲームプレイ用アニメーション背景",
   "shop.hint_trails": "マウスカーパーティクルトレイルエフェクト",
-  "shop.evolve_only": "パワーアップはエボルブモードのみ有効"
+  "shop.evolve_only": "パワーアップはエボルブモードのみ有効",
+  "onboarding.title": "遊び方",
+  "onboarding.welcome": "色付きセルをタップしてポイントを獲得！",
+  "onboarding.hint_intro": "3×3のグリッドです。セルが光ったら消える前にタップ！",
+  "onboarding.hint_safe": "緑のセルは安全 — タップしてスコア！",
+  "onboarding.hint_danger": "紫のセルは危険 — タップしないで！",
+  "onboarding.hint_special": "シアンのセルは特殊 — ボーナス効果あり！",
+  "onboarding.special_cells": "特殊セル：",
+  "onboarding.ready": "プレイ準備はできましたか？",
+  "onboarding.skip": "スキップ",
+  "onboarding.start": "次へ",
+  "onboarding.tap_safe": "安全なセルをタップ",
+  "onboarding.avoid_danger": "紫を避けて！",
+  "onboarding.legend_extra_life": "エクストラライフ",
+  "onboarding.legend_shield": "シールド",
+  "onboarding.legend_speed_boost": "スピードブースト",
+  "onboarding.legend_double_points": "ダブルポイント"
 }

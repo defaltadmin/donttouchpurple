@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { i18n } from "../../utils/i18n";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface Props {
   onComplete: () => void;
@@ -21,10 +21,10 @@ const CELL_COLORS: Record<DemoCellKind, string> = {
 };
 
 const SPECIAL_LEGEND = [
-  { icon: "❤️", label: "Extra Life" },
-  { icon: "🛡️", label: "Shield" },
-  { icon: "⚡", label: "Speed Boost" },
-  { icon: "💰", label: "Double Points" },
+  { icon: "❤️", key: "onboarding.legend_extra_life" as const },
+  { icon: "🛡️", key: "onboarding.legend_shield" as const },
+  { icon: "⚡", key: "onboarding.legend_speed_boost" as const },
+  { icon: "💰", key: "onboarding.legend_double_points" as const },
 ];
 
 interface Step {
@@ -42,6 +42,7 @@ const STEPS: Step[] = [
 ];
 
 export function FirstRunOverlay({ onComplete, onSkip }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
 
   const isLast = step >= STEPS.length;
@@ -57,11 +58,11 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
   const currentHighlight = !isLast ? STEPS[step].highlight : undefined;
 
   return (
-    <div className="first-run-overlay" role="dialog" aria-label={i18n.t("onboarding.title")}>
+    <div className="first-run-overlay" role="dialog" aria-label={t("onboarding.title")}>
       <div className="first-run-card">
-        <h2 className="first-run-title">{i18n.t("onboarding.title")}</h2>
+        <h2 className="first-run-title">{t("onboarding.title")}</h2>
 
-        <p className="first-run-sub">{i18n.t("onboarding.welcome")}</p>
+        <p className="first-run-sub">{t("onboarding.welcome")}</p>
 
         {/* Demo grid */}
         <div className="first-run-grid" role="img" aria-label="Demo game grid">
@@ -83,18 +84,18 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
         {/* Step content */}
         {!isLast && (
           <div className="first-run-step">
-            <p className="first-run-step-text">{i18n.t(`onboarding.${STEPS[step].key}` as any)}</p>
+            <p className="first-run-step-text">{t(`onboarding.${STEPS[step].key}` as any)}</p>
           </div>
         )}
 
         {/* Special cells legend (shown on last info step) */}
         {step === 3 && (
           <div className="first-run-legend">
-            <p className="first-run-legend-title">{i18n.t("onboarding.special_cells")}</p>
+            <p className="first-run-legend-title">{t("onboarding.special_cells")}</p>
             <div className="first-run-legend-grid">
               {SPECIAL_LEGEND.map(item => (
-                <span key={item.label} className="first-run-legend-item">
-                  {item.icon} {item.label}
+                <span key={item.key} className="first-run-legend-item">
+                  {item.icon} {t(item.key)}
                 </span>
               ))}
             </div>
@@ -104,17 +105,17 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
         {/* Ready step */}
         {isLast && (
           <div className="first-run-ready">
-            <p className="first-run-step-text">{i18n.t("onboarding.ready")}</p>
+            <p className="first-run-step-text">{t("onboarding.ready")}</p>
           </div>
         )}
 
         {/* Controls */}
         <div className="first-run-controls">
           <button className="first-run-btn first-run-btn--primary" onClick={handleNext}>
-            {isLast ? i18n.t("onboarding.ready") : i18n.t("onboarding.start")}
+            {isLast ? t("onboarding.ready") : t("onboarding.start")}
           </button>
           <button className="first-run-btn first-run-btn--ghost" onClick={onSkip}>
-            {i18n.t("onboarding.skip")}
+            {t("onboarding.skip")}
           </button>
         </div>
       </div>

@@ -157,5 +157,21 @@
   "shop.hint_powers": "Las cargas se llevan a tu próxima partida.",
   "shop.hint_backgrounds": "Fondos animados para el juego",
   "shop.hint_trails": "Efectos de partículas en el cursor",
-  "shop.evolve_only": "Los powerups solo funcionan en modo Evolución"
+  "shop.evolve_only": "Los powerups solo funcionan en modo Evolución",
+  "onboarding.title": "Cómo Jugar",
+  "onboarding.welcome": "¡Toca las celdas de color para ganar puntos!",
+  "onboarding.hint_intro": "Este es un tablero 3×3. ¡Las celdas se iluminan —tócalas antes de que desaparezcan!",
+  "onboarding.hint_safe": "¡Las celdas verdes son SEGURAS —tócalas para puntuar!",
+  "onboarding.hint_danger": "¡Las celdas moradas son PELIGROSAS —no las toques!",
+  "onboarding.hint_special": "¡Las celdas cian son ESPECIALES —dan efectos bonus!",
+  "onboarding.special_cells": "Celdas Especiales:",
+  "onboarding.ready": "¿Listo para jugar?",
+  "onboarding.skip": "Saltar",
+  "onboarding.start": "Siguiente",
+  "onboarding.tap_safe": "Toca celdas seguras",
+  "onboarding.avoid_danger": "¡Evita el morado!",
+  "onboarding.legend_extra_life": "Vida Extra",
+  "onboarding.legend_shield": "Escudo",
+  "onboarding.legend_speed_boost": "Boost de Velocidad",
+  "onboarding.legend_double_points": "Puntos Dobles"
 }
