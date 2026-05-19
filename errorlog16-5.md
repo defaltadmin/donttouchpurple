@@ -475,3 +475,36 @@
 - Replaced with CSS spring animation (cellIconSpring keyframe)
 
 **Final: 134/134 tests passing. 0 type errors. Build passes.**
+
+---
+
+## Consolidated Roadmap Execution (2026-05-19)
+
+### Phase A: Critical Fixes (R01-R05) ✅
+| ID | Issue | Fix |
+|----|-------|-----|
+| R01 | Hearts.tsx conditional hooks | Move hooks before practiceMode early return |
+| R02 | bundle-size.yml YAML syntax | Already fixed |
+| R03 | Node 18 → 20 | Already fixed |
+| R04 | scoreSubmittedRef reset | Already fixed |
+| R05 | Double fbLogEvent game_over | Remove duplicate direct call |
+
+### Phase B: Bug Fixes (R06-R18) ✅
+- R06-R08: Stray ternaries → if/else (PurpleRain, WarpGate, KeyBinder)
+- R09: Constant condition → actual variable (fractionalHealth test)
+- R10: Unused dirname removed (check-bundle-size)
+- R12: p2 session restore bounds-clamped
+- R18: `as any` → Record<string, unknown> (GameEngine)
+
+### Phase C: Architecture/QOL (R19-R28) ✅
+- R20: handleTutorialClose → calls startGame(true)
+- R21: toastTimer → toastTimeoutRef
+- R24: Dead A/B test removed
+- R25: No-op pressing memo removed
+- R26: Dead assetGate code removed
+
+### Phase D: Dependencies (R29-R32) ✅
+- R30: Version 7.5.1 → 7.5.3
+
+**App.tsx: 2323 → 2033 lines (-12.5%)**
+**Final: 134/134 tests passing. 0 type errors. Build passes.**
