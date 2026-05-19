@@ -652,14 +652,9 @@ body.damage-pulse::after {
   cursor: pointer; transition: all 0.18s;
   box-shadow: 0 6px 0 #6b21a8, 0 8px 24px rgba(192,38,211,0.4);
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  animation: btnPulse 2s ease-in-out infinite;
+  /* Animation: btnShimmer in enhancements.css */
 }
-@keyframes btnPulse {
-  0%, 100% { box-shadow: 0 6px 0 #6b21a8, 0 8px 24px rgba(192,38,211,0.4); }
-  50% { box-shadow: 0 6px 0 #6b21a8, 0 8px 40px rgba(192,38,211,0.6); }
-}
-.btn-play:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #6b21a8, 0 12px 32px rgba(192,38,211,0.5); }
-.btn-play:active { transform: translateY(3px); box-shadow: 0 3px 0 #6b21a8, 0 6px 16px rgba(192,38,211,0.3); }
+/* Hover/active: overridden by enhancements.css liquid glass effect */
 
 .btn-play--pulse {
   width: 120px; height: 120px;
@@ -809,11 +804,7 @@ body.damage-pulse::after {
   background: linear-gradient(90deg, #c026d3, #f0abfc, #fbbf24);
   transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
   box-shadow: 0 0 10px rgba(192,38,211,0.7);
-  animation: spdGlow 2s ease-in-out infinite;
-}
-@keyframes spdGlow {
-  0%,100% { box-shadow: 0 0 8px rgba(192,38,211,0.6); }
-  50%      { box-shadow: 0 0 18px rgba(240,171,252,0.9), 0 0 6px rgba(251,191,36,0.5); }
+  /* Animation: spdGlowV2 in enhancements.css */
 }
 
 /* ── Game area ── */
@@ -887,11 +878,7 @@ body.damage-pulse::after {
 .cell.purple  {
   background: linear-gradient(145deg,#d946ef,#7c3aed);
   box-shadow: 0 4px 0 #4c1d95, 0 5px 16px rgba(192,38,211,0.5);
-  animation: purplePulse 1.2s ease-in-out infinite;
-}
-@keyframes purplePulse {
-  0%,100% { box-shadow: 0 4px 0 #4c1d95, 0 5px 16px rgba(192,38,211,0.5); filter: brightness(1); }
-  50%      { box-shadow: 0 4px 0 #4c1d95, 0 5px 32px rgba(192,38,211,0.9), 0 0 0 4px rgba(192,38,211,0.18); filter: brightness(1.15); }
+  /* Animation: purplePulseV2 in enhancements.css */
 }
 
 /* Power-up cells */
@@ -995,15 +982,11 @@ body.damage-pulse::after {
 }
 
 /* ── Personal best pulse on HUD score ── */
-@keyframes pbPulse {
-  0%,100% { filter: drop-shadow(0 0 4px #f0abfc88); }
-  50%     { filter: drop-shadow(0 0 12px #f0abfc) brightness(1.2); }
-}
 .hud-val--pb {
   background: linear-gradient(135deg, #f0abfc 0%, #c026d3 50%, #f0abfc 100%) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  animation: pbPulse 1.2s ease-in-out infinite;
+  /* Animation: pbPulseV2 in enhancements.css */
 }
 
 /* ── Player panel ── */
@@ -2271,9 +2254,7 @@ body { background-color: var(--bg); }
     transition-duration: 0.01ms !important;
   }
   .orb-1, .orb-2, .orb-3 { animation: none; }
-  .purplePulse { animation: none; }
   .titleShimmer { animation: none; }
-  .spdGlow { animation: none; }
 }
 
 /* ── Shard size upgrade — more satisfying burst ── */

@@ -98,7 +98,6 @@ import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachin
 import { featureGates } from "./utils/featureGates";
 import { PauseOverlay } from "./components/Screens/PauseOverlay";
 import { EnergyPopup } from "./components/Screens/EnergyPopup";
-import { InstallBanner } from "./components/Screens/InstallBanner";
 import { QuickSettings } from "./components/Settings/QuickSettings";
 import { BossOverlay } from "./components/HUD/BossOverlay";
 import { ShareModal } from "./components/Screens/ShareModal";
@@ -435,9 +434,6 @@ export default function App() {
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
 
   // A/B Testing Foundation (ready for Cloudflare Worker routing)
   // IMPORTANT: must be pure during render. Derive variant in an initializer.
@@ -461,49 +457,6 @@ export default function App() {
       import("./components/Backgrounds/PurpleRain");
     }
   }, [screen]);
-
-  // PWA Install Prompt (One-time + iOS fallback)
-  useEffect(() => {
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(iOS);
-
-    const handler = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    const gamesPlayed = parseInt(localStorage.getItem('dtp-games-played') || '0', 10);
-    const promptAlreadyShown = localStorage.getItem('dtp-install-prompt-shown') === 'true';
-
-    if (!promptAlreadyShown && gamesPlayed >= 3) {
-      setTimeout(() => setShowInstallBanner(true), 2200);
-    }
-
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [screen]);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    safeSentry.addBreadcrumb({ category: "pwa", message: "install_prompt", data: { outcome, platform: "android" } });
-    fbLogEvent("pwa_install", { outcome, platform: "android" });
-
-    setDeferredPrompt(null);
-    setShowInstallBanner(false);
-    localStorage.setItem('dtp-install-prompt-shown', 'true');
-
-    if (outcome === 'accepted') toast$("🎉 Added to Home Screen!");
-  };
-
-  const dismissInstallBanner = () => {
-    setShowInstallBanner(false);
-    localStorage.setItem('dtp-install-prompt-shown', 'true');
-  };
 
   // Offline Score Queue
   const queueOfflineScore = async (scoreData: any) => {
@@ -2301,16 +2254,6 @@ export default function App() {
             <p>Please play in portrait mode for the best experience.</p>
           </div>
         </div>
-      )}
-
-      {/* PWA Install Banner */}
-      {showInstallBanner && (
-        <InstallBanner
-          isIOS={isIOS}
-          hasDeferredPrompt={!!deferredPrompt}
-          onInstall={handleInstallClick}
-          onDismiss={dismissInstallBanner}
-        />
       )}
 
       {screen === "menu" && (

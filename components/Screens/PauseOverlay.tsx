@@ -1,7 +1,7 @@
 import React from "react";
-import { motion } from "framer-motion";
 import type { GameSnapshot } from "../../engine/types";
 import { speedLabel } from "../../engine/DifficultyScaler";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface PauseOverlayProps {
   snapshot: GameSnapshot | null;
@@ -23,69 +23,71 @@ export const PauseOverlay = React.memo(function PauseOverlay({
   onToggleMute, onToggleFS, onOpenSettings,
   focusTrapRef,
 }: PauseOverlayProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="pause-overlay" ref={focusTrapRef}>
       <div className="pause-card">
-        <div className="pause-title">⏸ PAUSED</div>
+        <div className="pause-title">⏸ {t('pause.title')}</div>
         <div className="pause-hud-grid">
           <div className="pause-hud-item">
-            <span className="pause-hud-label">Score</span>
+            <span className="pause-hud-label">{t('hud.score')}</span>
             <span className="pause-hud-value">{snapshot?.p1.score ?? 0}</span>
           </div>
           {is2P && (
             <div className="pause-hud-item">
-              <span className="pause-hud-label">P2 Score</span>
+              <span className="pause-hud-label">{t('hud.p2_score')}</span>
               <span className="pause-hud-value">{snapshot?.p2?.score ?? 0}</span>
             </div>
           )}
           <div className="pause-hud-item">
-            <span className="pause-hud-label">Stage</span>
+            <span className="pause-hud-label">{t('hud.stage')}</span>
             <span className="pause-hud-value">{(snapshot?.p1.gridStage ?? 0) + 1}</span>
           </div>
           <div className="pause-hud-item">
-            <span className="pause-hud-label">Streak</span>
+            <span className="pause-hud-label">{t('hud.streak')}</span>
             <span className="pause-hud-value pause-hud-streak">{(snapshot?.p1.streak ?? 0) > 0 ? `🔥 ${snapshot?.p1.streak}` : "—"}</span>
           </div>
           <div className="pause-hud-item">
-            <span className="pause-hud-label">Speed</span>
+            <span className="pause-hud-label">{t('hud.speed')}</span>
             <span className="pause-hud-value">{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</span>
           </div>
           {snapshot && snapshot.p1.freezeEnd > Date.now() && (
             <div className="pause-hud-item">
-              <span className="pause-hud-label">Freeze</span>
+              <span className="pause-hud-label">{t('hud.freeze')}</span>
               <span className="pause-hud-value pause-hud-freeze">❄ {Math.ceil((snapshot.p1.freezeEnd - Date.now()) / 1000)}s</span>
             </div>
           )}
           {snapshot && snapshot.p1.multiplierEnd > Date.now() && (
             <div className="pause-hud-item">
-              <span className="pause-hud-label">Multiplier</span>
+              <span className="pause-hud-label">{t('hud.multiplier')}</span>
               <span className="pause-hud-value pause-hud-mult">⚡ {Math.ceil((snapshot.p1.multiplierEnd - Date.now()) / 1000)}s</span>
             </div>
           )}
           {snapshot && snapshot.p1.shieldCount > 0 && (
             <div className="pause-hud-item">
-              <span className="pause-hud-label">Shield</span>
+              <span className="pause-hud-label">{t('hud.shield')}</span>
               <span className="pause-hud-value pause-hud-shield">🛡 ×{snapshot.p1.shieldCount}</span>
             </div>
           )}
         </div>
-        <button className="btn-play" onClick={onResume}>▶ RESUME</button>
-        <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={onRestart}>↺ Restart</button>
+        <button className="btn-play" onClick={onResume}>▶ {t('pause.resume')}</button>
+        <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={onRestart}>↺ {t('pause.restart')}</button>
         <div className="pause-settings-row">
           <button
             className={`pause-setting-btn${muted ? " pause-setting-btn--active-mute" : " pause-setting-btn--active-sound"}`}
-            onClick={onToggleMute} title="Sound">
-            {muted ? "🔇" : "🔊"}<span>{muted ? "Muted" : "Sound"}</span>
+            onClick={onToggleMute} title={t('pause.sound')}>
+            {muted ? "🔇" : "🔊"}<span>{muted ? t('pause.muted') : t('pause.sound')}</span>
           </button>
           <button className="pause-setting-btn" onClick={onToggleFS} title="Fullscreen">
-            {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : "Full"}</span>
+            {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : t('pause.full')}</span>
           </button>
-          <button className="pause-setting-btn" onClick={onOpenSettings} title="Settings">
-            ⚙️<span>Settings</span>
+          <button className="pause-setting-btn" onClick={onOpenSettings} title={t('pause.settings')}>
+            ⚙️<span>{t('pause.settings')}</span>
           </button>
         </div>
-          <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={onExit}>🏠 Exit to Menu</button>
-        <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>Esc to resume · Exiting ends your game</div>
+          <button className="btn-ghost" style={{width:"100%",textAlign:"center"}} onClick={onExit}>🏠 {t('pause.exit')}</button>
+        <div style={{fontSize:11,color:"var(--muted)",textAlign:"center",fontFamily:"var(--font-ui)"}}>{t('pause.hint')}</div>
       </div>
     </div>
   );
