@@ -265,5 +265,9 @@
   "player.bot_inactive": "Bot inactif",
   "energy.refill_pip": "Recharger cette pip",
   "energy.plus_one": "+1 dans {mins}:{secs}",
-  "energy.full": "Plein"
+  "energy.full": "Plein",
+  "pause.exit_confirm_title": "Retour au Menu?",
+  "pause.exit_confirm_desc": "Votre partie en cours se terminera et la progression sera perdue.",
+  "ui.rotate_device": "Pivoter votre Appareil",
+  "ui.rotate_hint": "Jouez en mode portrait pour la meilleure expérience."
 }

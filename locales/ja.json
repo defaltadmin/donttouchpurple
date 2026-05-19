@@ -265,5 +265,9 @@
   "player.bot_inactive": "Bot無効",
   "energy.refill_pip": "このピップを補充",
   "energy.plus_one": "+1まで {mins}:{secs}",
-  "energy.full": "フル"
+  "energy.full": "フル",
+  "pause.exit_confirm_title": "メニューに戻る？",
+  "pause.exit_confirm_desc": "現在のゲームは終了し、進行状況は失われます。",
+  "ui.rotate_device": "デバイスを回転",
+  "ui.rotate_hint": "最適な体験のためにポートレートモードでプレイしてください。"
 }

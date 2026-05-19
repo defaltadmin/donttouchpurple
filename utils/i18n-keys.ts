@@ -71,4 +71,6 @@ export type I18nKey =
   | 'leaderboard.your_best' | 'leaderboard.refresh'
   | 'pause.exit_fs' | 'pause.fullscreen'
   | 'player.need_dust' | 'player.bot_on' | 'player.bot_off' | 'player.bot_active' | 'player.bot_inactive'
-  | 'energy.refill_pip' | 'energy.plus_one' | 'energy.full';
+  | 'energy.refill_pip' | 'energy.plus_one' | 'energy.full'
+  | 'pause.exit_confirm_title' | 'pause.exit_confirm_desc'
+  | 'ui.rotate_device' | 'ui.rotate_hint';

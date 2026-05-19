@@ -129,6 +129,8 @@ import { useBackgroundController } from './hooks/useBackground';
 
 import { NameChangeForm } from "./components/Settings/NameChangeForm";
 import { ColorblindFilters, getCBFilterStyle } from "./components/ColorblindFilters";
+import { ExitConfirmModal } from "./components/Screens/ExitConfirmModal";
+import { RotatePrompt } from "./components/Screens/RotatePrompt";
 import { loadShopData, saveShopData, type ShopData } from "./utils/shop-storage";
 
 // --- Tutorial ---
@@ -1769,18 +1771,10 @@ export default function App() {
       )}
 
       {showExitConfirm && (
-        <div className="modal-overlay" onClick={() => setShowExitConfirm(false)}>
-          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">🏠 Exit to Menu?</span>
-            </div>
-            <p style={{ color: "var(--muted)", fontSize: 14, margin: "8px 0 16px" }}>Your current game will end and progress will be lost.</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>Cancel</button>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={() => { setShowExitConfirm(false); setPaused(false); goMenu(); }}>Exit</button>
-            </div>
-          </div>
-        </div>
+        <ExitConfirmModal
+          onCancel={() => setShowExitConfirm(false)}
+          onConfirm={() => { setShowExitConfirm(false); setPaused(false); goMenu(); }}
+        />
       )}
 
       <GameHeader
@@ -2047,15 +2041,7 @@ export default function App() {
         </div>
       )}
 
-      {showRotatePrompt && (
-        <div className="dtp-rotate-overlay" role="alert" aria-live="polite">
-          <div className="dtp-rotate-card">
-            <span className="dtp-rotate-icon">📱↔️📱</span>
-            <h3>Rotate Your Device</h3>
-            <p>Please play in portrait mode for the best experience.</p>
-          </div>
-        </div>
-      )}
+      {showRotatePrompt && <RotatePrompt />}
 
       {screen === "menu" && (
         <footer className="credit">

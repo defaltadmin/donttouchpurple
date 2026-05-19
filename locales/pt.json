@@ -265,5 +265,9 @@
   "player.bot_inactive": "Bot inativo",
   "energy.refill_pip": "Recarregar esta carga",
   "energy.plus_one": "+1 em {mins}:{secs}",
-  "energy.full": "Cheio"
+  "energy.full": "Cheio",
+  "pause.exit_confirm_title": "Sair para o Menu?",
+  "pause.exit_confirm_desc": "Seu jogo atual terminará e o progresso será perdido.",
+  "ui.rotate_device": "Gire seu Dispositivo",
+  "ui.rotate_hint": "Jogue no modo retrato para a melhor experiência."
 }

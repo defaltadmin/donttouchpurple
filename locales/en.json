@@ -265,5 +265,9 @@
   "player.bot_inactive": "Bot inactive",
   "energy.refill_pip": "Refill this pip",
   "energy.plus_one": "+1 in {mins}:{secs}",
-  "energy.full": "Full"
+  "energy.full": "Full",
+  "pause.exit_confirm_title": "Exit to Menu?",
+  "pause.exit_confirm_desc": "Your current game will end and progress will be lost.",
+  "ui.rotate_device": "Rotate Your Device",
+  "ui.rotate_hint": "Please play in portrait mode for the best experience."
 }
