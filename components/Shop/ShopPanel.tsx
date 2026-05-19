@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS } from "../../config/powerupWeights";
+import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS, SHOP_TRAILS } from "../../config/powerupWeights";
 
 interface StoredPowerups {
   freeze: number;
@@ -30,6 +30,8 @@ interface ShopData {
   equippedSkin: string;
   unlockedBackgrounds: string[];
   equippedBackground: string;
+  unlockedTrails: string[];
+  equippedTrail: string;
 }
 
 export function ShopPanel({
@@ -45,10 +47,10 @@ export function ShopPanel({
   persistDust,
 }: ShopPanelProps) {
   const [shopData, setShopData] = useState(() => loadShopData());
-  const [tab, setTab] = useState<"backgrounds" | "themes" | "badges" | "skins" | "powerups">(() => {
+  const [tab, setTab] = useState<"backgrounds" | "themes" | "badges" | "skins" | "powerups" | "trails">(() => {
     try {
       const saved = localStorage.getItem("dtp-shop-tab");
-      if (saved === "backgrounds" || saved === "themes" || saved === "badges" || saved === "skins" || saved === "powerups") {
+      if (saved === "backgrounds" || saved === "themes" || saved === "badges" || saved === "skins" || saved === "powerups" || saved === "trails") {
         return saved;
       }
     } catch (_) {
@@ -144,6 +146,20 @@ export function ShopPanel({
     triggerBuyAnim(bgId);
   };
 
+  const equipTrail = (trailId: string) => {
+    const updated = { ...shopData, equippedTrail: trailId };
+    setShopData(updated);
+    saveShopData(updated);
+  };
+
+  const buyTrail = (trailId: string, cost: number) => {
+    if (!spend(cost)) return;
+    const updated = { ...shopData, unlockedTrails: [...shopData.unlockedTrails, trailId] };
+    setShopData(updated);
+    saveShopData(updated);
+    triggerBuyAnim(trailId);
+  };
+
   const buyPowerup = (itemId: string, cost: number) => {
     if (!spend(cost)) return;
     const stored = loadStoredPowerups();
@@ -178,6 +194,7 @@ export function ShopPanel({
         <button className={`shop-tab${tab === "badges" ? " shop-tab--on" : ""}`} onClick={() => { setTab("badges"); localStorage.setItem("dtp-shop-tab", "badges"); }}>🏅 Badges</button>
         <button className={`shop-tab${tab === "skins" ? " shop-tab--on" : ""}`} onClick={() => { setTab("skins"); localStorage.setItem("dtp-shop-tab", "skins"); }}>✨ Skins</button>
         <button className={`shop-tab${tab === "powerups" ? " shop-tab--on" : ""}`} onClick={() => { setTab("powerups"); localStorage.setItem("dtp-shop-tab", "powerups"); }}>⚡ Powers</button>
+        <button className={`shop-tab${tab === "trails" ? " shop-tab--on" : ""}`} onClick={() => { setTab("trails"); localStorage.setItem("dtp-shop-tab", "trails"); }}>✨ Trails</button>
       </div>
 
       {tab === "themes" && (
@@ -346,6 +363,36 @@ export function ShopPanel({
                   ) : (
                     <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= bg.cost ? 1 : 0.4 }} onClick={() => buyBackground(bg.id, bg.cost)} disabled={dust < bg.cost}>
                       💜 {bg.cost}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === "trails" && (
+        <>
+          <div className="shop-hint">Mouse cursor particle trail effects</div>
+          <div className="shop-grid">
+            {SHOP_TRAILS.map((trail) => {
+              const owned = shopData.unlockedTrails.includes(trail.id);
+              const equipped = shopData.equippedTrail === trail.id;
+              return (
+                <div key={trail.id} className={`shop-item${equipped ? " shop-item--equipped" : ""}${buyAnim === trail.id ? " shop-item--bought" : ""}`}>
+                  <div className="shop-swatch" style={{ background: `hsla(${trail.config.hueMin}, 60%, 50%, 0.2)`, fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {trail.icon}
+                  </div>
+                  <div className="shop-name">{trail.name}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-ui)", textAlign: "center" }}>{trail.desc}</div>
+                  {owned ? (
+                    <button className={equipped ? "btn-primary btn-sm" : "btn-ghost btn-sm"} style={{ fontSize: 11, padding: "4px 12px" }} onClick={() => equipTrail(trail.id)}>
+                      {equipped ? "✓ On" : "Equip"}
+                    </button>
+                  ) : (
+                    <button className="btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 12px", opacity: dust >= trail.cost ? 1 : 0.4 }} onClick={() => buyTrail(trail.id, trail.cost)} disabled={dust < trail.cost}>
+                      💜 {trail.cost}
                     </button>
                   )}
                 </div>

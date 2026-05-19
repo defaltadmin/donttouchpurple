@@ -24,6 +24,8 @@ const OBJECTIVE_POOL: Array<Omit<DailyObjective, 'completed' | 'date'>> = [
   { type: 'survive_inversion',target: 1,   reward: 45,  description: 'Survive an Inversion event 🔄' },
 ];
 
+export const DAILY_OBJECTIVE_COUNT = 3;
+
 function dailySeed(dateStr: string): number {
   let hash = 0;
   for (let i = 0; i < dateStr.length; i++) {
@@ -32,33 +34,62 @@ function dailySeed(dateStr: string): number {
   return Math.abs(hash);
 }
 
-function loadCompletedDates(): string[] {
+interface CompletedEntry {
+  date: string;
+  index: number;
+}
+
+function loadCompletedEntries(): CompletedEntry[] {
   try {
     const raw = localStorage.getItem('dtp-daily-completed');
     if (!raw) return [];
-    const all: string[] = JSON.parse(raw);
+    const all: CompletedEntry[] = JSON.parse(raw);
+    // Migrate old format (string[]) to new format
+    if (all.length > 0 && typeof all[0] === 'string') {
+      return [];
+    }
     // Keep only the last 7 days to prevent unbounded growth
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 7);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
-    return all.filter(d => d >= cutoffStr);
+    return all.filter(e => e.date >= cutoffStr);
   } catch {
     return [];
   }
 }
 
 export function getDailyObjective(dateStr?: string): DailyObjective {
+  const objectives = getDailyObjectives(dateStr);
+  return objectives[0];
+}
+
+export function getDailyObjectives(dateStr?: string): DailyObjective[] {
   const today = dateStr ?? new Date().toISOString().slice(0, 10);
   const seed = dailySeed(today);
-  const poolIndex = seed % OBJECTIVE_POOL.length;
-  const objective = OBJECTIVE_POOL[poolIndex];
-  
-  const completedDates = loadCompletedDates();
-  return {
-    ...objective,
-    completed: completedDates.includes(today),
-    date: today,
-  };
+  const completedEntries = loadCompletedEntries();
+
+  const results: DailyObjective[] = [];
+  const usedIndices = new Set<number>();
+
+  for (let i = 0; i < DAILY_OBJECTIVE_COUNT; i++) {
+    // Use different seed offsets to get different objectives
+    let poolIndex = (seed + i * 97) % OBJECTIVE_POOL.length;
+    // Avoid duplicates
+    while (usedIndices.has(poolIndex)) {
+      poolIndex = (poolIndex + 1) % OBJECTIVE_POOL.length;
+    }
+    usedIndices.add(poolIndex);
+
+    const objective = OBJECTIVE_POOL[poolIndex];
+    const completed = completedEntries.some(e => e.date === today && e.index === i);
+    results.push({
+      ...objective,
+      completed,
+      date: today,
+    });
+  }
+
+  return results;
 }
 
 export interface BossObjectiveCounters {
@@ -114,19 +145,22 @@ export function getObjectiveProgress(
   return Math.min(1, current / (objective.target || 1));
 }
 
-export function markObjectiveComplete(): DailyObjective | null {
+export function markObjectiveComplete(index: number = 0): DailyObjective | null {
   const today = new Date().toISOString().slice(0, 10);
-  const completedDates = loadCompletedDates();
-  if (completedDates.includes(today)) return null;
+  const entries = loadCompletedEntries();
+  if (entries.some(e => e.date === today && e.index === index)) return null;
 
-  completedDates.push(today);
-  localStorage.setItem('dtp-daily-completed', JSON.stringify(completedDates));
+  entries.push({ date: today, index });
+  localStorage.setItem('dtp-daily-completed', JSON.stringify(entries));
 
   incrementObjectiveStreak();
 
-  const objective = getDailyObjective(today);
-  objective.completed = true;
-  return objective;
+  const objectives = getDailyObjectives(today);
+  if (objectives[index]) {
+    objectives[index].completed = true;
+    return objectives[index];
+  }
+  return null;
 }
 
 export function getObjectiveStreak(): number {

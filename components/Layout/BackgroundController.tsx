@@ -12,6 +12,9 @@ const WarpGate      = lazy(() => import("../Backgrounds/WarpGate"));
 const PulseField    = lazy(() => import("../Backgrounds/PulseField"));
 const GlitchGrid    = lazy(() => import("../Backgrounds/GlitchGrid"));
 const AmbientFlow   = lazy(() => import("../Backgrounds/AmbientFlow"));
+const Nebula        = lazy(() => import("../Backgrounds/Nebula"));
+const DigitalRain   = lazy(() => import("../Backgrounds/DigitalRain"));
+const AuroraBorealis = lazy(() => import("../Backgrounds/AuroraBorealis"));
 
 const BG_MAP: Record<string, ComponentType<any>> = {
   'default': PurpleRain,
@@ -26,6 +29,9 @@ const BG_MAP: Record<string, ComponentType<any>> = {
   'pulse-field': PulseField,
   'glitch-grid': GlitchGrid,
   'ambient-flow': AmbientFlow,
+  'nebula': Nebula,
+  'digital-rain': DigitalRain,
+  'aurora-borealis': AuroraBorealis,
 };
 
 interface BackgroundControllerProps {

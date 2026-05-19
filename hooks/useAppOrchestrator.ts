@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useScreenStateMachine } from "./useScreenStateMachine";
 import { LS_KEYS } from "../config/difficulty";
-import { getDailyObjective, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "../config/dailyObjective";
+import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "../config/dailyObjective";
 import { getMessage } from "../components/Screens/GameOver";
 import { speedLabel } from "../engine/DifficultyScaler";
 import { type EnergyData } from "./useAppResources";
@@ -42,7 +42,7 @@ export function useAppOrchestrator(params: {
 
   const { current: screen, transition: setScreen } = machine;
 
-  const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
+  const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>(() => getDailyObjectives());
   const [gameOverProgress, setGameOverProgress] = useState(0);
   const [shareMsg, setShareMsg] = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
@@ -87,18 +87,21 @@ export function useAppOrchestrator(params: {
     setShareMsg(getMessage(earned));
     
     // Objective check
-    const obj = getDailyObjective();
+    const objs = getDailyObjectives();
     const spd = speedLabel(tick, false);
-    const progress = getObjectiveProgress(obj, tick, peakStreakRef.current, p1Score, spd, bossCounters);
+    const progress = objs.length > 0 ? getObjectiveProgress(objs[0], tick, peakStreakRef.current, p1Score, spd, bossCounters) : 0;
     setGameOverProgress(progress);
 
-    if (!obj.completed) {
-      if (checkObjective(obj, tick, peakStreakRef.current, p1Score, spd, bossCounters)) {
-        const completed = markObjectiveComplete();
-        if (completed) {
-          setDailyObjective(completed);
-          addDust(completed.reward, 'DailyObjective');
-          toast$(`🎯 Daily Complete! +${completed.reward} 💜`);
+    for (let i = 0; i < objs.length; i++) {
+      const obj = objs[i];
+      if (!obj.completed) {
+        if (checkObjective(obj, tick, peakStreakRef.current, p1Score, spd, bossCounters)) {
+          const completed = markObjectiveComplete(i);
+          if (completed) {
+            setDailyObjectives(prev => prev.map((o, idx) => idx === i ? completed : o));
+            addDust(completed.reward, 'DailyObjective');
+            toast$(`🎯 Daily Complete! +${completed.reward} 💜`);
+          }
         }
       }
     }
@@ -122,7 +125,7 @@ export function useAppOrchestrator(params: {
     practiceMode, setPracticeMode,
     best1, best2, wins, deaths, gamesPlayed,
     screen, setScreen, machine,
-    dailyObjective, setDailyObjective,
+    dailyObjectives, setDailyObjectives,
     gameOverProgress, shareMsg, setShareMsg,
     gameSeedState, setGameSeedState,
     paused, setPaused,

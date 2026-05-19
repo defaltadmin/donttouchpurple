@@ -346,3 +346,24 @@
 | P5 | Expand achievement system — 22 achievements (was 3) | engine/GameEngine.ts, engine/subsystems/TickProcessor.ts | ✅ DONE |
 
 **Final: 130/130 tests passing. 0 type errors. Build passes. All pushed to main.**
+
+---
+
+## Shop & Daily Objectives Expansion (2026-05-19)
+
+| # | Feature | Files | Status |
+|---|---------|-------|--------|
+| S1 | Add trail fields to ShopData (unlockedTrails/equippedTrail) | App.tsx, components/Shop/ShopPanel.tsx | ✅ DONE |
+| S2 | Trail tab in ShopPanel — buy/equip trail variants | components/Shop/ShopPanel.tsx | ✅ DONE |
+| S3 | Wire trail config to MouseTrail — equipped trail drives hueMin/hueMax/sizeMin/sizeMax | App.tsx | ✅ DONE |
+| S4 | Expand daily objectives from 1 to 3 per day | config/dailyObjective.ts, App.tsx, hooks/useAppOrchestrator.ts, components/Screens/StartScreen.tsx | ✅ DONE |
+| S5 | Fix TS2322 — add missing background component names to type union | config/powerupWeights.ts:131 | ✅ DONE |
+| S6 | Update dailyObjective test for new multi-objective + indexed completion format | __tests__/dailyObjective.test.ts | ✅ DONE |
+| S7 | Add getDailyObjectives test — 3 objectives, no duplicates, matches getDailyObjective[0] | __tests__/dailyObjective.test.ts | ✅ DONE |
+
+**Details:**
+- **Trail Shop:** 6 trail variants (default, fire, ice, neon, galaxy, lightning) from SHOP_TRAILS in powerupWeights.ts. New "✨ Trails" tab in Shop. Equipped trail config passed directly to MouseTrail component props.
+- **Daily Objectives:** 3 objectives per day (was 1). Uses seeded index offsets (seed + i*97) for variety. Completion stored as `{date, index}` pairs in localStorage. Backward-compatible `getDailyObjective()` still works (returns first).
+- **TS Fix:** Added PulseField, GlitchGrid, AmbientFlow, Nebula, DigitalRain, AuroraBorealis to ShopBackground component type union.
+
+**Final: 134/134 tests passing. 0 type errors. Build passes.**

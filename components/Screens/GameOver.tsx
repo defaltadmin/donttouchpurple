@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { GameMode, Winner } from "../../engine/types";
+import { useTranslation } from "../../hooks/useTranslation";
 
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
   { min: 0,   max: 4,   texts: ["Bro couldn't avoid ONE color. 💀","The grid had 12 safe colors. You still lost. 🫠","Have you considered... not touching purple?","A goldfish would've scored higher. Scientifically.","Congratulations on finding the worst possible score.","Purple: 1. You: somehow less than 1.","Even accidentally tapping would've been better.","Did you mean to play a different game? 🙃"] },
@@ -21,6 +22,7 @@ export function getMessage(score: number): string {
 }
 
 function NewBestBanner() {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ scale: 0, opacity: 0 }}
@@ -38,7 +40,7 @@ function NewBestBanner() {
         backgroundSize: "200% 100%",
       }}
     >
-      ✨ New Personal Best! ✨
+      ✨ {t('gameover.new_best')} ✨
     </motion.div>
   );
 }
@@ -59,6 +61,7 @@ export function GameOver({
   onAgain, onLeaderboard, onMenu, spinLevel,
   isHumanLimit, dustEarned, objectiveProgress = 0,
 }: GameOverProps) {
+  const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
@@ -109,7 +112,7 @@ export function GameOver({
           <div className="go-msg">&ldquo;{shareMsg}&rdquo;</div>
           <div className="go-objective-progress">
             <div className="go-objective-header">
-              <span>Daily Objective</span>
+              <span>{t('hud.score')}</span>
               <span>{Math.round(objectiveProgress * 100)}%</span>
             </div>
             <div className="go-progress-track">
@@ -132,12 +135,12 @@ export function GameOver({
           className="btn-primary btn-large"
           onClick={onAgain}
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
-        >▶ AGAIN</motion.button>
+        >▶ {t('gameover.again')}</motion.button>
         <motion.button
           className="btn-ghost"
           onClick={() => setShowShareModal(true)}
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
-        >🔗 SHARE</motion.button>
+        >🔗 {t('gameover.share')}</motion.button>
         <motion.div
           className="go-small-actions"
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
@@ -148,9 +151,9 @@ export function GameOver({
       </motion.div>
 
       {showShareModal && (
-        <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label="Share your run" tabIndex={-1}>
+        <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label={t('gameover.share_title')} tabIndex={-1}>
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: "var(--font-ui)", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Share Your Run</div>
+            <div style={{ fontFamily: "var(--font-ui)", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('gameover.share_title')}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button className="btn-ghost" onClick={() => {
                 const text = `I just scored ${p1Score} in Don't Touch Purple (${mode})! 🔥\nCan you beat me?\nSeed: ${gameSeed}\nhttps://dont-touch-purple.web.app`;
@@ -159,7 +162,7 @@ export function GameOver({
               <button className="btn-ghost" onClick={() => {
                 const text = `Just dropped ${p1Score} in Don't Touch Purple (${mode.toUpperCase()}) 🔥 Beat my seed? ${gameSeed}\nhttps://dont-touch-purple.web.app`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
-              }}>𝕏 Challenge on X</button>
+              }}>𝕏 {t('gameover.challenge')}</button>
               <button className="btn-ghost" onClick={() => {
                 try {
                   const W = 600, H = 315;
@@ -193,7 +196,7 @@ export function GameOver({
                   a.click();
                 } catch { /* canvas not available */ }
               }}>🖼️ Save Card</button>
-              <button className="btn-ghost" onClick={() => setShowShareModal(false)}>Cancel</button>
+              <button className="btn-ghost" onClick={() => setShowShareModal(false)}>{t('ui.cancel')}</button>
             </div>
           </div>
         </div>

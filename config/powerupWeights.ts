@@ -88,6 +88,39 @@ export const SHOP_SKINS: ShopSkin[] = [
   { id:"ice",     name:"Frozen",    icon:"🧊", cost:400, desc:"Frosty ice texture cells",  preview:"linear-gradient(145deg,#e0f2fe,#7dd3fc)" },
 ];
 
+// ─── Shop items — mouse trails ─────────────────────────────
+export interface ShopTrail {
+  id: string;
+  name: string;
+  icon: string;
+  cost: number;
+  desc: string;
+  config: {
+    particleCount: number;
+    fadeSpeed: number;
+    gravity: number;
+    hueMin: number;
+    hueMax: number;
+    sizeMin: number;
+    sizeMax: number;
+  };
+}
+
+export const SHOP_TRAILS: ShopTrail[] = [
+  { id: "default", name: "Default",     icon: "✨", cost: 0,   desc: "Purple sparkle trail",
+    config: { particleCount: 5, fadeSpeed: 0.02, gravity: 0.02, hueMin: 260, hueMax: 340, sizeMin: 2, sizeMax: 6 } },
+  { id: "fire",    name: "Fire",        icon: "🔥", cost: 300, desc: "Fiery orange-red trail",
+    config: { particleCount: 6, fadeSpeed: 0.025, gravity: 0.03, hueMin: 0, hueMax: 40, sizeMin: 3, sizeMax: 7 } },
+  { id: "ice",     name: "Ice",         icon: "❄️", cost: 300, desc: "Crystalline blue-white trail",
+    config: { particleCount: 4, fadeSpeed: 0.015, gravity: 0.01, hueMin: 180, hueMax: 220, sizeMin: 2, sizeMax: 5 } },
+  { id: "neon",    name: "Neon",        icon: "💜", cost: 400, desc: "Bright neon green trail",
+    config: { particleCount: 7, fadeSpeed: 0.03, gravity: 0.015, hueMin: 100, hueMax: 160, sizeMin: 2, sizeMax: 5 } },
+  { id: "galaxy",  name: "Galaxy",      icon: "🌌", cost: 500, desc: "Sparkling multi-color cosmic trail",
+    config: { particleCount: 8, fadeSpeed: 0.018, gravity: 0.005, hueMin: 0, hueMax: 360, sizeMin: 1, sizeMax: 4 } },
+  { id: "lightning", name: "Lightning", icon: "⚡", cost: 450, desc: "Electric yellow-white trail",
+    config: { particleCount: 3, fadeSpeed: 0.04, gravity: 0, hueMin: 50, hueMax: 60, sizeMin: 3, sizeMax: 8 } },
+];
+
 // ─── Shop items — backgrounds (animated) ──────────────────
 export interface ShopBackground {
   id: string;
@@ -95,17 +128,23 @@ export interface ShopBackground {
   icon: string;
   cost: number;
   desc: string;
-  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "none";
+  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "PulseField" | "GlitchGrid" | "AmbientFlow" | "Nebula" | "DigitalRain" | "AuroraBorealis" | "none";
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
-  { id: "default",        name: "Default",          icon: "🌑", cost: 0,   desc: "Static dark void",                  component: "none" },
-  { id: "void-tunnel",    name: "Void Tunnel",       icon: "🌀", cost: 400, desc: "Thick purple shapes spiral inward", component: "VoidTunnel" },
-  { id: "star-warp",      name: "Star Warp",         icon: "✨", cost: 350, desc: "DTP shapes accelerating outward",   component: "StarWarp" },
-  { id: "grid-pulse",     name: "Grid Pulse",        icon: "⬛", cost: 300, desc: "5×5 grid of cells breathing",     component: "GridPulse" },
-  { id: "purple-cascade", name: "Purple Cascade",    icon: "🟣", cost: 200, desc: "Columns of purple shapes falling", component: "PurpleCascade" },
-  { id: "block-orbit",    name: "Lightning",          icon: "🌀", cost: 350, desc: "Electric bolts tear through the dark", component: "BlockOrbit" },
-  { id: "data-stream",    name: "Matrix Rain",       icon: "📊", cost: 300, desc: "Game symbols cascade in green", component: "DataStream" },
-  { id: "cell-breath",    name: "Neon Pulse",        icon: "🫁", cost: 250, desc: "Cyan scanlines sweep the dark", component: "CellBreath" },
-  { id: "warp-gate",      name: "Hex Grid",          icon: "⭕", cost: 400, desc: "Honeycomb pulses in shifting color", component: "WarpGate" },
+  { id: "default",          name: "Default",          icon: "🌑", cost: 0,   desc: "Static dark void",                  component: "none" },
+  { id: "void-tunnel",      name: "Void Tunnel",       icon: "🌀", cost: 400, desc: "Thick purple shapes spiral inward", component: "VoidTunnel" },
+  { id: "star-warp",        name: "Star Warp",         icon: "✨", cost: 350, desc: "DTP shapes accelerating outward",   component: "StarWarp" },
+  { id: "grid-pulse",       name: "Grid Pulse",        icon: "⬛", cost: 300, desc: "5×5 grid of cells breathing",     component: "GridPulse" },
+  { id: "purple-cascade",   name: "Purple Cascade",    icon: "🟣", cost: 200, desc: "Columns of purple shapes falling", component: "PurpleCascade" },
+  { id: "block-orbit",      name: "Lightning",          icon: "🌀", cost: 350, desc: "Electric bolts tear through the dark", component: "BlockOrbit" },
+  { id: "data-stream",      name: "Matrix Rain",       icon: "📊", cost: 300, desc: "Game symbols cascade in green", component: "DataStream" },
+  { id: "cell-breath",      name: "Neon Pulse",        icon: "🫁", cost: 250, desc: "Cyan scanlines sweep the dark", component: "CellBreath" },
+  { id: "warp-gate",        name: "Hex Grid",          icon: "⭕", cost: 400, desc: "Honeycomb pulses in shifting color", component: "WarpGate" },
+  { id: "pulse-field",      name: "Pulse Field",       icon: "💜", cost: 350, desc: "Purple waves ripple across the screen", component: "PulseField" },
+  { id: "glitch-grid",      name: "Glitch Grid",       icon: "📺", cost: 400, desc: "Matrix-style falling characters", component: "GlitchGrid" },
+  { id: "ambient-flow",     name: "Ambient Flow",      icon: "🌊", cost: 300, desc: "Gentle flowing particles", component: "AmbientFlow" },
+  { id: "nebula",           name: "Nebula",            icon: "🌌", cost: 500, desc: "Deep space nebula with twinkling stars", component: "Nebula" },
+  { id: "digital-rain",     name: "Digital Rain",       icon: "💻", cost: 450, desc: "Purple matrix-style falling characters", component: "DigitalRain" },
+  { id: "aurora-borealis",  name: "Aurora Borealis",   icon: "🌈", cost: 600, desc: "Northern lights shimmer in purple", component: "AuroraBorealis" },
 ];

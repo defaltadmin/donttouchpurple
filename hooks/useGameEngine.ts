@@ -261,7 +261,7 @@ export function useGameEngine(
           }, 420));
           // Track per-tap dust cost for floating marker
           if (event.dustCost) {
-            const fx: BotTapFx = { // eslint-disable-line no-case-declarations
+            const fx: BotTapFx = {  
               id: `bot-fx-${event.player}-${event.idx}-${Date.now()}`,
               idx: event.idx,
               dustCost: event.dustCost,

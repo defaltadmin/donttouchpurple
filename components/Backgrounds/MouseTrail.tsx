@@ -17,6 +17,10 @@ interface MouseTrailProps {
   particleCount?: number;
   fadeSpeed?: number;
   gravity?: number;
+  hueMin?: number;
+  hueMax?: number;
+  sizeMin?: number;
+  sizeMax?: number;
   enabled?: boolean;
 }
 
@@ -46,6 +50,10 @@ export function MouseTrail({
   particleCount = 5,
   fadeSpeed = 0.02,
   gravity = 0.02,
+  hueMin = 260,
+  hueMax = 340,
+  sizeMin = 2,
+  sizeMax = 6,
   enabled = true,
 }: MouseTrailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -92,8 +100,8 @@ export function MouseTrail({
         p.vx = Math.cos(angle) * speed - 0.5;
         p.vy = Math.sin(angle) * speed - 0.5;
         p.alpha = 0.8 + Math.random() * 0.2;
-        p.size = Math.random() * 4 + 2;
-        p.hue = Math.random() * 80 + 260; // 260-340 = purple/magenta range
+        p.size = Math.random() * (sizeMax - sizeMin) + sizeMin;
+        p.hue = Math.random() * (hueMax - hueMin) + hueMin;
       }
     };
 
@@ -133,7 +141,7 @@ export function MouseTrail({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       for (let i = 0; i < POOL_SIZE; i++) resetParticle(particlePool[i]);
     };
-  }, [enabled, particleCount, fadeSpeed, gravity]);
+  }, [enabled, particleCount, fadeSpeed, gravity, hueMin, hueMax, sizeMin, sizeMax]);
 
   if (!enabled) return null;
 

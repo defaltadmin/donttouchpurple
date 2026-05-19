@@ -39,7 +39,7 @@ import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
 import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys, saveKeys, toLabel } from "./config/keybindings";
-import { SHOP_THEMES } from "./config/powerupWeights";
+import { SHOP_THEMES, SHOP_TRAILS } from "./config/powerupWeights";
 import { setAudioMuted, setAudioVolume, setHapticsEnabled, playVolumeChime, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
 import { useInputHandler } from "./hooks/useInputHandler";
 import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups, HoldCell } from "./engine/types";
@@ -87,7 +87,7 @@ import { MouseFollower } from "./components/Backgrounds/MouseFollower";
 import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
 // Daily Objective
-import { getDailyObjective, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "./config/dailyObjective";
+import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "./config/dailyObjective";
 
 // Services (lazy loaded - see getFirebase() below)
 import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
@@ -223,11 +223,13 @@ function loadShopData() {
         unlockedSkins:  data.unlockedSkins || data.ownedSkins || ["default"],
         equippedSkin:   data.equippedSkin || "default",
         unlockedBackgrounds: data.unlockedBackgrounds || ["default"],
-        equippedBackground: data.equippedBackground || "default"
+        equippedBackground: data.equippedBackground || "default",
+        unlockedTrails: data.unlockedTrails || ["default"],
+        equippedTrail: data.equippedTrail || "default"
       };
     }
   } catch { /* invalid JSON, return defaults */ }
-  return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default", unlockedBackgrounds: ["default"], equippedBackground: "default" };
+  return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default", unlockedBackgrounds: ["default"], equippedBackground: "default", unlockedTrails: ["default"], equippedTrail: "default" };
 }
 
 type ShopData = {
@@ -235,6 +237,7 @@ type ShopData = {
   unlockedBadges: string[]; equippedBadge: string;
   unlockedSkins:  string[]; equippedSkin:  string;
   unlockedBackgrounds: string[]; equippedBackground: string;
+  unlockedTrails: string[]; equippedTrail: string;
 };
 
 function saveShopData(d: ShopData) {
@@ -481,7 +484,7 @@ export default function App() {
     localStorage.removeItem("pendingReplaySeed");
     setPendingReplaySeed(null);
   }, []);
-  const [dailyObjective, setDailyObjective] = useState<DailyObjective>(() => getDailyObjective());
+  const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>(() => getDailyObjectives());
   const [bossCounters, setBossCounters] = useState<BossObjectiveCounters>({ bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 });
   const bossCountersRef = useRef(bossCounters);
   useEffect(() => { bossCountersRef.current = bossCounters; }, [bossCounters]);
@@ -798,31 +801,34 @@ export default function App() {
     // Update daily challenge progress
     updateChallengeProgress(p1Score, snapshotRef.current?.tick ?? 0);
 
-    const obj = getDailyObjective();
+    const objs = getDailyObjectives();
     const spd = snapshotRef.current ? speedLabel(snapshotRef.current.tick, false) : "1.0×";
     const finalStreak = peakStreakRef.current;
-    const progress = getObjectiveProgress(obj, snapshotRef.current?.tick ?? 0, finalStreak, p1Score, spd, bossCountersRef.current);
+    const progress = objs.length > 0 ? getObjectiveProgress(objs[0], snapshotRef.current?.tick ?? 0, finalStreak, p1Score, spd, bossCountersRef.current) : 0;
     setGameOverProgress(progress);
 
-    if (!obj.completed) {
-      if (checkObjective(obj, snapshotRef.current?.tick ?? 0, finalStreak, p1Score, spd, bossCountersRef.current)) {
-        const completed = markObjectiveComplete();
-        if (completed) {
-          setDailyObjective(completed);
-          const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
-          addDust(safeReward, 'DailyObjective');
-          setTimeout(() => {
-            setToast(`🎯 Daily Complete! +${completed.reward} 💜`);
-            if (toastRef.current) clearTimeout(toastRef.current);
-            toastRef.current = setTimeout(() => setToast(null), 3500);
-            safeSentry.addBreadcrumb({
-              category: "economy",
-              message: "daily_complete",
-              level: "info",
-              data: { reward: completed.reward, objective: obj.type },
-            });
-            getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type })).catch(e => logger.warn('Firebase operation failed', e));
-          }, 800);
+    for (let i = 0; i < objs.length; i++) {
+      const obj = objs[i];
+      if (!obj.completed) {
+        if (checkObjective(obj, snapshotRef.current?.tick ?? 0, finalStreak, p1Score, spd, bossCountersRef.current)) {
+          const completed = markObjectiveComplete(i);
+          if (completed) {
+            setDailyObjectives(prev => prev.map((o, idx) => idx === i ? completed : o));
+            const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
+            addDust(safeReward, 'DailyObjective');
+            setTimeout(() => {
+              setToast(`🎯 Daily Complete! +${completed.reward} 💜`);
+              if (toastRef.current) clearTimeout(toastRef.current);
+              toastRef.current = setTimeout(() => setToast(null), 3500);
+              safeSentry.addBreadcrumb({
+                category: "economy",
+                message: "daily_complete",
+                level: "info",
+                data: { reward: completed.reward, objective: obj.type },
+              });
+              getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type })).catch(e => logger.warn('Firebase operation failed', e));
+            }, 800);
+          }
         }
       }
     }
@@ -1831,7 +1837,14 @@ export default function App() {
       {/* Mouse Follower Blob - adds glassmorphism feel */}
       <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={30} opacity={0.5} delay={0.12} />
       {/* Mouse Trail - subtle particle effect on all screens */}
-      <MouseTrail enabled={!reducedMotion} />
+      {(() => {
+        const trailCfg = SHOP_TRAILS.find(t => t.id === shopData.equippedTrail)?.config;
+        return trailCfg ? (
+          <MouseTrail enabled={!reducedMotion} {...trailCfg} />
+        ) : (
+          <MouseTrail enabled={!reducedMotion} />
+        );
+      })()}
 
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
       {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}
@@ -2036,7 +2049,7 @@ export default function App() {
         <StartScreen
           playerName={playerName}
           isFeatureUnlocked={(f) => machine.isFeatureUnlocked(f, devMode)}
-          dailyObjective={dailyObjective}
+          dailyObjectives={dailyObjectives}
           energyCount={energyData.count}
           energyLastRegen={energyData.lastRegen}
           dust={dust}

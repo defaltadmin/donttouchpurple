@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getDailyObjective, getObjectiveStreak, incrementObjectiveStreak, markObjectiveComplete, checkObjective } from '../config/dailyObjective';
+import { getDailyObjective, getDailyObjectives, getObjectiveStreak, incrementObjectiveStreak, markObjectiveComplete, checkObjective } from '../config/dailyObjective';
 
 describe('dailyObjective', () => {
   beforeEach(() => {
@@ -29,6 +29,33 @@ describe('dailyObjective', () => {
       // They might be the same by luck, but test the mechanism
       expect(obj1.date).toBe('2026-05-17');
       expect(obj2.date).toBe('2026-05-18');
+    });
+  });
+
+  describe('getDailyObjectives', () => {
+    it('returns 3 objectives for today', () => {
+      const objs = getDailyObjectives();
+      expect(objs).toHaveLength(3);
+      objs.forEach(obj => {
+        expect(obj.type).toBeDefined();
+        expect(obj.description).toBeDefined();
+        expect(obj.target).toBeGreaterThan(0);
+        expect(typeof obj.completed).toBe('boolean');
+      });
+    });
+
+    it('returns 3 different objectives (no duplicates)', () => {
+      const objs = getDailyObjectives('2026-05-17');
+      const types = objs.map(o => `${o.type}-${o.target}`);
+      const unique = new Set(types);
+      expect(unique.size).toBe(3);
+    });
+
+    it('first objective matches getDailyObjective', () => {
+      const single = getDailyObjective('2026-05-17');
+      const multiple = getDailyObjectives('2026-05-17');
+      expect(multiple[0].type).toBe(single.type);
+      expect(multiple[0].target).toBe(single.target);
     });
   });
 
@@ -125,11 +152,20 @@ describe('dailyObjective', () => {
       expect(result).toBeNull();
     });
 
-    it('persists completed date to localStorage', () => {
-      markObjectiveComplete();
+    it('persists completed entry to localStorage', () => {
+      markObjectiveComplete(0);
       const saved = JSON.parse(localStorage.getItem('dtp-daily-completed') || '[]');
       const today = new Date().toISOString().slice(0, 10);
-      expect(saved).toContain(today);
+      expect(saved).toEqual(expect.arrayContaining([expect.objectContaining({ date: today, index: 0 })]));
+    });
+
+    it('can complete multiple objectives per day', () => {
+      markObjectiveComplete(0);
+      markObjectiveComplete(1);
+      const saved = JSON.parse(localStorage.getItem('dtp-daily-completed') || '[]');
+      expect(saved).toHaveLength(2);
+      expect(saved.filter((e: any) => e.index === 0)).toHaveLength(1);
+      expect(saved.filter((e: any) => e.index === 1)).toHaveLength(1);
     });
   });
 });

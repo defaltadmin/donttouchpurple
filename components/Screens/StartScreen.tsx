@@ -175,7 +175,7 @@ export interface StartScreenProps {
   rewardsBadgeCount?: number;
   dustWidget:      React.ReactNode;
   energyBar:       React.ReactNode;
-  dailyObjective?: import("../../config/dailyObjective").DailyObjective;
+  dailyObjectives?: import("../../config/dailyObjective").DailyObjective[];
   pendingReplaySeed?: string | null;
   onClearReplaySeed?: () => void;
   resumeReady?: boolean;
@@ -197,7 +197,7 @@ export function StartScreen({
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
   onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, onGameMaster, rewardsBadgeCount,
   dustWidget, energyBar,
-  dailyObjective,
+  dailyObjectives,
   pendingReplaySeed, onClearReplaySeed,
   resumeReady, resumeData, onResumeGame,
   onToast,
