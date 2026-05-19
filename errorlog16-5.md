@@ -414,3 +414,30 @@
 **App.tsx: 2323 → 2111 lines (-212, -9.1%)**
 
 **Final: 134/134 tests passing. 0 type errors. Build passes.**
+
+---
+
+## Full i18n Pass (2026-05-19)
+
+| Component | Status | Keys |
+|-----------|--------|------|
+| FirstRunOverlay | ✅ FIXED (was rendering raw keys) | 16 onboarding.* keys |
+| SettingsDrawer | ✅ Translated | 20 settings.* keys |
+| GameHeader | ✅ Translated | 4 header.* keys |
+| BossOverlay | ✅ Translated | 6 boss.* keys |
+| ScoreDisplay | ✅ Translated | 3 hud.* keys |
+| GridErrorBoundary | ✅ Translated (wrapper pattern) | 5 error.* keys |
+| LoadingScreen | ✅ Translated | 7 loading.* keys |
+| LoginStreakPopup | ✅ Translated | 4 streak.* keys |
+| RewardsHub | ✅ Translated | 11 rewards.* keys |
+| DailyChallengesPopup | ✅ Translated | 2 challenges.* keys |
+| ShareModal | ✅ Translated | 4 share.* keys |
+| PauseOverlay | ✅ Translated | 2 pause.* keys |
+| LeaderboardPanel | ✅ Translated | 9 leaderboard.* keys |
+| PlayerPanel | ✅ Translated | 5 player.* keys |
+| EnergyBar | ✅ Translated | 3 energy.* keys |
+
+**Total: 15 components translated, 200+ keys across 5 locales**
+**Critical fix: FirstRunOverlay no longer shows raw key strings to new players**
+
+**Final: 134/134 tests passing. 0 type errors. Build passes.**
