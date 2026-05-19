@@ -383,9 +383,15 @@ export class TickProcessor {
     ctx.emit({ type: "toast", message: getBossLabel(type) });
     ctx.scheduleTimeout(() => {
       if (ctx.bossEvent?.type === type) {
+        const completedType = type;
         ctx.bossEvent = null;
         ctx.dirty = true;
-        ctx.emit({ type: "toast", message: getBossDoneLabel(type) });
+        ctx.emit({ type: "toast", message: getBossDoneLabel(completedType) });
+        // Inversion survival achievement
+        if (completedType === "inversion") {
+          // Dynamic import to avoid circular dependency
+          import('../../utils/achievements').then(m => m.achievementSystem.unlock('boss_inversion')).catch(() => {});
+        }
       }
     }, durationMs);
   }

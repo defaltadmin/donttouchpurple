@@ -120,6 +120,7 @@ export class GameEngine {
   private _deathCleanupTimer: ReturnType<typeof setTimeout> | null = null; // Track death cleanup timeout
   private _cachedNow = Date.now(); // Cached Date.now() per tick — avoids 10+ syscalls per frame
   private _bossActive = false;
+  private _bombDefuseCount = 0;
   private _tickProcessor = new TickProcessor();
   private _tickCtx!: TickContext;
   private _bot: BotController;
@@ -130,14 +131,44 @@ export class GameEngine {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
     achievementSystem.load();
-    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '≡ƒÆÑ', unlocked: false });
-    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '≡ƒ¢í∩╕Å', unlocked: false });
-    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '≡ƒôà', unlocked: false });
+    // Core achievements
+    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '⚔️', unlocked: false });
+    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '💪', unlocked: false });
+    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '📅', unlocked: false });
+    // Score milestones
+    achievementSystem.register({ id: 'score_100', name: 'Getting Started', desc: 'Score 100 points', icon: '🌟', unlocked: false });
+    achievementSystem.register({ id: 'score_500', name: 'Rising Star', desc: 'Score 500 points', icon: '⭐', unlocked: false });
+    achievementSystem.register({ id: 'score_1000', name: 'Thousand Club', desc: 'Score 1,000 points', icon: '💫', unlocked: false });
+    achievementSystem.register({ id: 'score_2500', name: 'Quarter King', desc: 'Score 2,500 points', icon: '👑', unlocked: false });
+    achievementSystem.register({ id: 'score_5000', name: 'Half Hero', desc: 'Score 5,000 points', icon: '🏆', unlocked: false });
+    achievementSystem.register({ id: 'score_9999', name: 'Max Master', desc: 'Score 9,999 points (max)', icon: '💎', unlocked: false });
+    // Streak milestones
+    achievementSystem.register({ id: 'streak_10', name: 'On Fire', desc: 'Reach a 10-streak', icon: '🔥', unlocked: false });
+    achievementSystem.register({ id: 'streak_25', name: 'Unstoppable', desc: 'Reach a 25-streak', icon: '💥', unlocked: false });
+    achievementSystem.register({ id: 'streak_50', name: 'Legend', desc: 'Reach a 50-streak', icon: '⚡', unlocked: false });
+    // Mode completions
+    achievementSystem.register({ id: 'classic_win', name: 'Classic Champion', desc: 'Win a Classic game', icon: '🎯', unlocked: false });
+    achievementSystem.register({ id: 'evolve_win', name: 'Evolution Complete', desc: 'Win an Evolve game', icon: '🧬', unlocked: false });
+    // Boss achievements
+    achievementSystem.register({ id: 'boss_defeat', name: 'Boss Slayer', desc: 'Defeat a boss event', icon: '🐉', unlocked: false });
+    achievementSystem.register({ id: 'boss_inversion', name: 'Mind Bender', desc: 'Survive an Inversion event', icon: '🔄', unlocked: false });
+    // Bomb achievements
+    achievementSystem.register({ id: 'bomb_defuse', name: 'Defuser', desc: 'Defuse 10 bombs', icon: '💣', unlocked: false });
+    achievementSystem.register({ id: 'bomb_master', name: 'Bomb Expert', desc: 'Defuse 50 bombs', icon: '🧨', unlocked: false });
+    // Daily streak
+    achievementSystem.register({ id: 'streak_3', name: 'Consistent', desc: '3-day daily streak', icon: '📅', unlocked: false });
+    achievementSystem.register({ id: 'streak_7', name: 'Weekly Warrior', desc: '7-day daily streak', icon: '🗓️', unlocked: false });
+    // Dust achievements
+    achievementSystem.register({ id: 'dust_1000', name: 'Dust Collector', desc: 'Earn 1,000 dust total', icon: '💜', unlocked: false });
+    achievementSystem.register({ id: 'dust_10000', name: 'Dust Baron', desc: 'Earn 10,000 dust total', icon: '💰', unlocked: false });
     audioEngine.init();
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
     }).catch(e => logError('Settings module failed', e));
-    this._bossCompleteHandler = () => { this._bossActive = false; };
+    this._bossCompleteHandler = () => {
+      this._bossActive = false;
+      achievementSystem.unlock('boss_defeat');
+    };
     this._bossShieldBreakHandler = () => { this.hitPause(80); this.emit({ type: "shake", player: 1 }); this.emit({ type: "sound", name: "powerup" }); };
     this._difficultyEmergencyHandler = () => {
       if (!this.p1 || this.phase !== 'playing') return;
@@ -531,6 +562,10 @@ destroy(): void {
       const nextStreak = ref.streak + 1;
       ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
+      // Bomb achievements — track total defuses
+      this._bombDefuseCount = (this._bombDefuseCount ?? 0) + 1;
+      achievementSystem.check('bomb_defuse', () => this._bombDefuseCount >= 10);
+      achievementSystem.check('bomb_master', () => this._bombDefuseCount >= 50);
       ref.cells = activeToCellsP(ref.active, pat);
       this.dirty = true;
       this.emitSnapshot();
@@ -593,6 +628,17 @@ destroy(): void {
       if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
       achievementSystem.check('first_blood', () => true);
       achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
+      // Score milestones
+      achievementSystem.check('score_100', () => ref.score >= 100);
+      achievementSystem.check('score_500', () => ref.score >= 500);
+      achievementSystem.check('score_1000', () => ref.score >= 1000);
+      achievementSystem.check('score_2500', () => ref.score >= 2500);
+      achievementSystem.check('score_5000', () => ref.score >= 5000);
+      achievementSystem.check('score_9999', () => ref.score >= 9999);
+      // Streak milestones
+      achievementSystem.check('streak_10', () => ref.streak >= 10);
+      achievementSystem.check('streak_25', () => ref.streak >= 25);
+      achievementSystem.check('streak_50', () => ref.streak >= 50);
     }
     }
     ref.cells = activeToCellsP(ref.active, pat);
@@ -1017,6 +1063,12 @@ private triggerGameOver(winner: Winner): void {
     this.emitSnapshot();
     this.emit({ type: "phaseChange", phase: "gameover" });
     this.emit({ type: "gameOver", winner });
+
+    // Mode win achievements
+    if (winner === "p1" || winner === "tie") {
+      if (this.config.mode === "classic") achievementSystem.unlock('classic_win');
+      if (this.config.mode === "evolve") achievementSystem.unlock('evolve_win');
+    }
 
     // Death slow-motion: visually slow for 600ms before cleanup
     if (this._deathCleanupTimer) clearTimeout(this._deathCleanupTimer);
