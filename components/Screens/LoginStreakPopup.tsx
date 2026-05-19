@@ -31,7 +31,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
   const days = Array.from({ length: 7 }, (_, i) => i + 1);
 
   return (
-    <div className="popup-overlay" onClick={onClose}>
+    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('streak.title')} onClick={onClose}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
           <span className="popup-title">🔥 {t('streak.title')}</span>

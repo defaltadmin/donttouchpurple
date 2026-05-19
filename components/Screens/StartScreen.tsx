@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
-import { getObjectiveStreak as _getObjectiveStreak } from "../../config/dailyObjective";
 import { useTranslation } from "../../hooks/useTranslation";
 
 // ─── Types local to menu ──────────────────────────────────────────

@@ -68,7 +68,7 @@ export function RewardsHub({
 
   return (
     // No outside-click dismiss (E8) — modal is persistent until explicit ✕
-    <div className={`modal-overlay rewards-hub-overlay${closing ? " rewards-hub-overlay--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay rewards-hub-overlay${closing ? " rewards-hub-overlay--closing" : ""}`} role="dialog" aria-modal="true" aria-label={t('rewards.title')} onClick={(e) => e.stopPropagation()}>
       <div className={`modal-panel rewards-hub-panel${closing ? " rewards-hub-panel--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}

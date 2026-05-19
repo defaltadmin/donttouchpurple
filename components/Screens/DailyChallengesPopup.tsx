@@ -40,7 +40,7 @@ export default function DailyChallengesPopup({ challenges, onClaim, onClose }: D
   };
 
   return (
-    <div className="popup-overlay" onClick={onClose}>
+    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('challenges.title')} onClick={onClose}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
           <span className="popup-title">🎯 {t('challenges.title')}</span>

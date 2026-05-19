@@ -32,7 +32,7 @@ export function WhatsNew({ onClose }: WhatsNewProps) {
   })();
 
   return (
-    <div className="whatsnew-overlay" onClick={onClose}>
+    <div className="whatsnew-overlay" role="dialog" aria-modal="true" aria-label="What's New" onClick={onClose}>
       <div className="whatsnew-card" onClick={(e) => e.stopPropagation()}>
         <div className="whatsnew-header">
           <h2 className="whatsnew-title">What's New</h2>

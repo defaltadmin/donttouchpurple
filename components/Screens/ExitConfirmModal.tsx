@@ -9,7 +9,7 @@ interface Props {
 export function ExitConfirmModal({ onConfirm, onCancel }: Props) {
   const { t } = useTranslation();
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('pause.exit_confirm_title')} onClick={onCancel}>
       <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">🏠 {t('pause.exit_confirm_title')}</span>

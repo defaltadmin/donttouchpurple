@@ -18,7 +18,7 @@ export const EnergyPopup = React.memo(function EnergyPopup({
   const fullCost = needed * GAME.DUST_PER_ENERGY;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('ui.energy')} onClick={onClose}>
       <div className="modal-panel energy-popup" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">⚡ {t('ui.energy')}</span>

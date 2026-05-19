@@ -26,7 +26,7 @@ export const PauseOverlay = React.memo(function PauseOverlay({
   const { t } = useTranslation();
 
   return (
-    <div className="pause-overlay" ref={focusTrapRef}>
+    <div className="pause-overlay" role="dialog" aria-modal="true" aria-label={t('pause.title')} ref={focusTrapRef}>
       <div className="pause-card">
         <div className="pause-title">⏸ {t('pause.title')}</div>
         <div className="pause-hud-grid">

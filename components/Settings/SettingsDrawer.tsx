@@ -66,7 +66,7 @@ export function SettingsDrawer({
     setCurrentLocale?.(lang);
   };
   return (
-    <div className="drawer-overlay" onClick={onClose}>
+    <div className="drawer-overlay" role="dialog" aria-modal="true" aria-label={t('settings.title')} onClick={onClose}>
       <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <span className="drawer-title">{t('settings.title')}</span>
