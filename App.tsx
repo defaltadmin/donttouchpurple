@@ -39,6 +39,7 @@ import { SHOP_THEMES, SHOP_TRAILS } from "./config/powerupWeights";
 import { setAudioMuted, setAudioVolume, setHapticsEnabled, playVolumeChime, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
 import { useGameSettings } from "./hooks/useGameSettings";
 import { useDustEconomy } from "./hooks/useDustEconomy";
+import { useUIFlags } from "./hooks/useUIFlags";
 import { useInputHandler } from "./hooks/useInputHandler";
 import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups, HoldCell } from "./engine/types";
 
@@ -139,18 +140,35 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadDone, setLoadDone] = useState(false);
-  const [showNameEntry, setShowNameEntry] = useState(false);
+  const {
+    showNameEntry, setShowNameEntry,
+    showLangMenu, setShowLangMenu,
+    showShare, setShowShare,
+    shareUrl, setShareUrl,
+    showRotatePrompt, setShowRotatePrompt,
+    showDevPanel, setShowDevPanel,
+    showSettings, setShowSettings,
+    settingsFromPause, setSettingsFromPause,
+    showTutorial, setShowTutorial,
+    showWhatsNew, setShowWhatsNew,
+    showPrivacy, setShowPrivacy,
+    showLoginStreak, setShowLoginStreak,
+    showDailyChallenges, setShowDailyChallenges,
+    showRewardsHub, setShowRewardsHub,
+    showExitConfirm, setShowExitConfirm,
+    showEnergyPopup, setShowEnergyPopup,
+    showOnboarding, setShowOnboarding,
+    showDevUnlock, setShowDevUnlock,
+    showBuildDeploy, setShowBuildDeploy,
+    evolveTutorialSeen, setEvolveTutorialSeen,
+    EVOLVE_TUTORIAL_SEEN_KEY,
+  } = useUIFlags();
   const [currentLocale, setCurrentLocale] = useState<Locale>(i18n.current);
-  const [showLangMenu, setShowLangMenu] = useState(false);
   const [gamepadActive, setGamepadActive] = useState(false);
   interface AchievementToast { id: string; icon: string; name: string; desc: string; }
   const [achievementQueue, setAchievementQueue] = useState<AchievementToast[]>([]);
   const [dailyComplete, setDailyComplete] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [showRotatePrompt, setShowRotatePrompt] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && localStorage.getItem('dtp:dev') === 'true');
   const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
@@ -319,22 +337,9 @@ export default function App() {
   const [initialsEntered, setIE]     = useState(false);
   const [theme, setTheme]            = useState<"dark"|"light">("dark");
   const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
-  const [showSettings, setShowSettings]     = useState(false);
-  const [settingsFromPause, setSettingsFromPause] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
-  
-  const EVOLVE_TUTORIAL_SEEN_KEY = 'dtp-evolve-tutorial-seen';
-  const [evolveTutorialSeen, setEvolveTutorialSeen] = useState(() =>
-    Boolean(localStorage.getItem(EVOLVE_TUTORIAL_SEEN_KEY))
-  );
-  const [showPrivacy, setShowPrivacy]       = useState(() => !localStorage.getItem(LS_KEYS.PRIVACY_OK));
-  const [showLoginStreak, setShowLoginStreak]         = useState(false);
-  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [loginStreakCount, setLoginStreakCount]        = useState(1);
   const [loginStreakReward, setLoginStreakReward]      = useState(50);
   const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
-  const [showRewardsHub, setShowRewardsHub]           = useState(false);
   const [weeklyTasks, setWeeklyTasks]                 = useState<WeeklyTask[]>([]);
   const [prevBest, setPrevBest]     = useState(0);
 
@@ -342,18 +347,13 @@ export default function App() {
   const [devMode, setDevMode]       = useState(false);
   // Give 99999 dust when dev mode is enabled
   useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode]);
-  const [showDevUnlock, setShowDevUnlock] = useState(false);
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
    const [devRotationSpeed, setDevRotationSpeed] = useState(1);
   const [devAutoPlay, setDevAutoPlay] = useState(false);
   const [devHeatmap, setDevHeatmap]   = useState<Record<number, number>>({});
-    const [showBuildDeploy, setShowBuildDeploy] = useState(false);
-    const [showExitConfirm, setShowExitConfirm] = useState(false);
-    const [showEnergyPopup, setShowEnergyPopup] = useState(false);
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => false); // Disable persistent onboarding overlay during gameplay
   const [shareToast, setShareToast] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showOffset, setShowOffset] = useState(() => settingsManager.get().offsetPointer ?? false);
