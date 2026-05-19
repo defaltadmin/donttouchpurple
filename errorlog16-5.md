@@ -508,3 +508,23 @@
 
 **App.tsx: 2323 → 2033 lines (-12.5%)**
 **Final: 134/134 tests passing. 0 type errors. Build passes.**
+
+---
+
+## Remaining Tasks Completed (2026-05-19)
+
+| Task | Status |
+|------|--------|
+| PwrBar 50ms setInterval → RAF | ✅ DONE |
+| BombTimer 33ms setInterval → RAF | ✅ DONE |
+| CSS dead code cleanup (4 duplicate blocks) | ✅ DONE |
+| `as any` casts removed (Cell, PlayerPanel) | ✅ DONE |
+| ShopPanel inline styles → CSS classes | ✅ DONE |
+| devLog.ts check | Not dead code (used in engine) |
+
+**Performance improvements:**
+- PwrBar: 20 re-renders/sec → RAF (frame-synced)
+- BombTimer: 30fps setInterval → RAF (stops when done)
+- ShopPanel: 14 inline style objects → CSS classes
+
+**Final: 134/134 tests passing. 0 type errors. Build passes.**
