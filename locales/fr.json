@@ -95,7 +95,6 @@
   "how.pause_key": "Pause / Reprendre",
   "how.bot_key": "Activer Bot (Évolution, coûte de la poussière)",
   "how.tip": "Construisez des séries pour des bonus · Gagnez de la poussière pour débloquer skins et powerups",
-  "share.copy_link": "📤 Défier des Amis",
   "share.copied": "📋 Lien copié ! Défiez vos amis",
   "toast.game_restored": "📦 Partie restaurée ! Score : {score}",
   "toast.streak_lost": "{count} série perdue !",
@@ -111,9 +110,7 @@
   "toast.energy_full": "Énergie pleine !",
   "toast.level_up": "Niveau {level} !",
   "error.crash": "💥 Une erreur s'est produite",
-  "error.copy_debug": "📋 Copier les Infos Debug",
   "error.retry": "🔄 Recharger le Jeu",
-  "error.try_again": "↩️ Réessayer",
 
   "menu.game": "Jeu",
   "menu.players": "Joueurs",

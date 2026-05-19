@@ -23,6 +23,8 @@ if (IS_PROD) {
         /^https:\/\/game\.mscarabia\.com/,
       ],
     });
+    // Initialize safeSentry wrapper so error reporting works
+    import('./services/sentry').then(m => m.getSentry()).catch(() => {});
   }).catch(() => {});
 }
 

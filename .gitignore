@@ -6,6 +6,7 @@ node_modules/
 dist/
 htdocs/
 *.zip
+stats.html
 
 # Environment & Secrets
 .env
@@ -23,7 +24,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Temp/Junk folders (keeping them out of the clean repo)
+# Temp/Junk folders
 junk/
 from sonnet*/
 for sonnet*/
@@ -34,17 +35,20 @@ FILES NEEDED*/
 .vscode/
 .claude/
 .idea/
-.agents/
-.continue/
-.gemini/
-.trae/
-.windsurf/
-
-# IDE and agent configs
-.firebase/
+.openclaude/
+.qodo/
 .agents/
 .continue/
 .gemini/
 .trae/
 .windsurf/
 .aider*
+
+# Firebase
+.firebase/
+
+# Cloudflare
+.wrangler/
+
+# Test coverage
+coverage/

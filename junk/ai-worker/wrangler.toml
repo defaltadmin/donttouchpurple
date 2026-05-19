@@ -1,6 +1,0 @@
-name = "ai-worker"
-main = "index.ts"
-compatibility_date = "2026-05-17"
-
-[ai]
-binding = "AI"

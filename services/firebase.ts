@@ -145,21 +145,6 @@ async function ensureFirebaseModules(): Promise<FirebaseModuleFunctions> {
   return firebaseModules;
 }
 
-export async function fbAddScoreGlobal(
-  entry: GlobalScoreEntry,
-): Promise<void> {
-  const db = await getDB();
-  if (!db) return;
-  const modules = await ensureFirebaseModules();
-  await modules.addDoc(modules.collection(db, "lb_global"), { ...normalizeGlobalScoreEntry(entry), ts: modules.serverTimestamp() });
-}
-
-/** @deprecated Use scoreSync.queue() instead. */
-export async function fbAddScoreViaWorker(score: number, mode: 'classic' | 'evolve' = 'evolve'): Promise<void> {
-  const { scoreSync } = await import('../utils/score-sync');
-  await scoreSync.queue(score, mode);
-}
-
 export async function fbLogEvent(name: string, params: Record<string, string | number | boolean | null | undefined> = {}): Promise<void> {
   if (!IS_PROD || typeof window === "undefined") return;
   try {
@@ -208,30 +193,6 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
     dust: cappedDust,
     ts: modules.serverTimestamp(),
   });
-}
-
-export async function fbCheckWeeklyBonus(name: string): Promise<number> {
-  const db = await getDB();
-  if (!db) return 0;
-  // Sanitize name before any use — same rules as normalizeGlobalScoreEntry
-  const safeName = name.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8);
-  if (!safeName) return 0;
-  try {
-    const { collection, query, where, orderBy, limit, getDocs } = await ensureFirebaseModules();
-    // oneWeekAgo is a computed ISO date string — not user input
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const q = query(
-      collection(db, "lb_global"),
-      where("date", ">=", oneWeekAgo),
-      orderBy("date", "desc"),
-      limit(50)
-    );
-    const snap = await getDocs(q);
-    const entries = snap.docs.map((doc: { data: () => Record<string, unknown> }) => doc.data() as Record<string, unknown>);
-    return entries.slice(0, 3).some((entry: Record<string, unknown>) => entry.initials === safeName) ? 500 : 0;
-  } catch {
-    return 0;
-  }
 }
 
 let appInstance: FirebaseAppInstance | null = null;

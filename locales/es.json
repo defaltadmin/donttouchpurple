@@ -95,7 +95,6 @@
   "how.pause_key": "Pausa / Reanudar",
   "how.bot_key": "Alternar Bot (Evolve, cuesta polvo)",
   "how.tip": "Construye rachas para bonos · Gana polvo para desbloquear skins y powerups",
-  "share.copy_link": "📤 Desafiar Amigos",
   "share.copied": "📋 ¡Enlace copiado! Reta a tus amigos",
   "toast.game_restored": "📦 ¡Partida restaurada! Puntos: {score}",
   "toast.streak_lost": "¡{count} racha perdida!",
@@ -111,9 +110,7 @@
   "toast.energy_full": "¡Energía completa!",
   "toast.level_up": "¡Nivel {level}!",
   "error.crash": "💥 Algo salió mal",
-  "error.copy_debug": "📋 Copiar Info Debug",
   "error.retry": "🔄 Recargar Juego",
-  "error.try_again": "↩️ Intentar de Nuevo",
 
   "menu.game": "Juego",
   "menu.players": "Jugadores",

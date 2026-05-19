@@ -95,7 +95,6 @@
   "how.pause_key": "Pause / Resume",
   "how.bot_key": "Toggle Bot Assist (Evolve, costs dust)",
   "how.tip": "Build streaks for combo bonuses · Earn dust to unlock skins & powerups in the Shop",
-  "share.copy_link": "📤 Challenge Friends",
   "share.copied": "📋 Link copied! Challenge friends",
   "toast.game_restored": "📦 Game restored! Score: {score}",
   "toast.streak_lost": "{count} streak lost!",
@@ -111,9 +110,7 @@
   "toast.energy_full": "Energy full!",
   "toast.level_up": "Level {level}!",
   "error.crash": "💥 Something went wrong",
-  "error.copy_debug": "📋 Copy Debug Info",
   "error.retry": "🔄 Reload Game",
-  "error.try_again": "↩️ Try Again",
 
   "menu.game": "Game",
   "menu.players": "Players",

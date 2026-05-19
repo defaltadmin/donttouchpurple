@@ -20,7 +20,6 @@ export { haptics } from './haptics';
 
 // ─── UI & Experience ──────────────────────────────────────
 export { Preloader } from './preloader';
-// AssetGate is in preloader-v2.ts - import directly if needed
 export { AssetHydrator } from './asset-hydrator';
 export { LazyHydrate } from './lazy-hydrate';
 export { orientationMonitor } from './orientation';
