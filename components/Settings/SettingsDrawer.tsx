@@ -1,6 +1,7 @@
 import React from "react";
 import { PillRow } from "./PillRow";
 import { i18n, type Locale } from "../../utils/i18n";
+import { useTranslation } from "../../hooks/useTranslation";
 
 type ColorblindMode = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
@@ -59,6 +60,7 @@ export function SettingsDrawer({
   currentLocale,
   setCurrentLocale,
 }: SettingsDrawerProps) {
+  const { t } = useTranslation();
   const handleLocaleChange = (lang: Locale) => {
     i18n.set(lang);
     setCurrentLocale?.(lang);
@@ -67,21 +69,21 @@ export function SettingsDrawer({
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
-          <span className="drawer-title">⚙ Settings</span>
+          <span className="drawer-title">{t('settings.title')}</span>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">🌙 Appearance</div>
+          <div className="opt-label">{t('settings.appearance')}</div>
           <PillRow<"dark" | "light">
-            options={[{ value: "dark", label: "🌑 Dark" }, { value: "light", label: "☀️ Light" }]}
+            options={[{ value: "dark", label: t('settings.dark') }, { value: "light", label: t('settings.light') }]}
             value={theme}
             onChange={setTheme}
           />
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">🔊 Sound</div>
+          <div className="opt-label">{t('settings.sound')}</div>
           <div className="vol-row">
             <button
               className={`vol-mute-btn${muted ? " vol-mute-btn--muted" : ""}`}
@@ -100,55 +102,55 @@ export function SettingsDrawer({
               onChange={(e) => setVolume(parseFloat(e.target.value))}
               disabled={muted}
             />
-            <span className="vol-pct">{muted ? "Muted" : `${Math.round(volume * 100)}%`}</span>
+            <span className="vol-pct">{muted ? t('settings.muted_label') : `${Math.round(volume * 100)}%`}</span>
           </div>
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">📳 Screen Shake</div>
+          <div className="opt-label">{t('settings.screen_shake')}</div>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+            options={[{ value: "on", label: t('settings.on') }, { value: "off", label: t('settings.off') }]}
             value={screenShake ? "on" : "off"}
             onChange={(v) => setScreenShake(v === "on")}
           />
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">📳 Haptics</div>
+          <div className="opt-label">{t('settings.haptics')}</div>
           <PillRow<"on" | "off">
-            options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+            options={[{ value: "on", label: t('settings.on') }, { value: "off", label: t('settings.off') }]}
             value={haptics ? "on" : "off"}
             onChange={(v) => setHaptics(v === "on")}
           />
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">◌ Reduced Motion</div>
+          <div className="opt-label">{t('settings.reduced_motion')}</div>
           <PillRow<"on" | "off">
-            options={[{ value: "off", label: "Arcade" }, { value: "on", label: "Calm" }]}
+            options={[{ value: "off", label: t('settings.arcade') }, { value: "on", label: t('settings.calm') }]}
             value={reducedMotion ? "on" : "off"}
             onChange={(v) => setReducedMotion(v === "on")}
           />
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">⊞ Display</div>
+          <div className="opt-label">{t('settings.display')}</div>
           <PillRow<"window" | "full">
-            options={[{ value: "window", label: "⊟ Window" }, { value: "full", label: "⊞ Fullscreen" }]}
+            options={[{ value: "window", label: t('settings.window') }, { value: "full", label: t('settings.fullscreen') }]}
             value={isFS ? "full" : "window"}
             onChange={() => toggleFS()}
           />
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">👁 Colorblind Mode</div>
+          <div className="opt-label">{t('settings.colorblind')}</div>
           <PillRow<ColorblindMode>
             options={[
-              { value: "none", label: "None" },
-              { value: "deuteranopia", label: "Deuter" },
-              { value: "protanopia", label: "Protan" },
-              { value: "tritanopia", label: "Tritan" },
-              { value: "monochrome", label: "Mono" },
+              { value: "none", label: t('settings.none') },
+              { value: "deuteranopia", label: t('settings.deuter') },
+              { value: "protanopia", label: t('settings.protan') },
+              { value: "tritanopia", label: t('settings.tritan') },
+              { value: "monochrome", label: t('settings.mono') },
             ]}
             value={colorblindMode}
             onChange={setColorblindMode}
@@ -156,7 +158,7 @@ export function SettingsDrawer({
         </div>
 
         <div className="opt-section">
-          <div className="opt-label">🌐 Language</div>
+          <div className="opt-label">{t('settings.language')}</div>
           <PillRow<Locale>
             options={i18n.getAvailable().map(lang => ({
               value: lang,
@@ -169,25 +171,25 @@ export function SettingsDrawer({
 
         {onNameChange && (
           <div className="opt-section">
-            <div className="opt-label">✏️ Player Name{playerName ? ` · ${playerName}` : ""}</div>
+            <div className="opt-label">{t('settings.player_name')}{playerName ? ` · ${playerName}` : ""}</div>
             <button
               className="btn-ghost"
               style={{ width: "100%", textAlign: "center", transition: "opacity 0.2s" }}
               onClick={() => { onClose(); setTimeout(onNameChange, 150); }}
             >
-              ✏️ Change Name
+              {t('settings.change_name')}
             </button>
           </div>
         )}
 
         {onPlayWithSeed && (
           <div className="opt-section">
-            <div className="opt-label">🎲 Replay Seed</div>
+            <div className="opt-label">{t('settings.replay_seed')}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 className="name-input"
                 style={{ flex: 1, minWidth: 0 }}
-                placeholder="Enter seed number..."
+                placeholder={t('settings.enter_seed')}
                 value={customSeed ?? ""}
                 onChange={e => onCustomSeedChange?.(e.target.value.replace(/\D/g, ""))}
                 maxLength={12}
