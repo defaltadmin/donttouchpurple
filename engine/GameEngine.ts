@@ -1,3 +1,11 @@
+/**
+ * CLOCK DOMAIN CONVENTION:
+ * - Date.now(): Used for real-time game state (energy regen, bomb expiry, login streaks)
+ * - performance.now(): Used for sub-frame timing (FPS measurement, animation deltas)
+ * - Game ticks: Internal engine clock, advances once per tick interval
+ *
+ * Do NOT mix domains. When a value crosses domains, convert explicitly.
+ */
 import { GAME } from "../config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "../config/gridPatterns";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";

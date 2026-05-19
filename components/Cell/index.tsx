@@ -87,7 +87,7 @@ export default function Cell({
 }: CellProps) {
 
   const isBomb = cell.type === 'bomb';
-  const bombUrgent = isBomb && (bombFuse !== undefined ? bombFuse < 700 : Date.now() > (cell as import('../../engine/types').BombCell).expiresAt - 700); // last 700ms = urgent
+  const bombUrgent = isBomb && (bombFuse !== undefined ? bombFuse < 700 : false); // last 700ms = urgent
   const isClicked = cell.clicked;
   const shape = cell.shape || 'circle';
   const shapeClass = `cell-shape--${shape}`;

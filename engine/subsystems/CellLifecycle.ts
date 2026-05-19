@@ -8,8 +8,6 @@ const SAFE: CellType[] = [
   "green","cyan","lime","teal","pink","rose","magenta",
 ];
 
-const TEMP_CELLS: CellType[] = new Array(25).fill("inactive");
-
 export function randCell(rng: () => number, tick = 0, isClassic = false): CellType {
   const purpleChance = isClassic
     ? Math.min(0.42, 0.22 + Math.floor(tick / 20) * 0.02)
@@ -34,17 +32,17 @@ export function activeToCellsP(
   active: ActiveCell[],
   pattern: { cols: number; rows: number; mask: number[] | null }
 ): CellType[] {
-  for (let i = 0; i < 25; i++) TEMP_CELLS[i] = "inactive";
+  const cells: CellType[] = new Array(25).fill("inactive");
   const { cols, rows, mask } = pattern;
   const gridTotal = cols * rows;
   if (mask) {
     const maskSet = new Set(mask);
     for (let i = 0; i < gridTotal; i++) {
-      if (!maskSet.has(i)) TEMP_CELLS[i] = "void" as CellType;
+      if (!maskSet.has(i)) cells[i] = "void" as CellType;
     }
   }
-  active.forEach(c => { if (!c.clicked) TEMP_CELLS[c.idx] = c.type; });
-  return TEMP_CELLS.slice();
+  active.forEach(c => { if (!c.clicked) cells[c.idx] = c.type; });
+  return cells;
 }
 
 export function spawnActive(
