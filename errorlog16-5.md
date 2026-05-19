@@ -417,6 +417,19 @@
 
 ---
 
+## Phase 5-6: Hook + JSX Extractions (2026-05-19)
+
+| Item | Status |
+|------|--------|
+| useGameStartActions hook | ✅ Created (ready for integration) |
+| ExitConfirmModal component | ✅ Extracted from App.tsx |
+| RotatePrompt component | ✅ Extracted from App.tsx |
+| Exit confirm + rotate prompt i18n | ✅ 4 new keys, 5 locales |
+
+**App.tsx: 2111 → 2097 lines**
+
+---
+
 ## Full i18n Pass (2026-05-19)
 
 | Component | Status | Keys |
