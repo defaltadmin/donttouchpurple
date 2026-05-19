@@ -12,14 +12,6 @@ interface HeartsProps {
 }
 
 export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps) {
-  if (practiceMode) {
-    return (
-      <div className="hearts hearts--practice" role="status" aria-label="Practice mode - unlimited health">
-        <span className="hearts-infinity">∞</span>
-      </div>
-    );
-  }
-
   const sc = shieldCount ?? 0;
   const actualHealth  = Math.max(0, health);
   const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
@@ -38,6 +30,14 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
     }
     prevHealth.current = actualHealth;
   }, [actualHealth]);
+
+  if (practiceMode) {
+    return (
+      <div className="hearts hearts--practice" role="status" aria-label="Practice mode - unlimited health">
+        <span className="hearts-infinity">∞</span>
+      </div>
+    );
+  }
 
   const healthLabel = `Health: ${actualHealth}${overflow ? '+' : ''} hearts${sc > 0 ? `, ${sc} shielded` : ''}`;
 

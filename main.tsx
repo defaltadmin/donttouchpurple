@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App, { ErrorBoundary } from './App'
+import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { scoreSync } from './utils/score-sync'
 import { GameProvider } from './contexts/GameContext'
 import { DustProvider } from './contexts/DustContext'

@@ -497,14 +497,6 @@ export default function App() {
       level: "info",
       data: { gameMode, numPlayers, p1Score, p2Score, winner: engineWinner, seed: gameSeed },
     });
-    fbLogEvent("game_over", {
-      mode: gameMode,
-      players: numPlayers,
-      p1_score: p1Score,
-      p2_score: p2Score,
-      winner: engineWinner ?? "solo",
-      seed: gameSeed ?? 0,
-    });
     const rawEarned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
     const earned = isNaN(rawEarned) || !isFinite(rawEarned) ? 0 : rawEarned;
     const newDust = addDust(earned, 'GameOver');
