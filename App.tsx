@@ -29,12 +29,8 @@ import { useOffsetCursor } from "./hooks/useOffsetCursor";
 import { useEnergyStore } from "./hooks/useEnergyStore";
 
 declare const __APP_VERSION__: string;
-// Lazy-loaded Sentry (~50-80KB savings from main bundle)
-let _sentry: typeof import("@sentry/react") | null = null;
-async function getSentry() {
-  if (!_sentry) _sentry = await import("@sentry/react");
-  return _sentry;
-}
+import { getSentry, safeSentry } from "./services/sentry";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
@@ -118,14 +114,6 @@ type GameScreen    = "menu" | "howto" | "leaderboard" | "keybind" | "playing" | 
 type NumPlayers      = 1 | 2;
 type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
-// ─── Safe Sentry wrapper (deferred load + ad-blocker safe) ───
-const safeSentry = {
-  addBreadcrumb: (...args: unknown[]) => { try { _sentry?.addBreadcrumb(...args as [any]); } catch { /* Sentry unavailable */ } },
-  captureException: (...args: unknown[]) => { try { _sentry?.captureException(...args as [any]); } catch { /* Sentry unavailable */ } },
-  setTags: (...args: unknown[]) => { try { _sentry?.setTags(...args as [any]); } catch { /* Sentry unavailable */ } },
-  setContext: (...args: unknown[]) => { try { _sentry?.setContext(...args as [any, any]); } catch { /* Sentry unavailable */ } },
-};
-
 // ─── Lazy-loaded Firebase ────────────────────────────────────────
 let _firebase: typeof import('./services/firebase') | null = null;
 async function getFirebase() {
@@ -133,116 +121,12 @@ async function getFirebase() {
   return _firebase;
 }
 
-// --- Error Boundary ---
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Capture error in Sentry
-    safeSentry.captureException(error, {
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack,
-        } as Record<string, unknown>,
-      },
-    });
-    console.error('[DTP] Error caught by boundary:', error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) return <div style={{padding:40, color:"white", textAlign:"center", background:"#111", minHeight:"100vh"}}><h2>Something went wrong.</h2><button className="btn-primary" onClick={() => window.location.reload()}>Reload Page</button></div>;
-    return this.props.children;
-  }
-}
-
 // --- Background Control ---
 import { useBackgroundController } from './hooks/useBackground';
 
-// --- Helper: Colorblind Filters ---
-function ColorblindFilters() {
-  return (
-    <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
-      <filter id="deuteranopia"><feColorMatrix values="0.625,0.375,0,0,0 0.7,0.3,0,0,0 0,0.3,0.7,0,0 0,0,0,1,0" /></filter>
-      <filter id="protanopia"><feColorMatrix values="0.567,0.433,0,0,0 0.558,0.442,0,0,0 0,0.242,0.758,0,0 0,0,0,1,0" /></filter>
-      <filter id="tritanopia"><feColorMatrix values="0.95,0.05,0,0,0 0,0.433,0.567,0,0 0,0.475,0.525,0,0 0,0,0,1,0" /></filter>
-      <filter id="monochrome"><feColorMatrix values="0.33,0.33,0.33,0,0 0.33,0.33,0.33,0,0 0.33,0.33,0.33,0,0 0,0,0,1,0" /></filter>
-    </svg>
-  );
-}
-
-function NameChangeForm({ current, onSubmit, onDevTrigger }: { current: string; onSubmit: (name: string) => void; onDevTrigger?: () => void }) {
-  const [val, setVal] = React.useState(current);
-  const sanitize = (n: string) => n.replace(/[^a-zA-Z0-9_ /]/g, "").trim().slice(0, 8);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    if (raw.includes("//dev//") && onDevTrigger) { onDevTrigger(); setVal(""); return; }
-    setVal(raw);
-  };
-  return (
-    <div style={{ padding: "12px 0 4px" }}>
-      <input
-        className="name-input"
-        value={val}
-        onChange={handleChange}
-        onKeyDown={(e) => { if (e.key === "Enter" && sanitize(val)) onSubmit(sanitize(val)); }}
-        maxLength={8}
-        autoFocus={!('ontouchstart' in window)}
-        style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
-        placeholder="Your name..."
-      />
-      <button
-        className="btn-primary"
-        style={{ width: "100%" }}
-        disabled={!sanitize(val)}
-        onClick={() => { if (sanitize(val)) onSubmit(sanitize(val)); }}
-      >
-        Save
-      </button>
-    </div>
-  );
-}
-
-function getCBFilterStyle(mode: ColorblindMode): string {
-  if (mode === "none") return "";
-  return `url(#${mode})`;
-}
-
-// --- Storage Helpers ---
-function loadShopData() {
-  try {
-    const r = localStorage.getItem(LS_KEYS.SHOP);
-    if (r) {
-      const data = JSON.parse(r);
-      return {
-        unlockedThemes: data.unlockedThemes || data.ownedThemes || ["default"],
-        equippedTheme:  data.equippedTheme || "default",
-        unlockedBadges: data.unlockedBadges || data.ownedBadges || [],
-        equippedBadge:  data.equippedBadge || "",
-        unlockedSkins:  data.unlockedSkins || data.ownedSkins || ["default"],
-        equippedSkin:   data.equippedSkin || "default",
-        unlockedBackgrounds: data.unlockedBackgrounds || ["default"],
-        equippedBackground: data.equippedBackground || "default",
-        unlockedTrails: data.unlockedTrails || ["default"],
-        equippedTrail: data.equippedTrail || "default"
-      };
-    }
-  } catch { /* invalid JSON, return defaults */ }
-  return { unlockedThemes: ["default"], equippedTheme: "default", unlockedBadges: [], equippedBadge: "", unlockedSkins: ["default"], equippedSkin: "default", unlockedBackgrounds: ["default"], equippedBackground: "default", unlockedTrails: ["default"], equippedTrail: "default" };
-}
-
-type ShopData = {
-  unlockedThemes: string[]; equippedTheme: string;
-  unlockedBadges: string[]; equippedBadge: string;
-  unlockedSkins:  string[]; equippedSkin:  string;
-  unlockedBackgrounds: string[]; equippedBackground: string;
-  unlockedTrails: string[]; equippedTrail: string;
-};
-
-function saveShopData(d: ShopData) {
-  try { localStorage.setItem(LS_KEYS.SHOP, JSON.stringify(d)); } catch { /* storage full or unavailable */ }
-}
+import { NameChangeForm } from "./components/Settings/NameChangeForm";
+import { ColorblindFilters, getCBFilterStyle } from "./components/ColorblindFilters";
+import { loadShopData, saveShopData, type ShopData } from "./utils/shop-storage";
 
 // --- Tutorial ---
 import { MAX_TUTORIAL_GAMES } from './config/tutorial';
