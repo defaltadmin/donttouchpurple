@@ -3,7 +3,7 @@ import Cell from "../Cell";
 import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
 import { animateDustClaim } from "../../utils/dustAnimation";
-import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot } from "../../engine/types";
+import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot, ActiveCell } from "../../engine/types";
 import type { BotTapFx } from "../../hooks/useGameEngine";
 import { useTranslation } from "../../hooks/useTranslation";
 
@@ -191,14 +191,14 @@ export const PlayerPanel = memo(function PlayerPanel({
             const activeCell = ps.active.find(c => c.idx === i) || {
               idx: i,
               clicked: true,
-              type: type as any,
-              shape: undefined as any
-            };
+              type,
+              shape: undefined,
+            } as unknown as ActiveCell;
 
             const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
-            const bombFuse = activeCell.type === 'bomb'
-              ? Math.max(0, (activeCell as any).expiresAt - Date.now())
+            const bombFuse = activeCell.type === 'bomb' && 'expiresAt' in activeCell
+              ? Math.max(0, activeCell.expiresAt - Date.now())
               : undefined;
 
             return (
@@ -208,8 +208,8 @@ export const PlayerPanel = memo(function PlayerPanel({
                     <HoldCellDisplay
                       key={i}
                       idx={activeCell.idx}
-                      holdRequired={(activeCell as any).holdRequired ?? 800}
-                      holdStart={(activeCell as any).holdStart}
+                      holdRequired={activeCell.holdRequired ?? 800}
+                      holdStart={activeCell.holdStart}
                       onHoldStart={onHoldStart}
                       onHoldEnd={onHoldEnd}
                     />

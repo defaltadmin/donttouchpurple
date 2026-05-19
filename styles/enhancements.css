@@ -299,18 +299,6 @@
   }
 }
 
-/* Speed HUD value — color ramp from cool→warm at high speed */
-.hud-val--speed-high {
-  background: linear-gradient(135deg, #fb923c, #fbbf24) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  animation: speedWarning 0.6s ease-in-out infinite;
-}
-@keyframes speedWarning {
-  0%,100% { filter: brightness(1); }
-  50%     { filter: brightness(1.3) drop-shadow(0 0 8px rgba(251,146,60,0.7)); }
-}
-
 /* ═══════════════════════════════════════════════════════════════════
    SPEED BAR — more dramatic fill animation
    ═══════════════════════════════════════════════════════════════════ */
@@ -554,16 +542,6 @@
   100% { opacity: 0; transform: scale(1.3); }
 }
 
-/* Dust gained pulse animation */
-.dust--gained {
-  animation: dustGained 0.6s var(--ease-spring);
-}
-@keyframes dustGained {
-  0%   { transform: scale(1); filter: brightness(1); }
-  30%  { transform: scale(1.3); filter: brightness(2); color: #c084fc; }
-  100% { transform: scale(1); filter: brightness(1); }
-}
-
 /* Speed high warning — pulsing speed value */
 .hud-val--speed-high {
   animation: speedHighPulse 1s ease-in-out infinite;
@@ -784,23 +762,6 @@ body.damage-pulse::after {
 /* ═══════════════════════════════════════════════════════════════════
    REWARDS HUB — rich tab style
    ═══════════════════════════════════════════════════════════════════ */
-
-.rewards-hub-overlay--closing {
-  animation: modalOverlayLeave 0.42s ease forwards;
-}
-@keyframes modalOverlayLeave {
-  from { opacity: 1; }
-  to   { opacity: 0; pointer-events: none; }
-}
-.rewards-hub-panel--closing {
-  animation: hubPanelShrink 0.42s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
-  transform-origin: top right;
-}
-@keyframes hubPanelShrink {
-  0%   { transform: scale(1) translateY(0);    opacity: 1; }
-  40%  { transform: scale(1.04) translateY(-4px); opacity: 1; }
-  100% { transform: scale(0.05) translateY(-60px) translateX(60px); opacity: 0; }
-}
 
 .rewards-hub-overlay--closing {
   animation: modalOverlayExit 0.42s ease forwards !important;
@@ -1500,10 +1461,6 @@ body.damage-pulse::after {
   filter: drop-shadow(0 0 3px rgba(255,100,0,0.7));
   pointer-events: none;
 }
-/* Remove old text bomb styles */
-.bomb-icon { display: none; }
-.bomb-timer { display: none; }
-
 /* ═══════════════════════════════════════════════════════════════════
    BOSS STORM BANNER
    ═══════════════════════════════════════════════════════════════════ */
