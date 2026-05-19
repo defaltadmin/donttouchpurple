@@ -24,11 +24,16 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
     wasActive.current = hasActivePower;
   }, [hasActivePower]);
 
-  // Tick at 50ms for smoother progress drain
+  // Tick via RAF for smooth progress drain (~60fps, frame-synced)
   useEffect(() => {
     if (!hasActivePower && !fading) return;
-    const id = setInterval(() => setNow(Date.now()), 50);
-    return () => clearInterval(id);
+    let rafId: number;
+    const tick = () => {
+      setNow(Date.now());
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, [hasActivePower, fading]);
 
   if (!hasActivePower && !fading) return null;

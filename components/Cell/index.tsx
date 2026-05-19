@@ -23,12 +23,14 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
   const [ms, setMs] = useState(() => Math.max(0, expiresAt - Date.now()));
 
   useEffect(() => {
-    const id = setInterval(() => {
+    let rafId: number;
+    const tick = () => {
       const remaining = Math.max(0, expiresAt - Date.now());
       setMs(remaining);
-      if (remaining === 0) clearInterval(id);
-    }, 33); // ~30fps for smooth arc
-    return () => clearInterval(id);
+      if (remaining > 0) rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, [expiresAt]);
 
   const pct = Math.max(0, Math.min(1, ms / TOTAL_MS));
@@ -184,7 +186,7 @@ export default function Cell({
           </div>
         )}
         {cell.type === 'bomb' && (
-          <BombTimer expiresAt={(cell as any).expiresAt} />
+          <BombTimer expiresAt={cell.expiresAt} />
         )}
       </div>
 
