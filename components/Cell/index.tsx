@@ -1,6 +1,5 @@
 // components/Cell/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 
@@ -165,16 +164,12 @@ export default function Cell({
       {/* Powerup / Special icons */}
       <div className="cell-icon">
         {(cell.type === 'medpack' || cell.type === 'shield' || cell.type === 'freeze' || cell.type === 'multiplier') ? (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 20, mass: 0.5 }}
-          >
+          <span className="cell-icon-spring">
             {cell.type === 'medpack' && '❤️'}
             {cell.type === 'shield' && '🛡️'}
             {cell.type === 'freeze' && '❄️'}
             {cell.type === 'multiplier' && '×2'}
-          </motion.span>
+          </span>
         ) : null}
         {isHold && '⏳'}
         {isIce && (

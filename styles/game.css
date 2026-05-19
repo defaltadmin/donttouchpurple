@@ -2405,6 +2405,17 @@ body { background-color: var(--bg); }
   text-shadow: 0 2px 6px rgba(0,0,0,0.6);
 }
 
+.cell-icon-spring {
+  display: inline-block;
+  animation: cellIconSpring 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cellIconSpring {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
 .multi-tap-visual {
   position: relative;
   width: min(72%, 54px);
