@@ -1,6 +1,6 @@
 import { readdirSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 
 const distDir = fileURLToPath(new URL("../dist/assets/", import.meta.url));
 const reportPath = fileURLToPath(new URL("../dist/bundle-size-report.json", import.meta.url));

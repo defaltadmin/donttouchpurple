@@ -92,7 +92,7 @@ describe('Fractional Health Bug Fix', () => {
           ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
           if (ref.health < 1) {
             ref.alive = false;
-            (engine as any).triggerGameOver((engine as any).config.numPlayers === 1 ? null : (1 === 1 ? 'p2' : 'p1'));
+            (engine as any).triggerGameOver(ctx.config.numPlayers === 1 ? null : (ctx.activeBomb.player === 1 ? 'p2' : 'p1'));
           }
         }
       }

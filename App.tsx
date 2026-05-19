@@ -1472,8 +1472,8 @@ export default function App() {
 
   const submitScore = useCallback(async () => {
     const score = numPlayers === 1
-      ? snapshot?.p1.score
-      : Math.max(snapshot?.p1.score || 0, snapshot?.p2?.score || 0);
+      ? snapshot?.p1?.score
+      : Math.max(snapshot?.p1?.score || 0, snapshot?.p2?.score || 0);
     const tick = snapshot?.tick ?? 0;
 
     // Sanity: reject physically impossible scores

@@ -31,7 +31,7 @@ import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellShape, GameConfig, GameEvent,
   GameSnapshot, PlayerState, RareColorMode, Winner,
-  BossEvent, HoldCell,
+  BossEvent, BossEventType, HoldCell,
 } from "./types";
 import {
   activeToCellsP, spawnActive,
@@ -999,11 +999,11 @@ destroy(): void {
       if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode as Record<string, unknown>, this.rareMode as unknown as Record<string, unknown>) as unknown as RareColorMode;
       this._isInverted = (data.isInverted as boolean) ?? false;
       this.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
-      this.bossEvent = data.bossEvent ? { type: (data.bossEvent as any).type, endsAt: (data.bossEvent as any).endsAt } : null;
+      this.bossEvent = data.bossEvent ? { type: (data.bossEvent as Record<string, unknown>).type as BossEventType, endsAt: (data.bossEvent as Record<string, unknown>).endsAt as number } : null;
       this.nextBossTriggerScore = (data.nextBossTriggerScore as number) ?? 500;
       this._bossActive = (data._bossActive as boolean) ?? false;
       if (data.bossEngineActive) bossEngine.activate((data.bossEngineShieldHits as number) ?? 5);
-      this.activeBomb = data.activeBomb ? { idx: (data.activeBomb as any).idx, expiresAt: (data.activeBomb as any).expiresAt, player: (data.activeBomb as any).player } : null;
+      this.activeBomb = data.activeBomb ? { idx: (data.activeBomb as Record<string, unknown>).idx as number, expiresAt: (data.activeBomb as Record<string, unknown>).expiresAt as number, player: (data.activeBomb as Record<string, unknown>).player as 1 | 2 } : null;
       this.dda.reset((data.ddaSpawnRate as number) ?? 1200);
       const p1 = data.p1 as Record<string, unknown> | undefined;
       if (p1) {
@@ -1027,18 +1027,18 @@ destroy(): void {
       }
       const p2 = data.p2 as Record<string, unknown> | null | undefined;
       if (p2 && this.config.numPlayers === 2) {
-        this.p2.score = (p2.score as number) ?? 0;
-        this.p2.health = (p2.health as number) ?? GAME.MAX_HEARTS;
-        this.p2.streak = (p2.streak as number) ?? 0;
-        this.p2.gridStage = (p2.gridStage as number) ?? 0;
-        this.p2.stageProgress = (p2.stageProgress as number) ?? 0;
-        this.p2.patternIdx = (p2.patternIdx as number) ?? 0;
+        this.p2.score = Math.max(0, Math.min(9999, (p2.score as number) ?? 0));
+        this.p2.health = Math.max(0, Math.min(GAME.MAX_HEARTS + 2, (p2.health as number) ?? GAME.MAX_HEARTS));
+        this.p2.streak = Math.max(0, Math.min(999, (p2.streak as number) ?? 0));
+        this.p2.gridStage = Math.max(0, Math.min(10, (p2.gridStage as number) ?? 0));
+        this.p2.stageProgress = Math.max(0, Math.min(999, (p2.stageProgress as number) ?? 0));
+        this.p2.patternIdx = Math.max(0, Math.min(EVOLVE_PATTERNS.length - 1, (p2.patternIdx as number) ?? 0));
         this.p2.shield = (p2.shield as boolean) ?? false;
-        this.p2.shieldCount = (p2.shieldCount as number) ?? 0;
-        this.p2.freezeEnd = (p2.freezeEnd as number) ?? 0;
-        this.p2.multiplierEnd = (p2.multiplierEnd as number) ?? 0;
-        this.p2.storedFreezeCharges = (p2.storedFreezeCharges as number) ?? 0;
-        this.p2.storedShieldCharges = (p2.storedShieldCharges as number) ?? 0;
+        this.p2.shieldCount = Math.max(0, Math.min(5, (p2.shieldCount as number) ?? 0));
+        this.p2.freezeEnd = Math.max(0, (p2.freezeEnd as number) ?? 0);
+        this.p2.multiplierEnd = Math.max(0, (p2.multiplierEnd as number) ?? 0);
+        this.p2.storedFreezeCharges = Math.max(0, Math.min(10, (p2.storedFreezeCharges as number) ?? 0));
+        this.p2.storedShieldCharges = Math.max(0, Math.min(10, (p2.storedShieldCharges as number) ?? 0));
         this.p2.alive = (p2.alive as boolean) ?? true;
         this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
         const pat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];

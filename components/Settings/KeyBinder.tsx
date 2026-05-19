@@ -86,7 +86,8 @@ export function KeyBinder({ initP1, initP2, numPlayers, onSave, onCancel }: KeyB
           <button
             className="btn-ghost"
             onClick={() => {
-              ap === 1 ? setD1([...DEFAULT_P1_KEYS]) : setD2([...DEFAULT_P2_KEYS]);
+              if (ap === 1) setD1([...DEFAULT_P1_KEYS]);
+              else setD2([...DEFAULT_P2_KEYS]);
               setSel(null);
             }}
           >

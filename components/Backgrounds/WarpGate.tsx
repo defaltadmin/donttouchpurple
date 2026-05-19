@@ -31,8 +31,8 @@ export default function WarpGate() {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
         const a = (Math.PI / 3) * i - Math.PI / 6;
-        i === 0 ? ctx.moveTo(cx + 30 * Math.cos(a), cy + 30 * Math.sin(a))
-                : ctx.lineTo(cx + 30 * Math.cos(a), cy + 30 * Math.sin(a));
+        if (i === 0) ctx.moveTo(cx + 30 * Math.cos(a), cy + 30 * Math.sin(a));
+        else ctx.lineTo(cx + 30 * Math.cos(a), cy + 30 * Math.sin(a));
       }
       ctx.closePath();
 

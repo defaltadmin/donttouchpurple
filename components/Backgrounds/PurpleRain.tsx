@@ -84,7 +84,7 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
     if (s.type === "circle") {
       ctx.beginPath();
       ctx.arc(0, 0, s.size / 2, 0, Math.PI * 2);
-      s.filled ? ctx.fill() : ctx.stroke();
+      if (s.filled) ctx.fill(); else ctx.stroke();
     } else if (s.type === "square") {
       const h = s.size / 2;
       if (s.filled) ctx.fillRect(-h, -h, s.size, s.size);
@@ -96,7 +96,7 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
       ctx.lineTo(r * 0.866, r * 0.5);
       ctx.lineTo(-r * 0.866, r * 0.5);
       ctx.closePath();
-      s.filled ? ctx.fill() : ctx.stroke();
+      if (s.filled) ctx.fill(); else ctx.stroke();
     }
     ctx.restore();
   };
