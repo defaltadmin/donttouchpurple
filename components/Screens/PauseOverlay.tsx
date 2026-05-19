@@ -79,8 +79,8 @@ export const PauseOverlay = React.memo(function PauseOverlay({
             onClick={onToggleMute} title={t('pause.sound')}>
             {muted ? "🔇" : "🔊"}<span>{muted ? t('pause.muted') : t('pause.sound')}</span>
           </button>
-          <button className="pause-setting-btn" onClick={onToggleFS} title="Fullscreen">
-            {isFS ? "⊡" : "⊞"}<span>{isFS ? "Exit FS" : t('pause.full')}</span>
+          <button className="pause-setting-btn" onClick={onToggleFS} title={t('pause.fullscreen')}>
+            {isFS ? "⊡" : "⊞"}<span>{isFS ? t('pause.exit_fs') : t('pause.full')}</span>
           </button>
           <button className="pause-setting-btn" onClick={onOpenSettings} title={t('pause.settings')}>
             ⚙️<span>{t('pause.settings')}</span>

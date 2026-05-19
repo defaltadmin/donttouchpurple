@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface LoadingScreenProps {
   progress: number;
@@ -15,16 +16,17 @@ export function LoadingScreen({
   onNameSubmit,
   sanitizeName,
 }: LoadingScreenProps) {
+  const { t } = useTranslation();
   const [nameInput, setNameInput] = useState("");
   const [nameError, setNameError] = useState("");
 
   const handleSubmit = () => {
-    const safe = sanitizeName(nameInput.trim() || "Player");
-    if (safe === "Player" && nameInput.trim().length > 0) {
-      setNameError("That name isn't allowed. Try another!");
+    const safe = sanitizeName(nameInput.trim() || t('loading.default_name'));
+    if (safe === t('loading.default_name') && nameInput.trim().length > 0) {
+      setNameError(t('loading.name_error'));
       return;
     }
-    onNameSubmit(safe || "Player");
+    onNameSubmit(safe || t('loading.default_name'));
   };
 
   return (
@@ -40,9 +42,9 @@ export function LoadingScreen({
       <div className="loading-orb loading-orb-3" />
 
       <div className="loading-logo" style={{ textShadow: "0 0 40px rgba(192,38,211,0.8)" }}>
-        Don't Touch the <span className="loading-purple">Purple</span>
+        {t('loading.title')}
       </div>
-      <div className="loading-sub">Get your fingers ready&hellip;</div>
+      <div className="loading-sub">{t('loading.subtitle')}</div>
 
       {!done ? (
         <div style={{ width: "min(280px, 80vw)", marginTop: 20 }}>
@@ -64,11 +66,11 @@ export function LoadingScreen({
             width: "min(320px, 90vw)",
           }}
         >
-          <div className="loading-name-label" style={{ marginBottom: 12 }}>What should we call you?</div>
+          <div className="loading-name-label" style={{ marginBottom: 12 }}>{t('loading.name_prompt')}</div>
           <input
             className="go-input"
             maxLength={8}
-            placeholder="Your name"
+            placeholder={t('loading.name_placeholder')}
             value={nameInput}
             autoFocus
             style={{ width: "100%", marginBottom: 12 }}
@@ -79,7 +81,7 @@ export function LoadingScreen({
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           />
           <button className="btn-primary" style={{ width: "100%", padding: "12px" }} onClick={handleSubmit}>
-            Let&apos;s Go!
+            {t('loading.go')}
           </button>
           {nameError && <div style={{ color: "#f87171", fontSize: 12, marginTop: 8, fontFamily: "var(--font-ui)" }}>{nameError}</div>}
         </div>

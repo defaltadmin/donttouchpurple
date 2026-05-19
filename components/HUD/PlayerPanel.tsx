@@ -5,6 +5,7 @@ import { useRef, useEffect, useState } from "react";
 import { animateDustClaim } from "../../utils/dustAnimation";
 import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot } from "../../engine/types";
 import type { BotTapFx } from "../../hooks/useGameEngine";
+import { useTranslation } from "../../hooks/useTranslation";
 
 
 // ─── Dynamic cell size ────────────────────────────────────────────
@@ -87,6 +88,7 @@ export const PlayerPanel = memo(function PlayerPanel({
   showBotAssist = false,
   dust = 0,
 }: PlayerPanelProps) {
+  const { t } = useTranslation();
   const now = Date.now();
   const { cols, rows, mask } = snapshot?.grid ?? { 
     cols: 3, 
@@ -255,8 +257,8 @@ export const PlayerPanel = memo(function PlayerPanel({
               onToggleBotAssist();
             }
           }}
-          title={(dust ?? 0) < 30 ? "Need 30+ dust" : isBotActive ? "Bot ON" : "Bot OFF"}
-          aria-label={isBotActive ? "Bot active" : "Bot inactive"}
+          title={(dust ?? 0) < 30 ? t('player.need_dust') : isBotActive ? t('player.bot_on') : t('player.bot_off')}
+          aria-label={isBotActive ? t('player.bot_active') : t('player.bot_inactive')}
         >
           🤖
         </button>

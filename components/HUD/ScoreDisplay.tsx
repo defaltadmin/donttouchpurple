@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import type { PlayerState } from "../../engine/types";
 import { speedLabel, speedPct } from "../../engine/DifficultyScaler";
 import { Hearts } from "./Hearts";
+import { useTranslation } from "../../hooks/useTranslation";
 
 // ─── Score Count-Up Animation ─────────────────────────────────────
 function ScoreCountUp({ score }: { score: number }) {
@@ -64,24 +65,25 @@ interface ScoreDisplayProps {
 
 // ─── ScoreDisplay ─────────────────────────────────────────────────
 export function ScoreDisplay({ p1, tick, best, heartAnim }: ScoreDisplayProps) {
+  const { t } = useTranslation();
   const frozen = p1.freezeEnd > Date.now();
 
   return (
     <>
       <div className="hud">
         <div className="hud-card hud-card--score">
-          <div className="hud-lbl">Score</div>
+          <div className="hud-lbl">{t('hud.score')}</div>
           <div className="hud-score-row">
             <ScoreCountUp score={p1.score} />
             {p1.streak >= 3 && <div className="combo-wrap" data-streak={p1.streak >= 7 ? "high" : undefined}>×{p1.streak}</div>}
           </div>
         </div>
         <div className="hud-card">
-          <div className="hud-lbl">Best</div>
+          <div className="hud-lbl">{t('hud.best_label')}</div>
           <div className="hud-val">{best}</div>
         </div>
         <div className="hud-card">
-          <div className="hud-lbl">Speed</div>
+          <div className="hud-lbl">{t('hud.speed_label')}</div>
           <div className="hud-val hud-val--sm">{speedLabel(tick, frozen)}</div>
         </div>
         <div className="hud-card hud-card--hearts">

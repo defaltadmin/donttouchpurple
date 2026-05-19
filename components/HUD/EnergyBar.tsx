@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { GAME } from "../../config/difficulty";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface EnergyBarProps {
   energy: number;
@@ -18,6 +19,7 @@ export function EnergyBar({
   onEnergyIconClick,
   dust,
 }: EnergyBarProps) {
+  const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function EnergyBar({
                 onRefill();
               }
             }}
-            title={i >= energy && dust >= GAME.DUST_PER_ENERGY ? `Refill this pip — 💜${GAME.DUST_PER_ENERGY}` : undefined}
+            title={i >= energy && dust >= GAME.DUST_PER_ENERGY ? `${t('energy.refill_pip')} — 💜${GAME.DUST_PER_ENERGY}` : undefined}
           >
             ⚡
           </span>
@@ -52,7 +54,7 @@ export function EnergyBar({
       </div>
       {energy < GAME.MAX_ENERGY && (
         <div className="energy-regen-row">
-          <span className="energy-timer">+1 in {mins}:{String(secs).padStart(2, "0")}</span>
+          <span className="energy-timer">{t('energy.plus_one', { mins, secs: String(secs).padStart(2, "0") })}</span>
           {dust >= GAME.DUST_PER_ENERGY && (
             <button className="energy-refill-btn" onClick={onRefill}>
               💜{GAME.DUST_PER_ENERGY}→+1
@@ -60,7 +62,7 @@ export function EnergyBar({
           )}
           {dust >= costFull && energy < GAME.MAX_ENERGY - 1 && (
             <button className="energy-refill-btn" onClick={onRefillFull} style={{ marginLeft: 2 }}>
-              💜{costFull}→Full
+              💜{costFull}→{t('energy.full')}
             </button>
           )}
         </div>

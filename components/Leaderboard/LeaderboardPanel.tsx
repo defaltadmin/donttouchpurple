@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { SHOP_BADGES } from "../../config/powerupWeights";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface LeaderboardEntry {
   score: number;
@@ -32,6 +33,7 @@ export function LeaderboardPanel({
   playerName,
   onScoresFetched,
 }: LeaderboardPanelProps) {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGlobal, setIsGlobal] = useState(false);
@@ -76,16 +78,16 @@ export function LeaderboardPanel({
   return (
     <div className="lb-wrap screen-slide scrollable-screen">
       <div className="lb-header">
-        <span className="lb-title">🏆 {isGlobal ? "Global" : "Local"} Leaderboard</span>
+        <span className="lb-title">🏆 {isGlobal ? t('leaderboard.global') : t('leaderboard.local')} {t('leaderboard.title')}</span>
         <span className="lb-sub" style={{ fontSize: 10, opacity: 0.55 }}>
-          {isGlobal ? "🌐 Live" : "📴 Offline"}
+          {isGlobal ? `🌐 ${t('leaderboard.live')}` : `📴 ${t('leaderboard.offline')}`}
         </span>
       </div>
 
       {loading ? (
-        <div className="lb-empty" style={{ padding: "32px 0", opacity: 0.6 }}>Loading...</div>
+        <div className="lb-empty" style={{ padding: "32px 0", opacity: 0.6 }}>{t('leaderboard.loading')}</div>
       ) : entries.length === 0 ? (
-        <p className="lb-empty">No scores yet. Be the first!</p>
+        <p className="lb-empty">{t('leaderboard.no_scores')}</p>
       ) : (
         <>
           <div className="lb-list">
@@ -122,7 +124,7 @@ export function LeaderboardPanel({
           {/* F6: Personal best pinned row — shown only if not already in top 10 */}
           {!playerInTop10 && personalBest != null && personalBest > 0 && playerName && (
             <div className="lb-pb-row">
-              <span className="lb-pb-label">Your Best</span>
+              <span className="lb-pb-label">{t('leaderboard.your_best')}</span>
               <span className="lb-ini">{playerName}</span>
               <span className="lb-score">{personalBest}</span>
             </div>
@@ -131,7 +133,7 @@ export function LeaderboardPanel({
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, paddingBottom: 8 }}>
-        <button className="btn-ghost" style={{ flex: 1 }} onClick={fetchScores}>↻ Refresh</button>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={fetchScores}>↻ {t('leaderboard.refresh')}</button>
       </div>
     </div>
   );

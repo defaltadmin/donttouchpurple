@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { animateDustClaim } from '../../utils/dustAnimation';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface LoginStreakPopupProps {
   streak: number;
@@ -16,6 +17,7 @@ export function getStreakReward(streak: number): number {
 }
 
 export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose }: LoginStreakPopupProps) {
+  const { t } = useTranslation();
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const handleClaim = () => {
@@ -32,7 +34,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
     <div className="popup-overlay" onClick={onClose}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
-          <span className="popup-title">🔥 Daily Login</span>
+          <span className="popup-title">🔥 {t('streak.title')}</span>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
 
@@ -42,7 +44,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
               key={day}
               className={`streak-day ${day < streak ? 'streak-day--done' : day === streak ? 'streak-day--today' : 'streak-day--future'}`}
             >
-              <span className="streak-day-num">Day {day}</span>
+              <span className="streak-day-num">{t('streak.day', { n: day })}</span>
               <span className="streak-day-reward">+{getStreakReward(day)}💜</span>
               {day < streak && <span className="streak-day-check">✓</span>}
               {day === streak && <span className="streak-day-glow">★</span>}
@@ -51,11 +53,11 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
         </div>
 
         <div className="popup-reward-line">
-          Today&apos;s reward: <strong>+{dustReward} 💜</strong>
+          {t('streak.today_reward')} <strong>+{dustReward} 💜</strong>
         </div>
 
         <button ref={btnRef} className="btn-primary popup-claim-btn" onClick={handleClaim}>
-          Claim {dustReward} 💜
+          {t('streak.claim', { n: dustReward })} 💜
         </button>
       </div>
     </div>

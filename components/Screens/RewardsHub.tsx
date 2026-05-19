@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { DailyChallenge } from "./DailyChallengesPopup";
 import { playSoundEffect } from "../../hooks/useGameEngine";
+import { useTranslation } from "../../hooks/useTranslation";
 
 // ─── Types ────────────────────────────────────────────────
 export interface WeeklyTask {
@@ -45,6 +46,7 @@ export function RewardsHub({
   onClaimWeekly,
   onClose,
 }: RewardsHubProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<HubTab>("checkin");
   const [closing, setClosing] = useState(false);
 
@@ -71,15 +73,15 @@ export function RewardsHub({
 
         {/* Header */}
         <div className="modal-header">
-          <span className="modal-title">🎁 Rewards Hub</span>
+          <span className="modal-title">🎁 {t('rewards.title')}</span>
           <button className="btn-icon" onClick={handleClose}>✕</button>
         </div>
 
         {/* Tab bar */}
         <div className="hub-tabs">
-          <HubTabBtn label="Check-in" badge={loginBadge} active={tab === "checkin"} onClick={() => setTab("checkin")} />
-          <HubTabBtn label="Daily" badge={dailyBadge} active={tab === "daily"} onClick={() => setTab("daily")} />
-          <HubTabBtn label="Weekly" badge={weeklyBadge} active={tab === "weekly"} onClick={() => setTab("weekly")} />
+          <HubTabBtn label={t('rewards.checkin')} badge={loginBadge} active={tab === "checkin"} onClick={() => setTab("checkin")} />
+          <HubTabBtn label={t('rewards.daily')} badge={dailyBadge} active={tab === "daily"} onClick={() => setTab("daily")} />
+          <HubTabBtn label={t('rewards.weekly')} badge={weeklyBadge} active={tab === "weekly"} onClick={() => setTab("weekly")} />
         </div>
 
         {/* Tab content */}
@@ -129,12 +131,13 @@ const STREAK_MILESTONES = [
 function CheckinTab({ streak, reward, claimed, onClaim }: {
   streak: number; reward: number; claimed: boolean; onClaim: () => void;
 }) {
+  const { t } = useTranslation();
   const next = STREAK_MILESTONES.find(m => m.day > streak);
   return (
     <div className="hub-checkin">
       <div className="hub-streak-display">
         <span className="hub-streak-num">{streak}</span>
-        <span className="hub-streak-lbl">Day streak 🔥</span>
+        <span className="hub-streak-lbl">{t('rewards.day_streak')} 🔥</span>
       </div>
 
       {/* Milestone pips */}
@@ -144,7 +147,7 @@ function CheckinTab({ streak, reward, claimed, onClaim }: {
             key={m.day}
             className={`hub-milestone${streak >= m.day ? " hub-milestone--done" : ""}${streak + 1 === m.day ? " hub-milestone--next" : ""}`}
           >
-            <span className="hub-milestone-day">Day {m.day}</span>
+            <span className="hub-milestone-day">{t('streak.day', { n: m.day })}</span>
             <span className="hub-milestone-reward">+{m.reward} 💜</span>
           </div>
         ))}
@@ -152,18 +155,18 @@ function CheckinTab({ streak, reward, claimed, onClaim }: {
 
       {next && (
         <div className="hub-next-milestone">
-          Next milestone: Day {next.day} (+{next.reward} 💜) — {next.day - streak} day{next.day - streak !== 1 ? "s" : ""} away
+          {t('rewards.next_milestone', { n: next.day })}
         </div>
       )}
 
       <div className="hub-claim-row">
-        <span className="hub-today-reward">Today&apos;s reward: <strong>+{reward} 💜</strong></span>
+        <span className="hub-today-reward">{t('rewards.today_reward')} <strong>+{reward} 💜</strong></span>
         <button
           className="btn-primary"
           disabled={claimed}
           onClick={() => { onClaim(); playSoundEffect("claim"); }}
         >
-          {claimed ? "✓ Claimed" : "Claim"}
+          {claimed ? `✓ ${t('rewards.claimed')}` : t('rewards.claim')}
         </button>
       </div>
     </div>
@@ -175,8 +178,9 @@ function DailyTab({ challenges, onClaim }: {
   challenges: DailyChallenge[];
   onClaim: (id: string, reward: number) => void;
 }) {
+  const { t } = useTranslation();
   if (challenges.length === 0) {
-    return <div className="hub-empty">No daily tasks today.</div>;
+    return <div className="hub-empty">{t('rewards.no_daily')}</div>;
   }
   return (
     <div className="hub-tasks-list">
@@ -201,8 +205,9 @@ function WeeklyTab({ tasks, onClaim }: {
   tasks: WeeklyTask[];
   onClaim: (id: string, reward: number) => void;
 }) {
+  const { t } = useTranslation();
   if (tasks.length === 0) {
-    return <div className="hub-empty">No weekly tasks this week.</div>;
+    return <div className="hub-empty">{t('rewards.no_weekly')}</div>;
   }
   return (
     <div className="hub-tasks-list">
@@ -232,6 +237,7 @@ function TaskRow({ description, reward, progress, target, completed, claimed, on
   claimed: boolean;
   onClaim: () => void;
 }) {
+  const { t } = useTranslation();
   const pct = Math.min(100, target > 0 ? (progress / target) * 100 : 0);
   return (
     <div className={`hub-task-row${claimed ? " hub-task-row--claimed" : completed ? " hub-task-row--done" : ""}`}>
@@ -249,7 +255,7 @@ function TaskRow({ description, reward, progress, target, completed, claimed, on
           disabled={!completed || claimed}
           onClick={onClaim}
         >
-          {claimed ? "✓" : completed ? "Claim" : "…"}
+          {claimed ? "✓" : completed ? t('rewards.claim') : "…"}
         </button>
       </div>
     </div>

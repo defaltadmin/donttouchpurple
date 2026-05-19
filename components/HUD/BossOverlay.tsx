@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import type { GameSnapshot } from "../../engine/types";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface BossOverlayProps {
   snapshot: GameSnapshot | null;
@@ -14,14 +15,15 @@ interface BossOverlayProps {
 export const BossOverlay = React.memo(function BossOverlay({
   snapshot, screen, bossUi, comboPop, rareSplash, reducedMotion,
 }: BossOverlayProps) {
+  const { t } = useTranslation();
   return (
     <>
       {/* Boss Banner */}
       {snapshot?.bossEvent && screen === "playing" && (
         <div className={`boss-banner boss-banner--${snapshot.bossEvent.type}`}>
-          {snapshot.bossEvent.type === "storm"     && "⚡ STORM — CELLS SHUFFLE FASTER! ⚡"}
-          {snapshot.bossEvent.type === "inversion" && "🔄 INVERSION — SAFE & DANGER SWAPPED! 🔄"}
-          {snapshot.bossEvent.type === "blackout"  && "🌑 BLACKOUT — SURVIVE IN THE DARK! 🌑"}
+          {snapshot.bossEvent.type === "storm"     && `⚡ ${t('boss.storm')} ⚡`}
+          {snapshot.bossEvent.type === "inversion" && `🔄 ${t('boss.inversion')} 🔄`}
+          {snapshot.bossEvent.type === "blackout"  && `🌑 ${t('boss.blackout')} 🌑`}
         </div>
       )}
 
@@ -35,7 +37,7 @@ export const BossOverlay = React.memo(function BossOverlay({
           exit={{ opacity: 0, y: -10 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
-          <div className="dtp-boss-label">⚔️ BOSS PHASE {bossUi.phase}</div>
+          <div className="dtp-boss-label">⚔️ {t('boss.phase_label', { n: bossUi.phase })}</div>
           <div className="dtp-boss-track">
             <motion.div
               className="dtp-boss-fill"
@@ -53,13 +55,13 @@ export const BossOverlay = React.memo(function BossOverlay({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
         transition={{ type: "spring", stiffness: 500, damping: 20 }}
-      >⚡ COMBO x2 ⚡</motion.div>}
+      >⚡ {t('boss.combo')} ⚡</motion.div>}
 
       {/* Rare Splash */}
       {rareSplash && (
         <div className="rare-splash">
           <span className="rare-splash-text" style={{ color: rareSplash.cssColor, textShadow: `0 0 60px ${rareSplash.cssColor}, 0 0 120px ${rareSplash.cssColor}66` }}>
-            DON'T<br/>TOUCH<br/>{rareSplash.color.toUpperCase()}!
+            {t('boss.dont_touch', { color: rareSplash.color.toUpperCase() })}
           </span>
         </div>
       )}

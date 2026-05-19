@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { animateDustClaim } from '../../utils/dustAnimation';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export interface DailyChallenge {
   id: string;
@@ -18,6 +19,7 @@ interface DailyChallengesPopupProps {
 }
 
 export default function DailyChallengesPopup({ challenges, onClaim, onClose }: DailyChallengesPopupProps) {
+  const { t } = useTranslation();
   const [claimed, setClaimed] = useState<Set<string>>(
     () => new Set(challenges.filter(c => c.claimed).map(c => c.id))
   );
@@ -41,7 +43,7 @@ export default function DailyChallengesPopup({ challenges, onClaim, onClose }: D
     <div className="popup-overlay" onClick={onClose}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
-          <span className="popup-title">🎯 Daily Challenges</span>
+          <span className="popup-title">🎯 {t('challenges.title')}</span>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
 
@@ -75,7 +77,7 @@ export default function DailyChallengesPopup({ challenges, onClaim, onClose }: D
           })}
         </div>
 
-        <div className="popup-footer-note">Resets at midnight 🕛</div>
+        <div className="popup-footer-note">{t('challenges.resets')} 🕛</div>
       </div>
     </div>
   );
