@@ -12,6 +12,13 @@ function makeConfig(overrides: Partial<GameConfig> = {}): GameConfig {
   };
 }
 
+/** Access private engine internals in tests via `as unknown as ...` */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function eng(engine: GameEngine): any {
+  return engine as unknown;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 function latestActive(engine: GameEngine): ActiveCell[] {
   return engine.getSnapshot().p1.active.filter((cell) => !cell.clicked);
 }
@@ -68,7 +75,7 @@ describe("GameEngine", () => {
 
   it("damages the player when safe cells are not tapped in time", () => {
     // Override the engine's seeded rng to always return 0.99 (forces safe/non-purple cells)
-    (engine as any).rng = () => 0.99;
+    eng(engine).rng = () => 0.99;
     engine.start();
 
     vi.advanceTimersByTime(4_100);
@@ -100,7 +107,7 @@ describe("GameEngine", () => {
 
   it("increases score when a safe cell is tapped", () => {
     // Override rng to return 0.5 — produces regular (non-purple, non-powerup) cells
-    (engine as any).rng = () => 0.5;
+    eng(engine).rng = () => 0.5;
     engine.start();
     vi.advanceTimersByTime(2_100);
 
@@ -181,7 +188,7 @@ describe("GameEngine", () => {
       
       const snapshot = engine.getSnapshot();
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000, spawnedAt: Date.now() }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
 
       engine.handleHoldStart(1, 0);
       const holdCell = engine.getSnapshot().p1.active[0] as HoldCell;
@@ -199,7 +206,7 @@ describe("GameEngine", () => {
         { idx: 0, clicked: false, type: "ice", iceCount: 2 },
         { idx: 1, clicked: false, type: "white" },
       ];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
       
       // _processTap is private, but engine.handleTap calls it
       engine.handleTap(1, 0);
@@ -207,7 +214,7 @@ describe("GameEngine", () => {
       expect(engine.getSnapshot().p1.active[0].clicked).toBe(false);
       
       // Clear input buffer between taps (InputBuffer uses performance.now() which is not faked by vitest)
-      (engine as any).inputBuffer.clear();
+      eng(engine).inputBuffer.clear();
       engine.handleTap(1, 0);
       expect(engine.getSnapshot().p1.active[0].clicked).toBe(true);
     });
@@ -219,7 +226,7 @@ describe("GameEngine", () => {
       snapshot.p1.shieldCount = 1;
       snapshot.p1.shield = true;
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "purple" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
 
       // Tapping the danger color should consume the shield instead of dealing damage
       engine.handleTap(1, 0);
@@ -236,7 +243,7 @@ describe("GameEngine", () => {
       const snapshot = engine.getSnapshot();
       snapshot.p1.health = 2;
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "medpack" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
       
       engine.handleTap(1, 0);
       expect(engine.getSnapshot().p1.health).toBe(3);
@@ -246,7 +253,7 @@ describe("GameEngine", () => {
       engine.start();
       const snapshot = engine.getSnapshot();
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "freeze" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
       
       const now = Date.now();
       engine.handleTap(1, 0);
@@ -257,7 +264,7 @@ describe("GameEngine", () => {
       engine.start();
       const snapshot = engine.getSnapshot();
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "multiplier" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
       
       const now = Date.now();
       engine.handleTap(1, 0);
@@ -269,7 +276,7 @@ describe("GameEngine", () => {
       const snapshot = engine.getSnapshot();
       snapshot.p1.streak = 4;
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "white" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
       
       engine.handleTap(1, 0);
       expect(events.some(e => e.type === "toast" && e.message?.includes("5 Streak"))).toBe(true);
@@ -282,7 +289,7 @@ describe("GameEngine", () => {
       engine.start();
       
       // Force rare mode
-      (engine as any).rareMode = { active: true, color: "gold", cssColor: "#ffd700", turnsLeft: 1 };
+      eng(engine).rareMode = { active: true, color: "gold", cssColor: "#ffd700", turnsLeft: 1 };
       
       // Advance timers to trigger processTick
       vi.advanceTimersByTime(2100); 
@@ -299,7 +306,7 @@ describe("GameEngine", () => {
       
       const snapshot = engine.getSnapshot();
       snapshot.p1.active = [{ idx: 0, clicked: false, type: "white" }];
-      (engine as any).p1 = snapshot.p1;
+      eng(engine).p1 = snapshot.p1;
 
       engine.startBot();
       expect(engine.isBotActive()).toBe(true);
@@ -317,10 +324,10 @@ describe("GameEngine", () => {
 
     it("allows forcing rare mode via dev tools", () => {
       engine.start();
-      (engine as any).devForceRare(true);
+      eng(engine).devForceRare(true);
       expect(engine.getSnapshot().rareMode.active).toBe(true);
       
-      (engine as any).devForceRare(false);
+      eng(engine).devForceRare(false);
       expect(engine.getSnapshot().rareMode.active).toBe(false);
     });
 

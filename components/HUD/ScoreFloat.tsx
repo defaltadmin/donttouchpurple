@@ -9,7 +9,7 @@ interface ScoreFloatProps {
   gridRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function ScoreFloat({ player, idx, amount, cols, rows, gridRef }: ScoreFloatProps) {
+export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }: ScoreFloatProps) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 

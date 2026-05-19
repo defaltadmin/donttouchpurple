@@ -36,7 +36,7 @@ export function initGA(version: string) {
  * Progression events track player progress through the game.
  * status: Start, Complete, Fail
  */
-export function logProgressionEvent(status: "Start" | "Complete" | "Fail", mode: string, score: number, tick: number) {
+export function logProgressionEvent(status: "Start" | "Complete" | "Fail", mode: string, score: number, _tick: number) {
   if (!IS_PROD) return;
   try {
     const gaStatus = status === "Start" 
@@ -48,7 +48,7 @@ export function logProgressionEvent(status: "Start" | "Complete" | "Fail", mode:
     // Use mode as the first progression level, score as the value
     // We can also include ticks in the event name if needed, but keeping it simple for now
     GameAnalytics.addProgressionEvent(gaStatus, mode, "", "", score);
-  } catch (_) { /* GA not available in dev */ }
+  } catch { /* GA not available in dev */ }
 }
 
 /**
@@ -62,7 +62,7 @@ export function logDesignEvent(eventId: string, value?: number) {
     } else {
       GameAnalytics.addDesignEvent(eventId);
     }
-  } catch (_) { /* GA not available in dev */ }
+  } catch { /* GA not available in dev */ }
 }
 
 /**
@@ -77,7 +77,7 @@ export function logResourceEvent(flowType: "Source" | "Sink", currency: string, 
       : GameAnalytics.EGAResourceFlowType.Sink;
 
     GameAnalytics.addResourceEvent(gaFlowType, currency, amount, itemType, itemId);
-  } catch (_) { /* GA not available in dev */ }
+  } catch { /* GA not available in dev */ }
 }
 
 /**
@@ -95,5 +95,5 @@ export function logErrorEvent(severity: "Error" | "Warning" | "Info" | "Critical
           : GameAnalytics.EGAErrorSeverity.Critical;
 
     GameAnalytics.addErrorEvent(gaSeverity, message);
-  } catch (_) { /* GA not available in dev */ }
+  } catch { /* GA not available in dev */ }
 }

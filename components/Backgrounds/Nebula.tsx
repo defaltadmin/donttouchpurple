@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
 
-export function Nebula({ reducedMotion }: { reducedMotion?: boolean }) {
+export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const drawRef = useRef<(() => void) | null>(null);
@@ -102,7 +102,7 @@ export function Nebula({ reducedMotion }: { reducedMotion?: boolean }) {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, [active]);
+  }, []);
 
   if (!active) return null;
   return <canvas ref={canvasRef} className="background-canvas" />;

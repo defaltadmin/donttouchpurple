@@ -15,7 +15,7 @@ export class AssetGate {
 
   async loadAll(): Promise<void> {
     if (this.queue.length === 0) return;
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioCtx = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     const tasks = this.queue.map(a => this.decodeOrFetch(a, audioCtx));
     await Promise.allSettled(tasks);
     logger.info('Asset gate cleared');

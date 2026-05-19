@@ -5,7 +5,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 interface QuickSettingsProps {
   showOffset: boolean;
   onToggleOffset: () => void;
-  visualA11y: any;
+  visualA11y: { icons: Record<string, string> };
   onClose: () => void;
 }
 

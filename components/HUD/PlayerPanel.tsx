@@ -65,22 +65,22 @@ export interface PlayerPanelProps {
 
 // ─── PlayerPanel ──────────────────────────────────────────────────
 export const PlayerPanel = memo(function PlayerPanel({
-  ps, anim, onTap, onHoldStart, onHoldEnd,
+  ps, anim: _anim, onTap, onHoldStart, onHoldEnd,
   keyLabels, showKeys, pressing,
   label, heartAnim, mode,
   colorblind, cbFilter, is2P, shakeGrid,
-  cellShape, rareMode, onPause, isFS,
+  cellShape: _cellShape, rareMode, onPause: _onPause, isFS: _isFS,
   equippedSkin,
-  levelUpBadge, snapshot,
-  pwrToast,
-  storedFreezeCharges = 0,
-  storedShieldCharges = 0,
-  onActivateFreeze,
-  onActivateShield,
-  showStoredPwr = false,
+  levelUpBadge: _levelUpBadge, snapshot,
+  pwrToast: _pwrToast,
+  storedFreezeCharges: _storedFreezeCharges = 0,
+  storedShieldCharges: _storedShieldCharges = 0,
+  onActivateFreeze: _onActivateFreeze,
+  onActivateShield: _onActivateShield,
+  showStoredPwr: _showStoredPwr = false,
   practiceMode = false,
-  onStartBot,
-  onStopBot,
+  onStartBot: _onStartBot,
+  onStopBot: _onStopBot,
   isBotActive = false,
   botTapHighlights = {},
   botTapFx,
@@ -95,8 +95,6 @@ export const PlayerPanel = memo(function PlayerPanel({
     rows: 3, 
     mask: null 
   };
-  const spinCfg = snapshot?.spinCfg;
-  const spinLevel = snapshot?.spinLevel ?? 0;
   const gridTotal = cols * rows;
   const frozen    = ps.freezeEnd > now;
   const maskSet   = mask ? new Set(mask) : null;
@@ -109,9 +107,6 @@ export const PlayerPanel = memo(function PlayerPanel({
     : "";
 
   const skinClass = equippedSkin && equippedSkin !== "default" ? `grid-skin--${equippedSkin}` : "";
-
-  const counterSpinDur: string | null =
-    spinLevel >= 20 ? (spinCfg ? `${(spinCfg.duration * 1.4).toFixed(2)}s` : null) : null;
 
   const cellVar = getDynamicCellVar(cols, rows, is2P, mode);
 
@@ -166,7 +161,7 @@ export const PlayerPanel = memo(function PlayerPanel({
           </div>
         </div>
       )}
-      <div className="gpanel-wrap" style={{ "--cell": cellVar } as any}>
+      <div className="gpanel-wrap" style={{ "--cell": cellVar } as React.CSSProperties}>
         <div className={shakeGrid ? "gpanel-shake-wrap shake-grid" : "gpanel-shake-wrap"}>
           <div
             ref={gridRef}

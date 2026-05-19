@@ -44,7 +44,7 @@ export function buildDailyChallenges(dateStr: string): DailyChallenge[] {
   try {
     progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}');
     claimedIds = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
-  } catch (_) { /* corrupt localStorage — use defaults */ }
+  } catch { /* corrupt localStorage — use defaults */ }
 
   return picked.map(c => ({
     ...c,
@@ -66,7 +66,7 @@ export function buildWeeklyTasks(): WeeklyTask[] {
   try {
     progress   = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY) ?? '{}');
     claimedIds = JSON.parse(localStorage.getItem(WEEKLY_CLAIMED_KEY) ?? '[]');
-  } catch (_) { /* corrupt localStorage — use defaults */ }
+  } catch { /* corrupt localStorage — use defaults */ }
   const tasks = [
     { id: 'top10',    description: 'Reach top 10 leaderboard this week', reward: 200, target: 1 },
     { id: 'bothmode', description: 'Play both Classic and Evolve mode',   reward: 100, target: 2 },

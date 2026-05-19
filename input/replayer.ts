@@ -6,7 +6,7 @@ export interface InputRecording {
   events: InputEvent[];
   startTime: number;
   duration: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export class InputReplayer {
@@ -19,7 +19,7 @@ export class InputReplayer {
   };
 
   // Record input events
-  startRecording(id: string, metadata?: Record<string, any>): void {
+  startRecording(id: string, metadata?: Record<string, unknown>): void {
     const recording: InputRecording = {
       id,
       events: [],

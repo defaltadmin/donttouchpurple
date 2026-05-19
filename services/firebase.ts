@@ -69,10 +69,10 @@ async function ensureAuth(): Promise<void> {
     try {
       const app = await ensureFirebaseApp();
       const { getAuth, signInAnonymously } = await import("firebase/auth");
-      const auth = getAuth(app as any);
+      const auth = getAuth(app as FirebaseAppInstance);
       if (auth.currentUser) return; // Already signed in
       await signInAnonymously(auth);
-    } catch (e) {
+    } catch {
       // Auth failure is non-fatal — Firestore rules will reject unauthenticated writes
       authReady = null; // Allow retry
     }

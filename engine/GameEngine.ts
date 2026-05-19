@@ -241,7 +241,7 @@ export class GameEngine {
       getDangerColor:  () => this.rareMode?.active ? this.rareMode.color : 'purple',
       isInverted:      () => this.bossEvent?.type === 'inversion' && Date.now() < (this.bossEvent?.endsAt ?? 0),
       handleTap:       (player, idx) => this.handleTap(player, idx),
-      emit:            (event) => this.emit(event as any),
+      emit:            (event) => this.emit(event as unknown as GameEvent),
       getActiveCells:  (player) => (player === 1 ? this.p1 : this.p2).active,
       isPlaying:       () => this.phase === 'playing',
     });
@@ -787,10 +787,11 @@ destroy(): void {
       const cellType = type === "rare"
         ? (this.rareMode.active ? this.rareMode.color : "purple")
         : type;
-      (existing as any).type = cellType;
-      if (type === "ice") { (existing as any).iceCount = 3; (existing as any).holdProgress = undefined; }
-      if (type === "hold") { (existing as any).holdProgress = 0; (existing as any).iceCount = undefined; }
-      if (type === "bomb") { (existing as any).expiresAt = Date.now() + 3000; }
+      const mutable = existing as Record<string, unknown>;
+      mutable.type = cellType;
+      if (type === "ice") { mutable.iceCount = 3; mutable.holdProgress = undefined; }
+      if (type === "hold") { mutable.holdProgress = 0; mutable.iceCount = undefined; }
+      if (type === "bomb") { mutable.expiresAt = Date.now() + 3000; }
     }
     this.emitSnapshot();
   }
@@ -1021,7 +1022,7 @@ destroy(): void {
         this.p1.storedFreezeCharges = Math.max(0, Math.min(10, (p1.storedFreezeCharges as number) ?? 0));
         this.p1.storedShieldCharges = Math.max(0, Math.min(10, (p1.storedShieldCharges as number) ?? 0));
         this.p1.alive = (p1.alive as boolean) ?? true;
-        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
+        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c }) as unknown as ActiveCell);
         const pat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
         this.p1.cells = activeToCellsP(this.p1.active, pat);
       }
@@ -1040,7 +1041,7 @@ destroy(): void {
         this.p2.storedFreezeCharges = Math.max(0, Math.min(10, (p2.storedFreezeCharges as number) ?? 0));
         this.p2.storedShieldCharges = Math.max(0, Math.min(10, (p2.storedShieldCharges as number) ?? 0));
         this.p2.alive = (p2.alive as boolean) ?? true;
-        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c } as any));
+        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c }) as unknown as ActiveCell);
         const pat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
         this.p2.cells = activeToCellsP(this.p2.active, pat2);
       }

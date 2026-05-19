@@ -14,7 +14,7 @@ interface PauseOverlayProps {
   onToggleMute: () => void;
   onToggleFS: () => void;
   onOpenSettings: () => void;
-  focusTrapRef: any;
+  focusTrapRef: React.RefObject<HTMLDivElement>;
 }
 
 export const PauseOverlay = React.memo(function PauseOverlay({

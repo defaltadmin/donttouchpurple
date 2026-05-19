@@ -11,7 +11,7 @@ describe('ConfigManager', () => {
   });
 
   it('should merge partial updates with defaults', () => {
-    configManager.load({ grid: { cols: 8 } } as any);
+    configManager.load({ grid: { cols: 8 } } as Partial<import('../utils/game-config').GameConfigData>);
     const cfg = configManager.get();
     expect(cfg.grid.cols).toBe(8);
     expect(cfg.difficulty.baseTime).toBe(60);

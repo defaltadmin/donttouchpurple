@@ -66,7 +66,7 @@ export function LeaderboardPanel({
     } finally {
       setLoading(false);
     }
-  }, [classicStorageKey, evolveStorageKey, fetchGlobalScores]);
+  }, [classicStorageKey, evolveStorageKey, fetchGlobalScores, onScoresFetched]);
 
   useEffect(() => { fetchScores(); }, [fetchScores]);
 

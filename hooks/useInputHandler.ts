@@ -40,9 +40,11 @@ export function useInputHandler({
 
   // Clear all press timers on unmount
   useEffect(() => {
+    const p1Timers = pressP1TimersRef.current;
+    const p2Timers = pressP2TimersRef.current;
     return () => {
-      pressP1TimersRef.current.forEach(id => clearTimeout(id));
-      pressP2TimersRef.current.forEach(id => clearTimeout(id));
+      p1Timers.forEach(id => clearTimeout(id));
+      p2Timers.forEach(id => clearTimeout(id));
     };
   }, []);
   const p1KeysRef  = useRef(p1Keys);
@@ -107,13 +109,13 @@ export function useInputHandler({
 
         const state = player === 1 ? p1StateRef.current : p2StateRef.current;
         const cell = state?.active.find(c => c.idx === idx);
-        const isHold = cell?.type === "hold" && !(cell as any).clicked;
+        const isHold = cell?.type === "hold" && !(cell as { clicked?: boolean }).clicked;
 
         if (isHold) {
           const holdKey = `${player}_${idx}`;
           if (holdKeyTimers.has(holdKey)) clearTimeout(holdKeyTimers.get(holdKey)!);
           onHoldStartRef.current(player, idx);
-          const holdMs = ((cell as any).holdRequired ?? 800) + 50;
+          const holdMs = ((cell as { holdRequired?: number }).holdRequired ?? 800) + 50;
           holdKeyTimers.set(holdKey, setTimeout(() => {
             onHoldEndRef.current(player, idx);
             holdKeyTimers.delete(holdKey);

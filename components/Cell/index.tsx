@@ -106,16 +106,17 @@ export default function Cell({
   const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
   const [iceFlash, setIceFlash] = useState(false);
   useEffect(() => {
-    if (cell.type === 'ice' && prevIceCount.current !== undefined && cell.iceCount < prevIceCount.current) {
+    if (cell.type === 'ice' && prevIceCount.current !== undefined && (cell.iceCount ?? 0) < prevIceCount.current) {
       setIceFlash(true);
       const t = setTimeout(() => setIceFlash(false), 200);
       prevIceCount.current = cell.iceCount;
       return () => clearTimeout(t);
     }
     if (cell.type === 'ice') prevIceCount.current = cell.iceCount;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cell.type === 'ice' ? cell.iceCount : false]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = (_e: React.PointerEvent) => {
     if (isClicked) return;
     setIsTouched(true); // Instant visual feedback
     if (isHold && onHoldStart) {
@@ -155,7 +156,7 @@ export default function Cell({
       onPointerLeave={handlePointerUp}
       onPointerCancel={() => setIsTouched(false)}
       data-shape={shape}
-      style={{ '--cb-type': cell.type } as any}
+      style={{ '--cb-type': cell.type } as React.CSSProperties}
     >
       {/* Shape background layer */}
       <div className={`cell-shape-overlay ${shapeClass}`} />

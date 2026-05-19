@@ -1,8 +1,4 @@
-import { lazy, Suspense } from 'react';
-
-function Fallback() {
-  return <div className="panel-skeleton" aria-busy="true" aria-label="Loading panel" />;
-}
+import { lazy } from 'react';
 
 export const LazyShopPanel = lazy(() => import("./Shop/ShopPanel").then(m => ({ default: m.ShopPanel })));
 export const LazyLeaderboardPanel = lazy(() => import("./Leaderboard/LeaderboardPanel").then(m => ({ default: m.LeaderboardPanel })));

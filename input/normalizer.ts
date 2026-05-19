@@ -1,5 +1,5 @@
 // Input normalizer - converts platform-specific events to unified InputEvent format
-import type { InputEvent, KeyInputEvent, GamepadInputEvent, TouchInputEvent, MouseInputEvent } from './types';
+import type { KeyInputEvent, GamepadInputEvent, TouchInputEvent, MouseInputEvent } from './types';
 
 export class InputNormalizer {
   private static instance: InputNormalizer;

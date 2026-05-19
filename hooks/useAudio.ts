@@ -106,12 +106,12 @@ export function playSound(type: SoundType, pitchMult: number = 1): void {
       g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
       o.start(); o.stop(t + 0.04);
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
 }
 
 function getACtx(): AudioContext {
   if (!_actx) {
-    _actx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    _actx = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     _masterGain = _actx.createGain();
     _masterGain.gain.setValueAtTime(_volume, _actx.currentTime);
     _masterGain.connect(_actx.destination);

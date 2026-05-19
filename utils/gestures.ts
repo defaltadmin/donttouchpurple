@@ -45,6 +45,6 @@ export class TouchGesture {
     this.el.addEventListener('touchend', end, { passive: true });
   }
 
-  private fire(type: Gesture, payload?: any) { this.handlers.get(type)?.(type, payload); }
+  private fire(type: Gesture, payload?: { deltaX?: number; deltaY?: number }) { this.handlers.get(type)?.(type, payload); }
   destroy() { this.el.replaceWith(this.el.cloneNode(true)); this.handlers.clear(); }
 }

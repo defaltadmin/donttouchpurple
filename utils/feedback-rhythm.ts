@@ -1,5 +1,3 @@
-import { logger } from './logger';
-
 interface ComboState { count: number; lastTap: number; multiplier: number; }
 const COMBO_WINDOW = 1800;
 const MULTIPLIER_STEPS = [1, 1.2, 1.5, 2.0, 2.5];

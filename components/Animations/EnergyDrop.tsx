@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { GAME } from "../../config/difficulty";
 
 interface EnergyDropProps {
   active: boolean;
   onComplete?: () => void;
 }
 
-export function EnergyDrop({ active, onComplete }: EnergyDropProps) {
+export function EnergyDrop({ active, onComplete: _onComplete }: EnergyDropProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

@@ -3,10 +3,13 @@ import { getDeviceId } from '../utils/device';
 import { logger } from '../utils/logger';
 
 // ─── Inlined lazy Firebase (no separate chunk) ────────────────────
-let _firebaseModule: any = null;
-async function getFirebaseModule() {
+interface FirebaseModule {
+  getDB: () => unknown;
+}
+let _firebaseModule: FirebaseModule | null = null;
+async function getFirebaseModule(): Promise<FirebaseModule | null> {
   if (!_firebaseModule) {
-    _firebaseModule = await import('./firebase');
+    _firebaseModule = await import('./firebase') as unknown as FirebaseModule;
   }
   return _firebaseModule;
 }
@@ -30,7 +33,7 @@ export interface LeaderboardResult {
 
 export class LeaderboardService {
   private static instance: LeaderboardService;
-  private db: any; // Firestore instance
+  private db: unknown; // Firestore instance
 
   static getInstance(): LeaderboardService {
     if (!LeaderboardService.instance) {
@@ -40,14 +43,14 @@ export class LeaderboardService {
   }
 
   /** Inject a Firestore instance directly (used in tests). */
-  setFirestore(db: any): void {
+  setFirestore(db: unknown): void {
     this.db = db;
   }
 
-  async ensureDB(): Promise<any> {
+  async ensureDB(): Promise<unknown> {
     if (!this.db) {
       const fb = await getFirebaseModule();
-      this.db = fb.getDB();
+      this.db = fb?.getDB?.() ?? null;
     }
     return this.db;
   }
@@ -88,12 +91,14 @@ export class LeaderboardService {
         timestamp: new Date(),
         deviceId,
         playerName: playerName || 'Anonymous',
-        version: (globalThis as any).__APP_VERSION__ || 'unknown'
+        version: (globalThis as Record<string, unknown>).__APP_VERSION__ as string || 'unknown'
       };
 
       // Use transaction for atomic write
-      await runTransaction(db, async (transaction: any) => {
-        const docRef = doc(db, 'leaderboard', entryId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase dynamic import interop
+      await runTransaction(db as any, async (transaction: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase dynamic import interop
+        const docRef = doc(db as any, 'leaderboard', entryId);
         transaction.set(docRef, {
           ...entry,
           timestamp: Timestamp.fromDate(entry.timestamp)
@@ -130,7 +135,8 @@ export class LeaderboardService {
       } = await import('firebase/firestore');
 
       const q = query(
-        collection(db, 'leaderboard'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase dynamic import interop
+        collection(db as any, 'leaderboard'),
         where('mode', '==', mode),
         orderBy('score', 'desc'),
         orderBy('timestamp', 'asc'), // For tie-breaking
@@ -140,17 +146,17 @@ export class LeaderboardService {
       const snapshot = await getDocs(q);
       const entries: LeaderboardEntry[] = [];
 
-      snapshot.forEach((doc: any) => {
+      snapshot.forEach((doc: { id: string; data: () => Record<string, unknown> }) => {
         const data = doc.data();
         entries.push({
           id: doc.id,
-          score: data.score,
-          mode: data.mode,
-          seed: data.seed,
-          timestamp: data.timestamp.toDate(),
-          deviceId: data.deviceId,
-          playerName: data.playerName,
-          version: data.version
+          score: data.score as number,
+          mode: data.mode as 'classic' | 'evolve',
+          seed: data.seed as string,
+          timestamp: (data.timestamp as { toDate: () => Date }).toDate(),
+          deviceId: data.deviceId as string,
+          playerName: data.playerName as string | undefined,
+          version: data.version as string
         });
       });
 
@@ -166,7 +172,7 @@ export class LeaderboardService {
   async getUserRank(
     score: number,
     mode: 'classic' | 'evolve',
-    deviceId: string
+    _deviceId: string
   ): Promise<number | undefined> {
     const db = await this.ensureDB();
     if (!db) return undefined;
@@ -179,7 +185,8 @@ export class LeaderboardService {
 
       // Count how many scores are higher than this one
       const q = query(
-        collection(db, 'leaderboard'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase dynamic import interop
+        collection(db as any, 'leaderboard'),
         where('mode', '==', mode),
         where('score', '>', score)
       );
@@ -209,7 +216,8 @@ export class LeaderboardService {
       } = await import('firebase/firestore');
 
       let q = query(
-        collection(db, 'leaderboard'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase dynamic import interop
+        collection(db as any, 'leaderboard'),
         where('deviceId', '==', deviceId),
         orderBy('score', 'desc'),
         limit(limitCount)
@@ -222,17 +230,17 @@ export class LeaderboardService {
       const snapshot = await getDocs(q);
       const entries: LeaderboardEntry[] = [];
 
-      snapshot.forEach((doc: any) => {
+      snapshot.forEach((doc: { id: string; data: () => Record<string, unknown> }) => {
         const data = doc.data();
         entries.push({
           id: doc.id,
-          score: data.score,
-          mode: data.mode,
-          seed: data.seed,
-          timestamp: data.timestamp.toDate(),
-          deviceId: data.deviceId,
-          playerName: data.playerName,
-          version: data.version
+          score: data.score as number,
+          mode: data.mode as 'classic' | 'evolve',
+          seed: data.seed as string,
+          timestamp: (data.timestamp as { toDate: () => Date }).toDate(),
+          deviceId: data.deviceId as string,
+          playerName: data.playerName as string | undefined,
+          version: data.version as string
         });
       });
 

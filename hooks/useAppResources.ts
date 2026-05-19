@@ -18,7 +18,7 @@ export function useAppResources() {
         return 0;
       }
       return parsed;
-    } catch (_) { return 0; }
+    } catch { return 0; }
   });
   const dustRef = useRef(dust);
   useEffect(() => { dustRef.current = dust; }, [dust]);
@@ -27,7 +27,7 @@ export function useAppResources() {
     try {
       const r = localStorage.getItem(LS_KEYS.ENERGY);
       if (r) return JSON.parse(r);
-    } catch (_) {}
+    } catch { /* ignore */ }
     return { count: GAME.MAX_ENERGY, lastRegen: Date.now() };
   });
 
@@ -46,7 +46,7 @@ export function useAppResources() {
   }, []);
 
   const getLifetimeDustSpent = useCallback(() => {
-    try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch (_) { return 0; }
+    try { return parseInt(localStorage.getItem("dtp-lifetime-dust") || "0"); } catch { return 0; }
   }, []);
 
   const addDust = useCallback((amount: number, source: string): number => {
@@ -71,10 +71,10 @@ export function useAppResources() {
     const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
     const actualSpent = dustRef.current - newDust; // actual amount deducted (respects floor at 0)
     const spent = getLifetimeDustSpent() + actualSpent;
-    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch (_) {}
+    try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch { /* ignore */ }
     setDust(newDust);
     dustRef.current = newDust;
-    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch (_) {}
+    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch { /* ignore */ }
     import("../services/gameanalytics").then(m => m.logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount)).catch(() => {});
   }, [getLifetimeDustSpent]);
 

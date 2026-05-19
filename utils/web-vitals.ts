@@ -6,7 +6,7 @@ import { metricsService } from '../services/metrics';
 // Extend Window type for gtag
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
@@ -70,7 +70,7 @@ class WebVitalsMonitor {
       });
 
       console.log('[WebVitals] Monitoring started');
-    } catch (error) {
+    } catch {
       errorLogger.error('Failed to start Web Vitals monitoring');
     }
   }
@@ -126,12 +126,12 @@ class WebVitalsMonitor {
           event_label: metric.id,
         });
       }
-    } catch (error) {
+    } catch {
       errorLogger.error('Failed to report Web Vitals metric', { name } as Record<string, string | number | boolean | undefined>);
     }
   }
 
-  exportMetrics(): Record<string, any> {
+  exportMetrics(): Record<string, unknown> {
     return {
       ...this.metrics,
       timestamp: new Date().toISOString(),
@@ -148,8 +148,13 @@ declare module '../services/metrics' {
   }
 }
 
-const originalMetricsService = metricsService as any;
+interface MetricsServiceExtended {
+  recordPerformanceMetric(metric: string, value: number, rating: string): void;
+  perfMetrics: Record<string, Record<string, { value: number; rating: string; timestamp: number }>>;
+}
+const originalMetricsService = metricsService as unknown as MetricsServiceExtended;
 originalMetricsService.recordPerformanceMetric = function(
+  this: MetricsServiceExtended,
   metric: string,
   value: number,
   rating: string

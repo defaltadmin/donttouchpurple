@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
 export function usePWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<{ prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     // ✅ FIX: Check installation status synchronously (safe)
     const checkInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isIOSStandalone = (window.navigator as any).standalone === true;
+      const isIOSStandalone = (window.navigator as { standalone?: boolean }).standalone === true;
       setIsInstalled(isStandalone || isIOSStandalone);
     };
     checkInstalled();
@@ -16,7 +16,7 @@ export function usePWA() {
     // ✅ FIX: beforeinstallprompt is async — safe to set state here
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as unknown as { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> });
       // ✅ This is safe: event handler, not render
     };
 

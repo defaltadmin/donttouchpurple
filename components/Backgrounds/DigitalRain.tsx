@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
 
-export function DigitalRain({ reducedMotion }: { reducedMotion?: boolean }) {
+export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const drawRef = useRef<(() => void) | null>(null);
@@ -24,8 +24,6 @@ export function DigitalRain({ reducedMotion }: { reducedMotion?: boolean }) {
     if (!active) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
-    let tick = 0;
-
     const fontSize = 14;
     const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
 
@@ -70,7 +68,7 @@ export function DigitalRain({ reducedMotion }: { reducedMotion?: boolean }) {
         drops[i] += 0.5 + Math.random() * 0.5;
       }
 
-      tick++;
+      _tick++;
       rafRef.current = requestAnimationFrame(draw);
     };
     drawRef.current = draw;
@@ -80,7 +78,7 @@ export function DigitalRain({ reducedMotion }: { reducedMotion?: boolean }) {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, [active]);
+  }, []);
 
   if (!active) return null;
   return <canvas ref={canvasRef} className="background-canvas" />;

@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
-import { motion } from "framer-motion";
 import "./styles/game.css";
 import "./styles/enhancements.css";
 import { logger } from "./utils/logger";
-import { sessionManager } from "./utils/session";
 import { settingsManager } from "./utils/settings";
-import { analytics } from "./utils/analytics";
 import { audioEngine } from "./utils/audio";
 import { i18n, type Locale } from "./utils/i18n";
 import { AssetHydrator } from "./utils/asset-hydrator";
@@ -15,8 +12,6 @@ import { Preloader } from "./utils/preloader";
 import { gamepadManager } from "./utils/gamepad";
 import { configManager } from "./utils/game-config";
 import { errorTracker } from "./utils/error-tracker";
-import { LazyHydrate } from "./utils/lazy-hydrate";
-import { achievementSystem } from "./utils/achievements";
 import { scoreCardGen } from "./utils/score-card";
 import { privacyManager } from "./utils/privacy";
 import { webVitalsMonitor } from "./utils/web-vitals";
@@ -29,37 +24,28 @@ import { useOffsetCursor } from "./hooks/useOffsetCursor";
 import { useEnergyStore } from "./hooks/useEnergyStore";
 
 declare const __APP_VERSION__: string;
-import { getSentry, safeSentry } from "./services/sentry";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { safeSentry } from "./services/sentry";
 import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
-import { STAGES, EVOLVE_PATTERNS } from "./config/gridPatterns";
-import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys, saveKeys, toLabel } from "./config/keybindings";
+import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys } from "./config/keybindings";
 import { SHOP_THEMES, SHOP_TRAILS } from "./config/powerupWeights";
-import { setAudioMuted, setAudioVolume, setHapticsEnabled, playVolumeChime, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
+import { setAudioMuted, setAudioVolume, setHapticsEnabled, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
 import { useGameSettings } from "./hooks/useGameSettings";
 import { useDustEconomy } from "./hooks/useDustEconomy";
 import { useUIFlags } from "./hooks/useUIFlags";
 import { useInputHandler } from "./hooks/useInputHandler";
-import type { GameConfig as EngineGameConfig, Winner, PlayerState, GameSnapshot, StoredPowerups, HoldCell } from "./engine/types";
+import type { GameConfig as EngineGameConfig, Winner, PlayerState, HoldCell } from "./engine/types";
 
 // Components - HUD
 import { EnergyBar } from "./components/HUD/EnergyBar";
 import { DustWidget } from "./components/HUD/DustWidget";
-import { Toast, RareSplash } from "./components/HUD/Toasts";
 import { Hearts } from "./components/HUD/Hearts";
-import { GridErrorBoundary } from "./components/HUD/GridErrorBoundary";
-import { PwrBar } from "./components/HUD/PwrBar";
-import { PlayerPanel } from "./components/HUD/PlayerPanel";
-import { ShieldDrop } from "./components/Animations/ShieldDrop";
-import { FreezeDrop } from "./components/Animations/FreezeDrop";
-import { EnergyDrop } from "./components/Animations/EnergyDrop";
 
 // Components - Screens
 import { LoadingScreen } from "./components/Screens/LoadingScreen";
 import { StartScreen } from "./components/Screens/StartScreen";
 import { HowToPlay } from "./components/Screens/HowToPlay";
-import { GameOver, getMessage } from "./components/Screens/GameOver";
+import { getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
 import EvolveTutorial from "./components/Screens/EvolveTutorial";
 import { WhatsNew, shouldShowWhatsNew, markWhatsNewSeen } from "./components/Screens/WhatsNew";
@@ -89,12 +75,11 @@ import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "./config/dailyObjective";
 
 // Services (lazy loaded - see getFirebase() below)
-import { fbLogEvent, fbFetchTop20Global } from "./services/firebase";
-import { initGA, logProgressionEvent, logDesignEvent, logResourceEvent, logErrorEvent } from "./services/gameanalytics";
+import { fbFetchTop20Global } from "./services/firebase";
+import { initGA, logProgressionEvent } from "./services/gameanalytics";
 import { safeGetJSON, safeSet } from "./utils/storage";
 import { addPendingScore } from "./utils/pendingScoresDb";
 import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachine";
-import { featureGates } from "./utils/featureGates";
 import { PauseOverlay } from "./components/Screens/PauseOverlay";
 import { EnergyPopup } from "./components/Screens/EnergyPopup";
 import { QuickSettings } from "./components/Settings/QuickSettings";
@@ -104,7 +89,6 @@ import { GameHeader } from "./components/HUD/GameHeader";
 import { GameArea } from "./components/HUD/GameArea";
 
 // Components - Settings & Shop
-import { KeyBinder } from "./components/Settings/KeyBinder";
 const SettingsDrawer = lazy(() => import("./components/Settings/SettingsDrawer").then(m => ({ default: m.SettingsDrawer })));
 const ShopPanel = lazy(() => import("./components/Shop/ShopPanel").then(m => ({ default: m.ShopPanel })));
 const LeaderboardPanel = lazy(() => import("./components/Leaderboard/LeaderboardPanel").then(m => ({ default: m.LeaderboardPanel })));
@@ -113,7 +97,6 @@ import { DevOverlay, DevUnlockModal } from "./components/Settings/DevOverlay";
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 type GameMode        = "classic" | "evolve";
 type InputMode       = "touch" | "keyboard";
-type GameScreen    = "menu" | "howto" | "leaderboard" | "keybind" | "playing" | "gameover" | "shop";
 type NumPlayers      = 1 | 2;
 type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
@@ -124,9 +107,6 @@ async function getFirebase() {
   return _firebase;
 }
 
-// --- Background Control ---
-import { useBackgroundController } from './hooks/useBackground';
-
 import { NameChangeForm } from "./components/Settings/NameChangeForm";
 import { ColorblindFilters, getCBFilterStyle } from "./components/ColorblindFilters";
 import { ExitConfirmModal } from "./components/Screens/ExitConfirmModal";
@@ -134,7 +114,6 @@ import { RotatePrompt } from "./components/Screens/RotatePrompt";
 import { loadShopData, saveShopData, type ShopData } from "./utils/shop-storage";
 
 // --- Tutorial ---
-import { MAX_TUTORIAL_GAMES } from './config/tutorial';
 import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 
 // --- App Component ---
@@ -144,7 +123,6 @@ export default function App() {
   const [loadDone, setLoadDone] = useState(false);
   const {
     showNameEntry, setShowNameEntry,
-    showLangMenu, setShowLangMenu,
     showShare, setShowShare,
     shareUrl, setShareUrl,
     showRotatePrompt, setShowRotatePrompt,
@@ -154,8 +132,7 @@ export default function App() {
     showTutorial, setShowTutorial,
     showWhatsNew, setShowWhatsNew,
     showPrivacy, setShowPrivacy,
-    showLoginStreak, setShowLoginStreak,
-    showDailyChallenges, setShowDailyChallenges,
+    setShowLoginStreak,
     showRewardsHub, setShowRewardsHub,
     showExitConfirm, setShowExitConfirm,
     showEnergyPopup, setShowEnergyPopup,
@@ -169,9 +146,9 @@ export default function App() {
   const [gamepadActive, setGamepadActive] = useState(false);
   interface AchievementToast { id: string; icon: string; name: string; desc: string; }
   const [achievementQueue, setAchievementQueue] = useState<AchievementToast[]>([]);
-  const [dailyComplete, setDailyComplete] = useState(false);
+  const [, setDailyComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [combo, setCombo] = useState({ count: 0, multiplier: 1 });
+  const [, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
   const [bossUi, setBossUi] = useState<{ active: boolean; shieldHits: number; maxShield: number; phase: number }>({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
@@ -232,7 +209,7 @@ export default function App() {
   }, []);
 
   const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
-  const { dust, dustRef, setDust, addDust, spendDust, persistDust, getLifetimeDustSpent, getBotAccuracy } = useDustEconomy(playerName);
+  const { dust, dustRef, setDust, addDust, spendDust, persistDust, getBotAccuracy } = useDustEconomy(playerName);
   const scoreSubmittedRef = useRef(false);
 
   const { energyData, refillEnergy, spendEnergy } = useEnergyStore();
@@ -246,7 +223,7 @@ export default function App() {
   useEffect(() => {
     const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
     if (gamesEver > 0 && shouldShowWhatsNew()) setShowWhatsNew(true);
-  }, []);
+  }, [setShowWhatsNew]);
 
   // Spotlight effect - update CSS vars for card hover glow (throttled via RAF)
   useEffect(() => {
@@ -275,7 +252,7 @@ export default function App() {
   const [numPlayers, setNumPlayers]  = useState<NumPlayers>(1);
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
   const [practiceMode, setPracticeMode] = useState(false);
-  const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion, backgroundFPS } = useGameSettings();
+  const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion } = useGameSettings();
   const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
@@ -290,20 +267,6 @@ export default function App() {
     }
   }, [screen]);
 
-  // Offline Score Queue
-  const queueOfflineScore = async (scoreData: any) => {
-    try {
-      await addPendingScore({ ...scoreData, timestamp: Date.now() });
-      if ('serviceWorker' in navigator && 'SyncManager' in window) {
-        const reg = await navigator.serviceWorker.ready;
-        await (reg as any).sync.register('dtp-score-submit');
-      }
-      toast$("💾 Score saved offline. Will sync when online.");
-    } catch (e) {
-      console.error("[DTP] Failed to queue offline score", e);
-    }
-  };
-
   const [pendingReplaySeed, setPendingReplaySeed] = useState<string | null>(
     () => localStorage.getItem("pendingReplaySeed")
   );
@@ -317,20 +280,20 @@ export default function App() {
   const [bossCounters, setBossCounters] = useState<BossObjectiveCounters>({ bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 });
   const bossCountersRef = useRef(bossCounters);
   useEffect(() => { bossCountersRef.current = bossCounters; }, [bossCounters]);
-  const [initials, setInitials]      = useState("");
-  const [initialsEntered, setIE]     = useState(false);
+  const [, setInitials]              = useState("");
+  const [, setIE]                    = useState(false);
   const [theme, setTheme]            = useState<"dark"|"light">("dark");
   const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
   const [loginStreakCount, setLoginStreakCount]        = useState(1);
   const [loginStreakReward, setLoginStreakReward]      = useState(50);
   const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
   const [weeklyTasks, setWeeklyTasks]                 = useState<WeeklyTask[]>([]);
-  const [prevBest, setPrevBest]     = useState(0);
+  const [, setPrevBest]              = useState(0);
 
   const [paused, setPaused]         = useState(false);
   const [devMode, setDevMode]       = useState(false);
   // Give 99999 dust when dev mode is enabled
-  useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode]);
+  useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
    const [devRotationSpeed, setDevRotationSpeed] = useState(1);
@@ -345,8 +308,6 @@ export default function App() {
   useEffect(() => { settingsManager.set({ offsetPointer: showOffset }); }, [showOffset]);
   const [showFps, setShowFps] = useState(() => localStorage.getItem('showFps') === 'true');
   const [fps, setFps] = useState(0);
-  const fpsFrameRef = useRef(0);
-  const lastFpsTimeRef = useRef<number>(performance.now());
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(dust);
   const pbFlashedRef = useRef(false);
@@ -397,10 +358,10 @@ export default function App() {
   const switchPlayer = useCallback(() => {
     // Toggle between player names or show name entry
     setShowNameEntry(true);
-  }, []);
+  }, [setShowNameEntry]);
 
-  const [p1Keys, setP1Keys] = useState(() => loadKeys(LS_KEYS.P1_KEYS, DEFAULT_P1_KEYS));
-  const [p2Keys, setP2Keys] = useState(() => loadKeys(LS_KEYS.P2_KEYS, DEFAULT_P2_KEYS));
+  const [p1Keys] = useState(() => loadKeys(LS_KEYS.P1_KEYS, DEFAULT_P1_KEYS));
+  const [p2Keys] = useState(() => loadKeys(LS_KEYS.P2_KEYS, DEFAULT_P2_KEYS));
 
   const toastRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   const toast$ = useCallback((msg: string) => {
@@ -451,7 +412,7 @@ export default function App() {
     getDust: () => dustRef.current,
     spendDust,
     getAccuracy: getBotAccuracy,
-  }), [spendDust, getBotAccuracy]);
+  }), [spendDust, getBotAccuracy, dustRef]);
 
   const engineConfig: EngineGameConfig = React.useMemo(() => ({
     mode: gameMode,
@@ -460,6 +421,40 @@ export default function App() {
     inputMode: inputMode === "keyboard" ? "keys" as const : "touch" as const,
     godMode: godMode || practiceMode,
   }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
+
+  // Update challenge progress from game over
+  const updateChallengeProgress = useCallback((p1Score: number, finalTick: number) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
+    let progress: Record<string,number> = {};
+    try { progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}'); } catch {}
+
+    progress['play3'] = (progress['play3'] ?? 0) + 1;
+    if (p1Score >= 50) progress['score50'] = p1Score;
+    if (finalTick >= 60) progress['survive60'] = finalTick;
+    if (peakStreakRef.current >= 5) progress['streak5'] = peakStreakRef.current;
+
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    setDailyChallenges(buildDailyChallenges(todayStr));
+
+    // Weekly task progress
+    const now2 = new Date();
+    const weekStart2 = new Date(now2);
+    weekStart2.setDate(now2.getDate() - now2.getDay());
+    const weekKey2 = weekStart2.toISOString().slice(0, 10);
+    const WEEKLY_PROGRESS_KEY2 = `dtp-weekly-progress-${weekKey2}`;
+    let weeklyProgress: Record<string, number> = {};
+    try { weeklyProgress = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY2) ?? '{}'); } catch {}
+    weeklyProgress['play10'] = (weeklyProgress['play10'] ?? 0) + 1;
+    if (p1Score >= 100) weeklyProgress['score100'] = (weeklyProgress['score100'] ?? 0) + 1;
+    const modesKey = `dtp-weekly-modes-${weekKey2}`;
+    const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
+    modesPlayed.add(gameMode);
+    localStorage.setItem(modesKey, JSON.stringify([...modesPlayed]));
+    weeklyProgress['bothmode'] = modesPlayed.size;
+    localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
+    setWeeklyTasks(buildWeeklyTasks());
+  }, [gameMode]);
 
   const handleEngineGameOver = useCallback(async (engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
     // TRANSITION FIRST — prevents soft lock if async work fails
@@ -481,7 +476,7 @@ export default function App() {
     });
     const rawEarned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
     const earned = isNaN(rawEarned) || !isFinite(rawEarned) ? 0 : rawEarned;
-    const newDust = addDust(earned, 'GameOver');
+    addDust(earned, 'GameOver');
     getFirebase().then(fb => {
       fb.fbLogEvent("game_over", {
         mode: gameMode,
@@ -547,18 +542,18 @@ export default function App() {
           if (!response.ok) throw new Error('Worker rejected');
           toast$("🏆 Score submitted to global leaderboard!");
 
-        } catch (err) {
+        } catch {
           console.warn("Worker offline, queuing score");
           await addPendingScore(autoEntry);
 
           if ('serviceWorker' in navigator && 'SyncManager' in window) {
             const reg = await navigator.serviceWorker.ready;
-            (reg as any).sync.register('dtp-score-submit');
+            (reg as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync?.register('dtp-score-submit');
           }
           toast$("💾 Score saved offline — will sync soon");
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('[DTP] Score submission failed', err);
     }
 
@@ -600,7 +595,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust, setScreen]);
+  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust, setScreen, updateChallengeProgress]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {
@@ -610,7 +605,7 @@ export default function App() {
       }, 900);
       return () => clearTimeout(t);
     }
-  }, [shouldShowRewardsAfterGame, screen]);
+  }, [shouldShowRewardsAfterGame, screen, setShowRewardsHub]);
 
   useEffect(() => {
     if (shouldShowRewardsOnLogin && screen === "menu") {
@@ -620,7 +615,7 @@ export default function App() {
       }, 700);
       return () => clearTimeout(t);
     }
-  }, [shouldShowRewardsOnLogin, screen]);
+  }, [shouldShowRewardsOnLogin, screen, setShowRewardsHub]);
 
   // Challenge URL detection
   useEffect(() => {
@@ -654,14 +649,10 @@ export default function App() {
     devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
-    startBot, stopBot, isBotActive,
+    isBotActive,
     setBotAssist, botAssistActive, botTapHighlights, scoreFloats,
-    lastGameScore,
     getAutoLowQuality,
-    submitScoreToLeaderboard,
-    restoreSession,
     restoreSessionSnapshot,
-    generateChallengeUrl,
   } = useGameEngine(
     engineConfig,
     handleEngineGameOver,
@@ -707,8 +698,8 @@ export default function App() {
     resumeCheckedRef.current = true;
     const raw = sessionStorage.getItem('dtp:session');
     if (!raw) { setResumeReady(false); return; }
-    const parsed = stateGuard.parse<Record<string, unknown> | null>(raw, null, (d: any) =>
-      d && typeof d === 'object' && typeof d.gameSeed === 'number' && typeof d.score === 'number'
+    const parsed = stateGuard.parse<Record<string, unknown> | null>(raw, null, (d: unknown): d is Record<string, unknown> =>
+      !!d && typeof d === 'object' && typeof (d as Record<string, unknown>).gameSeed === 'number' && typeof (d as Record<string, unknown>).score === 'number'
     );
     if (parsed) {
       setResumeReady(true);
@@ -725,13 +716,13 @@ export default function App() {
       return;
     }
     setBotAssist(player, !botAssistActive[player]);
-  }, [botAssistActive, toast$, setBotAssist]);
+  }, [botAssistActive, toast$, setBotAssist, dustRef]);
 
   // Compute whether backgrounds should animate
   const shouldAnimateBackground = !reducedMotion && (screen === "playing" || screen === "gameover" || screen === "menu");
 
   // Background component mapping
-  const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<any> }>>(() => ({
+  const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<Record<string, unknown>> }>>(() => ({
     'default': { component: PurpleRain },
     'void-tunnel': { component: VoidTunnel },
     'star-warp': { component: StarWarp },
@@ -747,7 +738,7 @@ export default function App() {
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 
-  const [settings, setSettings] = useState(settingsManager.get());
+  const [, setSettings] = useState(settingsManager.get());
   useEffect(() => {
     const unsub = settingsManager.subscribe(s => { setSettings(s); });
     return () => { unsub(); };
@@ -826,7 +817,7 @@ export default function App() {
       setResumeReady(false);
       setResumeData(null);
     }
-  }, [resumeData, restoreSessionSnapshot, toast$]);
+  }, [resumeData, restoreSessionSnapshot, toast$, setScreen]);
 
   const resumeGame = useCallback(() => {
     safeSentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
@@ -920,7 +911,7 @@ export default function App() {
       // keep paused — user was in pause menu
     }
     setSettingsFromPause(false);
-  }, [settingsFromPause, paused]);
+  }, [settingsFromPause, paused, setShowSettings, setSettingsFromPause]);
 
   // Dev Events
   useEffect(() => {
@@ -936,12 +927,12 @@ export default function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [setShowDevPanel]);
 
   useEffect(() => {
-    const s = (e: CustomEvent) => devForceStage(e.detail);
-    const p = (e: CustomEvent) => devForcePattern(e.detail);
-    const r = (e: CustomEvent) => devForceRare(e.detail);
+    const s = (e: CustomEvent<number>) => devForceStage(e.detail);
+    const p = (e: CustomEvent<number>) => devForcePattern(e.detail);
+    const r = (e: CustomEvent<{ color: string; cssColor: string } | null>) => devForceRare(e.detail);
     window.addEventListener("dtp-dev-stage",   s as EventListener);
     window.addEventListener("dtp-dev-pattern", p as EventListener);
     window.addEventListener("dtp-dev-rare",    r as EventListener);
@@ -1118,14 +1109,14 @@ export default function App() {
       setLoadProgress((prev) => Math.min(100, Math.max(prev, p)));
     }, 80);
     return () => clearInterval(interval);
-  }, [playerName]);
+  }, [playerName, setShowNameEntry]);
 
   // Transition to menu once the app is fully ready
   useEffect(() => {
     if (appReady && screen === 'loading') {
       setScreen('menu');
     }
-  }, [appReady, screen]);
+  }, [appReady, screen, setScreen]);
 
   useEffect(() => {
     configManager.load();
@@ -1234,7 +1225,7 @@ export default function App() {
       setShareUrl(url);
       setShowShare(true);
     } catch (e) { logger.error('Share generation failed', e); }
-  }, []);
+  }, [setShareUrl, setShowShare]);
 
   useEffect(() => {
     const consent = localStorage.getItem('dtp:telemetry-consent');
@@ -1246,7 +1237,7 @@ export default function App() {
       setShowRotatePrompt(isLand);
     });
     return unsub;
-  }, []);
+  }, [setShowRotatePrompt]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -1303,7 +1294,7 @@ export default function App() {
     if (forceSeed !== undefined) {
       clearReplaySeed();
     }
-  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, numPlayers, inputMode, evolveTutorialSeen, spendEnergy, setScreen]);
+  }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, numPlayers, inputMode, evolveTutorialSeen, spendEnergy, setScreen, dustRef, setShowTutorial]);
 
   // Tutorial close handler — mark seen, then delegate to startGame
   const handleTutorialClose = useCallback(() => {
@@ -1325,7 +1316,7 @@ export default function App() {
     setIE(false);
     setShareMsg("");
     // Clear snapshot so rare badge and other game-specific UI don't persist on menu
-    snapshotRef.current = null as any;
+    snapshotRef.current = null as unknown as typeof snapshotRef.current;
   }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
@@ -1379,79 +1370,6 @@ export default function App() {
     addDust(safeReward, 'WeeklyTask');
     setWeeklyTasks(buildWeeklyTasks());
   };
-
-  // Update challenge progress from game over
-  const updateChallengeProgress = useCallback((p1Score: number, finalTick: number) => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
-    let progress: Record<string,number> = {};
-    try { progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}'); } catch {}
-
-    progress['play3'] = (progress['play3'] ?? 0) + 1;
-    if (p1Score >= 50) progress['score50'] = p1Score;
-    if (finalTick >= 60) progress['survive60'] = finalTick;
-    if (peakStreakRef.current >= 5) progress['streak5'] = peakStreakRef.current;
-
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-    setDailyChallenges(buildDailyChallenges(todayStr));
-
-    // Weekly task progress
-    const now2 = new Date();
-    const weekStart2 = new Date(now2);
-    weekStart2.setDate(now2.getDate() - now2.getDay());
-    const weekKey2 = weekStart2.toISOString().slice(0, 10);
-    const WEEKLY_PROGRESS_KEY2 = `dtp-weekly-progress-${weekKey2}`;
-    let weeklyProgress: Record<string, number> = {};
-    try { weeklyProgress = JSON.parse(localStorage.getItem(WEEKLY_PROGRESS_KEY2) ?? '{}'); } catch {}
-    weeklyProgress['play10'] = (weeklyProgress['play10'] ?? 0) + 1;
-    if (p1Score >= 100) weeklyProgress['score100'] = (weeklyProgress['score100'] ?? 0) + 1;
-    const modesKey = `dtp-weekly-modes-${weekKey2}`;
-    const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
-    modesPlayed.add(gameMode);
-    localStorage.setItem(modesKey, JSON.stringify([...modesPlayed]));
-    weeklyProgress['bothmode'] = modesPlayed.size;
-    localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
-    setWeeklyTasks(buildWeeklyTasks());
-  }, [gameMode, buildDailyChallenges, buildWeeklyTasks, addDust]);
-
-  const submitScore = useCallback(async () => {
-    const score = numPlayers === 1
-      ? snapshot?.p1?.score
-      : Math.max(snapshot?.p1?.score || 0, snapshot?.p2?.score || 0);
-    const tick = snapshot?.tick ?? 0;
-
-    // Sanity: reject physically impossible scores
-    const MAX_SCORE_PER_TICK = 20;
-    if (score && tick > 0 && score / tick > MAX_SCORE_PER_TICK) {
-      console.warn('[DTP] Score rejected: exceeds max score/tick ratio', { score, tick });
-      safeSentry.captureException(new Error('Suspicious score submission'), {
-        tags: { component: 'leaderboard-submit', type: 'suspicious' },
-        extra: { score, tick, ratio: score / tick },
-      });
-      toast$("⚠️ Score validation failed.");
-      return;
-    }
-
-    const entry = {
-      score: score || 0,
-      initials,
-      mode: gameMode,
-      badge: shopData.equippedBadge,
-      date: new Date().toISOString().split("T")[0],
-    };
-    setIE(true);
-    try {
-      const fb = await getFirebase();
-      await fb.fbAddScoreGlobal(entry);
-      safeSentry.addBreadcrumb({ category: "leaderboard", message: "score_submit", level: "info", data: entry });
-      fb.fbLogEvent("score_submit", { mode: entry.mode, score: entry.score, has_badge: Boolean(entry.badge) });
-    } catch(error) {
-      safeSentry.captureException(error, {
-        tags: { component: "leaderboard-submit" },
-        extra: { entry },
-      });
-    }
-  }, [snapshot, initials, gameMode, shopData.equippedBadge, numPlayers, toast$]);
 
   const toggleFS = useCallback(() => {
     if (!document.fullscreenElement) {

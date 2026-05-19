@@ -16,7 +16,7 @@ const Nebula        = lazy(() => import("../Backgrounds/Nebula"));
 const DigitalRain   = lazy(() => import("../Backgrounds/DigitalRain"));
 const AuroraBorealis = lazy(() => import("../Backgrounds/AuroraBorealis"));
 
-const BG_MAP: Record<string, ComponentType<any>> = {
+const BG_MAP: Record<string, ComponentType<{ reducedMotion?: boolean }>> = {
   'default': PurpleRain,
   'void-tunnel': VoidTunnel,
   'star-warp': StarWarp,

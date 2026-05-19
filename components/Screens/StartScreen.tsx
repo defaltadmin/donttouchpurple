@@ -195,9 +195,9 @@ export function StartScreen({
   playerName,
   isFeatureUnlocked,
   onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
-  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, onGameMaster, rewardsBadgeCount,
-  dustWidget, energyBar,
-  dailyObjectives,
+  onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, onGameMaster: _onGameMaster, rewardsBadgeCount: _rewardsBadgeCount,
+  dustWidget: _dustWidget, energyBar,
+  dailyObjectives: _dailyObjectives,
   pendingReplaySeed, onClearReplaySeed,
   resumeReady, resumeData, onResumeGame,
   onToast,
@@ -274,7 +274,7 @@ export function StartScreen({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame]);
+  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame, setGameMode, setInputMode, setNumPlayers]);
 
   return (
     <div className="menu-card screen-slide" role="main" aria-label="Game menu">
@@ -310,7 +310,7 @@ export function StartScreen({
             ]}
             value={gameMode}
             disabledOptions={(!isFeatureUnlocked('evolve_mode') && !devMode) ? ['evolve'] : []}
-            onDisabledClick={(m) => onToast?.(t('menu.locked_evolve'))}
+            onDisabledClick={(_m) => onToast?.(t('menu.locked_evolve'))}
             onChange={(m) => setGameMode(m)}
           />
         </div>
@@ -323,7 +323,7 @@ export function StartScreen({
             ] as { value: NumPlayers; label: string }[]}
             value={numPlayers}
             disabledOptions={(!isFeatureUnlocked('two_player') && !devMode) ? [2] : []}
-            onDisabledClick={(n) => onToast?.(t('menu.locked_duo'))}
+            onDisabledClick={(_n) => onToast?.(t('menu.locked_duo'))}
             onChange={(n) => setNumPlayers(n)}
           />
         </div>

@@ -6,7 +6,7 @@ import { logger } from './logger';
 // For now, we use a dev-only placeholder that disables challenge signing in production
 // unless a real secret is configured.
 const HMAC_SECRET: string =
-  (import.meta as any).env?.VITE_CHALLENGE_SECRET || '';
+  (import.meta as { env?: Record<string, string> }).env?.VITE_CHALLENGE_SECRET || '';
 
 const SIGNING_ENABLED = !!HMAC_SECRET;
 const IS_PROD = typeof window !== "undefined" && window.location.hostname === "game.mscarabia.com";

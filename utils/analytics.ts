@@ -8,7 +8,7 @@ const MAX_QUEUE = 50;
 
 export const analytics = {
   track(name: EventName, payload: Record<string, unknown> = {}) {
-    if ((navigator as any).doNotTrack === '1') return;
+    if ((navigator as { doNotTrack?: string }).doNotTrack === '1') return;
     const evt: GameEvent = { name, ts: Date.now(), payload };
     const queue = this._getQueue();
     queue.push(evt);

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { GAME } from "../../config/difficulty";
 
 interface FreezeDropProps {
   active: boolean;
   onComplete?: () => void;
 }
 
-export function FreezeDrop({ active, onComplete }: FreezeDropProps) {
+export function FreezeDrop({ active, onComplete: _onComplete }: FreezeDropProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

@@ -84,7 +84,7 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
         {/* Step content */}
         {!isLast && (
           <div className="first-run-step">
-            <p className="first-run-step-text">{t(`onboarding.${STEPS[step].key}` as any)}</p>
+            <p className="first-run-step-text">{t(`onboarding.${STEPS[step].key}` as Parameters<typeof t>[0])}</p>
           </div>
         )}
 

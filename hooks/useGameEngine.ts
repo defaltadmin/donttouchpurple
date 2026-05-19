@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GameEngine } from "../engine/GameEngine";
 import { sessionManager } from "../utils/session";
-import { scoreSync } from "../utils/score-sync";
 import { logger } from "../utils/logger";
 import type { GameConfig, GameEvent, GameSnapshot, Winner, StoredPowerups } from "../engine/types";
 import { LS_KEYS, GAME } from "../config/difficulty";
@@ -107,7 +106,6 @@ export function useGameEngine(
   useEffect(() => { onGameOverRef.current = onGameOver; });
 
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
-  const latestSnapshotRef = useRef<GameSnapshot | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
   const [heartAnimP1, setHA1]         = useState(false);
@@ -139,7 +137,6 @@ export function useGameEngine(
   const gameOverTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const botTapTimersRef    = useRef<ReturnType<typeof setTimeout>[]>([]);
   const peakStreakRef     = useRef(0);
-  const dustAtStartRef    = useRef(0);
 
   const toast$ = useCallback((msg: string) => {
     if (!mountedRef.current) return;
@@ -304,7 +301,9 @@ export function useGameEngine(
       sessionManager.clear();
       unsub();
       engine.destroy();
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally read the latest ref value in cleanup
+      const rafId = rafIdRef.current;
+      if (rafId) cancelAnimationFrame(rafId);
       document.removeEventListener("visibilitychange", handleVisibility);
       if (toastTimerRef.current)      clearTimeout(toastTimerRef.current);
       if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
@@ -320,7 +319,7 @@ export function useGameEngine(
       botTapTimersRef.current.forEach(clearTimeout);
       botTapTimersRef.current = [];
     };
-  }, [config.mode, config.numPlayers, config.speedMult]);
+  }, [config.mode, config.numPlayers, config.speedMult, config, dustCallbacks, onBombDefused, onBossEvent, onDamage, toast$]);
 
   const startBot = useCallback(() => engineRef.current?.startBot(), []);
   const stopBot  = useCallback(() => engineRef.current?.stopBot(), []);

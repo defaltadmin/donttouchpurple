@@ -15,7 +15,9 @@ interface Shape {
   filled: boolean; rotation: number; rotSpeed: number;
 }
 
-const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, ref) => {
+export interface PurpleRainHandle { pause: () => void; resume: () => void; }
+
+const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotion = false }, ref) => {
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const animationRef   = useRef<number | null>(null);
   const shapesRef      = useRef<Shape[]>([]);
@@ -42,16 +44,6 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
       animationRef.current = null;
     }
   }, []);
-
-  const resume = useCallback(() => {
-    if (reducedMotion || !canvasRef.current) return;
-    if (!animationRef.current) animate(performance.now());
-  }, [reducedMotion]);
-
-  useEffect(() => {
-    const unregister = register({ pause, resume });
-    return unregister;
-  }, [register, pause, resume]);
 
   const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
     const types: Shape["type"][] = ["square", "circle", "triangle"];
@@ -132,6 +124,16 @@ const PurpleRain = forwardRef<any, PurpleRainProps>(({ reducedMotion = false }, 
 
     animationRef.current = requestAnimationFrame(animate);
   }, [reducedMotion, frameInterval]);
+
+  const resume = useCallback(() => {
+    if (reducedMotion || !canvasRef.current) return;
+    if (!animationRef.current) animate(performance.now());
+  }, [reducedMotion, animate]);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useImperativeHandle(ref, () => ({ pause, resume }));
 

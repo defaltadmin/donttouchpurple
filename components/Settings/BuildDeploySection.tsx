@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { DIFFICULTY } from "../../config/difficulty";
-import { difficultyOverrides, applyOverride, clearOverrides } from "../../config/difficultyOverrides";
+import { applyOverride, clearOverrides } from "../../config/difficultyOverrides";
 
 interface SliderDef {
   key: keyof typeof DIFFICULTY;
@@ -37,7 +37,7 @@ interface BuildDeploySectionProps {
 
 export function BuildDeploySection({ onClose }: BuildDeploySectionProps) {
   const [vals, setVals] = useState<Record<string, number>>(() =>
-    Object.fromEntries(SLIDERS.map(s => [s.key, (DIFFICULTY as any)[s.key]]))
+    Object.fromEntries(SLIDERS.map(s => [s.key, (DIFFICULTY as Record<string, number>)[s.key]]))
   );
   const [livePreview, setLivePreview] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -65,11 +65,11 @@ export function BuildDeploySection({ onClose }: BuildDeploySectionProps) {
   };
 
   const reset = () => {
-    const defaults = Object.fromEntries(SLIDERS.map(s => [s.key, (DIFFICULTY as any)[s.key]]));
+    const defaults = Object.fromEntries(SLIDERS.map(s => [s.key, (DIFFICULTY as Record<string, number>)[s.key]]));
     setVals(defaults);
     clearOverrides();
     if (livePreview) {
-      SLIDERS.forEach(s => applyOverride(s.key, (DIFFICULTY as any)[s.key]));
+      SLIDERS.forEach(s => applyOverride(s.key, (DIFFICULTY as Record<string, number>)[s.key]));
     }
   };
 
@@ -127,7 +127,7 @@ export function BuildDeploySection({ onClose }: BuildDeploySectionProps) {
             />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, opacity: 0.4 }}>
               <span>{s.min}</span>
-              <span>default: {(DIFFICULTY as any)[s.key]}</span>
+              <span>default: {(DIFFICULTY as Record<string, number>)[s.key]}</span>
               <span>{s.max}</span>
             </div>
           </div>

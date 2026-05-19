@@ -18,7 +18,7 @@ describe('bossEngine', () => {
     bossEngine.deactivate();
     bossEngine.resetCombo();
     dispatchedEvents = []; // clear after setup
-    (window.dispatchEvent as any).mockClear();
+    (window.dispatchEvent as unknown as { mockClear: () => void }).mockClear();
   });
 
   afterEach(() => {
@@ -51,7 +51,7 @@ describe('bossEngine', () => {
     it('dispatches boss:complete event', () => {
       bossEngine.activate(5);
       dispatchedEvents = [];
-      (window.dispatchEvent as any).mockClear();
+      (window.dispatchEvent as unknown as { mockClear: () => void }).mockClear();
       bossEngine.deactivate();
       expect(dispatchedEvents.some(e => e.type === 'dtp:boss:complete')).toBe(true);
     });

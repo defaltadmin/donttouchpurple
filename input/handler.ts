@@ -6,7 +6,7 @@ export class UnifiedInputHandler {
   private normalizer = InputNormalizer.getInstance();
   private listeners = new Set<(event: InputEvent) => void>();
   private config: InputConfig;
-  private boundHandlers: Record<string, (event: any) => void> = {};
+  private boundHandlers: Record<string, (event: Event) => void> = {};
   private repeatTimers = new Map<string, NodeJS.Timeout>();
   private gamepadPolling?: number;
 

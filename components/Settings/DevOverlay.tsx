@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { EVOLVE_PATTERNS, RARE_COLORS, STAGES } from "../../config/gridPatterns";
-import type { CellShape, GameMode, NumPlayers, PlayerState, RareColorMode, CellType } from "../../engine/types";
+import type { CellShape, GameMode, NumPlayers, PlayerState, RareColorMode } from "../../engine/types";
 
 interface DevOverlayProps {
   p1: PlayerState;
@@ -156,7 +156,7 @@ function HeatmapGrid({ heatmap, cols, rows }: { heatmap: Record<number, number>;
 export function DevOverlay({
   p1, p2, tick, gameMode, numPlayers, rareMode, cellShape, paused, screen, onClose,
   godMode, onGodModeToggle, speedMult, onSpeedMult, rotationSpeed, onRotationSpeed,
-  freezeTime, onFreezeTimeToggle, dust, onDustAdd, onSpawnPowerup, gameSeed,
+  freezeTime, onFreezeTimeToggle, dust: _dust, onDustAdd, onSpawnPowerup, gameSeed,
   autoPlay, onAutoPlayToggle, heatmap, onResetHeatmap, gridCols, gridRows,
   onOpenBuildDeploy,
   onSpawnSpecialCell, onTriggerBotTap, onToggleBotAssist,

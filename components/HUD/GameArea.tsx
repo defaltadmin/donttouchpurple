@@ -1,5 +1,6 @@
 import React from "react";
 import type { GameSnapshot, GameMode } from "../../engine/types";
+import type { ShopData } from "../../utils/shop-storage";
 import { PwrBar } from "./PwrBar";
 import { PlayerPanel } from "./PlayerPanel";
 import { GridErrorBoundary } from "./GridErrorBoundary";
@@ -23,20 +24,20 @@ interface GameAreaProps {
   heartAnimP2: boolean;
   best1: number;
   best2: number;
-  engineWinner: any;
+  engineWinner: "p1" | "p2" | "tie" | null;
   shareMsg: string;
   gameSeedState: number;
   dust: number;
   dustAtStart: number;
   gameOverProgress: number;
-  p1Keys: any;
-  p2Keys: any;
+  p1Keys: string[];
+  p2Keys: string[];
   inputMode: string;
   pressing1: Set<number>;
   pressing2: Set<number>;
   cbActive: boolean;
   cbFilter: string;
-  shopData: any;
+  shopData: ShopData;
   pwrToastP1: string | null;
   pwrToastP2: string | null;
   levelUpBadge: string | null;
@@ -62,15 +63,15 @@ interface GameAreaProps {
 }
 
 export const GameArea = React.memo(function GameArea({
-  snapshot, screen, gameMode, is2P, numPlayers, isPlaying, reducedMotion,
+  snapshot, screen, gameMode, is2P, numPlayers, isPlaying: _isPlaying, reducedMotion,
   screenShake, shakeGrid1, shakeGrid2, heartAnimP1, heartAnimP2,
   best1, best2, engineWinner, shareMsg, gameSeedState,
   dust, dustAtStart, gameOverProgress,
   p1Keys, p2Keys, inputMode, pressing1, pressing2,
   cbActive, cbFilter, shopData, pwrToastP1, pwrToastP2,
   levelUpBadge, practiceMode, botAssistActive, botTapHighlights,
-  scoreFloats, isFS, devHeatmap,
-  onRestart, onStartGame, onTap, onHoldStart, onHoldEnd, onPause,
+  scoreFloats, isFS, devHeatmap: _devHeatmap,
+  onRestart: _onRestart, onStartGame, onTap, onHoldStart, onHoldEnd, onPause,
   onLeaderboard, onMenu, onShare, onCopyChallenge,
   onActivateFreeze, onActivateShield, onToggleBot,
 }: GameAreaProps) {

@@ -28,6 +28,6 @@ export const errorTracker = {
     try {
       logger.debug('Error batch flushed', queue.length);
       localStorage.setItem(QUEUE_KEY, '[]');
-    } catch (_) { logger.warn('Error flush failed'); }
+    } catch { logger.warn('Error flush failed'); }
   }
 };

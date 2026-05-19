@@ -36,7 +36,7 @@ import { LeaderboardService } from '../services/leaderboard';
 
 describe('LeaderboardService', () => {
   let service: LeaderboardService;
-  let mockDb: any;
+  let mockDb: unknown;
 
   beforeEach(() => {
     vi.clearAllMocks();

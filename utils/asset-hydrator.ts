@@ -14,7 +14,7 @@ export class AssetHydrator {
   private get audioCtx(): AudioContext {
     if (!this._audioCtx) {
       this._audioCtx = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+        (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     }
     return this._audioCtx;
   }

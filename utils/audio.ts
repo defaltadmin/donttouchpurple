@@ -61,8 +61,9 @@ class AudioEngine {
     source.loop = opts.loop ?? false;
 
     const type = id.includes('music') || id.includes('bgm') ? 'music' : 'sfx';
-    const _gain = opts.volume ?? (type === 'music' ? 0.4 : 0.7);
+    const volume = opts.volume ?? (type === 'music' ? 0.4 : 0.7);
 
+    this.gainNodes[type].gain.value = volume;
     source.connect(this.gainNodes[type]);
     source.start();
 

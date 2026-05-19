@@ -16,7 +16,7 @@ interface GameStartDeps {
   startEngine: (seed?: number) => void;
   spendEnergy: () => void;
   clearReplaySeed: () => void;
-  getFirebase: () => Promise<any>;
+  getFirebase: () => Promise<{ fbLogEvent?: (name: string, params: Record<string, unknown>) => void } | null>;
   toast$: (msg: string) => void;
   setScreen: (s: string) => void;
   setPaused: (v: boolean) => void;
@@ -29,7 +29,7 @@ interface GameStartDeps {
 export function useGameStartActions(deps: GameStartDeps) {
   const resumeCheckedRef = useRef(false);
   const [resumeReady, setResumeReady] = useState(false);
-  const [resumeData, setResumeData] = useState<any>(null);
+  const [resumeData, setResumeData] = useState<Record<string, unknown> | null>(null);
   const scoreSubmittedRef = useRef(false);
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(0);
@@ -66,7 +66,7 @@ export function useGameStartActions(deps: GameStartDeps) {
       level: "info",
       data: { gameMode: deps.gameMode, numPlayers: deps.numPlayers, inputMode: deps.inputMode, practiceMode: deps.practiceMode, forceSeed },
     });
-    deps.getFirebase().then((fb: any) => fb.fbLogEvent("game_start", {
+    deps.getFirebase().then((fb) => fb?.fbLogEvent?.("game_start", {
       mode: deps.gameMode,
       players: deps.numPlayers,
       input: deps.inputMode,
@@ -103,7 +103,7 @@ export function useGameStartActions(deps: GameStartDeps) {
     pbFlashedRef.current = false;
     const forceSeed = deps.pendingReplaySeed ? parseInt(deps.pendingReplaySeed, 10) : undefined;
     safeSentry.addBreadcrumb({ category: "tutorial", message: "tutorial_completed", level: "info", data: { game: next } });
-    deps.getFirebase().then((fb: any) => fb.fbLogEvent("game_start", {
+    deps.getFirebase().then((fb) => fb?.fbLogEvent?.("game_start", {
       mode: deps.gameMode,
       players: deps.numPlayers,
       input: deps.inputMode,

@@ -67,10 +67,10 @@ export function loadKeys(lsKey: string, def: string[]): string[] {
       const p = JSON.parse(r);
       if (Array.isArray(p) && p.length === 16) return p;
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
   return [...def];
 }
 
 export function saveKeys(lsKey: string, val: string[]): void {
-  try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch (_) {}
+  try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch { /* ignore */ }
 }

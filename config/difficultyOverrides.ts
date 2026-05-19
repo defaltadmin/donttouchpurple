@@ -4,9 +4,9 @@ import { DIFFICULTY } from "./difficulty";
 export const difficultyOverrides: Partial<typeof DIFFICULTY> = {};
 
 export function applyOverride(key: keyof typeof DIFFICULTY, value: number) {
-  (difficultyOverrides as any)[key] = value;
+  (difficultyOverrides as Record<string, unknown>)[key] = value;
 }
 
 export function clearOverrides() {
-  Object.keys(difficultyOverrides).forEach(k => delete (difficultyOverrides as any)[k]);
+  Object.keys(difficultyOverrides).forEach(k => delete (difficultyOverrides as Record<string, unknown>)[k]);
 }

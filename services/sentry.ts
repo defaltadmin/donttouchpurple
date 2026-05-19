@@ -9,8 +9,8 @@ export async function getSentry() {
 
 // Safe Sentry wrapper (deferred load + ad-blocker safe)
 export const safeSentry = {
-  addBreadcrumb: (...args: unknown[]) => { try { _sentry?.addBreadcrumb(...args as [any]); } catch { /* Sentry unavailable */ } },
-  captureException: (...args: unknown[]) => { try { _sentry?.captureException(...args as [any]); } catch { /* Sentry unavailable */ } },
-  setTags: (...args: unknown[]) => { try { _sentry?.setTags(...args as [any]); } catch { /* Sentry unavailable */ } },
-  setContext: (...args: unknown[]) => { try { _sentry?.setContext(...args as [any, any]); } catch { /* Sentry unavailable */ } },
+  addBreadcrumb: (...args: unknown[]) => { try { _sentry?.addBreadcrumb(...args as [Record<string, unknown>]); } catch { /* Sentry unavailable */ } },
+  captureException: (...args: unknown[]) => { try { _sentry?.captureException(...args as [unknown]); } catch { /* Sentry unavailable */ } },
+  setTags: (...args: unknown[]) => { try { _sentry?.setTags(...args as [Record<string, string | number | boolean>]); } catch { /* Sentry unavailable */ } },
+  setContext: (...args: unknown[]) => { try { _sentry?.setContext(...args as [string, Record<string, unknown> | null]); } catch { /* Sentry unavailable */ } },
 };

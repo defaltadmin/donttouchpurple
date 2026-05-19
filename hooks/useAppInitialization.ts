@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { i18n } from "../utils/i18n";
 import { webVitalsMonitor } from "../utils/web-vitals";
 import { configManager } from "../utils/game-config";
-import { logger } from "../utils/logger";
 
 export function useAppInitialization(state: { 
   screen: string, 
@@ -19,7 +18,7 @@ export function useAppInitialization(state: {
     i18n.init().then(() => setUiReady(true));
     webVitalsMonitor.startMonitoring();
     configManager.load();
-    import("../services/gameanalytics").then(m => m.initGA(typeof (window as any).__APP_VERSION__ !== "undefined" ? (window as any).__APP_VERSION__ : "5.9.0")).catch(() => {});
+    import("../services/gameanalytics").then(m => m.initGA(typeof (window as unknown as Record<string, unknown>).__APP_VERSION__ !== "undefined" ? (window as unknown as Record<string, unknown>).__APP_VERSION__ as string : "5.9.0")).catch(() => {});
   }, []);
 
   const abTestVariant = useMemo(() => {

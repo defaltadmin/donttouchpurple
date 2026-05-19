@@ -2,7 +2,7 @@ import { streamText } from "ai";
 import { createWorkersAI } from "workers-ai-provider";
 
 export interface Env {
-  AI: any;
+  AI: unknown;
 }
 
 export default {
@@ -23,7 +23,7 @@ export default {
     }
 
     try {
-      const { messages } = await request.json() as any;
+      const { messages } = await request.json() as { messages: unknown[] };
       const workersAi = createWorkersAI({ binding: env.AI });
 
       const result = streamText({
@@ -44,8 +44,9 @@ export default {
         statusText: response.statusText,
         headers,
       });
-    } catch (error: any) {
-      return new Response(error.message, { status: 500 });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return new Response(message, { status: 500 });
     }
   },
 };

@@ -1,7 +1,5 @@
 import { logger } from './logger';
 
-type SafeParseResult<T> = { ok: true; data: T } | { ok: false; reason: string; fallback: T };
-
 export const stateGuard = {
   parse<T>(raw: string | null, fallback: T, validator?: (d: unknown) => boolean): T {
     if (!raw) return fallback;

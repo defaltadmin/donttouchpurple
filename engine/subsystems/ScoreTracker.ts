@@ -1,6 +1,3 @@
-import { rhythmFeedback } from "../../utils/feedback-rhythm";
-import { bossEngine } from "../../utils/boss-engine";
-
 const STREAK_MILESTONES = [5, 10, 25, 50];
 const STREAK_BONUS_TIERS = [
   { streak: 30, bonus: 3 },

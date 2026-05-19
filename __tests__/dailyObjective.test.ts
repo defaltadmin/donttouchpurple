@@ -164,8 +164,8 @@ describe('dailyObjective', () => {
       markObjectiveComplete(1);
       const saved = JSON.parse(localStorage.getItem('dtp-daily-completed') || '[]');
       expect(saved).toHaveLength(2);
-      expect(saved.filter((e: any) => e.index === 0)).toHaveLength(1);
-      expect(saved.filter((e: any) => e.index === 1)).toHaveLength(1);
+      expect(saved.filter((e: { index: number }) => e.index === 0)).toHaveLength(1);
+      expect(saved.filter((e: { index: number }) => e.index === 1)).toHaveLength(1);
     });
   });
 });

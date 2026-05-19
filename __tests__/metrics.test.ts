@@ -33,6 +33,13 @@ Object.defineProperty(window, 'gtag', {
 
 import { MetricsService } from '../services/metrics';
 
+/** Access private service internals in tests */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function svc(service: MetricsService): any {
+  return service as unknown;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 describe('MetricsService', () => {
   let service: MetricsService;
 
@@ -40,13 +47,13 @@ describe('MetricsService', () => {
     vi.clearAllMocks();
     service = MetricsService.getInstance();
     // Reset singleton state
-    (service as any).gameMetrics = {};
-    (service as any).perfMetrics = {};
-    (service as any).firebaseMetrics = {};
-    (service as any).sessionStartTime = Date.now();
+    svc(service).gameMetrics = {};
+    svc(service).perfMetrics = {};
+    svc(service).firebaseMetrics = {};
+    svc(service).sessionStartTime = Date.now();
     // Pre-inject the mocked Sentry so async ensureSentry() resolves immediately
-    (service as any).sentryLoaded = true;
-    (service as any).sentryModule = {
+    svc(service).sentryLoaded = true;
+    svc(service).sentryModule = {
       addBreadcrumb: mockAddBreadcrumb,
       setTag: mockSetTag,
       captureException: mockCaptureException,
@@ -173,7 +180,7 @@ describe('MetricsService', () => {
       service.startSession();
 
       // Simulate time passing
-      (service as any).sessionStartTime = Date.now() - 5000;
+      svc(service).sessionStartTime = Date.now() - 5000;
 
       service.endSession();
 

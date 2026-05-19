@@ -53,7 +53,7 @@ export function SettingsDrawer({
   onClose,
   onNameChange,
   playerName,
-  onOpenBuildDeploy,
+  onOpenBuildDeploy: _onOpenBuildDeploy,
   customSeed,
   onCustomSeedChange,
   onPlayWithSeed,

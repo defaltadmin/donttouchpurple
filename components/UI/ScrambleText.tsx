@@ -11,11 +11,9 @@ interface ScrambleTextProps {
 
 export function ScrambleText({ text, duration = SCRAMBLE_DURATION, className = "" }: ScrambleTextProps) {
   const [display, setDisplay] = useState(text);
-  const [scrambling, setScrambling] = useState(true);
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    setScrambling(true);
     startTimeRef.current = Date.now();
 
     const interval = setInterval(() => {
@@ -24,7 +22,6 @@ export function ScrambleText({ text, duration = SCRAMBLE_DURATION, className = "
 
       if (progress >= 1) {
         setDisplay(text);
-        setScrambling(false);
         clearInterval(interval);
         return;
       }

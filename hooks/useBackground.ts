@@ -21,6 +21,7 @@ export function useBackgroundController(shouldAnimate: boolean) {
     const effective = shouldAnimate && !document.hidden;
     if (effective) controller.resume(); else controller.pause();
     return () => { controllers.current.delete(controller); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- applyState is stable (useCallback w/ [] deps)
   }, [shouldAnimate, applyState]);
 
   // React to shouldAnimate changes

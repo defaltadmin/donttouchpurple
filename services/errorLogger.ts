@@ -10,10 +10,21 @@ export interface ErrorContext {
   [key: string]: string | number | boolean | undefined;
 }
 
+// Minimal interface for the Sentry module methods we use
+interface SentryLike {
+  withScope(cb: (scope: { setTag: (k: string, v: string) => void }) => void): void;
+  captureException(e: unknown): void;
+  captureMessage(msg: string, level: string): void;
+  setUser(u: { id?: string; email?: string } | null): void;
+  setTag(k: string, v: string): void;
+  addBreadcrumb(b: { message?: string; category?: string; level?: string; data?: Record<string, unknown> }): void;
+  flush(timeout?: number): Promise<boolean>;
+}
+
 export class ErrorLogger {
   private static instance: ErrorLogger;
   private sentryLoaded = false;
-  private sentryModule: any = null;
+  private sentryModule: SentryLike | null = null;
 
   static getInstance(): ErrorLogger {
     if (!ErrorLogger.instance) {
@@ -22,10 +33,10 @@ export class ErrorLogger {
     return ErrorLogger.instance;
   }
 
-  private async ensureSentry(): Promise<any> {
+  private async ensureSentry(): Promise<SentryLike | null> {
     if (this.sentryLoaded && this.sentryModule) return this.sentryModule;
     try {
-      this.sentryModule = await import('@sentry/react');
+      this.sentryModule = (await import('@sentry/react')) as unknown as SentryLike;
       this.sentryLoaded = true;
       return this.sentryModule;
     } catch (error) {
@@ -41,7 +52,7 @@ export class ErrorLogger {
 
     // Add context to Sentry
     if (Sentry && context) {
-      Sentry.withScope((scope: any) => {
+      Sentry.withScope((scope) => {
         Object.entries(context).forEach(([key, value]) => {
           scope.setTag(key, String(value));
         });
@@ -69,7 +80,7 @@ export class ErrorLogger {
     const Sentry = await this.ensureSentry();
     if (Sentry) {
       if (context) {
-        Sentry.withScope((scope: any) => {
+        Sentry.withScope((scope) => {
           Object.entries(context).forEach(([key, value]) => {
             scope.setTag(key, String(value));
           });
@@ -140,21 +151,21 @@ export const safeSentry = {
   captureException: async (error: unknown, hint?: Record<string, unknown>) => {
     try {
       const Sentry = await import('@sentry/react');
-      Sentry.captureException(error, hint as any);
+      Sentry.captureException(error, hint as Record<string, unknown> | undefined);
     } catch {}
   },
 
   captureMessage: async (message: string, level?: string) => {
     try {
       const Sentry = await import('@sentry/react');
-      Sentry.captureMessage(message, level as any);
+      Sentry.captureMessage(message, level as 'info' | 'warning' | 'error' | 'fatal');
     } catch {}
   },
 
   setUser: async (user: Record<string, unknown> | null) => {
     try {
       const Sentry = await import('@sentry/react');
-      Sentry.setUser(user as any);
+      Sentry.setUser(user as { id?: string; email?: string } | null);
     } catch {}
   },
 
@@ -168,7 +179,7 @@ export const safeSentry = {
   addBreadcrumb: async (breadcrumb: Record<string, unknown>) => {
     try {
       const Sentry = await import('@sentry/react');
-      Sentry.addBreadcrumb(breadcrumb as any);
+      Sentry.addBreadcrumb(breadcrumb as unknown as import('@sentry/react').Breadcrumb);
     } catch {}
   },
 

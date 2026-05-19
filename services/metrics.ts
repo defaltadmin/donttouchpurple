@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 // Extend Window type for gtag
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
@@ -42,7 +42,7 @@ export class MetricsService {
   private frameCount = 0;
   private lastFrameTime = 0;
   private sentryLoaded = false;
-  private sentryModule: any = null;
+  private sentryModule: { setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void } | null = null;
 
   static getInstance(): MetricsService {
     if (!MetricsService.instance) {
@@ -51,10 +51,10 @@ export class MetricsService {
     return MetricsService.instance;
   }
 
-  private async ensureSentry(): Promise<any> {
+  private async ensureSentry(): Promise<{ setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void } | null> {
     if (this.sentryLoaded && this.sentryModule) return this.sentryModule;
     try {
-      this.sentryModule = await import('@sentry/react');
+      this.sentryModule = (await import('@sentry/react')) as unknown as { setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void };
       this.sentryLoaded = true;
       return this.sentryModule;
     } catch (error) {
@@ -131,8 +131,8 @@ export class MetricsService {
 
   recordMemoryUsage(): void {
     if ('memory' in performance) {
-      const memInfo = (performance as any).memory;
-      this.perfMetrics.memoryUsage = memInfo.usedJSHeapSize;
+      const memInfo = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      this.perfMetrics.memoryUsage = memInfo?.usedJSHeapSize ?? 0;
     }
   }
 
@@ -198,7 +198,7 @@ export class MetricsService {
       }
 
       // Call Sentry synchronously if already loaded, otherwise fire-and-forget
-      const addBreadcrumb = (sentry: any) => {
+      const addBreadcrumb = (sentry: { addBreadcrumb: (b: unknown) => void } | null) => {
         if (sentry) {
           sentry.addBreadcrumb({
             message: `Game ended: ${score} points${completed ? ' (completed)' : ''}`,

@@ -23,8 +23,9 @@ export const perfMonitor = {
 
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          this.metrics.CLS = (this.metrics.CLS || 0) + (entry as any).value;
+        const layoutShift = entry as { hadRecentInput?: boolean; value?: number };
+        if (!layoutShift.hadRecentInput) {
+          this.metrics.CLS = (this.metrics.CLS || 0) + (layoutShift.value ?? 0);
           this._flush();
         }
       }

@@ -1,18 +1,16 @@
 import { GAME } from "../../config/difficulty";
 import { BALANCE } from "../../config/gameBalance";
-import { STAGES, EVOLVE_PATTERNS, RARE_COLORS } from "../../config/gridPatterns";
+import { EVOLVE_PATTERNS, RARE_COLORS } from "../../config/gridPatterns";
 import { logError } from "../../utils/devLog";
 import { haptics } from "../../utils/haptics";
 import { errorTracker } from "../../utils/error-tracker";
 import { bossEngine } from "../../utils/boss-engine";
 import { rhythmFeedback } from "../../utils/feedback-rhythm";
-import { analytics } from "../../utils/analytics";
 import { spawnActive, activeToCellsP, pickPattern, pickCellShape } from "./CellLifecycle";
 import {
   getNextBossEventType, getBossDuration, getBossLabel, getBossDoneLabel,
   getNextBossTriggerScore, shouldTriggerShieldBoss,
 } from "./EventOrchestrator";
-import { calculateStreakBonus } from "./ScoreTracker";
 import type { ActiveCell, CellShape, GameConfig, GameEvent, GameSnapshot, PlayerState, RareColorMode, Winner, BombCell, BossEvent, NumPlayers } from "../types";
 
 export interface TickContext {

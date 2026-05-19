@@ -8,8 +8,8 @@ const DTP_KEYS = [
 ];
 
 export const privacyManager = {
-  getAllData(): Record<string, any> {
-    const data: Record<string, any> = {};
+  getAllData(): Record<string, unknown> {
+    const data: Record<string, unknown> = {};
     DTP_KEYS.forEach(k => {
       try { data[k] = JSON.parse(localStorage.getItem(k) || 'null'); } catch { data[k] = localStorage.getItem(k); }
     });

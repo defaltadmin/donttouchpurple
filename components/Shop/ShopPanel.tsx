@@ -55,7 +55,7 @@ export function ShopPanel({
       if (saved === "backgrounds" || saved === "themes" || saved === "badges" || saved === "skins" || saved === "powerups" || saved === "trails") {
         return saved;
       }
-    } catch (_) {
+    } catch {
       return "backgrounds";
     }
     return "backgrounds";
