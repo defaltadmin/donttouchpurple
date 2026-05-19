@@ -1,10 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { i18n } from "../utils/i18n";
 import { webVitalsMonitor } from "../utils/web-vitals";
-import { initGA } from "../services/gameanalytics";
 import { configManager } from "../utils/game-config";
 import { logger } from "../utils/logger";
-import * as Sentry from "@sentry/react";
 
 export function useAppInitialization(state: { 
   screen: string, 
@@ -21,7 +19,7 @@ export function useAppInitialization(state: {
     i18n.init().then(() => setUiReady(true));
     webVitalsMonitor.startMonitoring();
     configManager.load();
-    initGA(typeof (window as any).__APP_VERSION__ !== "undefined" ? (window as any).__APP_VERSION__ : "5.9.0");
+    import("../services/gameanalytics").then(m => m.initGA(typeof (window as any).__APP_VERSION__ !== "undefined" ? (window as any).__APP_VERSION__ : "5.9.0")).catch(() => {});
   }, []);
 
   const abTestVariant = useMemo(() => {
@@ -34,7 +32,7 @@ export function useAppInitialization(state: {
 
   useEffect(() => {
     try {
-      Sentry.setTags({
+      import("@sentry/react").then(S => S.setTags({
         screen: state.screen,
         gameMode: state.gameMode,
         inputMode: state.inputMode,
@@ -42,7 +40,7 @@ export function useAppInitialization(state: {
         practiceMode: String(state.practiceMode),
         colorblindMode: state.colorblindMode,
         reducedMotion: String(state.reducedMotion),
-      });
+      })).catch(() => {});
     } catch {}
   }, [state]);
 

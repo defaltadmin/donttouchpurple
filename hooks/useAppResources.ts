@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { LS_KEYS, GAME } from "../config/difficulty";
-import { logResourceEvent } from "../services/gameanalytics";
 
 export type ShopData = {
   unlockedThemes: string[]; equippedTheme: string;
@@ -93,7 +92,7 @@ export function useAppResources() {
         fb.fbSyncDust(playerName, newDust).catch(() => {});
     }).catch(() => {});
 
-    logResourceEvent("Source", "Dust", source, "earned", amount);
+    import("../services/gameanalytics").then(m => m.logResourceEvent("Source", "Dust", source, "earned", amount)).catch(() => {});
     return newDust;
   }, [playerName]);
 
@@ -106,7 +105,7 @@ export function useAppResources() {
     setDust(newDust);
     dustRef.current = newDust;
     try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch (_) {}
-    logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
+    import("../services/gameanalytics").then(m => m.logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount)).catch(() => {});
   }, [getLifetimeDustSpent]);
 
   // Natural Energy Regeneration
