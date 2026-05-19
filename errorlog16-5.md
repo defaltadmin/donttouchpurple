@@ -343,4 +343,6 @@
 | P3 | Clean dead CSS — remove 4 overridden keyframes from game.css | styles/game.css | ✅ DONE |
 | P4 | HowToPlay i18n + remove storm/blackout references | HowToPlay.tsx | ✅ DONE |
 
+| P5 | Expand achievement system — 22 achievements (was 3) | engine/GameEngine.ts, engine/subsystems/TickProcessor.ts | ✅ DONE |
+
 **Final: 130/130 tests passing. 0 type errors. Build passes. All pushed to main.**
