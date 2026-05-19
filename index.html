@@ -57,27 +57,8 @@
       #root { height: 100%; display: flex; flex-direction: column; }
     </style>
 
-    <!-- CSP (XSS hardening) -->
-    <meta http-equiv="Content-Security-Policy"
-      content="
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' 'strict-dynamic' https://www.gstatic.com https://apis.google.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self'
-          https://*.googleapis.com
-          https://*.firebaseio.com
-          https://firestore.googleapis.com
-          https://identitytoolkit.googleapis.com
-          https://*.clarity.ms
-          https://*.cloudfunctions.net;
-        img-src 'self' data: blob:;
-        frame-src 'none';
-        object-src 'none';
-        base-uri 'self';
-        form-action 'self';
-      "
-    />
+    <!-- CSP is set via HTTP headers in firebase.json for production.
+         Not included here as meta tag CSP blocks Vite dev server scripts. -->
   </head>
   <body>
     <div id="root"></div>

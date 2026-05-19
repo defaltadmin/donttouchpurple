@@ -99,12 +99,13 @@ describe("GameEngine", () => {
   });
 
   it("increases score when a safe cell is tapped", () => {
-    // Override the engine's seeded rng to always return 0.99 (forces safe/non-purple cells)
-    (engine as any).rng = () => 0.99;
+    // Override rng to return 0.5 — produces regular (non-purple, non-powerup) cells
+    (engine as any).rng = () => 0.5;
     engine.start();
     vi.advanceTimersByTime(2_100);
 
-    const safeCell = latestActive(engine).find((cell) => cell.type !== "purple");
+    const active = latestActive(engine);
+    const safeCell = active.find((cell) => !["purple", "medpack", "shield", "freeze", "multiplier"].includes(cell.type));
     expect(safeCell).toBeDefined();
 
     engine.handleTap(1, safeCell!.idx);

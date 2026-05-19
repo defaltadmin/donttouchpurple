@@ -734,6 +734,11 @@ export default function App() {
   }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
 
   const handleEngineGameOver = useCallback(async (engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
+    // TRANSITION FIRST — prevents soft lock if async work fails
+    setScreen("gameover");
+    setPaused(false);
+    setPrevBest(gameMode === "classic" ? best1 : best2);
+
     safeSentry.addBreadcrumb({
       category: "game",
       message: "game_over",
@@ -768,7 +773,6 @@ export default function App() {
       });
     }).catch(e => logger.warn('Firebase operation failed', e));
     logProgressionEvent("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
-    setPrevBest(gameMode === "classic" ? best1 : best2);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
 
     // Update progress tracking
@@ -797,41 +801,45 @@ export default function App() {
     setGameSeedState(gameSeed ?? snapshotRef.current?.gameSeed ?? 0);
     setInitials(playerName || "Player");
     setIE(false);
-    setPaused(false);
 
     // Auto-submit score through Cloudflare Worker (with offline fallback)
-    const autoEntry = {
-      score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
-      initials: playerName || "Player",
-      mode: gameMode,
-      badge: shopData.equippedBadge,
-      date: new Date().toISOString().split("T")[0],
-      tick: snapshotRef.current?.tick || 0
-    };
+    // Wrapped in try/catch — screen transition already happened, this is fire-and-forget
+    try {
+      const autoEntry = {
+        score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
+        initials: playerName || "Player",
+        mode: gameMode,
+        badge: shopData.equippedBadge,
+        date: new Date().toISOString().split("T")[0],
+        tick: snapshotRef.current?.tick || 0
+      };
 
-    if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
-      scoreSubmittedRef.current = true;
+      if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
+        scoreSubmittedRef.current = true;
 
-      try {
-        const response = await fetch('https://game.mscarabia.com/api/submit-score', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(autoEntry)
-        });
+        try {
+          const response = await fetch('https://game.mscarabia.com/api/submit-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(autoEntry)
+          });
 
-        if (!response.ok) throw new Error('Worker rejected');
-        toast$("🏆 Score submitted to global leaderboard!");
+          if (!response.ok) throw new Error('Worker rejected');
+          toast$("🏆 Score submitted to global leaderboard!");
 
-      } catch (err) {
-        console.warn("Worker offline, queuing score");
-        await addPendingScore(autoEntry);
+        } catch (err) {
+          console.warn("Worker offline, queuing score");
+          await addPendingScore(autoEntry);
 
-        if ('serviceWorker' in navigator && 'SyncManager' in window) {
-          const reg = await navigator.serviceWorker.ready;
-          (reg as any).sync.register('dtp-score-submit');
+          if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            const reg = await navigator.serviceWorker.ready;
+            (reg as any).sync.register('dtp-score-submit');
+          }
+          toast$("💾 Score saved offline — will sync soon");
         }
-        toast$("💾 Score saved offline — will sync soon");
       }
+    } catch (err) {
+      console.warn('[DTP] Score submission failed', err);
     }
 
     // Update daily challenge progress
@@ -865,7 +873,6 @@ export default function App() {
         }
       }
     }
-    setScreen("gameover");
     if (localStorage.getItem('dtp-show-rewards-after-first-game') === '1') {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
@@ -998,7 +1005,7 @@ export default function App() {
   }, [botAssistActive, toast$, setBotAssist]);
 
   // Compute whether backgrounds should animate
-  const shouldAnimateBackground = !reducedMotion && (screen === "playing" || screen === "gameover");
+  const shouldAnimateBackground = !reducedMotion && (screen === "playing" || screen === "gameover" || screen === "menu");
 
   // Background component mapping
   const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<any> }>>(() => ({
@@ -1100,11 +1107,8 @@ export default function App() {
 
   const resumeGame = useCallback(() => {
     safeSentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
+    resumeEngine();
     setPaused(false);
-    // Small delay to ensure React state updates before engine fully resumes
-    setTimeout(() => {
-      resumeEngine();
-    }, 16);
   }, [resumeEngine]);
 
   const pauseGame = useCallback(() => {
@@ -1141,6 +1145,7 @@ export default function App() {
       } else if (document.visibilityState === 'visible') {
         if (snapshotRef.current?.phase === "paused") {
           resumeEngine();
+          setPaused(false);
         }
       }
     };
@@ -1586,11 +1591,9 @@ export default function App() {
   // Tutorial close handler
   const handleTutorialClose = () => {
     setShowTutorial(false);
-    // Mark Evolve tutorial as seen (only once)
-    if (gameMode === "evolve") {
-      localStorage.setItem(EVOLVE_TUTORIAL_SEEN_KEY, '1');
-      setEvolveTutorialSeen(true);
-    }
+    // Mark tutorial as seen (always, not just evolve mode)
+    localStorage.setItem(EVOLVE_TUTORIAL_SEEN_KEY, '1');
+    setEvolveTutorialSeen(true);
     if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
@@ -2020,7 +2023,7 @@ export default function App() {
             <p style={{ color: "var(--muted)", fontSize: 14, margin: "8px 0 16px" }}>Your current game will end and progress will be lost.</p>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>Cancel</button>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={() => { setShowExitConfirm(false); resumeEngine(); setPaused(false); goMenu(); }}>Exit</button>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={() => { setShowExitConfirm(false); setPaused(false); goMenu(); }}>Exit</button>
             </div>
           </div>
         </div>
