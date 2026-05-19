@@ -454,3 +454,24 @@
 **Critical fix: FirstRunOverlay no longer shows raw key strings to new players**
 
 **Final: 134/134 tests passing. 0 type errors. Build passes.**
+
+---
+
+## Accessibility & Performance Polish (2026-05-19)
+
+| Item | Status |
+|------|--------|
+| Modal accessibility (role="dialog", aria-modal) | ✅ 9 modals fixed |
+| Remove unused imports (Cell, StartScreen) | ✅ DONE |
+| Replace framer-motion in Cell with CSS animation | ✅ DONE (~30KB savings) |
+| useGameStartActions hook | ✅ Created (ready for integration) |
+| ExitConfirmModal + RotatePrompt extraction | ✅ DONE |
+
+**Accessibility fixes:**
+- PauseOverlay, EnergyPopup, DailyChallengesPopup, LoginStreakPopup, WhatsNew, RewardsHub, SettingsDrawer, ExitConfirmModal, RotatePrompt — all now have role="dialog" and aria-modal="true"
+
+**Performance:**
+- Cell component no longer imports framer-motion (~30KB gzipped savings)
+- Replaced with CSS spring animation (cellIconSpring keyframe)
+
+**Final: 134/134 tests passing. 0 type errors. Build passes.**
