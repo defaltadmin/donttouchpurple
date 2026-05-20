@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { i18n } from "../utils/i18n";
 import { webVitalsMonitor } from "../utils/web-vitals";
 import { configManager } from "../utils/game-config";
@@ -21,13 +21,13 @@ export function useAppInitialization(state: {
     import("../services/gameanalytics").then(m => m.initGA(typeof (window as unknown as Record<string, unknown>).__APP_VERSION__ !== "undefined" ? (window as unknown as Record<string, unknown>).__APP_VERSION__ as string : "5.9.0")).catch(() => {});
   }, []);
 
-  const abTestVariant = useMemo(() => {
+  const [abTestVariant] = useState(() => {
     const saved = localStorage.getItem('dtp_ab_variant');
     if (saved) return saved;
     const variant = Math.random() > 0.5 ? 'A' : 'B';
     localStorage.setItem('dtp_ab_variant', variant);
     return variant;
-  }, []);
+  });
 
   useEffect(() => {
     try {

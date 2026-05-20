@@ -50,7 +50,8 @@ export function useDustEconomy(playerName: string) {
     if (amount === 0) return;
     const raw = dustRef.current - amount;
     const newDust = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
-    const spent = getLifetimeDustSpent() + amount;
+    const actualDeducted = dustRef.current - newDust;
+    const spent = getLifetimeDustSpent() + Math.max(0, actualDeducted);
     try { localStorage.setItem("dtp-lifetime-dust", spent.toString()); } catch {}
     setDust(newDust);
     dustRef.current = newDust;
