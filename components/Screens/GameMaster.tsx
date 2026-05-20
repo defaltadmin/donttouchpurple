@@ -30,7 +30,8 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8787", {
+      const endpoint = import.meta.env.VITE_GAMEMASTER_URL || '/api/gamemaster';
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),
@@ -59,7 +60,6 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
       logger.error("AI Error:", err);
       setMessages(prev => [...prev, { role: "assistant", content: "Error: Could not connect to the void." }]);
     } finally {
-      setIsLoading(true); // Artificial delay or just state management
       setIsLoading(false);
     }
   };
@@ -98,7 +98,7 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
             type="text" 
             value={input} 
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask for advice..."
             style={{
               flex: 1,

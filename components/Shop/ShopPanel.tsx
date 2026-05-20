@@ -63,6 +63,7 @@ export function ShopPanel({
   const [buyAnim, setBuyAnim] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewTimeoutRef = useRef<number | null>(null);
+  const buyAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePreview = useCallback((themeId: string) => {
     if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
@@ -89,7 +90,8 @@ export function ShopPanel({
 
   const triggerBuyAnim = useCallback((id: string) => {
     setBuyAnim(id);
-    setTimeout(() => setBuyAnim(null), 600);
+    if (buyAnimTimerRef.current) clearTimeout(buyAnimTimerRef.current);
+    buyAnimTimerRef.current = setTimeout(() => setBuyAnim(null), 600);
   }, []);
 
   const buyTheme = (themeId: string, cost: number) => {
@@ -178,7 +180,10 @@ export function ShopPanel({
   const stored = useMemo(() => loadStoredPowerups(), [loadStoredPowerups]);
 
   useEffect(() => {
-    return () => { if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current); };
+    return () => {
+      if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
+      if (buyAnimTimerRef.current) clearTimeout(buyAnimTimerRef.current);
+    };
   }, []);
 
   return (
