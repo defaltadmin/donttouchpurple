@@ -41,13 +41,13 @@
       "name": "Play Classic",
       "short_name": "Classic",
       "url": "/?mode=classic",
-      "icons": [{ "src": "/icons/classic.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icons/classic.png", "sizes": "96x96" }]
     },
     {
       "name": "Play Evolve",
       "short_name": "Evolve",
       "url": "/?mode=evolve",
-      "icons": [{ "src": "/icons/evolve.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icons/evolve.png", "sizes": "96x96" }]
     }
   ]
 }
