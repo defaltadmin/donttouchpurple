@@ -23,7 +23,7 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { role: "user", content: input.slice(0, 500) };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput("");
