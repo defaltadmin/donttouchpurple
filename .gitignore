@@ -47,6 +47,9 @@ FILES NEEDED*/
 # Firebase
 .firebase/
 
+# CodeGraph
+.codegraph/
+
 # Cloudflare
 .wrangler/
 
