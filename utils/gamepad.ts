@@ -8,6 +8,8 @@ export const gamepadManager = {
   activeId: null as number | null,
   listeners: new Set<(btn: GamepadButton, state: 'press' | 'release') => void>(),
   _initialized: false,
+  _polling: false,
+  _prevPressed: new Map<number, boolean>(),
 
   init() {
     if (this._initialized) return;
@@ -21,21 +23,30 @@ export const gamepadManager = {
     window.addEventListener('gamepaddisconnected', () => {
       this.connected = false;
       this.activeId = null;
+      this._polling = false;
+      this._prevPressed.clear();
       logger.info('Gamepad disconnected');
     });
   },
 
   startPolling() {
+    if (this._polling) return; // prevent duplicate loops on reconnect
+    this._polling = true;
+
     const poll = () => {
-      if (!this.connected) return;
+      if (!this.connected) { this._polling = false; return; }
       const pad = navigator.getGamepads()[this.activeId!];
       if (!pad) { requestAnimationFrame(poll); return; }
 
       pad.buttons.forEach((b, i) => {
         const name = BUTTON_MAP[i];
         if (!name) return;
-        if (b.pressed) this._trigger(name, 'press');
-        else this._trigger(name, 'release');
+        const wasPressed = this._prevPressed.get(i) ?? false;
+        const isPressed = b.pressed;
+        this._prevPressed.set(i, isPressed);
+        // Edge detection: only fire press on rising edge
+        if (isPressed && !wasPressed) this._trigger(name, 'press');
+        else if (!isPressed && wasPressed) this._trigger(name, 'release');
       });
 
       requestAnimationFrame(poll);

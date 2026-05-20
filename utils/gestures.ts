@@ -8,6 +8,9 @@ export class TouchGesture {
   private readonly SWIPE_THRESHOLD = 50;
   private readonly DOUBLE_TAP_WINDOW = 300;
   private readonly LONG_PRESS_DELAY = 600;
+  private _start: ((e: TouchEvent) => void) | null = null;
+  private _move: (() => void) | null = null;
+  private _end: ((e: TouchEvent) => void) | null = null;
 
   constructor(el: HTMLElement) {
     this.el = el;
@@ -17,14 +20,14 @@ export class TouchGesture {
   on(type: Gesture, cb: Handler) { this.handlers.set(type, cb); return () => this.handlers.delete(type); }
 
   private bind() {
-    const start = (e: TouchEvent) => {
+    this._start = (e: TouchEvent) => {
       this.startX = e.touches[0].clientX; this.startY = e.touches[0].clientY;
       this.longPressTimer = setTimeout(() => this.fire('long-press'), this.LONG_PRESS_DELAY);
     };
-    const move = () => {
+    this._move = () => {
       if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
     };
-    const end = (e: TouchEvent) => {
+    this._end = (e: TouchEvent) => {
       if (this.longPressTimer) clearTimeout(this.longPressTimer);
       const dx = e.changedTouches[0].clientX - this.startX;
       const dy = e.changedTouches[0].clientY - this.startY;
@@ -40,11 +43,17 @@ export class TouchGesture {
       else { this.fire('tap'); this.lastTap = now; }
     };
 
-    this.el.addEventListener('touchstart', start, { passive: true });
-    this.el.addEventListener('touchmove', move, { passive: true });
-    this.el.addEventListener('touchend', end, { passive: true });
+    this.el.addEventListener('touchstart', this._start, { passive: true });
+    this.el.addEventListener('touchmove', this._move, { passive: true });
+    this.el.addEventListener('touchend', this._end, { passive: true });
   }
 
   private fire(type: Gesture, payload?: { deltaX?: number; deltaY?: number }) { this.handlers.get(type)?.(type, payload); }
-  destroy() { this.el.replaceWith(this.el.cloneNode(true)); this.handlers.clear(); }
+
+  destroy() {
+    if (this._start) this.el.removeEventListener('touchstart', this._start);
+    if (this._move) this.el.removeEventListener('touchmove', this._move);
+    if (this._end) this.el.removeEventListener('touchend', this._end);
+    this.handlers.clear();
+  }
 }

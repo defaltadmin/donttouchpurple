@@ -6,6 +6,7 @@ interface ComboState { count: number; windowStart: number; multiplier: number; }
 export const bossEngine = {
   state: { active: false, shieldHits: 0, maxShield: 5, phase: 1 } as BossState,
   combo: { count: 0, windowStart: 0, multiplier: 1 } as ComboState,
+  _comboTimer: null as ReturnType<typeof setTimeout> | null,
   COMBO_WINDOW_MS: 400,
   COMBO_THRESHOLD: 3,
 
@@ -37,7 +38,12 @@ export const bossEngine = {
       this.combo.multiplier = 2;
       window.dispatchEvent(new CustomEvent('dtp:combo:kill', { detail: { x: 2, duration: 3000 } }));
       this.combo.count = 0;
-      setTimeout(() => { this.combo.multiplier = 1; window.dispatchEvent(new CustomEvent('dtp:combo:reset')); }, 3000);
+      if (this._comboTimer) clearTimeout(this._comboTimer);
+      this._comboTimer = setTimeout(() => {
+        this.combo.multiplier = 1;
+        this._comboTimer = null;
+        window.dispatchEvent(new CustomEvent('dtp:combo:reset'));
+      }, 3000);
     }
   },
 
@@ -58,7 +64,6 @@ export const bossEngine = {
 
     if (this.state.phase <= 3) {
       window.dispatchEvent(new CustomEvent('dtp:boss:shuffle-grid', { detail: {} }));
-      // Don't call activate() — it resets phase to 1. Just reset combo for next phase.
       this.resetCombo();
     } else {
       this.deactivate();
@@ -72,7 +77,10 @@ export const bossEngine = {
     logger.info('Boss defeated');
   },
 
-  resetCombo() { this.combo = { count: 0, windowStart: 0, multiplier: 1 }; },
+  resetCombo() {
+    if (this._comboTimer) { clearTimeout(this._comboTimer); this._comboTimer = null; }
+    this.combo = { count: 0, windowStart: 0, multiplier: 1 };
+  },
 
   _dispatchBossUpdate() {
     window.dispatchEvent(new CustomEvent('dtp:boss:update', { detail: { ...this.state } }));
