@@ -1,3 +1,6 @@
+// Icon generator for PWA shortcut icons (Classic + Evolve)
+// To regenerate: pnpm add -D @resvg/resvg-js && node scripts/generate-icons.mjs
+// This is a Node-only script — do NOT import @resvg/resvg-js in source code.
 import { Resvg } from '@resvg/resvg-js';
 import { writeFileSync } from 'fs';
 
