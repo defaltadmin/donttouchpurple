@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 interface ScoreFloatProps {
   player: 1 | 2;
@@ -13,7 +13,7 @@ export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!gridRef.current) return;
     const grid = gridRef.current;
     const rect = grid.getBoundingClientRect();

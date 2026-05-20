@@ -11,8 +11,8 @@ export const ShareModal = React.memo(function ShareModal({ shareUrl, onClose }: 
   const { t } = useTranslation();
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   return (
-    <div className="dtp-modal-backdrop" onClick={onClose} aria-hidden="true" ref={trapRef}>
-      <div className="dtp-share-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+    <div className="dtp-modal-backdrop" onClick={onClose} aria-hidden="true">
+      <div className="dtp-share-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} ref={trapRef}>
         <h2>{t('share.title')}</h2>
         <img src={shareUrl} alt="Score card" className="dtp-share-preview" />
         <div className="dtp-share-actions">

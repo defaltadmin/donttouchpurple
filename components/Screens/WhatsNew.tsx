@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 // Injected at build time via vite.config.ts define
@@ -26,12 +26,12 @@ const CHANGES = [
 
 export function WhatsNew({ onClose }: WhatsNewProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  const isNewVersion = (() => {
+  const [isNewVersion] = useState(() => {
     try {
       const last = localStorage.getItem(LS_KEY);
       return last !== WHATS_NEW_VERSION;
     } catch { return false; }
-  })();
+  });
 
   return (
     <div className="whatsnew-overlay" role="dialog" aria-modal="true" aria-label="What's New" onClick={onClose} ref={trapRef}>

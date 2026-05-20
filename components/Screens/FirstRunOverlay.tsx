@@ -91,7 +91,7 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
         )}
 
         {/* Special cells legend (shown on last info step) */}
-        {step === 3 && (
+        {step === STEPS.length - 1 && (
           <div className="first-run-legend">
             <p className="first-run-legend-title">{t("onboarding.special_cells")}</p>
             <div className="first-run-legend-grid">

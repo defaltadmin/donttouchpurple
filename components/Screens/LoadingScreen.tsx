@@ -75,7 +75,7 @@ export function LoadingScreen({
             autoFocus
             style={{ width: "100%", marginBottom: 12 }}
             onChange={(e) => {
-              setNameInput(e.target.value.replace(/[^a-zA-Z0-9_ /]/g, "").slice(0, 8));
+              setNameInput(e.target.value.replace(/[^a-zA-Z0-9_ ]/g, "").slice(0, 8));
               setNameError("");
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}

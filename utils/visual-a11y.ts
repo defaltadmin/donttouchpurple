@@ -23,6 +23,10 @@ export const visualA11y = {
       Object.entries(this.patterns).forEach(([type, css]) => {
         document.documentElement.style.setProperty(`--pattern-${type}`, css);
       });
+    } else {
+      Object.keys(this.patterns).forEach(type => {
+        document.documentElement.style.removeProperty(`--pattern-${type}`);
+      });
     }
   },
 
