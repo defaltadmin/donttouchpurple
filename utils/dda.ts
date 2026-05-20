@@ -87,7 +87,7 @@ export class DynamicDifficulty {
     const avgReaction = this._recentReactions.length
       ? this._recentReactions.reduce((a, b) => a + b, 0) / this._recentReactions.length
       : 0;
-    const reactionSpike = avgReaction > 800 && this._recentReactions.length >= this.MAX_REACTION_SAMPLES;
+    const reactionSpike = avgReaction > 800 && this._recentReactions.length >= Math.ceil(this.MAX_REACTION_SAMPLES / 2);
     const deathSpike    = this._consecutiveDeaths >= this.DEATH_SPIKE_THRESHOLD;
 
     if (deathSpike || reactionSpike) {

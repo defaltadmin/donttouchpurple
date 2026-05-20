@@ -71,8 +71,12 @@ export class BotController {
         this.callbacks.emit({ type: 'dustConsumed', amount: costPerTap });
 
         const idx = cell.idx;
+        const expectedType = cell.type;
         setTimeout(() => {
           if (!this._active[1] || !this.callbacks.isPlaying()) return;
+          // Verify cell at idx is still the same safe cell (could have been replaced by a new spawn)
+          const current = this.callbacks.getActiveCells(1).find(c => c.idx === idx && !c.clicked);
+          if (!current || current.type !== expectedType) return;
           this.callbacks.handleTap(1, idx);
           this.callbacks.emit({ type: 'botTap', player: 1, idx, dustCost: costPerTap });
         }, delay);

@@ -59,7 +59,7 @@ export function useAppOrchestrator(params: {
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
     
     const newWins = wins + (engineWinner === "p1" ? 1 : 0);
-    const newDeaths = deaths + (p1Score === 0 ? 1 : 0);
+    const newDeaths = deaths + (engineWinner !== "p1" && engineWinner !== "draw" ? 1 : 0);
     const newGames = gamesPlayed + 1;
     
     setWins(newWins);
