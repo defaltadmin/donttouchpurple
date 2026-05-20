@@ -31,6 +31,8 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
   };
 
   const days = Array.from({ length: 7 }, (_, i) => i + 1);
+  // For streaks beyond 7, show the last 7 days relative to current streak
+  const streakDisplay = streak > 7 ? ((streak - 1) % 7) + 1 : streak;
 
   return (
     <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('streak.title')} onClick={onClose} ref={trapRef}>
@@ -44,12 +46,12 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
           {days.map(day => (
             <div
               key={day}
-              className={`streak-day ${day < streak ? 'streak-day--done' : day === streak ? 'streak-day--today' : 'streak-day--future'}`}
+              className={`streak-day ${day < streakDisplay ? 'streak-day--done' : day === streakDisplay ? 'streak-day--today' : 'streak-day--future'}`}
             >
               <span className="streak-day-num">{t('streak.day', { n: day })}</span>
               <span className="streak-day-reward">+{getStreakReward(day)}💜</span>
-              {day < streak && <span className="streak-day-check">✓</span>}
-              {day === streak && <span className="streak-day-glow">★</span>}
+              {day < streakDisplay && <span className="streak-day-check">✓</span>}
+              {day === streakDisplay && <span className="streak-day-glow">★</span>}
             </div>
           ))}
         </div>

@@ -66,7 +66,8 @@ interface ScoreDisplayProps {
 // ─── ScoreDisplay ─────────────────────────────────────────────────
 export function ScoreDisplay({ p1, tick, best, heartAnim }: ScoreDisplayProps) {
   const { t } = useTranslation();
-  const frozen = p1.freezeEnd > Date.now();
+  const now = Date.now();
+  const frozen = p1.freezeEnd > now;
 
   return (
     <>

@@ -110,37 +110,6 @@ export const PlayerPanel = memo(function PlayerPanel({
 
   const cellVar = getDynamicCellVar(cols, rows, is2P, mode);
 
-  // K5: Slide animation helper
-  function getSlideStyle(
-    idx: number,
-    fromIdx: number,
-    cols: number,
-    startMs: number,
-    durationMs: number,
-  ): React.CSSProperties {
-    const elapsed = Date.now() - startMs;
-    const progress = Math.min(1, elapsed / durationMs);
-    // Eased progress (ease-out quad)
-    const eased = 1 - Math.pow(1 - progress, 2);
-
-    const fromRow = Math.floor(fromIdx / cols);
-    const fromCol = fromIdx % cols;
-    const toRow   = Math.floor(idx / cols);
-    const toCol   = idx % cols;
-    const dRow    = fromRow - toRow;
-    const dCol    = fromCol - toCol;
-
-    // Offset in cell units — CSS will interpret via percentage
-    const tx = dCol * (1 - eased) * 100;
-    const ty = dRow * (1 - eased) * 100;
-
-    return {
-      transform: `translate(${tx}%, ${ty}%)`,
-      transition: `transform ${durationMs}ms ease-out`,
-      zIndex: 5,
-    };
-  }
-
   return (
     <div className={`ppanel${!ps.alive ? " ppanel--dead" : ""}`}>
       {label && (
@@ -212,14 +181,33 @@ export const PlayerPanel = memo(function PlayerPanel({
                 }
                 // K5: Apply slide animation if cell was shuffled
                 const slideInfo = ps.slideAnim?.[activeCell.idx];
-                const slideStyle = slideInfo
-                  ? getSlideStyle(activeCell.idx, slideInfo.fromIdx, cols, slideInfo.startMs, 200)
-                  : {};
-                const slideClass = slideInfo ? "cell--sliding" : "";
 
-                return (
-                  <div key={i} className={slideClass} style={slideStyle}>
-                  <Cell 
+                return slideInfo ? (
+                  <SlidingCell
+                    key={i}
+                    idx={activeCell.idx}
+                    fromIdx={slideInfo.fromIdx}
+                    startMs={slideInfo.startMs}
+                    cols={cols}
+                    durationMs={200}
+                  >
+                    <Cell
+                      cell={activeCell}
+                      onTap={(idx: number) => onTap(idx)}
+                      onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
+                      onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
+                      colorblindMode={colorblind ? 'colorblind' : ''}
+                      showKeyLabel={showKeys}
+                      keyLabel={keyLabels[keyIdx] || ''}
+                      isPressing={pressing.has(i)}
+                      botPulse={Boolean(botTapHighlights[i])}
+                      botDustCost={botTapFx?.findLast(fx => fx.idx === i)?.dustCost}
+                      bombFuse={bombFuse}
+                    />
+                  </SlidingCell>
+                ) : (
+                  <div key={i}>
+                  <Cell
                     cell={activeCell}
                     onTap={(idx: number) => onTap(idx)}
                     onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
@@ -261,6 +249,47 @@ export const PlayerPanel = memo(function PlayerPanel({
     </div>
   );
 });
+
+// ─── Sliding Cell (K5) — RAF-driven slide animation ─────────────
+function SlidingCell({
+  idx, fromIdx, startMs, cols, durationMs, children,
+}: {
+  idx: number; fromIdx: number; startMs: number; cols: number; durationMs: number;
+  children: React.ReactNode;
+}) {
+  const [style, setStyle] = useState<React.CSSProperties>(() =>
+    computeSlideStyle(idx, fromIdx, cols, startMs, durationMs)
+  );
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const animate = () => {
+      const s = computeSlideStyle(idx, fromIdx, cols, startMs, durationMs);
+      setStyle(s);
+      if (Date.now() - startMs < durationMs) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [idx, fromIdx, cols, startMs, durationMs]);
+
+  return <div className="cell--sliding" style={style}>{children}</div>;
+}
+
+function computeSlideStyle(
+  idx: number, fromIdx: number, cols: number, startMs: number, durationMs: number
+): React.CSSProperties {
+  const elapsed = Date.now() - startMs;
+  const progress = Math.min(1, elapsed / durationMs);
+  const eased = 1 - Math.pow(1 - progress, 2);
+  const dCol = (fromIdx % cols) - (idx % cols);
+  const dRow = Math.floor(fromIdx / cols) - Math.floor(idx / cols);
+  return {
+    transform: `translate(${dCol * (1 - eased) * 100}%, ${dRow * (1 - eased) * 100}%)`,
+    zIndex: 5,
+  };
+}
 
 // ─── Hold Cell Display (I2) ───────────────────────────────
 function HoldCellDisplay({
