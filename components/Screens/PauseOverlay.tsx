@@ -24,6 +24,7 @@ export const PauseOverlay = React.memo(function PauseOverlay({
   focusTrapRef,
 }: PauseOverlayProps) {
   const { t } = useTranslation();
+  const now = Date.now();
 
   return (
     <div className="pause-overlay" role="dialog" aria-modal="true" aria-label={t('pause.title')} ref={focusTrapRef}>
@@ -50,18 +51,18 @@ export const PauseOverlay = React.memo(function PauseOverlay({
           </div>
           <div className="pause-hud-item">
             <span className="pause-hud-label">{t('hud.speed')}</span>
-            <span className="pause-hud-value">{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > Date.now()) : "1.0×"}</span>
+            <span className="pause-hud-value">{snapshot ? speedLabel(snapshot.tick, snapshot.p1.freezeEnd > now) : "1.0×"}</span>
           </div>
-          {snapshot && snapshot.p1.freezeEnd > Date.now() && (
+          {snapshot && snapshot.p1.freezeEnd > now && (
             <div className="pause-hud-item">
               <span className="pause-hud-label">{t('hud.freeze')}</span>
-              <span className="pause-hud-value pause-hud-freeze">❄ {Math.ceil((snapshot.p1.freezeEnd - Date.now()) / 1000)}s</span>
+              <span className="pause-hud-value pause-hud-freeze">❄ {Math.ceil((snapshot.p1.freezeEnd - now) / 1000)}s</span>
             </div>
           )}
-          {snapshot && snapshot.p1.multiplierEnd > Date.now() && (
+          {snapshot && snapshot.p1.multiplierEnd > now && (
             <div className="pause-hud-item">
               <span className="pause-hud-label">{t('hud.multiplier')}</span>
-              <span className="pause-hud-value pause-hud-mult">⚡ {Math.ceil((snapshot.p1.multiplierEnd - Date.now()) / 1000)}s</span>
+              <span className="pause-hud-value pause-hud-mult">⚡ {Math.ceil((snapshot.p1.multiplierEnd - now) / 1000)}s</span>
             </div>
           )}
           {snapshot && snapshot.p1.shieldCount > 0 && (

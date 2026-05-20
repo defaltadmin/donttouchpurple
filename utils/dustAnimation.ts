@@ -4,9 +4,9 @@ export function animateDustClaim(
   amount: number = 0,
   isSpend: boolean = false,
   onComplete?: () => void
-): void {
+): () => void {
   const target = document.querySelector(targetSelector) as HTMLElement | null;
-  if (!target) { onComplete?.(); return; }
+  if (!target) { onComplete?.(); return () => {}; }
 
   const srcRect = sourceEl.getBoundingClientRect();
   const tgtRect = target.getBoundingClientRect();
@@ -37,8 +37,18 @@ export function animateDustClaim(
     particle.style.opacity = '0';
   });
 
-  setTimeout(() => {
+  let cleaned = false;
+  const timer = setTimeout(() => {
+    if (cleaned) return;
+    cleaned = true;
     particle.remove();
     onComplete?.();
   }, 800);
+
+  return () => {
+    if (cleaned) return;
+    cleaned = true;
+    clearTimeout(timer);
+    particle.remove();
+  };
 }

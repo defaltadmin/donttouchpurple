@@ -24,20 +24,20 @@ interface MouseTrailProps {
   enabled?: boolean;
 }
 
-// Pre-allocated particle pool
-const particlePool: Particle[] = Array.from({ length: POOL_SIZE }, () => ({
-  x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 0, hue: 0, active: false,
-}));
+function createPool(): Particle[] {
+  return Array.from({ length: POOL_SIZE }, () => ({
+    x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 0, hue: 0, active: false,
+  }));
+}
 
-function getParticle(): Particle | null {
+function getParticle(pool: Particle[]): Particle | null {
   for (let i = 0; i < POOL_SIZE; i++) {
-    if (!particlePool[i].active) {
-      particlePool[i].active = true;
-      return particlePool[i];
+    if (!pool[i].active) {
+      pool[i].active = true;
+      return pool[i];
     }
   }
-  // Pool exhausted - recycle oldest (skip first 10 to avoid immediate reuse)
-  const p = particlePool[10];
+  const p = pool[10];
   p.active = true;
   return p;
 }
@@ -59,9 +59,11 @@ export function MouseTrail({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const particlePoolRef = useRef<Particle[]>(createPool());
 
   useEffect(() => {
     if (!enabled) return;
+    const pool = particlePoolRef.current;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -91,7 +93,7 @@ export function MouseTrail({
 
       // Spawn from pool
       for (let i = 0; i < particleCount; i++) {
-        const p = getParticle();
+        const p = getParticle(pool);
         if (!p) continue;
         p.x = x;
         p.y = y;
@@ -109,7 +111,7 @@ export function MouseTrail({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (let i = 0; i < POOL_SIZE; i++) {
-        const p = particlePool[i];
+        const p = pool[i];
         if (!p.active) continue;
 
         p.x += p.vx;
@@ -139,7 +141,7 @@ export function MouseTrail({
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      for (let i = 0; i < POOL_SIZE; i++) resetParticle(particlePool[i]);
+      for (let i = 0; i < POOL_SIZE; i++) resetParticle(pool[i]);
     };
   }, [enabled, particleCount, fadeSpeed, gravity, hueMin, hueMax, sizeMin, sizeMax]);
 
