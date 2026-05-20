@@ -179,6 +179,13 @@ export function getObjectiveStreak(): number {
 
 export function incrementObjectiveStreak(): void {
   const today = new Date().toISOString().slice(0, 10);
+  try {
+    const raw = localStorage.getItem('dtp-obj-streak');
+    if (raw) {
+      const { lastDate } = JSON.parse(raw);
+      if (lastDate === today) return; // already incremented today
+    }
+  } catch {}
   const current = getObjectiveStreak();
   localStorage.setItem('dtp-obj-streak', JSON.stringify({ count: current + 1, lastDate: today }));
 }

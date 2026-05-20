@@ -18,9 +18,10 @@ export const stateGuard = {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       if ((e as Error).name === 'QuotaExceededError') {
-        logger.error('Storage quota exceeded, clearing stale keys');
-        const keys = Object.keys(localStorage).filter(k => k.startsWith('dtp:'));
-        keys.forEach(k => localStorage.removeItem(k));
+        logger.error('Storage quota exceeded, clearing non-essential keys');
+        // Only clear large/non-essential keys — preserve achievements, dust, settings
+        const safeToClear = ['dtp:errors', 'dtp:perf', 'dtp:session-snapshot', 'dtp:logs'];
+        safeToClear.forEach(k => localStorage.removeItem(k));
       }
     }
   },

@@ -32,11 +32,16 @@ export function buildDailyChallenges(dateStr: string): DailyChallenge[] {
 
   // Pick 3 deterministically by date
   const seed = dateStr.split('').reduce((h,c)=>h*31+c.charCodeAt(0)|0, 0);
-  const picked = [
-    pool[Math.abs(seed) % pool.length],
-    pool[Math.abs(seed * 7) % pool.length],
-    pool[Math.abs(seed * 13) % pool.length],
-  ].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i).slice(0,3);
+  // Pick 3 unique challenges — retry with different multipliers on collision
+  const seen = new Set<number>();
+  const picked = [];
+  const multipliers = [1, 7, 13, 17, 23, 31];
+  let mi = 0;
+  while (picked.length < 3 && mi < multipliers.length) {
+    const idx = Math.abs(seed * multipliers[mi]) % pool.length;
+    if (!seen.has(idx)) { seen.add(idx); picked.push(pool[idx]); }
+    mi++;
+  }
 
   // Load progress and claimed state
   let progress: Record<string,number> = {};

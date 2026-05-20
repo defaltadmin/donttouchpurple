@@ -132,10 +132,17 @@ describe('dailyObjective', () => {
     });
 
     it('increments existing streak', () => {
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      localStorage.setItem('dtp-obj-streak', JSON.stringify({ count: 3, lastDate: yesterday }));
+      incrementObjectiveStreak();
+      expect(getObjectiveStreak()).toBe(4);
+    });
+
+    it('does not increment twice on same day', () => {
       const today = new Date().toISOString().slice(0, 10);
       localStorage.setItem('dtp-obj-streak', JSON.stringify({ count: 3, lastDate: today }));
       incrementObjectiveStreak();
-      expect(getObjectiveStreak()).toBe(4);
+      expect(getObjectiveStreak()).toBe(3); // unchanged — already incremented today
     });
   });
 

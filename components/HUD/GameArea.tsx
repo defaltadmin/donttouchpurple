@@ -101,7 +101,7 @@ export const GameArea = React.memo(function GameArea({
               onMenu={onMenu}
               spinLevel={snapshot.spinLevel}
               isHumanLimit={snapshot.phase === "humanlimit"}
-              dustEarned={isNaN(dust - dustAtStart) ? 0 : dust - dustAtStart}
+              dustEarned={Math.max(0, isNaN(dust - dustAtStart) ? 0 : dust - dustAtStart)}
               objectiveProgress={gameOverProgress}
             />
             <button className="dtp-icon-btn" onClick={() => onShare(snapshot.p1.score, snapshot.p1.health, snapshot.tick)} title="Share Score" style={{marginTop:8}}>Share Score</button>

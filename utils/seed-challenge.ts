@@ -30,6 +30,7 @@ export class DailyChallenge {
   getSeed(): string { return this.seed; }
 
   isTodayComplete(): boolean {
+    if (!this.seed) return false; // seed not yet resolved — don't give false negatives
     const saved = localStorage.getItem(this.challengeId);
     if (!saved) return false;
     try {
@@ -39,6 +40,7 @@ export class DailyChallenge {
   }
 
   markComplete(score: number, time: number) {
+    if (!this.seed) return; // seed not yet resolved — don't poison with empty string
     localStorage.setItem(this.challengeId, JSON.stringify({
       seed: this.seed, completed: true, score, time,
       date: new Date().toISOString(),
