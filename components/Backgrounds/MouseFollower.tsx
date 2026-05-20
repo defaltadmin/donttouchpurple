@@ -21,6 +21,9 @@ export function MouseFollower({
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Disable on touch devices — mouse effects don't work with touch
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+
     const handleMove = (e: MouseEvent) => {
       targetRef.current = { x: e.clientX, y: e.clientY };
     };

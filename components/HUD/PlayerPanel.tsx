@@ -145,14 +145,17 @@ export const PlayerPanel = memo(function PlayerPanel({
               ...(cbFilter      ? { filter: cbFilter } : {}),
               ...(rareMode.active ? { outline: `2px solid ${rareMode.cssColor}` } : {}),
             } as React.CSSProperties}>
-            {Array.from({ length: gridTotal }, (_, i) => {
-            const isVoid = maskSet && !maskSet.has(i);
-            if (isVoid) return <div key={i} className="cell-void" />;
+            {/* Pre-build active cell map for O(1) lookup instead of O(n) find per cell */}
+            {(() => {
+              const activeMap = new Map(ps.active.map(c => [c.idx, c]));
+              return Array.from({ length: gridTotal }, (_, i) => {
+              const isVoid = maskSet && !maskSet.has(i);
+              if (isVoid) return <div key={i} className="cell-void" />;
 
-            const type = ps.cells[i] ?? "inactive";
-            if (type === "inactive" || type === "void") return <div key={i} className="cell-void" />;
+              const type = ps.cells[i] ?? "inactive";
+              if (type === "inactive" || type === "void") return <div key={i} className="cell-void" />;
 
-            const activeCell = ps.active.find(c => c.idx === i) || {
+              const activeCell = activeMap.get(i) || {
               idx: i,
               clicked: true,
               type,
@@ -224,7 +227,8 @@ export const PlayerPanel = memo(function PlayerPanel({
                 );
               })()
             );
-          })}
+          });
+          })()}
           </div>
         </div>
       </div>
