@@ -5,9 +5,11 @@ const STORAGE_KEY = 'dtp:perf';
 
 export const perfMonitor = {
   metrics: { LCP: 0, FID: 0, CLS: 0, INP: 0, TTFB: 0 } as Record<Metric, number>,
+  _observing: false,
 
   observe() {
-    if (!('PerformanceObserver' in window)) return;
+    if (!('PerformanceObserver' in window) || this._observing) return;
+    this._observing = true;
 
     new PerformanceObserver((list) => {
       const entry = list.getEntries().at(-1);

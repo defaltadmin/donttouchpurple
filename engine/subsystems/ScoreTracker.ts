@@ -41,21 +41,6 @@ export function shouldShowStreakToast(streak: number): string | null {
   return null;
 }
 
-export function calculateSurvivalBonus(
-  tickCount: number,
-  rhythmMultiplier: number,
-  p1Alive: boolean,
-  p2Alive: boolean,
-  numPlayers: number
-): number {
-  const bonus = tickCount > 200 ? 5 : tickCount > 120 ? 3 : 2;
-  const multBonus = Math.round(bonus * rhythmMultiplier);
-  let total = 0;
-  if (p1Alive) total += multBonus;
-  if (numPlayers === 2 && p2Alive) total += multBonus;
-  return total;
-}
-
 export function recordAttempt(
   dda: { recordAttempt: (success: boolean, reaction: number, miss: boolean) => void },
   success: boolean,

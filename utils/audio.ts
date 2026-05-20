@@ -63,8 +63,11 @@ class AudioEngine {
     const type = id.includes('music') || id.includes('bgm') ? 'music' : 'sfx';
     const volume = opts.volume ?? (type === 'music' ? 0.4 : 0.7);
 
-    this.gainNodes[type].gain.value = volume;
-    source.connect(this.gainNodes[type]);
+    // Per-source gain node to avoid clobbering shared channel volume
+    const sourceGain = this.ctx.createGain();
+    sourceGain.gain.value = volume;
+    sourceGain.connect(this.gainNodes[type]);
+    source.connect(sourceGain);
     source.start();
 
     const cleanId = `${id}_${Date.now()}`;

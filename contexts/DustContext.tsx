@@ -1,7 +1,7 @@
 // contexts/DustContext.tsx
 // Isolates dust/energy/shop economy state.
 // Updates here never trigger game grid re-renders.
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import { LS_KEYS } from "../config/difficulty";
 
 export interface EnergyData { current: number; max: number; lastRefill: number; }
@@ -62,22 +62,21 @@ export function DustProvider({ children }: { children: React.ReactNode }) {
   const [shopData, setShopData] = useState<ShopData>(loadInitialShop);
   const [playerName, setPlayerName] = useState(loadInitialPlayerName);
 
+  const dustRef = useRef(loadInitialDust());
+
   const addDust = useCallback((amount: number, _source?: string): number => {
     let next = 0;
-    setDust(prev => {
-      next = prev + amount;
-      return next;
-    });
-    return next;
+    setDust(prev => { next = prev + amount; dustRef.current = next; return next; });
+    return next || dustRef.current + amount; // fallback for synchronous read
   }, []);
 
   const spendDust = useCallback((amount: number): boolean => {
     let success = false;
     setDust(prev => {
-      if (prev >= amount) { success = true; return prev - amount; }
+      if (prev >= amount) { success = true; dustRef.current = prev - amount; return dustRef.current; }
       return prev;
     });
-    return success;
+    return success || dustRef.current >= amount; // fallback for synchronous read
   }, []);
 
   return (
