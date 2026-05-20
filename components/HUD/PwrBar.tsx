@@ -1,3 +1,4 @@
+import { BALANCE } from "../../config/gameBalance";
 import React, { useEffect, useState, useRef } from "react";
 import type { PlayerState } from "../../engine/types";
 
@@ -50,7 +51,7 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
     <div className={`pwr-bar${fading ? ' pwr-bar--fading' : ''}`} role="status" aria-label={powerLabel}>
       {rareMode?.active && (
         <div className="pwr-pill pwr-pill--rare" aria-label={`Rare mode active: ${rareMode.turnsLeft} turns remaining`}>
-          <div className="pwr-progress" style={{ width: `${(rareMode.turnsLeft / 9) * 100}%` }} aria-hidden="true" />
+          <div className="pwr-progress" style={{ width: `${(rareMode.turnsLeft / (BALANCE.rare.minTurns + BALANCE.rare.bonusTurns)) * 100}%` }} aria-hidden="true" />
           <div className="pwr-center">
             <span className="pwr-icon" aria-hidden="true">{rareMode.emoji || "⚠️"}</span>
             <span className="pwr-count" style={{ color: rareMode.cssColor }} aria-hidden="true">{rareMode.turnsLeft}</span>

@@ -942,6 +942,7 @@ destroy(): void {
       rareMode: { ...this.rareMode },
       isInverted: this._isInverted,
       nextShuffleTick: this.p1.nextShuffleTick,
+      p2NextShuffleTick: this.p2.nextShuffleTick,
       bossEvent: this.bossEvent ? { type: this.bossEvent.type, endsAt: this.bossEvent.endsAt } : null,
       nextBossTriggerScore: this.nextBossTriggerScore,
       _bossActive: this._bossActive,
@@ -1001,6 +1002,7 @@ destroy(): void {
       if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode as Record<string, unknown>, this.rareMode as unknown as Record<string, unknown>) as unknown as RareColorMode;
       this._isInverted = (data.isInverted as boolean) ?? false;
       this.p1.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
+      this.p2.nextShuffleTick = (data.p2NextShuffleTick as number) ?? 40;
       this.bossEvent = data.bossEvent ? { type: (data.bossEvent as Record<string, unknown>).type as BossEventType, endsAt: (data.bossEvent as Record<string, unknown>).endsAt as number } : null;
       this.nextBossTriggerScore = (data.nextBossTriggerScore as number) ?? 500;
       this._bossActive = (data._bossActive as boolean) ?? false;

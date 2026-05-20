@@ -162,7 +162,7 @@ export const PlayerPanel = memo(function PlayerPanel({
             const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
             const bombFuse = activeCell.type === 'bomb' && 'expiresAt' in activeCell
-              ? Math.max(0, activeCell.expiresAt - Date.now())
+              ? Math.max(0, activeCell.expiresAt - now)
               : undefined;
 
             return (
