@@ -74,6 +74,7 @@ export interface PlayerState {
   storedShieldCharges: number;
   pendingStageUpdate?: boolean;
   slideAnim?: Record<number, { fromIdx: number; startMs: number }>; // K3: cell shuffle slide
+  nextShuffleTick: number;  // per-player shuffle scheduling
 }
 
 // ─── Rare color mode ──────────────────────────────────────────────

@@ -50,6 +50,7 @@ function makePS(bonusHearts: number, hasMult: boolean, stored: { freeze: number;
     gridStage: 0, stageProgress: 0, patternIdx: 0,
     storedFreezeCharges: stored.freeze,
     storedShieldCharges: stored.shield,
+    nextShuffleTick: 0,
   };
 }
 
@@ -98,7 +99,7 @@ export class GameEngine {
   private _cachedSpinSeed = -1;
   private _cachedRotationSpeed = 1;
   // K1: cell shuffle state
-  private nextShuffleTick: number = 0;
+  // nextShuffleTick moved to PlayerState for per-player tracking
   private readonly SHUFFLE_DURATION_MS = 200; // K3: slide animation duration
   // Boss/Bomb state
   private bossEvent: BossEvent | null = null;
@@ -214,7 +215,6 @@ export class GameEngine {
       get _bossActive() { return self._bossActive; }, set _bossActive(v) { self._bossActive = v; },
       get _isInverted() { return self._isInverted; }, set _isInverted(v) { self._isInverted = v; },
       get _isBlackout() { return self._isBlackout; }, set _isBlackout(v) { self._isBlackout = v; },
-      get nextShuffleTick() { return self.nextShuffleTick; }, set nextShuffleTick(v) { self.nextShuffleTick = v; },
       get nextBossTriggerScore() { return self.nextBossTriggerScore; }, set nextBossTriggerScore(v) { self.nextBossTriggerScore = v; },
       get activeBomb() { return self.activeBomb; }, set activeBomb(v) { self.activeBomb = v; },
       get dirty() { return self.dirty; }, set dirty(v) { self.dirty = v; },
@@ -303,7 +303,6 @@ export class GameEngine {
     this.rng        = mulberry32(this.gameSeed);
     this._bot.setRng(this.rng);
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
-    this.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
     this.bossEvent = null;
     this.nextBossTriggerScore = 500;
     this.activeBomb = null;
@@ -319,6 +318,8 @@ export class GameEngine {
     }
     this.p1 = makePS(bonusHearts, hasMult, stored);
     this.p2 = makePS(bonusHearts, hasMult, stored);
+    this.p1.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
+    this.p2.nextShuffleTick = 40 + Math.floor(this.rng() * 20);
     this.tapBuffer  = { 1: null, 2: null };
     this.dirty = true;
     this.emit({ type: "phaseChange", phase: "playing" });
@@ -867,8 +868,8 @@ destroy(): void {
     if (!this.p1 || !this.p2) {
       return {
         tick: 0, evolveTick: 0, gameSeed: 0,
-        p1: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0 },
-        p2: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0 },
+        p1: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 },
+        p2: { cells: Array(25).fill('inactive'), active: [], score: 0, streak: 0, alive: false, anim: {}, health: 0, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0, gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 },
         cellShape: 'square', rareMode: { active: false, color: '', cssColor: '', turnsLeft: 0, shape: 'circle', emoji: '' },
         spinLevel: 0, paused: false, phase: 'playing',
         grid: { cols: 3, rows: 3, mask: null }, spinCfg: null, devRotationSpeed: 1,
@@ -940,7 +941,7 @@ destroy(): void {
       spinLevel: this.spinLevel,
       rareMode: { ...this.rareMode },
       isInverted: this._isInverted,
-      nextShuffleTick: this.nextShuffleTick,
+      nextShuffleTick: this.p1.nextShuffleTick,
       bossEvent: this.bossEvent ? { type: this.bossEvent.type, endsAt: this.bossEvent.endsAt } : null,
       nextBossTriggerScore: this.nextBossTriggerScore,
       _bossActive: this._bossActive,
@@ -999,7 +1000,7 @@ destroy(): void {
       this.spinLevel = (data.spinLevel as number) ?? 0;
       if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode as Record<string, unknown>, this.rareMode as unknown as Record<string, unknown>) as unknown as RareColorMode;
       this._isInverted = (data.isInverted as boolean) ?? false;
-      this.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
+      this.p1.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
       this.bossEvent = data.bossEvent ? { type: (data.bossEvent as Record<string, unknown>).type as BossEventType, endsAt: (data.bossEvent as Record<string, unknown>).endsAt as number } : null;
       this.nextBossTriggerScore = (data.nextBossTriggerScore as number) ?? 500;
       this._bossActive = (data._bossActive as boolean) ?? false;

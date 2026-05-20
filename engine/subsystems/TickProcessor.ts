@@ -27,7 +27,6 @@ export interface TickContext {
   _bossActive: boolean;
   _isInverted: boolean;
   _isBlackout: boolean;
-  nextShuffleTick: number;
   nextBossTriggerScore: number;
   activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null;
   dirty: boolean;
@@ -185,7 +184,8 @@ export class TickProcessor {
       const stormActive = ctx.bossEvent?.type === "storm" && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
       const shufflePat = EVOLVE_PATTERNS[ctx.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
       if (stormActive) {
-        ctx.nextShuffleTick = 0;
+        ctx.p1.nextShuffleTick = 0;
+        ctx.p2.nextShuffleTick = 0;
         if (ctx.p1.alive) this._tryShuffleCells(ctx, ctx.p1, shufflePat, 1);
         if (ctx.numPlayers === 2 && ctx.p2.alive) {
           const p2Pat = EVOLVE_PATTERNS[ctx.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
@@ -242,9 +242,9 @@ export class TickProcessor {
   // Shuffle cells — 1-2 cells slide to adjacent empty positions
   private _tryShuffleCells(ctx: TickContext, ref: PlayerState, pat: { cols: number; rows: number; mask: number[] | null }, player: 1 | 2): void {
     if (ctx.config.mode !== "evolve" || ref.gridStage < 3) return;
-    if (ctx.tickCount < ctx.nextShuffleTick) return;
+    if (ctx.tickCount < ref.nextShuffleTick) return;
 
-    ctx.nextShuffleTick = ctx.tickCount + BALANCE.shuffle.minInterval + Math.floor(ctx.rng() * BALANCE.shuffle.bonusInterval);
+    ref.nextShuffleTick = ctx.tickCount + BALANCE.shuffle.minInterval + Math.floor(ctx.rng() * BALANCE.shuffle.bonusInterval);
 
     const { cols, rows, mask } = pat;
     const total = cols * rows;

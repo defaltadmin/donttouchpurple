@@ -19,7 +19,7 @@ interface CellProps {
 }
 
 function BombTimer({ expiresAt }: { expiresAt: number }) {
-  const TOTAL_MS = 2000; // bomb fuse duration
+  const TOTAL_MS = 2000; // matches BALANCE.bomb.fuseTimeMs
   const [ms, setMs] = useState(() => Math.max(0, expiresAt - Date.now()));
 
   useEffect(() => {

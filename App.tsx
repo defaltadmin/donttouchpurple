@@ -1728,8 +1728,8 @@ export default function App() {
       {/* DevOverlay — eliminated from prod bundle by Rollup dead-code elimination */}
       {import.meta.env.DEV && devMode && (
         <DevOverlay
-          p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
-          p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0 } as PlayerState}
+          p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}
+          p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}
           tick={snapshot?.tick || 0}
           gameMode={gameMode}
           numPlayers={numPlayers}
