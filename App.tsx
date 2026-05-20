@@ -22,6 +22,7 @@ import { TouchGesture } from "./utils/gestures";
 import { visualA11y } from "./utils/visual-a11y";
 import { useOffsetCursor } from "./hooks/useOffsetCursor";
 import { useEnergyStore } from "./hooks/useEnergyStore";
+import { useFocusTrap } from "./hooks/useFocusTrap";
 
 declare const __APP_VERSION__: string;
 import { safeSentry } from "./services/sentry";
@@ -543,7 +544,7 @@ export default function App() {
           toast$("🏆 Score submitted to global leaderboard!");
 
         } catch {
-          console.warn("Worker offline, queuing score");
+          logger.warn("Worker offline, queuing score");
           await addPendingScore(autoEntry);
 
           if ('serviceWorker' in navigator && 'SyncManager' in window) {
@@ -554,7 +555,7 @@ export default function App() {
         }
       }
     } catch (err: unknown) {
-      console.warn('[DTP] Score submission failed', err);
+      logger.warn('[DTP] Score submission failed', err);
     }
 
     // Update daily challenge progress
@@ -877,26 +878,9 @@ export default function App() {
   }, [pauseEngine, resumeEngine]);
 
   // Focus trap for pause overlay
-  const focusTrapRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!paused || !focusTrapRef.current) return;
-    const container = focusTrapRef.current;
-    const focusable = container.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    first.focus();
-    const trap = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') {
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    };
-    document.addEventListener('keydown', trap);
-    return () => document.removeEventListener('keydown', trap);
-  }, [paused]);
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(paused);
+  // Focus trap for onboarding overlay
+  const onboardingTrapRef = useFocusTrap<HTMLDivElement>(showOnboarding && screen === 'playing');
 
   // Live region timer
   useEffect(() => {
@@ -1512,7 +1496,7 @@ export default function App() {
       )}
 
       {showOnboarding && screen === 'playing' && (
-        <div className="dtp-onboarding" role="dialog" aria-modal="true" aria-label="Quick visual tutorial">
+        <div className="dtp-onboarding" role="dialog" aria-modal="true" aria-label="Quick visual tutorial" ref={onboardingTrapRef}>
           <div className="dtp-hint-step tap-hint">Tap green</div>
           <div className="dtp-hint-step avoid-hint">Avoid purple</div>
           <button onClick={() => { localStorage.setItem('dtp:onboard-seen', 'true'); setShowOnboarding(false); }}

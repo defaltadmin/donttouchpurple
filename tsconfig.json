@@ -28,7 +28,8 @@
     "utils/**/*.ts",
     "__tests__/**/*.ts",
     "test/**/*.ts",
-    "*.d.ts"
+    "*.d.ts",
+    "types/**/*.d.ts"
   ],
   "references": []
 }

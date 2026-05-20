@@ -1,6 +1,7 @@
 import React from "react";
 import { settingsManager } from "../../utils/settings";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 interface QuickSettingsProps {
   showOffset: boolean;
@@ -13,10 +14,11 @@ export const QuickSettings = React.memo(function QuickSettings({
   showOffset, onToggleOffset, visualA11y, onClose,
 }: QuickSettingsProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const settings = settingsManager.get();
 
   return (
-    <div className="dtp-modal-backdrop" onClick={onClose} aria-hidden="true">
+    <div className="dtp-modal-backdrop" onClick={onClose} aria-hidden="true" ref={trapRef}>
       <div className="dtp-modal" role="dialog" aria-modal="true" aria-label={t('menu.settings')} onClick={e => e.stopPropagation()}>
         <h2>{t('menu.settings')}</h2>
         <div className="dtp-setting-row">

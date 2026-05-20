@@ -1,18 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock Sentry first
-const mockCaptureException = vi.fn();
-const mockCaptureMessage = vi.fn();
-const mockSetTag = vi.fn();
-const mockAddBreadcrumb = vi.fn();
-const mockFlush = vi.fn();
+// Mock Sentry methods (hoisted so vi.mock factories can reference them)
+const { mockSetTag, mockAddBreadcrumb, mockSentry, mockGtag } = vi.hoisted(() => {
+  const mockCaptureException = vi.fn();
+  const mockCaptureMessage = vi.fn();
+  const mockSetTag = vi.fn();
+  const mockAddBreadcrumb = vi.fn();
+  const mockFlush = vi.fn();
+  const mockSentry = {
+    captureException: mockCaptureException,
+    captureMessage: mockCaptureMessage,
+    setTag: mockSetTag,
+    addBreadcrumb: mockAddBreadcrumb,
+    flush: mockFlush
+  };
+  const mockGtag = vi.fn();
+  return { mockSetTag, mockAddBreadcrumb, mockSentry, mockGtag };
+});
 
-vi.mock('@sentry/react', () => ({
-  captureException: mockCaptureException,
-  captureMessage: mockCaptureMessage,
-  setTag: mockSetTag,
-  addBreadcrumb: mockAddBreadcrumb,
-  flush: mockFlush
+// Mock the centralized sentry module so getSentry() resolves immediately
+vi.mock('../services/sentry', () => ({
+  getSentry: () => Promise.resolve(mockSentry),
+  safeSentry: mockSentry
 }));
 
 // Mock logger
@@ -24,8 +33,7 @@ vi.mock('../utils/logger', () => ({
   }
 }));
 
-// Mock gtag
-const mockGtag = vi.fn();
+// Mock gtag on window
 Object.defineProperty(window, 'gtag', {
   value: mockGtag,
   writable: true
@@ -51,15 +59,6 @@ describe('MetricsService', () => {
     svc(service).perfMetrics = {};
     svc(service).firebaseMetrics = {};
     svc(service).sessionStartTime = Date.now();
-    // Pre-inject the mocked Sentry so async ensureSentry() resolves immediately
-    svc(service).sentryLoaded = true;
-    svc(service).sentryModule = {
-      addBreadcrumb: mockAddBreadcrumb,
-      setTag: mockSetTag,
-      captureException: mockCaptureException,
-      captureMessage: mockCaptureMessage,
-      flush: mockFlush,
-    };
   });
 
   afterEach(() => {
@@ -98,7 +97,7 @@ describe('MetricsService', () => {
       expect(metrics.game.completionRate).toBe(50); // 1 out of 2 completed
     });
 
-    it('should send metrics to analytics', () => {
+    it('should send metrics to analytics', async () => {
       service.recordGameStart();
       service.recordGameEnd(1000, true, { shield: 1 }, 'purple_tap');
 
@@ -109,10 +108,12 @@ describe('MetricsService', () => {
         death_cause: 'purple_tap'
       });
 
-      expect(mockAddBreadcrumb).toHaveBeenCalledWith({
-        message: 'Game ended: 1000 points (completed)',
-        category: 'game',
-        level: 'info'
+      await vi.waitFor(() => {
+        expect(mockAddBreadcrumb).toHaveBeenCalledWith({
+          message: 'Game ended: 1000 points (completed)',
+          category: 'game',
+          level: 'info'
+        });
       });
     });
   });
@@ -144,10 +145,12 @@ describe('MetricsService', () => {
       expect(metrics.performance.frameDrops).toBeGreaterThan(0);
     });
 
-    it('should record load time', () => {
+    it('should record load time', async () => {
       service.recordLoadTime(2500);
 
-      expect(mockSetTag).toHaveBeenCalledWith('load_time', '2500');
+      await vi.waitFor(() => {
+        expect(mockSetTag).toHaveBeenCalledWith('load_time', '2500');
+      });
     });
 
     it('should record input latency', () => {

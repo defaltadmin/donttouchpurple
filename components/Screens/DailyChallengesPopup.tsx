@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { animateDustClaim } from '../../utils/dustAnimation';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export interface DailyChallenge {
   id: string;
@@ -20,6 +21,7 @@ interface DailyChallengesPopupProps {
 
 export default function DailyChallengesPopup({ challenges, onClaim, onClose }: DailyChallengesPopupProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [claimed, setClaimed] = useState<Set<string>>(
     () => new Set(challenges.filter(c => c.claimed).map(c => c.id))
   );
@@ -40,7 +42,7 @@ export default function DailyChallengesPopup({ challenges, onClaim, onClose }: D
   };
 
   return (
-    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('challenges.title')} onClick={onClose}>
+    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('challenges.title')} onClick={onClose} ref={trapRef}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
           <span className="popup-title">🎯 {t('challenges.title')}</span>

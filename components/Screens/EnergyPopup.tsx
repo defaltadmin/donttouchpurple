@@ -1,6 +1,7 @@
 import React from "react";
 import { GAME } from "../../config/difficulty";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 interface EnergyPopupProps {
   energyCount: number;
@@ -14,11 +15,12 @@ export const EnergyPopup = React.memo(function EnergyPopup({
   energyCount, dust, onClose, onRefill1, onRefillFull,
 }: EnergyPopupProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const needed = GAME.MAX_ENERGY - energyCount;
   const fullCost = needed * GAME.DUST_PER_ENERGY;
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('ui.energy')} onClick={onClose}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('ui.energy')} onClick={onClose} ref={trapRef}>
       <div className="modal-panel energy-popup" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">⚡ {t('ui.energy')}</span>

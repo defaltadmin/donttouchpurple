@@ -1,12 +1,6 @@
 // Custom metrics and monitoring service
 import { logger } from '../utils/logger';
-
-// Extend Window type for gtag
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
+import { getSentry } from './sentry';
 
 export interface GameMetrics {
   sessionDuration: number;
@@ -41,26 +35,12 @@ export class MetricsService {
   private sessionStartTime = Date.now();
   private frameCount = 0;
   private lastFrameTime = 0;
-  private sentryLoaded = false;
-  private sentryModule: { setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void } | null = null;
 
   static getInstance(): MetricsService {
     if (!MetricsService.instance) {
       MetricsService.instance = new MetricsService();
     }
     return MetricsService.instance;
-  }
-
-  private async ensureSentry(): Promise<{ setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void } | null> {
-    if (this.sentryLoaded && this.sentryModule) return this.sentryModule;
-    try {
-      this.sentryModule = (await import('@sentry/react')) as unknown as { setTag: (k: string, v: string) => void; addBreadcrumb: (b: unknown) => void };
-      this.sentryLoaded = true;
-      return this.sentryModule;
-    } catch (error) {
-      console.warn('[Metrics] Failed to load Sentry:', error);
-      return null;
-    }
   }
 
   // Game metrics
@@ -119,14 +99,9 @@ export class MetricsService {
 
   recordLoadTime(time: number): void {
     this.perfMetrics.loadTime = time;
-    // Call setTag synchronously if Sentry is already loaded
-    if (this.sentryLoaded && this.sentryModule) {
-      try { this.sentryModule.setTag('load_time', time.toString()); } catch {}
-    } else {
-      this.ensureSentry().then(Sentry => {
-        if (Sentry) Sentry.setTag('load_time', time.toString());
-      });
-    }
+    getSentry().then(Sentry => {
+      try { Sentry.setTag('load_time', time.toString()); } catch {}
+    }).catch(() => { /* Sentry unavailable */ });
   }
 
   recordMemoryUsage(): void {
@@ -197,21 +172,15 @@ export class MetricsService {
         });
       }
 
-      // Call Sentry synchronously if already loaded, otherwise fire-and-forget
-      const addBreadcrumb = (sentry: { addBreadcrumb: (b: unknown) => void } | null) => {
-        if (sentry) {
-          sentry.addBreadcrumb({
+      getSentry().then(Sentry => {
+        try {
+          Sentry.addBreadcrumb({
             message: `Game ended: ${score} points${completed ? ' (completed)' : ''}`,
             category: 'game',
             level: 'info'
           });
-        }
-      };
-      if (this.sentryLoaded && this.sentryModule) {
-        addBreadcrumb(this.sentryModule);
-      } else {
-        this.ensureSentry().then(addBreadcrumb);
-      }
+        } catch {}
+      }).catch(() => { /* Sentry unavailable */ });
 
       logger.info('[Metrics] Game metrics recorded', { score, completed, powerupsUsed, deathCause });
     } catch (error) {

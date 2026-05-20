@@ -1,5 +1,6 @@
 // Centralized error logging service
 import { logger } from '../utils/logger';
+import { getSentry } from './sentry';
 
 export interface ErrorContext {
   userId?: string;
@@ -10,21 +11,8 @@ export interface ErrorContext {
   [key: string]: string | number | boolean | undefined;
 }
 
-// Minimal interface for the Sentry module methods we use
-interface SentryLike {
-  withScope(cb: (scope: { setTag: (k: string, v: string) => void }) => void): void;
-  captureException(e: unknown): void;
-  captureMessage(msg: string, level: string): void;
-  setUser(u: { id?: string; email?: string } | null): void;
-  setTag(k: string, v: string): void;
-  addBreadcrumb(b: { message?: string; category?: string; level?: string; data?: Record<string, unknown> }): void;
-  flush(timeout?: number): Promise<boolean>;
-}
-
 export class ErrorLogger {
   private static instance: ErrorLogger;
-  private sentryLoaded = false;
-  private sentryModule: SentryLike | null = null;
 
   static getInstance(): ErrorLogger {
     if (!ErrorLogger.instance) {
@@ -33,41 +21,24 @@ export class ErrorLogger {
     return ErrorLogger.instance;
   }
 
-  private async ensureSentry(): Promise<SentryLike | null> {
-    if (this.sentryLoaded && this.sentryModule) return this.sentryModule;
-    try {
-      this.sentryModule = (await import('@sentry/react')) as unknown as SentryLike;
-      this.sentryLoaded = true;
-      return this.sentryModule;
-    } catch (error) {
-      console.warn('[ErrorLogger] Failed to load Sentry:', error);
-      return null;
-    }
-  }
-
-  // Log error with context
   async error(error: Error | string, context?: ErrorContext): Promise<void> {
     const errorObj = typeof error === 'string' ? new Error(error) : error;
-    const Sentry = await this.ensureSentry();
-
-    // Add context to Sentry
-    if (Sentry && context) {
-      Sentry.withScope((scope) => {
-        Object.entries(context).forEach(([key, value]) => {
-          scope.setTag(key, String(value));
+    try {
+      const Sentry = await getSentry();
+      if (context) {
+        Sentry.withScope((scope) => {
+          Object.entries(context).forEach(([key, value]) => {
+            scope.setTag(key, String(value));
+          });
+          Sentry.captureException(errorObj);
         });
+      } else {
         Sentry.captureException(errorObj);
-      });
-    } else if (Sentry) {
-      Sentry.captureException(errorObj);
-    }
-
-    // Also log to console in development
+      }
+    } catch { /* Sentry unavailable */ }
     if (process.env.NODE_ENV === 'development') {
       console.error('[ErrorLogger]', errorObj, context);
     }
-
-    // Log to our custom logger
     logger.error('[ErrorLogger]', {
       message: errorObj.message,
       stack: errorObj.stack,
@@ -75,10 +46,9 @@ export class ErrorLogger {
     });
   }
 
-  // Log warning
   async warn(message: string, context?: ErrorContext): Promise<void> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       if (context) {
         Sentry.withScope((scope) => {
           Object.entries(context).forEach(([key, value]) => {
@@ -89,106 +59,97 @@ export class ErrorLogger {
       } else {
         Sentry.captureMessage(message, 'warning');
       }
-    }
-
+    } catch { /* Sentry unavailable */ }
     logger.warn('[ErrorLogger]', { message, context });
   }
 
-  // Log info
   info(message: string, context?: ErrorContext): void {
-    // Info messages go to logger only, not Sentry
     logger.info('[ErrorLogger]', { message, context });
   }
 
-  // Set user context for all future logs
   async setUser(userId: string, email?: string): Promise<void> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       Sentry.setUser({ id: userId, email });
-    }
+    } catch { /* Sentry unavailable */ }
   }
 
-  // Set global context tags
   async setTag(key: string, value: string): Promise<void> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       Sentry.setTag(key, value);
-    }
+    } catch { /* Sentry unavailable */ }
   }
 
-  // Clear user context
   async clearUser(): Promise<void> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       Sentry.setUser(null);
-    }
+    } catch { /* Sentry unavailable */ }
   }
 
-  // Add breadcrumb for debugging
   async addBreadcrumb(message: string, category?: string, level?: 'info' | 'warning' | 'error'): Promise<void> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       Sentry.addBreadcrumb({
         message,
         category: category || 'custom',
         level: level || 'info'
       });
-    }
+    } catch { /* Sentry unavailable */ }
   }
 
-  // Flush pending events (useful before app close)
   async flush(timeout = 2000): Promise<boolean> {
-    const Sentry = await this.ensureSentry();
-    if (Sentry) {
+    try {
+      const Sentry = await getSentry();
       return await Sentry.flush(timeout);
-    }
-    return false;
+    } catch { return false; }
   }
 }
 
-// Safe wrapper for Sentry methods (handles cases where Sentry isn't loaded)
+// Safe wrapper using centralized getSentry (no duplicate lazy-load)
 export const safeSentry = {
   captureException: async (error: unknown, hint?: Record<string, unknown>) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       Sentry.captureException(error, hint as Record<string, unknown> | undefined);
     } catch {}
   },
 
   captureMessage: async (message: string, level?: string) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       Sentry.captureMessage(message, level as 'info' | 'warning' | 'error' | 'fatal');
     } catch {}
   },
 
   setUser: async (user: Record<string, unknown> | null) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       Sentry.setUser(user as { id?: string; email?: string } | null);
     } catch {}
   },
 
   setTag: async (key: string, value: string) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       Sentry.setTag(key, value);
     } catch {}
   },
 
   addBreadcrumb: async (breadcrumb: Record<string, unknown>) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       Sentry.addBreadcrumb(breadcrumb as unknown as import('@sentry/react').Breadcrumb);
     } catch {}
   },
 
   flush: async (timeout?: number) => {
     try {
-      const Sentry = await import('@sentry/react');
+      const Sentry = await getSentry();
       return await Sentry.flush(timeout);
     } catch {
-      return Promise.resolve(false);
+      return false;
     }
   }
 };

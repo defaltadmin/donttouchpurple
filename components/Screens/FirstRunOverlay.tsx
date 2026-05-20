@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 interface Props {
   onComplete: () => void;
@@ -43,6 +44,7 @@ const STEPS: Step[] = [
 
 export function FirstRunOverlay({ onComplete, onSkip }: Props) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [step, setStep] = useState(0);
 
   const isLast = step >= STEPS.length;
@@ -58,7 +60,7 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
   const currentHighlight = !isLast ? STEPS[step].highlight : undefined;
 
   return (
-    <div className="first-run-overlay" role="dialog" aria-modal="true" aria-label={t("onboarding.title")}>
+    <div className="first-run-overlay" role="dialog" aria-modal="true" aria-label={t("onboarding.title")} ref={trapRef}>
       <div className="first-run-card">
         <h2 className="first-run-title">{t("onboarding.title")}</h2>
 

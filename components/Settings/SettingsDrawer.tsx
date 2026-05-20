@@ -2,6 +2,7 @@ import React from "react";
 import { PillRow } from "./PillRow";
 import { i18n, type Locale } from "../../utils/i18n";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 type ColorblindMode = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
 
@@ -61,12 +62,13 @@ export function SettingsDrawer({
   setCurrentLocale,
 }: SettingsDrawerProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const handleLocaleChange = (lang: Locale) => {
     i18n.set(lang);
     setCurrentLocale?.(lang);
   };
   return (
-    <div className="drawer-overlay" role="dialog" aria-modal="true" aria-label={t('settings.title')} onClick={onClose}>
+    <div className="drawer-overlay" role="dialog" aria-modal="true" aria-label={t('settings.title')} onClick={onClose} ref={trapRef}>
       <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <span className="drawer-title">{t('settings.title')}</span>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { DailyChallenge } from "./DailyChallengesPopup";
 import { playSoundEffect } from "../../hooks/useGameEngine";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 // ─── Types ────────────────────────────────────────────────
 export interface WeeklyTask {
@@ -47,6 +48,7 @@ export function RewardsHub({
   onClose,
 }: RewardsHubProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [tab, setTab] = useState<HubTab>("checkin");
   const [closing, setClosing] = useState(false);
 
@@ -68,7 +70,7 @@ export function RewardsHub({
 
   return (
     // No outside-click dismiss (E8) — modal is persistent until explicit ✕
-    <div className={`modal-overlay rewards-hub-overlay${closing ? " rewards-hub-overlay--closing" : ""}`} role="dialog" aria-modal="true" aria-label={t('rewards.title')} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay rewards-hub-overlay${closing ? " rewards-hub-overlay--closing" : ""}`} role="dialog" aria-modal="true" aria-label={t('rewards.title')} onClick={(e) => e.stopPropagation()} ref={trapRef}>
       <div className={`modal-panel rewards-hub-panel${closing ? " rewards-hub-panel--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}

@@ -37,7 +37,7 @@ export const idb = {
     // Cap queue size to prevent unbounded growth
     const count = await this.count();
     if (count >= 100) {
-      console.warn('Score queue full (100), dropping oldest entry');
+      if (process.env.NODE_ENV === 'development') console.warn('Score queue full (100), dropping oldest entry');
       const db = await this.open();
       const tx = db.transaction(this.STORE, 'readwrite');
       const store = tx.objectStore(this.STORE);

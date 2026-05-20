@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { GameMode, Winner } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
   { min: 0,   max: 4,   texts: ["Bro couldn't avoid ONE color. 💀","The grid had 12 safe colors. You still lost. 🫠","Have you considered... not touching purple?","A goldfish would've scored higher. Scientifically.","Congratulations on finding the worst possible score.","Purple: 1. You: somehow less than 1.","Even accidentally tapping would've been better.","Did you mean to play a different game? 🙃"] },
@@ -63,6 +64,7 @@ export function GameOver({
 }: GameOverProps) {
   const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
+  const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
   const [displayScore, setDisplayScore] = useState(0);
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
 
@@ -151,7 +153,7 @@ export function GameOver({
       </motion.div>
 
       {showShareModal && (
-        <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label={t('gameover.share_title')} tabIndex={-1}>
+        <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label={t('gameover.share_title')} tabIndex={-1} ref={shareTrapRef}>
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
             <div style={{ fontFamily: "var(--font-ui)", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('gameover.share_title')}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

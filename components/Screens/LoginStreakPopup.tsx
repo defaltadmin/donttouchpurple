@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { animateDustClaim } from '../../utils/dustAnimation';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface LoginStreakPopupProps {
   streak: number;
@@ -18,6 +19,7 @@ export function getStreakReward(streak: number): number {
 
 export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose }: LoginStreakPopupProps) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const handleClaim = () => {
@@ -31,7 +33,7 @@ export default function LoginStreakPopup({ streak, dustReward, onClaim, onClose 
   const days = Array.from({ length: 7 }, (_, i) => i + 1);
 
   return (
-    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('streak.title')} onClick={onClose}>
+    <div className="popup-overlay" role="dialog" aria-modal="true" aria-label={t('streak.title')} onClick={onClose} ref={trapRef}>
       <div className="popup-card" onClick={e => e.stopPropagation()}>
         <div className="popup-header">
           <span className="popup-title">🔥 {t('streak.title')}</span>

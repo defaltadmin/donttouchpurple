@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 interface Props {
   onConfirm: () => void;
@@ -8,8 +9,9 @@ interface Props {
 
 export function ExitConfirmModal({ onConfirm, onCancel }: Props) {
   const { t } = useTranslation();
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('pause.exit_confirm_title')} onClick={onCancel}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('pause.exit_confirm_title')} onClick={onCancel} ref={trapRef}>
       <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">🏠 {t('pause.exit_confirm_title')}</span>

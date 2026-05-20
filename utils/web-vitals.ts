@@ -3,13 +3,6 @@ import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { errorLogger } from '../services/errorLogger';
 import { metricsService } from '../services/metrics';
 
-// Extend Window type for gtag
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
-
 export interface WebVitalsMetrics {
   cls: number | null;
   fid: number | null;

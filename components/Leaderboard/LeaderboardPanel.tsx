@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { SHOP_BADGES } from "../../config/powerupWeights";
 import { useTranslation } from "../../hooks/useTranslation";
+import { logger } from "../../utils/logger";
 
 interface LeaderboardEntry {
   score: number;
@@ -48,7 +49,7 @@ export function LeaderboardPanel({
       // P1: notify parent with fetched entries (for top-10 achievement check)
       if (onScoresFetched) onScoresFetched(global);
     } catch (err) {
-      console.warn("[DTP-LB] Firebase fetch failed, using local fallback:", err);
+      logger.warn("[DTP-LB] Firebase fetch failed, using local fallback:", err);
       try {
         const classicRaw = localStorage.getItem(classicStorageKey);
         const evolveRaw  = localStorage.getItem(evolveStorageKey);
