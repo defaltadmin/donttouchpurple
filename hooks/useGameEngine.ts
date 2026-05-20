@@ -182,7 +182,9 @@ export function useGameEngine(
         case "scoreFloat": {
           const id = ++scoreFloatIdRef.current;
           setScoreFloats(prev => [...prev, { id, player: event.player, idx: event.idx, amount: event.amount }]);
-          setTimeout(() => setScoreFloats(prev => prev.filter(f => f.id !== id)), 800);
+          botTapTimersRef.current.push(setTimeout(() => {
+            if (mountedRef.current) setScoreFloats(prev => prev.filter(f => f.id !== id));
+          }, 800));
           break;
         }
         case "toast": toast$(event.message); break;

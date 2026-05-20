@@ -99,6 +99,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // HTML navigation: network-first so deploys are picked up immediately
+  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(resp => {
+          if (resp.status === 200) {
+            caches.open(STATIC_CACHE).then(c => c.put(event.request, resp.clone()));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(event.request).then(c => c || fetch(event.request)))
+    );
+    return;
+  }
+
   if (url.pathname.match(/\.(js|css|png|svg|webp|woff2|json)$/)) {
     event.respondWith(
       caches.match(event.request).then(cached =>

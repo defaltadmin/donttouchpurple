@@ -101,11 +101,13 @@ import type { CellShape } from '../engine/types';
 
 export const RARE_MODE_CONFIGS: Record<string, { color: string; shape: CellShape; emoji: string }> = {
   red:    { color: '#ef4444', shape: 'triangle',        emoji: '🔺' },
-  gold:   { color: '#fbbf24', shape: 'diamond',        emoji: '⭐' },
-  cyan:   { color: '#22d3ee', shape: 'square',         emoji: '■' },
-  lime:   { color: '#a3e635', shape: 'roundedTriangle', emoji: '🟩' },
-  pink:   { color: '#f472b6', shape: 'circle',         emoji: '🌸' },
-  purple: { color: '#c026d3', shape: 'circle',         emoji: '🟣' },
+  blue:   { color: '#3b82f6', shape: 'square',          emoji: '🔷' },
+  green:  { color: '#22c55e', shape: 'roundedTriangle', emoji: '🟩' },
+  orange: { color: '#f97316', shape: 'diamond',         emoji: '🔶' },
+  cyan:   { color: '#06b6d4', shape: 'circle',          emoji: '🔵' },
+  pink:   { color: '#ec4899', shape: 'circle',          emoji: '🌸' },
+  yellow: { color: '#eab308', shape: 'diamond',         emoji: '⭐' },
+  purple: { color: '#c026d3', shape: 'circle',          emoji: '🟣' },
 };
 
 export const getRareModeConfig = (colorKey: string = 'purple') => {

@@ -45,6 +45,11 @@ export function activeToCellsP(
   return cells;
 }
 
+// Pre-computed base powerup table (health-independent portion)
+const BASE_POWERUP_TABLE = POWERUP_TABLE.filter(p => p.type !== 'medpack');
+const BASE_POWERUP_WEIGHT = BASE_POWERUP_TABLE.reduce((s, p) => s + p.weight, 0);
+const MEDPACK_BASE_WEIGHT = POWERUP_TABLE.find(p => p.type === 'medpack')?.weight ?? 7;
+
 export function spawnActive(
   rng: () => number,
   stage: number,
@@ -75,19 +80,24 @@ export function spawnActive(
 
   let powerup: CellType | null = null;
   const powerupEligible = isEvolve ? stage >= 2 : true;
-  let table = POWERUP_TABLE.map(p =>
-    p.type === "medpack" && health < GAME.MAX_HEARTS ? { ...p, weight: p.weight + 10 } : p
-  );
-  if (godMode) table = table.filter(p => p.type !== "medpack");
-  const totalWeight = table.reduce((s, p) => s + p.weight, 0);
+  // Use pre-computed base table — only adjust medpack weight dynamically
+  const medpackWeight = (!godMode && health < GAME.MAX_HEARTS) ? MEDPACK_BASE_WEIGHT + 10 : (godMode ? 0 : MEDPACK_BASE_WEIGHT);
+  const totalWeight = BASE_POWERUP_WEIGHT + medpackWeight;
   const effectiveTotal = powerupEligible ? totalWeight : totalWeight * 0.4;
   if (powerupEligible && totalWeight > 0) {
     const roll = rng() * 100;
     if (roll < effectiveTotal) {
       let cursor = 0;
-      for (const p of table) {
-        cursor += p.weight;
-        if (roll < cursor) { powerup = p.type as CellType; break; }
+      // Check medpack first
+      if (medpackWeight > 0) {
+        cursor += medpackWeight;
+        if (roll < cursor) { powerup = 'medpack' as CellType; }
+      }
+      if (!powerup) {
+        for (const p of BASE_POWERUP_TABLE) {
+          cursor += p.weight;
+          if (roll < cursor) { powerup = p.type as CellType; break; }
+        }
       }
     }
   }

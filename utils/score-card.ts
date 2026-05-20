@@ -38,7 +38,7 @@ export const scoreCardGen = {
     ctx.fillStyle = '#888888';
     ctx.fillText('Share your progress!', canvas.width / 2, 1600);
     ctx.font = '40px monospace';
-    ctx.fillText('github.com/defaltadmin/donttouchpurple', canvas.width / 2, 1700);
+    ctx.fillText('game.mscarabia.com', canvas.width / 2, 1700);
 
     return new Promise((resolve) => canvas.toBlob((blob) => resolve(URL.createObjectURL(blob!)), 'image/png'));
   }

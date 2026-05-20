@@ -116,5 +116,6 @@ function getACtx(): AudioContext {
     _masterGain.gain.setValueAtTime(_volume, _actx.currentTime);
     _masterGain.connect(_actx.destination);
   }
+  if (_actx.state === 'suspended') _actx.resume();
   return _actx;
 }
