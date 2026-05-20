@@ -58,7 +58,7 @@ export function FirstRunOverlay({ onComplete, onSkip }: Props) {
   const currentHighlight = !isLast ? STEPS[step].highlight : undefined;
 
   return (
-    <div className="first-run-overlay" role="dialog" aria-label={t("onboarding.title")}>
+    <div className="first-run-overlay" role="dialog" aria-modal="true" aria-label={t("onboarding.title")}>
       <div className="first-run-card">
         <h2 className="first-run-title">{t("onboarding.title")}</h2>
 

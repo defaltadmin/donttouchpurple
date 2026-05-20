@@ -1512,7 +1512,7 @@ export default function App() {
       )}
 
       {showOnboarding && screen === 'playing' && (
-        <div className="dtp-onboarding" role="dialog" aria-label="Quick visual tutorial">
+        <div className="dtp-onboarding" role="dialog" aria-modal="true" aria-label="Quick visual tutorial">
           <div className="dtp-hint-step tap-hint">Tap green</div>
           <div className="dtp-hint-step avoid-hint">Avoid purple</div>
           <button onClick={() => { localStorage.setItem('dtp:onboard-seen', 'true'); setShowOnboarding(false); }}
