@@ -4,7 +4,11 @@ const DTP_KEYS = [
   'dtp:session', 'dtp:score-queue', 'dtp:settings', 'dtp:events', 'dtp:errors',
   'dtp:locale', 'dtp:config', 'dtp:achievements', 'dtp:achievement-toasts',
   'dtp:daily', 'dtp:perf', 'dtp:vol:sfx', 'dtp:vol:music', 'dtp:vol:ambient',
-  'dtp:telemetry-consent'
+  'dtp:telemetry-consent', 'dtp:wins', 'dtp:deaths', 'dtp:feature-unlocks',
+  'dtp-lifetime-dust', 'dtp-login-streak', 'dtp-device-id', 'dtp_ab_variant',
+  'dtp_muted', 'dtp_volume', 'dtp_haptics', 'dtp_screen_shake', 'dtp_reduced_motion',
+  'dtp-best-classic', 'dtp-best-evolve', 'dtp-daily-completed', 'dtp-obj-streak',
+  'dtp-games-played', 'dtp-challenge-progress', 'dtp:daily-complete',
 ];
 
 export const privacyManager = {

@@ -11,11 +11,8 @@ export const updateStreak = functions.https.onCall(async (data, _context) => {
   const deviceId: string | undefined = data?.deviceId;
   if (!deviceId) throw new functions.https.HttpsError("invalid-argument", "deviceId required");
 
-  const clientDate: string | undefined = data?.clientDate;
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  const todayStr = (clientDate && dateRegex.test(clientDate))
-    ? clientDate
-    : dateString(new Date());
+  // Always use server date — never trust client-supplied dates
+  const todayStr = dateString(new Date());
 
   const streakRef = admin.firestore().collection("streaks").doc(deviceId);
   const now = admin.firestore.Timestamp.now();

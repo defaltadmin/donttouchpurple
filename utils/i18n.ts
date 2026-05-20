@@ -8,7 +8,7 @@ const STORAGE_KEY = 'dtp:locale';
 
 class I18nManager {
   private dicts: Partial<Record<Locale, Dict>> = {};
-  private _current: Locale = (localStorage.getItem(STORAGE_KEY) as Locale) || FALLBACK;
+  private _current: Locale = (() => { try { return (localStorage.getItem(STORAGE_KEY) as Locale) || FALLBACK; } catch { return FALLBACK; } })();
   private _fallback: Dict = {};
 
   async init() {
