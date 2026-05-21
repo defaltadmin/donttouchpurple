@@ -30,14 +30,11 @@ export class Preloader {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
 
-      const res = await fetch(asset.url, { signal: ctrl.signal });
+      // Just prime the browser cache — no need to read the response body
+      const res = await fetch(asset.url, { signal: ctrl.signal, cache: 'force-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      if (asset.type === 'audio') {
-        // audio assets are preloaded via fetch but not decoded here
-      } else {
-        await res.arrayBuffer();
-      }
+      // Consume body to free connection (but don't allocate arrayBuffer)
+      await res.text().catch(() => {});
 
       clearTimeout(timer);
       asset.progress = 1;

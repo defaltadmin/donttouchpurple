@@ -25,7 +25,8 @@ export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }
       x: rect.left + col * cellW + cellW / 2,
       y: rect.top + row * cellH,
     });
-  }, [gridRef, idx, cols, rows]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- gridRef is a stable ref, not a reactive dep
+  }, [idx, cols, rows]);
 
   if (!pos) return null;
 

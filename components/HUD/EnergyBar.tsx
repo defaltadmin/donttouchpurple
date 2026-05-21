@@ -21,12 +21,13 @@ export function EnergyBar({
 }: EnergyBarProps) {
   const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
+  const isFull = energy >= GAME.MAX_ENERGY;
 
   useEffect(() => {
-    if (energy >= GAME.MAX_ENERGY) return;
-    const id = setInterval(() => setNow(Date.now()), 1000); // 1s for visual precision
+    if (isFull) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [energy]);
+  }, [isFull]);
 
   const remaining = GAME.ENERGY_REGEN_MS - ((now - energyLastRegen) % GAME.ENERGY_REGEN_MS);
   const mins = Math.floor(remaining / 60000);

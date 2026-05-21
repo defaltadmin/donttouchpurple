@@ -74,7 +74,7 @@ export const BossOverlay = React.memo(function BossOverlay({
         >
           <div className="rare-pip-row">
             {Array.from({ length: snapshot.rareMode.turnsLeft }).map((_, i) => (
-              <span key={i} className="rare-pip" style={{ background: snapshot!.rareMode.cssColor }} />
+              <span key={i} className="rare-pip" style={{ background: snapshot?.rareMode.cssColor ?? '' }} />
             ))}
           </div>
         </div>

@@ -33,14 +33,16 @@ export function WhatsNew({ onClose }: WhatsNewProps) {
     } catch { return false; }
   });
 
+  const handleClose = () => { markWhatsNewSeen(); onClose(); };
+
   return (
-    <div className="whatsnew-overlay" role="dialog" aria-modal="true" aria-label="What's New" onClick={onClose} ref={trapRef}>
+    <div className="whatsnew-overlay" role="dialog" aria-modal="true" aria-label="What's New" onClick={handleClose} ref={trapRef}>
       <div className="whatsnew-card" onClick={(e) => e.stopPropagation()}>
         <div className="whatsnew-header">
           <h2 className="whatsnew-title">What's New</h2>
           <span className="whatsnew-version">v{WHATS_NEW_VERSION}</span>
           {isNewVersion && <span className="whatsnew-badge">New!</span>}
-          <button className="whatsnew-close" onClick={onClose}>✕</button>
+          <button className="whatsnew-close" onClick={handleClose}>✕</button>
         </div>
         <div className="whatsnew-list">
           {CHANGES.map((c, i) => (
@@ -50,7 +52,7 @@ export function WhatsNew({ onClose }: WhatsNewProps) {
             </div>
           ))}
         </div>
-        <button className="btn-play whatsnew-ok" onClick={onClose}>Got it!</button>
+        <button className="btn-play whatsnew-ok" onClick={handleClose}>Got it!</button>
       </div>
     </div>
   );

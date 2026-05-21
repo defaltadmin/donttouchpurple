@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG: GameConfigData = {
   version: 1,
   difficulty: { initialHearts: 3, baseTime: 60, difficultyRamp: 1.15 },
   scoring: { basePoints: 100, multiplier: 1.5, comboWindowMs: 2000 },
-  grid: { cols: 6, rows: 8, spawnRateMs: 1200, maxActiveCells: 15 },
+  grid: { cols: 3, rows: 3, spawnRateMs: 1200, maxActiveCells: 9 },
   audio: { defaultVolumes: { sfx: 0.7, music: 0.4, ambient: 0.3 } }
 };
 
@@ -83,5 +83,13 @@ export const configManager = {
       audio: { ...this.current.audio, ...partial.audio },
     };
     this.save();
+    this._listeners.forEach(cb => cb(this.current));
+  },
+
+  _listeners: new Set<(config: GameConfigData) => void>(),
+
+  subscribe(cb: (config: GameConfigData) => void) {
+    this._listeners.add(cb);
+    return () => { this._listeners.delete(cb); };
   }
 };

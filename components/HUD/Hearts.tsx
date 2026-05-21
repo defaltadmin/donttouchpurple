@@ -11,7 +11,7 @@ interface HeartsProps {
   practiceMode?: boolean;
 }
 
-export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps) {
+export function Hearts({ health, anim: _anim, shieldCount, practiceMode }: HeartsProps) {
   const sc = shieldCount ?? 0;
   const actualHealth  = Math.max(0, health);
   const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
@@ -20,11 +20,17 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
   // Track health gain for animation
   const prevHealth = useRef(actualHealth);
   const [gainIdx, setGainIdx] = useState<number | null>(null);
+  const [lossIdx, setLossIdx] = useState<number | null>(null);
   useEffect(() => {
     if (actualHealth > prevHealth.current) {
-      // The newly filled heart is at index actualHealth - 1
       setGainIdx(actualHealth - 1);
       const t = setTimeout(() => setGainIdx(null), 500);
+      prevHealth.current = actualHealth;
+      return () => clearTimeout(t);
+    }
+    if (actualHealth < prevHealth.current) {
+      setLossIdx(prevHealth.current - 1);
+      const t = setTimeout(() => setLossIdx(null), 500);
       prevHealth.current = actualHealth;
       return () => clearTimeout(t);
     }
@@ -49,7 +55,7 @@ export function Hearts({ health, anim, shieldCount, practiceMode }: HeartsProps)
       <span key={i} className={[
         "heart",
         isFull ? (isShieldHeart ? "heart--shield" : "heart--full") : "heart--empty",
-        anim && i === Math.ceil(displayHealth) - 1 ? "heart--loss" : "",
+        lossIdx === i ? "heart--loss" : "",
         gainIdx === i ? "heart--gain" : "",
       ].filter(Boolean).join(" ")}
       aria-hidden="true">
