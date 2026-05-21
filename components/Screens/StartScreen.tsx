@@ -112,12 +112,12 @@ function MagneticButton({ children, onClick, className = "", disabled = false }:
       btn.style.transform = "";
     };
 
-    window.addEventListener("mousemove", handleMove);
-    btn.addEventListener("mouseleave", handleLeave);
+    btn.addEventListener("pointermove", handleMove);
+    btn.addEventListener("pointerleave", handleLeave);
     btn.addEventListener("touchstart", handleTouchStart, { passive: true });
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      btn.removeEventListener("mouseleave", handleLeave);
+      btn.removeEventListener("pointermove", handleMove);
+      btn.removeEventListener("pointerleave", handleLeave);
       btn.removeEventListener("touchstart", handleTouchStart);
       mq?.removeEventListener("change", handleMediaChange);
     };

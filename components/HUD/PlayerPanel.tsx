@@ -330,6 +330,7 @@ function HoldCellDisplay({
       onPointerDown={(e) => { e.preventDefault(); onHoldStart(idx); }}
       onPointerUp={() => onHoldEnd(idx)}
       onPointerLeave={() => onHoldEnd(idx)}
+      onPointerCancel={() => onHoldEnd(idx)}
     >
       <svg className="hold-progress-ring" viewBox="0 0 36 36" aria-hidden="true">
         <path className="hold-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />

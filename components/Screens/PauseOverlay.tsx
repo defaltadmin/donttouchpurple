@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import type { GameSnapshot } from "../../engine/types";
 import { speedLabel } from "../../engine/DifficultyScaler";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -24,7 +24,11 @@ export const PauseOverlay = React.memo(function PauseOverlay({
   focusTrapRef,
 }: PauseOverlayProps) {
   const { t } = useTranslation();
-  const now = Date.now();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="pause-overlay" role="dialog" aria-modal="true" aria-label={t('pause.title')} ref={focusTrapRef}>

@@ -26,8 +26,9 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
   }, [hasActivePower]);
 
   // Tick via RAF for smooth progress drain (~60fps, frame-synced)
+  // Only run when active powers exist — fading is handled by CSS transition
   useEffect(() => {
-    if (!hasActivePower && !fading) return;
+    if (!hasActivePower) return;
     let rafId: number;
     const tick = () => {
       setNow(Date.now());
@@ -35,7 +36,7 @@ export function PwrBar({ ps, rareMode }: PwrBarProps) {
     };
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [hasActivePower, fading]);
+  }, [hasActivePower]);
 
   if (!hasActivePower && !fading) return null;
 
