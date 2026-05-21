@@ -124,3 +124,10 @@ function getACtx(): AudioContext {
   if (_actx.state === 'suspended') _actx.resume();
   return _actx;
 }
+
+/** Cleanup for HMR — closes the AudioContext so it doesn't leak across reloads */
+export function destroyAudioContext(): void {
+  _actx?.close();
+  _actx = null;
+  _masterGain = null;
+}

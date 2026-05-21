@@ -101,6 +101,8 @@ export const PlayerPanel = memo(function PlayerPanel({
 
   const gridRef = useRef<HTMLDivElement>(null);
   const botBtnRef = useRef<HTMLButtonElement>(null);
+  const dustCleanupRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => { dustCleanupRef.current?.(); }, []);
 
   const spinClass = snapshot?.spinCfg
     ? (snapshot.spinCfg.direction === 1 ? "gpanel--cw" : "gpanel--ccw")
@@ -238,7 +240,8 @@ export const PlayerPanel = memo(function PlayerPanel({
           className={`bot-icon-btn${isBotActive ? " bot-icon-btn--active" : ""}${(dust ?? 0) < 30 ? " bot-icon-btn--disabled" : ""}`}
           onClick={() => {
             if ((dust ?? 0) >= 30 && !isBotActive && botBtnRef.current) {
-              animateDustClaim(botBtnRef.current, '.dust-counter', 30, true);
+              dustCleanupRef.current?.();
+              dustCleanupRef.current = animateDustClaim(botBtnRef.current, '.dust-counter', 30, true);
             }
             if ((dust ?? 0) >= 30) {
               onToggleBotAssist();

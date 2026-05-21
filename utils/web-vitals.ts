@@ -133,6 +133,7 @@ originalMetricsService.recordPerformanceMetric = function(
   value: number,
   rating: string
 ): void {
+  if (!this.perfMetrics) this.perfMetrics = {};
   if (!this.perfMetrics.webVitals) this.perfMetrics.webVitals = {};
   this.perfMetrics.webVitals[metric] = { value, rating, timestamp: Date.now() };
 };
