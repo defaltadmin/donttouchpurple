@@ -20,7 +20,7 @@ export const stateGuard = {
       if ((e as Error).name === 'QuotaExceededError') {
         logger.error('Storage quota exceeded, clearing non-essential keys');
         // Only clear large/non-essential keys — preserve achievements, dust, settings
-        const safeToClear = ['dtp:errors', 'dtp:perf', 'dtp:session-snapshot', 'dtp:logs'];
+        const safeToClear = ['dtp:errors', 'dtp:perf'];
         safeToClear.forEach(k => localStorage.removeItem(k));
       }
     }

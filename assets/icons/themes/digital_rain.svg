@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48">
+  <defs>
+    <filter id="digital-rain-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="64" height="48" fill="#151028" rx="4"/>
+  <g filter="url(#digital-rain-glow)" fill="#fda9ff">
+    <rect x="8" y="5" width="2" height="2" opacity="1"/>
+    <rect x="8" y="9" width="2" height="2" opacity="0.6"/>
+    <rect x="8" y="13" width="2" height="2" opacity="0.3"/>
+    
+    <rect x="20" y="15" width="2" height="2" opacity="0.9"/>
+    <rect x="20" y="19" width="2" height="2" opacity="0.5"/>
+    
+    <rect x="32" y="8" width="2" height="2" opacity="0.8"/>
+    <rect x="32" y="12" width="2" height="2" opacity="0.4"/>
+    <rect x="32" y="16" width="2" height="2" opacity="0.2"/>
+
+    <rect x="44" y="25" width="2" height="2" opacity="1"/>
+    <rect x="44" y="29" width="2" height="2" opacity="0.7"/>
+
+    <rect x="56" y="12" width="2" height="2" opacity="0.9"/>
+    <rect x="56" y="16" width="2" height="2" opacity="0.5"/>
+  </g>
+</svg>

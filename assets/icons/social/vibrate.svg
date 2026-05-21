@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <filter id="glow-vibrate" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="none" stroke="#fda9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-vibrate)">
+    <rect x="5" y="2" width="14" height="20" rx="2"/>
+    <path d="M2 8l1 1M2 12l1 1M2 16l1 1M21 8l1 1M21 12l1 1M21 16l1 1"/>
+  </g>
+</svg>

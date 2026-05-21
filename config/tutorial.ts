@@ -43,4 +43,3 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
-export const MAX_TUTORIAL_GAMES = 3;

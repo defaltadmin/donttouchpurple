@@ -115,6 +115,7 @@ export class TickProcessor {
         }
         ctx.emit({ type: "sound", name: "levelup" });
         ctx.emit({ type: "levelUp", player: (pi + 1) as 1 | 2, stage: ref.gridStage });
+        haptics.levelUp();
       }
       const curStage = ref.gridStage;
       const patIdx = ref.patternIdx;

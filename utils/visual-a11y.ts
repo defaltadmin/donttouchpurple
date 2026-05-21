@@ -2,11 +2,11 @@ import { logger } from './logger';
 
 export const visualA11y = {
   patterns: {
-    purple: 'repeating-linear-gradient(45deg, #8a2be2 0, #8a2be2 4px, transparent 4px, transparent 6px)',
+    purple: 'repeating-linear-gradient(45deg, #fda9ff 0, #fda9ff 4px, transparent 4px, transparent 6px)',
     safe: 'radial-gradient(circle, #4ade80 20%, transparent 20%)',
     danger: 'repeating-conic-gradient(#ef4444 0% 25%, transparent 0% 50%) 0 0 / 10px 10px',
     ice: 'linear-gradient(135deg, rgba(147,197,253,0.4) 25%, transparent 25%) -50% 0, linear-gradient(225deg, rgba(147,197,253,0.4) 25%, transparent 25%) -50% 0, linear-gradient(315deg, rgba(147,197,253,0.4) 25%, transparent 25%), linear-gradient(45deg, rgba(147,197,253,0.4) 25%, transparent 25%)',
-    bomb: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #fbbf24 2px, #fbbf24 4px)',
+    bomb: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #f9bd22 2px, #f9bd22 4px)',
   },
 
   icons: {

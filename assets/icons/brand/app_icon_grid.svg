@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <filter id="glow-app" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="24" height="24" rx="5" fill="#151028" stroke="#fda9ff" stroke-width="1"/>
+  <g filter="url(#glow-app)">
+    <rect x="5" y="5" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="10" y="5" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="15" y="5" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="5" y="10" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="10" y="10" width="4" height="4" rx="1" fill="#c026d3"/>
+    <rect x="15" y="10" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="5" y="15" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="10" y="15" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+    <rect x="15" y="15" width="4" height="4" rx="1" fill="#fff" opacity="0.3"/>
+  </g>
+</svg>

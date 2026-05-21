@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { SHOP_BADGES } from "../../config/powerupWeights";
 import { useTranslation } from "../../hooks/useTranslation";
 import { logger } from "../../utils/logger";
+import { ChampionSpotlight } from "./ChampionSpotlight";
+import { FilterTabs } from "../UI/FilterTabs";
+import { Icon } from "../UI/Icon";
 
 interface LeaderboardEntry {
   score: number;
@@ -38,6 +41,11 @@ export function LeaderboardPanel({
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGlobal, setIsGlobal] = useState(false);
+  const [modeFilter, setModeFilter] = useState<"all" | "classic" | "evolve">("all");
+
+  const filteredEntries = modeFilter === "all"
+    ? entries
+    : entries.filter(e => e.mode === modeFilter);
 
   const fetchScores = useCallback(async () => {
     setLoading(true);
@@ -79,27 +87,55 @@ export function LeaderboardPanel({
   return (
     <div className="lb-wrap screen-slide scrollable-screen">
       <div className="lb-header">
-        <span className="lb-title">🏆 {isGlobal ? t('leaderboard.global') : t('leaderboard.local')} {t('leaderboard.title')}</span>
+        <span className="lb-title"><Icon name="trophy" size={20} /> {isGlobal ? t('leaderboard.global') : t('leaderboard.local')} {t('leaderboard.title')}</span>
         <span className="lb-sub" style={{ fontSize: 10, opacity: 0.55 }}>
           {isGlobal ? `🌐 ${t('leaderboard.live')}` : `📴 ${t('leaderboard.offline')}`}
         </span>
       </div>
 
+      {/* Mode filter tabs */}
+      <div style={{ padding: "0 16px 12px" }}>
+        <FilterTabs
+          options={[
+            { key: "all", label: "All" },
+            { key: "classic", label: "⊞ Classic" },
+            { key: "evolve", label: "∞ Evolve" },
+          ]}
+          active={modeFilter}
+          onChange={(k) => setModeFilter(k as typeof modeFilter)}
+        />
+      </div>
+
       {loading ? (
         <div className="lb-empty" style={{ padding: "32px 0", opacity: 0.6 }}>{t('leaderboard.loading')}</div>
-      ) : entries.length === 0 ? (
+      ) : filteredEntries.length === 0 ? (
         <p className="lb-empty">{t('leaderboard.no_scores')}</p>
       ) : (
         <>
+          {/* Champion spotlight for #1 */}
+          {modeFilter === "all" && entries.length > 0 && (
+            <div style={{ padding: "0 16px 16px" }}>
+              <ChampionSpotlight
+                player={{
+                  name: entries[0].initials,
+                  score: entries[0].score.toLocaleString(),
+                  time: entries[0].date,
+                  rank: 1,
+                  category: entries[0].mode === "evolve" ? "EVOLVE OPERATOR" : "CLASSIC OPERATOR",
+                }}
+              />
+            </div>
+          )}
+
           <div className="lb-list">
-            {entries.map((entry, i) => {
+            {filteredEntries.map((entry, i) => {
               const badgeObj = entry.badge ? SHOP_BADGES.find(b => b.id === entry.badge) : null;
               return (
                 <div
                   key={`${entry.initials}-${entry.score}-${entry.date}-${i}`}
                   className={`lb-row ${i === 0 ? "lb-row--gold" : i === 1 ? "lb-row--silver" : i === 2 ? "lb-row--bronze" : ""}`}
                 >
-                  <span className="lb-rank">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}</span>
+                  <span className="lb-rank">{i === 0 ? <Icon name="star" size={18} /> : i === 1 ? <Icon name="star" size={16} /> : i === 2 ? <Icon name="star" size={14} /> : `#${i + 1}`}</span>
                   <span className="lb-ini">
                     {badgeObj && <span style={{ marginRight: 3 }}>{badgeObj.icon}</span>}
                     {entry.initials}
@@ -109,7 +145,7 @@ export function LeaderboardPanel({
                     className="lb-mode-chip"
                     style={{
                       background: entry.mode === "evolve" ? "rgba(192,38,211,0.18)" : "rgba(96,165,250,0.18)",
-                      color: entry.mode === "evolve" ? "#f0abfc" : "#93c5fd",
+                      color: entry.mode === "evolve" ? "#fda9ff" : "#93c5fd",
                       fontSize: 9, padding: "1px 5px", borderRadius: 4,
                       fontWeight: 800, fontFamily: "var(--font-ui)",
                     }}

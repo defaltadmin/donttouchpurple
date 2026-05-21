@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <filter id="glow-3x3" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="0.8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="#9f8a9d">
+    <rect x="2" y="2" width="5" height="5" rx="1"/>
+    <rect x="9.5" y="2" width="5" height="5" rx="1"/>
+    <rect x="17" y="2" width="5" height="5" rx="1"/>
+    <rect x="2" y="9.5" width="5" height="5" rx="1"/>
+    <rect x="10" y="10" width="4" height="4" rx="1" fill="#fda9ff" filter="url(#glow-3x3)"/>
+    <rect x="17" y="9.5" width="5" height="5" rx="1"/>
+    <rect x="2" y="17" width="5" height="5" rx="1"/>
+    <rect x="9.5" y="17" width="5" height="5" rx="1"/>
+    <rect x="17" y="17" width="5" height="5" rx="1"/>
+  </g>
+</svg>

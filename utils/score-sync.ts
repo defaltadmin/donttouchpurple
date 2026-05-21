@@ -24,7 +24,7 @@ export const scoreSync = {
 
   async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number }): Promise<boolean> {
     try {
-      const res = await fetch('/api/submit-score', {
+      const res = await fetch('https://game.mscarabia.com/api/submit-score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

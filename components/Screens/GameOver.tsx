@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { GameMode, Winner } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { Icon } from "../UI/Icon";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
@@ -32,11 +33,11 @@ function NewBestBanner() {
       style={{
         fontFamily: "var(--font-game)",
         fontSize: 14, letterSpacing: 3, textTransform: "uppercase" as const,
-        background: "linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24)",
+        background: "linear-gradient(90deg, #f9bd22, #f59e0b, #f9bd22)",
         backgroundClip: "text",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
-        filter: "drop-shadow(0 0 12px rgba(251,191,36,0.8))",
+        filter: "drop-shadow(0 0 12px rgba(249,189,34,0.8))",
         animation: "humanLimitPulse 1s ease-in-out infinite, goldShimmer 2s linear infinite",
         backgroundSize: "200% 100%",
       }}
@@ -147,7 +148,7 @@ export function GameOver({
           className="go-small-actions"
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
         >
-          <button className="btn-icon" onClick={onLeaderboard}>🏆</button>
+          <button className="btn-icon" onClick={onLeaderboard}><Icon name="trophy" size={20} /></button>
           <button className="btn-icon" onClick={onMenu}>☰</button>
         </motion.div>
       </motion.div>
@@ -160,7 +161,7 @@ export function GameOver({
               <button className="btn-ghost" onClick={() => {
                 const text = `I just scored ${p1Score} in Don't Touch Purple (${mode})! 🔥\nCan you beat me?\nSeed: ${gameSeed}\nhttps://dont-touch-purple.web.app`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-              }}>📱 WhatsApp</button>
+              }}><Icon name="share" size={16} /> WhatsApp</button>
               <button className="btn-ghost" onClick={() => {
                 const text = `Just dropped ${p1Score} in Don't Touch Purple (${mode.toUpperCase()}) 🔥 Beat my seed? ${gameSeed}\nhttps://dont-touch-purple.web.app`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
@@ -173,7 +174,7 @@ export function GameOver({
                   const ctx = canvas.getContext("2d");
                   if (!ctx) return;
                   const bg = ctx.createLinearGradient(0, 0, W, H);
-                  bg.addColorStop(0, "#0d0820"); bg.addColorStop(1, "#1e0a46");
+                  bg.addColorStop(0, "#151028"); bg.addColorStop(1, "#1e0a46");
                   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
                   const glow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 220);
                   glow.addColorStop(0, "rgba(192,38,211,0.18)"); glow.addColorStop(1, "transparent");

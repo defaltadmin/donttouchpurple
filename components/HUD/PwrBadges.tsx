@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Icon } from "../UI/Icon";
 
 interface PwrBadgesProps {
   shield: boolean;
@@ -35,19 +36,19 @@ export function PwrBadges({
     <div className="pwr-pills">
       {levelUpBadge && (
         <div className="pwr-chip pwr-chip--levelup">
-          <span className="pwr-chip-icon">🔥</span>
+          <span className="pwr-chip-icon"><Icon name="fire" size={16} /></span>
           <span className="pwr-chip-lbl">{levelUpBadge}</span>
         </div>
       )}
       {shield && (
         <div className="pwr-chip pwr-chip--shield">
-          <span className="pwr-chip-icon">◈</span>
+          <span className="pwr-chip-icon"><Icon name="shield" size={16} /></span>
           <span className="pwr-chip-lbl">Shield</span>
         </div>
       )}
       {freezeActive && (
         <div className="pwr-chip pwr-chip--freeze">
-          <span className="pwr-chip-icon">❄</span>
+          <span className="pwr-chip-icon"><Icon name="freeze" size={16} /></span>
           <div className="pwr-chip-bar-track">
             <div className="pwr-chip-bar pwr-chip-bar--freeze" style={{ width: `${freezePct}%` }} />
           </div>
@@ -55,7 +56,7 @@ export function PwrBadges({
       )}
       {multActive && (
         <div className="pwr-chip pwr-chip--mult">
-          <span className="pwr-chip-icon">⚡</span>
+          <span className="pwr-chip-icon"><Icon name="multiplier" size={16} /></span>
           <div className="pwr-chip-bar-track">
             <div className="pwr-chip-bar pwr-chip-bar--mult" style={{ width: `${multPct}%` }} />
           </div>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="comboKingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f9bd22" />
+      <stop offset="100%" stop-color="#fae8ff" />
+    </linearGradient>
+    <filter id="comboKingGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#comboKingGrad)" stroke-width="2" filter="url(#comboKingGlow)">
+    <circle cx="9" cy="15" r="4"/>
+    <circle cx="15" cy="15" r="4"/>
+    <path stroke="none" fill="url(#comboKingGrad)" d="M12 5l-2 2h4l-2-2zm-4 3l1 2h2l1-2-2-1-2 1z"/>
+    <path d="M7 6l2-2 3 2 3-2 2 2h-10z" fill="url(#comboKingGrad)" stroke="none"/>
+  </g>
+</svg>

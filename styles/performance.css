@@ -6,11 +6,6 @@
   transform: translateZ(0);
 }
 
-/* Safe Animation Enforcement (Transform/Opacity ONLY) */
-@keyframes safePulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.03);opacity:0.9} }
-@keyframes safeFade { from{opacity:0} to{opacity:1} }
-@keyframes safeSlide { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
-
 /* Reduced motion — kill decorative animations, preserve functional transitions */
 @media (prefers-reduced-motion: reduce) {
   /* Kill decorative/looping animations */

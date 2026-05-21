@@ -1,9 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { logger } from './logger';
+import { shouldSkipFrame } from './fpsCap';
 
 export function useSafeRaf(callback: (time: number) => void) {
   const rafRef = useRef<number>();
   const callbackRef = useRef(callback);
+  const frameCountRef = useRef(0);
 
   // ✅ FIX: Update callback ref safely
   useEffect(() => {
@@ -16,7 +18,11 @@ export function useSafeRaf(callback: (time: number) => void) {
     if (!rafRef.current) {
       // Define the loop function once, using callbackRef for the callback
       const loop = (time: number) => {
-        callbackRef.current(time);
+        frameCountRef.current++;
+        const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+        if (!shouldSkipFrame(frameCountRef.current, reducedMotion)) {
+          callbackRef.current(time);
+        }
         rafRef.current = requestAnimationFrame(loopRef.current!);
       };
       loopRef.current = loop;

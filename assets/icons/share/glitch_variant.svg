@@ -1,0 +1,53 @@
+<svg width="360" height="640" viewBox="0 0 360 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glitch-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="cyan-blur"/>
+      <feOffset in="cyan-blur" dx="-2" result="cyan-offset"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0  1 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="magenta-blur"/>
+      <feOffset in="magenta-blur" dx="2" result="magenta-offset"/>
+      <feMerge>
+        <feMergeNode in="cyan-offset"/>
+        <feMergeNode in="magenta-offset"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark Background -->
+  <rect width="360" height="640" fill="#0f0a22" />
+  
+  <!-- High Density Glitch Grid -->
+  <g opacity="0.2">
+    <path d="M0 100 H360 M0 200 H360 M0 300 H360 M0 400 H360 M0 500 H360" stroke="#c026d3" stroke-width="0.5"/>
+    <path d="M60 0 V640 M120 0 V640 M180 0 V640 M240 0 V640 M300 0 V640" stroke="#fda9ff" stroke-width="0.5"/>
+    <!-- Distorted Grid segments -->
+    <path d="M180 0 V100 M182 100 V200 M178 200 V300" stroke="#fda9ff" stroke-width="2" filter="url(#glitch-glow)"/>
+  </g>
+
+  <!-- Content Card Shell -->
+  <rect x="20" y="20" width="320" height="600" rx="4" fill="#211c35" fill-opacity="0.8" stroke="#c026d3" stroke-width="2" />
+
+  <!-- Score Section -->
+  <g transform="translate(180, 160)">
+    <text font-family="Fredoka One, sans-serif" font-size="14" fill="#fda9ff" text-anchor="middle" filter="url(#glitch-glow)">CRITICAL SYSTEM SCORE</text>
+    <text y="80" font-family="Fredoka One, sans-serif" font-size="80" fill="#ffffff" text-anchor="middle" filter="url(#glitch-glow)">2,490,120</text>
+    <rect y="100" x="-100" width="200" height="2" fill="#c026d3" />
+  </g>
+
+  <!-- Data Stream -->
+  <g transform="translate(40, 320)">
+    <text font-family="Nunito, sans-serif" font-size="14" fill="#ffffff">PLAYER: NEON_STALKER</text>
+    <text y="30" font-family="Nunito, sans-serif" font-size="14" fill="#ffffff">MODE: EVOLVE [STAGE MAX]</text>
+    <text y="60" font-family="Nunito, sans-serif" font-size="14" fill="#ffffff">STREAK: 482x</text>
+  </g>
+
+  <!-- Large Grid Visual -->
+  <g transform="translate(40, 430)">
+    <rect width="280" height="120" fill="#151028" rx="4" />
+    <!-- Pulse Line -->
+    <path d="M0 60 Q 70 20 140 60 T 280 60" fill="none" stroke="#fda9ff" stroke-width="3" filter="url(#glitch-glow)" />
+  </g>
+
+  <text x="180" y="600" font-family="Fredoka One, sans-serif" font-size="16" fill="#c026d3" text-anchor="middle">SYSTEM BREACH DETECTED</text>
+</svg>

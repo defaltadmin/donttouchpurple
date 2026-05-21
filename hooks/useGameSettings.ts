@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { setAudioMuted, setAudioVolume, setHapticsEnabled, playVolumeChime } from "./useGameEngine";
 import { fbLogEvent } from "../services/firebase";
 
@@ -12,6 +12,14 @@ export function useGameSettings() {
   const [haptics, setHapticsState] = useState(() => {
     try { return localStorage.getItem("dtp_haptics") !== "false"; } catch { return true; }
   });
+
+  // Sync persisted haptics setting to audio + engine on mount
+  useEffect(() => {
+    setHapticsEnabled(haptics);
+    setAudioMuted(muted);
+    setAudioVolume(volume);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [screenShake, setScreenShake] = useState(() => {
     try { return localStorage.getItem("dtp_screen_shake") !== "false"; } catch { return true; }
   });

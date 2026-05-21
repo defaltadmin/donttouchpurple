@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="untouchableGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <filter id="untouchableGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="url(#untouchableGrad)" filter="url(#untouchableGlow)">
+    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z"/>
+    <path fill="#151028" d="M10 12l2 2 4-4-1.5-1.5L12 11l-1.5-1.5L9 11z" opacity="0.9"/>
+    <path fill="white" d="M17 4l1 1M19 3l-1 1M21 5l-1-1" opacity="0.6"/>
+  </g>
+</svg>

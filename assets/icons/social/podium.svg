@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <filter id="glow-podium" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="#fda9ff" filter="url(#glow-podium)">
+    <rect x="2" y="12" width="6" height="8" rx="1" opacity="0.6"/>
+    <rect x="9" y="8" width="6" height="12" rx="1"/>
+    <rect x="16" y="14" width="6" height="6" rx="1" opacity="0.4"/>
+  </g>
+</svg>

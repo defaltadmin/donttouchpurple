@@ -56,4 +56,3 @@ export const BALANCE = {
   },
 } as const;
 
-export type BalanceConfig = typeof BALANCE;

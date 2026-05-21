@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import "./styles/game.css";
 import "./styles/enhancements.css";
+import "./styles/dtp-components.css";
 import { logger } from "./utils/logger";
+import { Icon } from "./components/UI/Icon";
+import type { IconName } from "./components/UI/Icon";
 import { settingsManager } from "./utils/settings";
 import { audioEngine } from "./utils/audio";
 import { i18n, type Locale } from "./utils/i18n";
@@ -35,7 +38,7 @@ import { useGameSettings } from "./hooks/useGameSettings";
 import { useDustEconomy } from "./hooks/useDustEconomy";
 import { useUIFlags } from "./hooks/useUIFlags";
 import { useInputHandler } from "./hooks/useInputHandler";
-import type { GameConfig as EngineGameConfig, Winner, PlayerState, HoldCell } from "./engine/types";
+import type { GameConfig as EngineGameConfig, GameSnapshot, Winner, PlayerState, HoldCell } from "./engine/types";
 
 // Components - HUD
 import { EnergyBar } from "./components/HUD/EnergyBar";
@@ -147,6 +150,13 @@ export default function App() {
   const [gamepadActive, setGamepadActive] = useState(false);
   interface AchievementToast { id: string; icon: string; name: string; desc: string; }
   const [achievementQueue, setAchievementQueue] = useState<AchievementToast[]>([]);
+
+  // Map emoji icons from engine to SVG Icon names
+  const ACHIEVEMENT_ICON_MAP: Record<string, IconName> = {
+    '⭐': 'star',
+    '🏆': 'trophy',
+    '🔥': 'fire',
+  };
   const [, setDailyComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setCombo] = useState({ count: 0, multiplier: 1 });
@@ -191,20 +201,6 @@ export default function App() {
     // 3. Configure asset tiers
     const h = hydrator.current;
     h.setProgress((pct: number, tier: AssetTier) => setLoadPct(prev => ({ ...prev, [tier]: pct })));
-
-    // CRITICAL (blocks UI)
-    // h.add('/sfx/tick.mp3', 'critical', 'audio');
-    // h.add('/sfx/damage.mp3', 'critical', 'audio');
-    // h.add('/themes/default-purple.json', 'critical', 'json');
-
-    // DEFERRED (loads after menu shows)
-    // h.add('/themes/shop-theme-1.json', 'deferred', 'json');
-    // h.add('/themes/shop-theme-2.json', 'deferred', 'json');
-
-    // BACKGROUND (loads during gameplay/idle)
-    // h.add('/sfx/boss-intro.mp3', 'background', 'audio');
-    // h.add('/sfx/shield-break.mp3', 'background', 'audio');
-    // h.add('/bg/ambient-loop.mp3', 'background', 'audio');
 
     h.hydrateAll();
   }, []);
@@ -254,6 +250,7 @@ export default function App() {
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
   const [practiceMode, setPracticeMode] = useState(false);
   const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion } = useGameSettings();
+  const isTouchDevice = !(window.matchMedia?.("(pointer: fine)")?.matches);
   const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
@@ -413,7 +410,8 @@ export default function App() {
     getDust: () => dustRef.current,
     spendDust,
     getAccuracy: getBotAccuracy,
-  }), [spendDust, getBotAccuracy, dustRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dustRef is a stable ref, not a reactive dep
+  }), [spendDust, getBotAccuracy]);
 
   const engineConfig: EngineGameConfig = React.useMemo(() => ({
     mode: gameMode,
@@ -761,7 +759,7 @@ export default function App() {
     };
   }, [handleFirstInteraction]);
 
-  const snapshotRef = useRef(snapshot);
+  const snapshotRef = useRef<GameSnapshot | null>(snapshot);
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
   useEffect(() => {
     if (!snapshot) return;
@@ -838,7 +836,7 @@ export default function App() {
       document.documentElement.style.setProperty('--motion-scale', e.matches ? '0' : '1');
       document.documentElement.style.setProperty('--particles-enabled', e.matches ? '0' : '1');
     };
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     document.documentElement.style.setProperty('--motion-scale', prefersReduced.matches ? '0' : '1');
     document.documentElement.style.setProperty('--particles-enabled', prefersReduced.matches ? '0' : '1');
     prefersReduced.addEventListener('change', handleMotionPref);
@@ -1155,14 +1153,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      }, { once: true });
-    }
-  }, []);
-
-  useEffect(() => {
     const unsub = gamepadManager.on((btn, state) => {
       if (state === 'press') setGamepadActive(true);
     });
@@ -1300,7 +1290,7 @@ export default function App() {
     setIE(false);
     setShareMsg("");
     // Clear snapshot so rare badge and other game-specific UI don't persist on menu
-    snapshotRef.current = null as unknown as typeof snapshotRef.current;
+    snapshotRef.current = null;
   }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
@@ -1462,10 +1452,10 @@ export default function App() {
         </Suspense>
       )}
 
-      {/* Mouse Follower Blob - adds glassmorphism feel */}
-      <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={30} opacity={0.5} delay={0.12} />
-      {/* Mouse Trail - subtle particle effect on all screens */}
-      {(() => {
+      {/* Mouse Follower Blob - adds glassmorphism feel (desktop only) */}
+      {!isTouchDevice && <MouseFollower color="rgba(138, 43, 226, 0.35)" size={280} blur={30} opacity={0.5} delay={0.12} />}
+      {/* Mouse Trail - subtle particle effect on all screens (desktop only) */}
+      {!isTouchDevice && (() => {
         const trailCfg = SHOP_TRAILS.find(t => t.id === shopData.equippedTrail)?.config;
         return trailCfg ? (
           <MouseTrail enabled={!reducedMotion} {...trailCfg} />
@@ -1869,9 +1859,13 @@ export default function App() {
         <div className="dtp-toast-stack" aria-live="polite">
           {achievementQueue.map((a, i) => (
             <div key={a.id} className="dtp-toast-achievement" style={{ animationDelay: `${i * 0.1}s` }}>
-              <span className="dtp-toast-icon">{a.icon}</span>
+              <span className="dtp-toast-icon">
+                {ACHIEVEMENT_ICON_MAP[a.icon]
+                  ? <Icon name={ACHIEVEMENT_ICON_MAP[a.icon]} size={24} />
+                  : a.icon}
+              </span>
               <div className="dtp-toast-content">
-                <strong>🏆 {a.name}</strong>
+                <strong><Icon name="trophy" size={16} /> {a.name}</strong>
                 <small>{a.desc}</small>
               </div>
             </div>

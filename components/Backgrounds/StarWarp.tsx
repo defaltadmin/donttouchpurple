@@ -62,14 +62,10 @@ export default function StarWarp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<WarpShape[]>([]);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const frameSkipRef = useRef(0);
   const { register } = useBackgroundController(true);
 
   const { start, stop } = useSafeRaf(() => {
-    // Cap at 30fps when reduced motion is preferred
-    frameSkipRef.current++;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion && frameSkipRef.current % 2 !== 0) return;
+    // FPS cap handled by useSafeRaf (reduced motion, low battery, background)
     const ctx = ctxRef.current;
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;

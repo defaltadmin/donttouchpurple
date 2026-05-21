@@ -13,7 +13,7 @@ function getDynamicCellVar(cols: number, rows: number, is2P: boolean, mode?: str
   const maxDim = Math.max(cols, rows);
   if (is2P) {
     if (mode === "classic") return "clamp(62px, 18vw, 90px)";
-    return "clamp(38px, 9vw, 56px)";
+    return "clamp(48px, 9vw, 56px)";
   }
   if (maxDim <= 2) return "clamp(100px, 28vw, 140px)";
   if (maxDim <= 3) return "clamp(80px, 22vw, 110px)";

@@ -42,14 +42,6 @@ export function getNextBossTriggerScore(current: number): number {
   return current + 500;
 }
 
-export function shouldTriggerBossEvent(
-  score: number,
-  nextTriggerScore: number,
-  activeBoss: boolean
-): boolean {
-  return score >= nextTriggerScore && !activeBoss;
-}
-
 export function shouldTriggerShieldBoss(
   score: number,
   bossActive: boolean,

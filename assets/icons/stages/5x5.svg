@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="grad-5x5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fda9ff" />
+      <stop offset="100%" stop-color="#9f8a9d" />
+    </linearGradient>
+    <filter id="glow-5x5" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="0.4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g filter="url(#glow-5x5)">
+    <rect x="2" y="2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="6.2" y="2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="10.4" y="2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="14.6" y="2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="18.8" y="2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    
+    <rect x="2" y="6.2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="6.2" y="6.2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="10.4" y="6.2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="14.6" y="6.2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="18.8" y="6.2" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+
+    <rect x="2" y="10.4" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="6.2" y="10.4" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="10.4" y="10.4" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="14.6" y="10.4" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="18.8" y="10.4" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+
+    <rect x="2" y="14.6" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="6.2" y="14.6" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="10.4" y="14.6" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="14.6" y="14.6" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="18.8" y="14.6" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+
+    <rect x="2" y="18.8" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="6.2" y="18.8" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="10.4" y="18.8" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="14.6" y="18.8" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+    <rect x="18.8" y="18.8" width="3.2" height="3.2" rx="0.5" fill="url(#grad-5x5)"/>
+  </g>
+</svg>

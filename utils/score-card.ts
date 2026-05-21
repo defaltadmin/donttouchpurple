@@ -8,10 +8,10 @@ export const scoreCardGen = {
 
     canvas.width = 1080; canvas.height = 1920;
 
-    ctx.fillStyle = theme.bg || '#0a0a14';
+    ctx.fillStyle = theme.bg || '#151028';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = theme.primary || '#8a2be2';
+    ctx.strokeStyle = theme.primary || '#fda9ff';
     ctx.lineWidth = 8;
     ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
@@ -21,7 +21,7 @@ export const scoreCardGen = {
     ctx.fillText("DON'T TOUCH PURPLE", canvas.width / 2, 250);
 
     ctx.font = 'bold 200px system-ui';
-    ctx.fillStyle = theme.accent || '#fbbf24';
+    ctx.fillStyle = theme.accent || '#f9bd22';
     ctx.fillText(data.score.toLocaleString(), canvas.width / 2, 650);
 
     ctx.font = '80px system-ui';

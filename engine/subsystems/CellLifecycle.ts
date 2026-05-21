@@ -8,7 +8,7 @@ const SAFE: CellType[] = [
   "green","cyan","lime","teal","pink","rose","magenta",
 ];
 
-export function randCell(rng: () => number, tick = 0, isClassic = false): CellType {
+function randCell(rng: () => number, tick = 0, isClassic = false): CellType {
   const purpleChance = isClassic
     ? Math.min(0.42, 0.22 + Math.floor(tick / 20) * 0.02)
     : 0.22;

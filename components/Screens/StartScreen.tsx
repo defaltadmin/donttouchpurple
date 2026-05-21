@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
 import { useTranslation } from "../../hooks/useTranslation";
+import { Icon } from "../UI/Icon";
+import { ParticleLayer } from "../Layout/ParticleLayer";
 
 // ─── Types local to menu ──────────────────────────────────────────
 type InputMode = "touch" | "keyboard";
@@ -69,10 +71,10 @@ function MagneticButton({ children, onClick, className = "", disabled = false }:
 
   useEffect(() => {
     // Check if device has fine pointer (mouse) vs coarse (touch)
-    isFinePointer.current = window.matchMedia("(pointer: fine)").matches;
-    const mq = window.matchMedia("(pointer: fine)");
+    isFinePointer.current = window.matchMedia?.("(pointer: fine)")?.matches ?? false;
+    const mq = window.matchMedia?.("(pointer: fine)");
     const handleMediaChange = (e: MediaQueryListEvent) => { isFinePointer.current = e.matches; };
-    mq.addEventListener("change", handleMediaChange);
+    mq?.addEventListener("change", handleMediaChange);
 
     const btn = btnRef.current;
     if (!btn) return;
@@ -117,7 +119,7 @@ function MagneticButton({ children, onClick, className = "", disabled = false }:
       window.removeEventListener("mousemove", handleMove);
       btn.removeEventListener("mouseleave", handleLeave);
       btn.removeEventListener("touchstart", handleTouchStart);
-      mq.removeEventListener("change", handleMediaChange);
+      mq?.removeEventListener("change", handleMediaChange);
     };
   }, []);
 
@@ -277,7 +279,9 @@ export function StartScreen({
   }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame, setGameMode, setInputMode, setNumPlayers]);
 
   return (
-    <div className="menu-card screen-slide" role="main" aria-label="Game menu">
+    <>
+      <ParticleLayer count={25} />
+      <div className="menu-card screen-slide" role="main" aria-label="Game menu">
       {pendingReplaySeed && (
         <div className="replay-banner">
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
@@ -354,10 +358,10 @@ export function StartScreen({
       )}
 
       <div className="menu-links">
-        <button className="btn-icon-sm" onClick={onHowTo} title={t('menu.how_to_play')}>❓</button>
-        <button className="btn-icon-sm" onClick={onShop} title={t('menu.shop')}>🛒</button>
-        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title={t('menu.leaderboard')}>🏆</button>
-        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')}>🎁</button>
+        <button className="btn-icon-sm" onClick={onHowTo} title={t('menu.how_to_play')}><Icon name="info" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onShop} title={t('menu.shop')}><Icon name="bolt" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title={t('menu.leaderboard')}><Icon name="trophy" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')}><Icon name="star" size={20} /></button>
         {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title={t('menu.keys')}>⌨</button>}
       </div>
 
@@ -368,5 +372,6 @@ export function StartScreen({
         {resumeReady ? ' Press R to resume saved game.' : ''}
       </div>
     </div>
+    </>
   );
 }

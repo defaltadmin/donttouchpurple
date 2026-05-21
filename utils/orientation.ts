@@ -12,13 +12,13 @@ export const orientationMonitor = {
     this._initialized = true;
 
     const check = () => {
-      this.isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      this.isLandscape = window.matchMedia?.('(orientation: landscape)')?.matches ?? false;
       this._listeners.forEach(cb => cb(this.isLandscape));
       logger.debug('Orientation changed', this.isLandscape ? 'Landscape' : 'Portrait');
     };
     this._handler = check;
-    this._mql = window.matchMedia('(orientation: landscape)');
-    this._mql.addEventListener('change', check);
+    this._mql = window.matchMedia?.('(orientation: landscape)') ?? null;
+    this._mql?.addEventListener('change', check);
     check();
   },
 

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Don't Touch Purple - The Ultimate Arcade Challenge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&amp;family=Nunito:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#261a00",
+                      "error-container": "#93000a",
+                      "on-surface-variant": "#d7c0d3",
+                      "surface-container-low": "#1d1830",
+                      "surface-variant": "#36314b",
+                      "on-tertiary": "#402d00",
+                      "inverse-surface": "#e7deff",
+                      "tertiary-fixed-dim": "#f9bd22",
+                      "secondary-container": "#6a3178",
+                      "surface-container-highest": "#36314b",
+                      "secondary-fixed-dim": "#f3aeff",
+                      "on-background": "#e7deff",
+                      "primary": "#fda9ff",
+                      "surface-container-high": "#2c2640",
+                      "on-secondary-fixed-variant": "#682f76",
+                      "on-primary-container": "#fffafa",
+                      "on-primary-fixed": "#36003d",
+                      "surface-dim": "#151028",
+                      "on-surface": "#e7deff",
+                      "surface-tint": "#fda9ff",
+                      "outline": "#9f8a9d",
+                      "on-tertiary-container": "#fffaf6",
+                      "on-secondary": "#4e155d",
+                      "surface": "#151028",
+                      "inverse-primary": "#a400b7",
+                      "inverse-on-surface": "#322d47",
+                      "primary-container": "#c026d3",
+                      "on-primary-fixed-variant": "#7d008c",
+                      "outline-variant": "#524151",
+                      "tertiary-fixed": "#ffdf9f",
+                      "surface-container-lowest": "#0f0a22",
+                      "primary-fixed-dim": "#fda9ff",
+                      "background": "#151028",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "secondary": "#f3aeff",
+                      "secondary-fixed": "#fcd6ff",
+                      "primary-fixed": "#ffd6fb",
+                      "on-secondary-fixed": "#340042",
+                      "surface-bright": "#3b3650",
+                      "on-tertiary-fixed-variant": "#5c4300",
+                      "tertiary-container": "#936d00",
+                      "tertiary": "#f9bd22",
+                      "surface-container": "#211c35",
+                      "on-secondary-container": "#e4a0f0",
+                      "on-primary": "#580063",
+                      "on-error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "20px",
+                      "xxl": "24px",
+                      "lg": "16px",
+                      "margin-mobile": "10px",
+                      "xs": "4px",
+                      "gutter": "8px",
+                      "unit": "4px",
+                      "md": "12px",
+                      "margin-desktop": "24px",
+                      "sm": "8px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Nunito"],
+                      "headline-lg-mobile": ["Fredoka One"],
+                      "headline-md": ["Fredoka One"],
+                      "body-bold": ["Nunito"],
+                      "headline-lg": ["Fredoka One"],
+                      "display-lg": ["Fredoka One"],
+                      "body-base": ["Nunito"]
+              },
+              "fontSize": {
+                      "label-caps": ["10px", {"lineHeight": "12px", "letterSpacing": "0.15em", "fontWeight": "900"}],
+                      "headline-lg-mobile": ["32px", {"lineHeight": "36px", "fontWeight": "900"}],
+                      "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                      "body-bold": ["15px", {"lineHeight": "22px", "fontWeight": "800"}],
+                      "headline-lg": ["42px", {"lineHeight": "44px", "letterSpacing": "0.01em", "fontWeight": "900"}],
+                      "display-lg": ["76px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                      "body-base": ["15px", {"lineHeight": "22px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+        .3d-button {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .3d-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 transparent !important;
+        }
+        .shimmer-sweep {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer-sweep::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 20%, rgba(255,255,255,0.2) 50%, transparent 80%);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+        .hazard-glow {
+            box-shadow: 0 0 20px rgba(192, 38, 211, 0.6);
+        }
+        .safe-glow {
+            box-shadow: 0 0 20px rgba(253, 169, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-container selection:text-white">
+<!-- TopNavBar -->
+<header class="bg-surface/80 backdrop-blur-xl dark:bg-surface/80 docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<nav class="flex justify-between items-center px-margin-desktop py-md max-w-7xl mx-auto w-full">
+<div class="font-headline-md text-headline-md font-black tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(253,169,255,0.6)]">
+                Don't Touch Purple
+            </div>
+<!-- Desktop Links -->
+<div class="hidden md:flex items-center gap-xl">
+<a class="font-body-base text-body-base text-on-surface-variant hover:text-on-surface transition-colors duration-300 hover:scale-105 hover:text-primary transition-all duration-200" href="#">How to Play</a>
+<a class="font-body-base text-body-base text-on-surface-variant hover:text-on-surface transition-colors duration-300 hover:scale-105 hover:text-primary transition-all duration-200" href="#">Leaderboard</a>
+<a class="font-body-base text-body-base text-on-surface-variant hover:text-on-surface transition-colors duration-300 hover:scale-105 hover:text-primary transition-all duration-200" href="#">Shop</a>
+<a class="font-body-base text-body-base text-on-surface-variant hover:text-on-surface transition-colors duration-300 hover:scale-105 hover:text-primary transition-all duration-200" href="#">News</a>
+</div>
+<button class="font-body-base text-body-base bg-primary-container text-on-primary-container px-lg py-sm rounded-lg font-bold 3d-button shadow-[0_4px_0_#7d008c] shimmer-sweep">
+                Play Now
+            </button>
+</nav>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative min-h-[921px] flex items-center justify-center overflow-hidden px-margin-mobile md:px-margin-desktop">
+<!-- Atmospheric BG Effect -->
+<div class="absolute inset-0 z-0">
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-container/20 rounded-full blur-[120px] animate-pulse"></div>
+<div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-secondary-container/10 rounded-full blur-[150px]"></div>
+</div>
+<div class="relative z-10 text-center max-w-4xl mx-auto">
+<h1 class="font-display-lg text-display-lg md:text-[96px] text-white tracking-tighter leading-none mb-lg drop-shadow-[0_10px_20px_rgba(192,38,211,0.5)]">
+                    DON'T TOUCH <span class="text-primary-container italic hazard-glow">PURPLE</span>
+</h1>
+<p class="font-headline-md text-headline-md text-on-surface-variant mb-xxl max-w-2xl mx-auto opacity-90">
+                    A high-stakes arcade experience where speed is everything and <span class="text-primary underline decoration-2">purple is the enemy</span>.
+                </p>
+<div class="flex flex-col sm:flex-row gap-lg justify-center items-center">
+<button class="w-full sm:w-auto font-headline-md text-headline-md bg-primary-container text-on-primary-container px-xxl py-lg rounded-xl font-black 3d-button shadow-[0_8px_0_#7d008c] shimmer-sweep uppercase">
+                        Start Game
+                    </button>
+<button class="w-full sm:w-auto font-headline-md text-headline-md glass-panel text-primary px-xxl py-lg rounded-xl font-bold 3d-button shadow-[0_8px_0_rgba(253,169,255,0.2)] hover:bg-white/10">
+                        View Tutorial
+                    </button>
+</div>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute bottom-10 left-10 hidden lg:block animate-bounce">
+<span class="material-symbols-outlined text-[64px] text-primary/30">keyboard_double_arrow_down</span>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="py-xxl px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-white mb-xxl text-center">SYSTEM UPGRADES</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Card 1 -->
+<div class="glass-panel p-xxl rounded-xl group hover:border-primary/50 transition-all duration-500 hover:-translate-y-2">
+<div class="w-16 h-16 bg-primary-container/20 rounded-lg flex items-center justify-center mb-lg hazard-glow group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[32px]">bolt</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-md">Insane Speed</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">Frame-perfect response times required. As you climb, the velocity triples. Can you keep up with the lightspeed shift?</p>
+</div>
+<!-- Card 2 -->
+<div class="glass-panel p-xxl rounded-xl group hover:border-secondary/50 transition-all duration-500 hover:-translate-y-2">
+<div class="w-16 h-16 bg-secondary-container/20 rounded-lg flex items-center justify-center mb-lg safe-glow group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-secondary text-[32px]">leaderboard</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-secondary mb-md">Global Leaderboards</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">Battle against the world's elite. Only the top 0.1% earn the "Void Walker" badge and exclusive neon skins.</p>
+</div>
+<!-- Card 3 -->
+<div class="glass-panel p-xxl rounded-xl group hover:border-tertiary/50 transition-all duration-500 hover:-translate-y-2">
+<div class="w-16 h-16 bg-tertiary-container/20 rounded-lg flex items-center justify-center mb-lg group-hover:scale-110 transition-transform" style="box-shadow: 0 0 20px rgba(249, 189, 34, 0.3);">
+<span class="material-symbols-outlined text-tertiary text-[32px]">palette</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-tertiary mb-md">Neon Aesthetics</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">Stunning synthwave visuals with reactive audio that pulses to your heartbeat. Pure digital adrenaline.</p>
+</div>
+</div>
+</section>
+<!-- Leaderboard Table -->
+<section class="py-xxl px-margin-mobile md:px-margin-desktop bg-surface-container-lowest/50">
+<div class="max-w-4xl mx-auto">
+<div class="text-center mb-xxl">
+<h2 class="font-headline-lg text-headline-lg text-white">TOP OPERATORS</h2>
+<p class="font-body-base text-body-base text-on-surface-variant uppercase tracking-widest mt-xs">Live Feed: Session 094</p>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white/5 font-label-caps text-label-caps text-on-surface-variant border-b border-white/10">
+<th class="p-lg">RANK</th>
+<th class="p-lg">PLAYER</th>
+<th class="p-lg">SURVIVAL TIME</th>
+<th class="p-lg text-right">SCORE</th>
+</tr>
+</thead>
+<tbody class="font-body-bold text-body-bold">
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors group">
+<td class="p-lg text-tertiary">#01</td>
+<td class="p-lg flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-tertiary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+                                    NEON_STALKER
+                                </td>
+<td class="p-lg text-on-surface-variant">42:15.02</td>
+<td class="p-lg text-right text-primary">992,400</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="p-lg text-on-surface-variant">#02</td>
+<td class="p-lg flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"></div>
+                                    VOID_RUNNER
+                                </td>
+<td class="p-lg text-on-surface-variant">38:02.11</td>
+<td class="p-lg text-right text-primary">875,120</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="p-lg text-on-surface-variant">#03</td>
+<td class="p-lg flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"></div>
+                                    PURPLE_HATER_99
+                                </td>
+<td class="p-lg text-on-surface-variant">35:55.90</td>
+<td class="p-lg text-right text-primary">812,005</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-lg text-on-surface-variant">#04</td>
+<td class="p-lg flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"></div>
+                                    CYBER_GHOST
+                                </td>
+<td class="p-lg text-on-surface-variant">31:12.45</td>
+<td class="p-lg text-right text-primary">745,880</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- News Section -->
+<section class="py-xxl px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-xxl">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white">TRANSMISSIONS</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Latest updates from the development core.</p>
+</div>
+<button class="font-body-bold text-body-bold text-primary hover:underline flex items-center gap-xs">
+                    View All Archives <span class="material-symbols-outlined">trending_flat</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- News 1 -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col hover:border-primary/40 transition-all">
+<img alt="Update 1.4" class="w-full h-40 object-cover opacity-80" data-alt="A macro shot of a sleek futuristic computer hardware interface with glowing neon purple fiber optic cables and circuit patterns. The aesthetic is deep dark tech-noir with electric magenta highlights and soft bokeh reflections of light. The atmosphere is high-tech and energetic with a sense of immense processing power." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB_4faHjAF2ryiCoOpCgXOsh6DVOpAnhoMiLwR10FaZ214EqZVfKIER2yjWRgseMjq25kqM6eLNsjgj_gJlli2UN9_2LYUKs6Urm1fpMQOeUrNdRjpeZIFyjpiYL8xLx5S5WxSEGundRy5ScOYqomuzLIWQkWgzoHY_Rk_-Wc09qO668yKUdedXB3niK-ohuOaeoudAbZRVx5cMz1OoZ2xdLIH-2V5uEKz4goKkvlvTUDCgk6Hv7AYb2xc7ULQ0y16YilxHZYJMk5t"/>
+<div class="p-lg">
+<span class="font-label-caps text-label-caps text-primary mb-xs block">PATCH 1.4.0</span>
+<h4 class="font-headline-md text-[18px] text-white leading-tight mb-md">THE FROZEN CORE EXPANSION</h4>
+<p class="font-body-base text-body-base text-on-surface-variant text-sm line-clamp-2">Introducing the new Ice Cells. Movement is slippery, but the points are double. Watch out for the purple cracks.</p>
+</div>
+</div>
+<!-- News 2 -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col hover:border-secondary/40 transition-all">
+<img alt="Retro Arcade" class="w-full h-40 object-cover opacity-80" data-alt="A vintage arcade cabinet glowing intensely in a dark room filled with purple and cyan haze. The screen displays abstract geometric patterns in high-contrast neon colors. Soft blue lighting illuminates the surrounding retro hardware, creating a nostalgic yet futuristic cyberpunk gaming environment with heavy atmospheric blur." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD27X7Fiz-_zY_xm_BXlJR-cq9XPqj94vJC3u2IhPgviEx3SR5kXI3qWM4lOkxkyDtXB-vYNutRqZImGb3J4HbpGQa8oYanwPJbv-lFpbtRYqadwpRDBwNayM8b6KojKZvf3zZ5H-fD1KQsHjQMmOYZlFGEz9Ml3sueipLu4zBn5_FOxHQ4SnwzTmPmlY2tqodnEkm2QERrXGLLng5x5Gytyv1VIgH-fu1IUUai0Wo2HzHonE1f-U8W4m2trjCWWlXKtg2toajIy3R"/>
+<div class="p-lg">
+<span class="font-label-caps text-label-caps text-secondary mb-xs block">COMMUNITY</span>
+<h4 class="font-headline-md text-[18px] text-white leading-tight mb-md">WORLD CHAMPIONSHIP ANNOUNCED</h4>
+<p class="font-body-base text-body-base text-on-surface-variant text-sm line-clamp-2">Qualifiers begin next month in the Tokyo Digital District. Prize pool includes 5 BTC and unique hardware.</p>
+</div>
+</div>
+<!-- News 3 -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col hover:border-tertiary/40 transition-all">
+<img alt="Code Grid" class="w-full h-40 object-cover opacity-80" data-alt="A dense digital grid of floating code and data streams flowing through a dark 3D void. The primary colors are electric violet and soft gold. The lighting is moody and cinematic with sharp glowing lines and floating particulate effects. The overall style is sophisticated abstract data visualization in a high-speed digital space." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQHLbNXrBqYhzynr0rIgIFu9pn0Xsj4dFsvV5BUuZEyXrjFJX8fZmjWn4GyfrhC8U9ACvqmI1VG2pvL5zhhiM7QZQAO1Yb3OOR4NHcCbZE-ccj1ZANvEVEMZ70cYn6bKwlRp_RCodgvSlmF7qJCDYgZtgjlI_qrIuVGw4LpPdy5oG6Vf1oZbdXAOsmA35o5JN5qOqCir9RDGHePHKVqHuYZO3Z_uJ9FhzOYApwC3HYqH8HEG7AEapbBeCCQue8Ou8n8L9pn7itTWiq"/>
+<div class="p-lg">
+<span class="font-label-caps text-label-caps text-tertiary mb-xs block">DEV LOG</span>
+<h4 class="font-headline-md text-[18px] text-white leading-tight mb-md">HAPTIC FEEDBACK OVERHAUL</h4>
+<p class="font-body-base text-body-base text-on-surface-variant text-sm line-clamp-2">Feel the purple. New controller integration brings physical vibration to every near-miss and hazard touch.</p>
+</div>
+</div>
+<!-- News 4 -->
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col hover:border-primary/40 transition-all">
+<img alt="Nebula" class="w-full h-40 object-cover opacity-80" data-alt="A breathtaking cosmic nebula in deep space dominated by vibrant magenta and royal purple clouds. Countless tiny white stars twinkle through the translucent gas layers. The lighting is ethereal and grand, creating a sense of infinite scale and moody cosmic energy within a dark, cold digital universe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADrMYdD9hkVqWYt8sPH5aDWYI3bI0A3-XrWKVMiOFPAGrjbsL-Mb1am8OeRCUE32VnyB9NS5iLDJZvBO7r0_DXtIV6LC8uzntaXqP_TqG6ndsRDldCbMZHp34LBPeyyMGjnGES3kByqBIMeCFltLYimrhvbWagaxxy7_DSMU87s7vSQcl2no3OaAQ2hLsGCnWv6lelOBtZoLdIhWltaDjCn07Asj-87RT1xhVA5mvbNBkSSw0N575sTpZlT7de0-jURAG_pHNCHMPm"/>
+<div class="p-lg">
+<span class="font-label-caps text-label-caps text-primary mb-xs block">STORE</span>
+<h4 class="font-headline-md text-[18px] text-white leading-tight mb-md">COSMIC SKIN BUNDLE</h4>
+<p class="font-body-base text-body-base text-on-surface-variant text-sm line-clamp-2">The Nebula collection is here. Transform your avatar into a literal star-cluster. Limited time availability.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-xxl px-margin-mobile md:px-margin-desktop mb-xxl">
+<div class="max-w-5xl mx-auto glass-panel p-xxl rounded-xl text-center relative overflow-hidden hazard-glow">
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-primary-container/20 rounded-full blur-[80px]"></div>
+<div class="absolute -bottom-20 -left-20 w-64 h-64 bg-primary/20 rounded-full blur-[80px]"></div>
+<h2 class="font-headline-lg text-headline-lg text-white mb-md relative z-10">THE PURPLE IS WAITING</h2>
+<p class="font-headline-md text-headline-md text-on-surface-variant mb-xl relative z-10">Will you be the one to break the 1 Million point barrier?</p>
+<div class="flex flex-col sm:flex-row gap-md justify-center relative z-10">
+<button class="bg-primary text-on-primary px-xxl py-lg rounded-xl font-black font-headline-md 3d-button shadow-[0_8px_0_#a400b7] shimmer-sweep uppercase">
+                        Launch Game Now
+                    </button>
+<button class="bg-surface-container-high text-on-surface px-xxl py-lg rounded-xl font-bold font-headline-md 3d-button shadow-[0_8px_0_#1d1830]">
+                        Discord Community
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest full-width bottom-0 border-t border-white/5">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop py-xxl gap-lg w-full max-w-7xl mx-auto">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<div class="font-headline-md text-headline-md text-primary font-black tracking-tighter">
+                    Don't Touch Purple
+                </div>
+<p class="font-body-base text-body-base text-on-surface-variant opacity-60">© 2024 NEON ARCADE STUDIOS. AVOID THE PURPLE.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-xl">
+<a class="font-body-base text-body-base font-label-caps text-label-caps text-on-surface-variant hover:text-tertiary transition-colors hover:opacity-80" href="#">Terms of Service</a>
+<a class="font-body-base text-body-base font-label-caps text-label-caps text-on-surface-variant hover:text-tertiary transition-colors hover:opacity-80" href="#">Privacy Protocol</a>
+<a class="font-body-base text-body-base font-label-caps text-label-caps text-on-surface-variant hover:text-tertiary transition-colors hover:opacity-80" href="#">Support</a>
+<a class="font-body-base text-body-base font-label-caps text-label-caps text-on-surface-variant hover:text-tertiary transition-colors hover:opacity-80" href="#">Press Kit</a>
+</div>
+<div class="flex gap-lg">
+<a class="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</a>
+<a class="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">videogame_asset</span>
+</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for buttons Z-axis movement
+        document.querySelectorAll('.3d-button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'translateY(4px)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = '';
+            });
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = '';
+            });
+        });
+
+        // Simple mouse tracking glow effect for the hero
+        const hero = document.querySelector('section');
+        hero.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            // subtle movement of the bg blobs could go here
+        });
+    </script>
+</body></html>

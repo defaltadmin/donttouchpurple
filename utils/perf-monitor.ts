@@ -39,11 +39,4 @@ export const perfMonitor = {
   _flush() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.metrics)); } catch {}
   },
-
-  getReport() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : this.metrics;
-  },
-
-  reset() { this.metrics = { LCP: 0, FID: 0, CLS: 0, INP: 0, TTFB: 0 }; this._flush(); }
 };

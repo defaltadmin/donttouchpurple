@@ -8,7 +8,7 @@
  */
 import { GAME } from "../config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "../config/gridPatterns";
-import { computeMs, makeGameSeed, getSpinConfig, mulberry32 } from "./DifficultyScaler";
+import { computeMs, makeGameSeed, getSpinConfig, mulberry32, speedLabel } from "./DifficultyScaler";
 import { logError } from "../utils/devLog";
 import { InputBuffer } from "../utils/input-smoothing";
 import { haptics } from "../utils/haptics";
@@ -80,7 +80,6 @@ export class GameEngine {
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
-  private _currentThemeId = 'default';
   private botAssistActive: { 1: boolean; 2: boolean } = { 1: false, 2: false };
 
   private listeners: Set<(e: GameEvent) => void> = new Set();
@@ -130,6 +129,9 @@ export class GameEngine {
   private _cachedNow = Date.now(); // Cached Date.now() per tick — avoids 10+ syscalls per frame
   private _bossActive = false;
   private _bombDefuseCount = 0;
+  private _shieldCollected = 0;
+  private _freezeCollected = 0;
+  private _purpleTaps = 0;
   private _tickProcessor = new TickProcessor();
   private _tickCtx!: TickContext;
   private _bot: BotController;
@@ -167,9 +169,25 @@ export class GameEngine {
     // Daily streak
     achievementSystem.register({ id: 'streak_3', name: 'Consistent', desc: '3-day daily streak', icon: '📅', unlocked: false });
     achievementSystem.register({ id: 'streak_7', name: 'Weekly Warrior', desc: '7-day daily streak', icon: '🗓️', unlocked: false });
+    achievementSystem.register({ id: 'streak_14', name: 'Fortnight Fighter', desc: '14-day daily streak', icon: '🏅', unlocked: false });
+    achievementSystem.register({ id: 'streak_30', name: 'Monthly Master', desc: '30-day daily streak', icon: '👑', unlocked: false });
     // Dust achievements
     achievementSystem.register({ id: 'dust_1000', name: 'Dust Collector', desc: 'Earn 1,000 dust total', icon: '💜', unlocked: false });
     achievementSystem.register({ id: 'dust_10000', name: 'Dust Baron', desc: 'Earn 10,000 dust total', icon: '💰', unlocked: false });
+    // Speed achievements
+    achievementSystem.register({ id: 'speed_2x', name: 'Quick Draw', desc: 'Reach 2.0x speed', icon: '⚡', unlocked: false });
+    achievementSystem.register({ id: 'speed_3x', name: 'Lightning Fast', desc: 'Reach 3.0x speed', icon: '🌩️', unlocked: false });
+    // Powerup achievements
+    achievementSystem.register({ id: 'shield_5', name: 'Shield Bearer', desc: 'Collect 5 shields in one game', icon: '🛡️', unlocked: false });
+    achievementSystem.register({ id: 'freeze_5', name: 'Frost Master', desc: 'Collect 5 freezes in one game', icon: '❄️', unlocked: false });
+    // Perfect round
+    achievementSystem.register({ id: 'perfect_round', name: 'Untouchable', desc: 'Complete a round with no damage', icon: '✨', unlocked: false });
+    // Play count
+    achievementSystem.register({ id: 'games_50', name: 'Dedicated', desc: 'Play 50 games', icon: '🎮', unlocked: false });
+    achievementSystem.register({ id: 'games_200', name: 'Veteran', desc: 'Play 200 games', icon: '🏅', unlocked: false });
+    // Secret achievements
+    achievementSystem.register({ id: 'secret_purple_tap', name: '???', desc: '???', icon: '🔮', unlocked: false });
+    achievementSystem.register({ id: 'secret_speed_run', name: '???', desc: '???', icon: '🔮', unlocked: false });
     audioEngine.init();
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
@@ -583,6 +601,10 @@ destroy(): void {
     const dmg = this.config.mode === "evolve" ? 0.5 : 1;
     if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
       cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
+      if (cell.type === "medpack") haptics.medpack();
+      else if (cell.type === "shield") haptics.shield();
+      else if (cell.type === "freeze") haptics.freeze();
+      else if (cell.type === "multiplier") haptics.multiplier();
       if (cell.type === "medpack") {
         if (ref.health >= GAME.MAX_HEARTS) {
           // Overheal → gain shield instead
@@ -593,8 +615,8 @@ destroy(): void {
           this.emit({ type: "toast", message: "♥ +1 Heart!" });
         }
       }
-      if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; }
-      if (cell.type === "freeze") ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000;
+      if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; this._shieldCollected++; }
+      if (cell.type === "freeze") { ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000; this._freezeCollected++; }
       if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
       if (cell.type === "shield") {
         this.emit({ type: "pwrToast", message: `≡ƒ¢í Shield ├ù${ref.shieldCount}!`, player });
@@ -628,7 +650,7 @@ destroy(): void {
       const tapScore = (mult * bossMult) + calculateStreakBonus(nextStreak);
       ref.score += tapScore; ref.streak = nextStreak; ref.stageProgress += 1;
       this.emit({ type: "scoreFloat", player, idx, amount: tapScore });
-      if (checkStreakMilestone(ref.streak)) { this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` }); this.hitPause(25); }
+      if (checkStreakMilestone(ref.streak)) { this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` }); this.hitPause(25); haptics.combo(ref.streak); }
       if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "Γ¥ñ∩╕Å Last heart!" });
       this.checkStageProgress(player);
       const now = performance.now();
@@ -648,6 +670,17 @@ destroy(): void {
       achievementSystem.check('streak_10', () => ref.streak >= 10);
       achievementSystem.check('streak_25', () => ref.streak >= 25);
       achievementSystem.check('streak_50', () => ref.streak >= 50);
+      // Speed achievements
+      const currentSpeed = parseFloat(speedLabel(this.tickCount, ref.freezeEnd > Date.now()));
+      achievementSystem.check('speed_2x', () => currentSpeed >= 2.0);
+      achievementSystem.check('speed_3x', () => currentSpeed >= 3.0);
+      achievementSystem.check('shield_5', () => (this._shieldCollected ?? 0) >= 5);
+      achievementSystem.check('freeze_5', () => (this._freezeCollected ?? 0) >= 5);
+      // Secret: tap purple 10 times in one game
+      this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
+      achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
+      // Secret: score 500+ at 3x speed
+      achievementSystem.check('secret_speed_run', () => ref.score >= 500 && currentSpeed >= 3.0);
     }
     }
     ref.cells = activeToCellsP(ref.active, pat);
@@ -836,7 +869,7 @@ destroy(): void {
           score: this.p1.score,
           timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
           isPaused: this.paused
-        }, { theme: this._currentThemeId, difficulty: this.config.mode });
+        }, { theme: 'default', difficulty: this.config.mode });
       }
     }, 5000);
   }
@@ -1051,6 +1084,8 @@ destroy(): void {
       this.emit({ type: "phaseChange", phase: "playing" });
       this.dirty = true;
       this.emitSnapshot();
+      this.scheduleTick();
+      this.startSnapshotRaf();
       return true;
     } catch (e) {
       logError("Session restore failed", e);
@@ -1081,6 +1116,20 @@ private triggerGameOver(winner: Winner): void {
       if (this.config.mode === "classic") achievementSystem.unlock('classic_win');
       if (this.config.mode === "evolve") achievementSystem.unlock('evolve_win');
     }
+
+    // Game count achievements
+    const gamesPlayed = parseInt(localStorage.getItem('dtp-games-played') || '0') + 1;
+    localStorage.setItem('dtp-games-played', String(gamesPlayed));
+    achievementSystem.check('games_50', () => gamesPlayed >= 50);
+    achievementSystem.check('games_200', () => gamesPlayed >= 200);
+
+    // Perfect round — no damage taken (health still at max)
+    achievementSystem.check('perfect_round', () => this.p1.health >= GAME.MAX_HEARTS && this.tickCount > 100);
+
+    // Reset per-game counters
+    this._shieldCollected = 0;
+    this._freezeCollected = 0;
+    this._purpleTaps = 0;
 
     // Death slow-motion: visually slow for 600ms before cleanup
     if (this._deathCleanupTimer) clearTimeout(this._deathCleanupTimer);

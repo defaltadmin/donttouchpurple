@@ -1,6 +1,6 @@
 :root {
-  --bg: #0a0a14; --panel: #121220; --border: #2a2a40; --text: #e0e0e0; --text-muted: #888;
-  --primary: #8a2be2; --accent: #fbbf24; --danger: #ef4444; --success: #4ade80;
+  --bg: #151028; --panel: #211c35; --border: #524151; --text: #e7deff; --text-muted: #9f8a9d;
+  --primary: #fda9ff; --accent: #f9bd22; --danger: #ffb4ab; --success: #4ade80;
   --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
   font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent;
 }

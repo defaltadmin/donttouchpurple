@@ -1,0 +1,47 @@
+<svg width="360" height="640" viewBox="0 0 360 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#211c35" />
+      <stop offset="50%" stop-color="#c026d3" />
+      <stop offset="100%" stop-color="#fda9ff" />
+    </linearGradient>
+    <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="360" height="640" fill="url(#sky-grad)" opacity="0.3" />
+  <rect width="360" height="640" fill="#151028" opacity="0.9" />
+
+  <!-- Sun Circle -->
+  <circle cx="180" cy="300" r="120" fill="#c026d3" opacity="0.3" filter="url(#soft-glow)" />
+  
+  <!-- Perspective Grid (Synthwave floor) -->
+  <g transform="translate(180, 640) scale(1, 0.5)" opacity="0.4">
+    <pattern id="synth-grid" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#fda9ff" stroke-width="1" />
+    </pattern>
+    <rect x="-400" y="-400" width="800" height="400" fill="url(#synth-grid)" />
+  </g>
+
+  <!-- Floating Score -->
+  <g transform="translate(180, 240)">
+    <text font-family="Fredoka One, sans-serif" font-size="18" fill="#ffffff" text-anchor="middle">NEW HIGH SCORE</text>
+    <text y="70" font-family="Fredoka One, sans-serif" font-size="72" fill="#fda9ff" text-anchor="middle" filter="url(#soft-glow)">892,100</text>
+    <text y="110" font-family="Nunito, sans-serif" font-size="20" fill="#f3aeff" text-anchor="middle">BY NEON_STALKER</text>
+  </g>
+
+  <!-- Minimal Stats Bar -->
+  <g transform="translate(180, 480)">
+    <line x1="-120" x2="120" stroke="#fda9ff" stroke-width="1" opacity="0.5" />
+    <text y="30" font-family="Nunito, sans-serif" font-size="14" fill="#ffffff" text-anchor="middle">TIME: 03:15 | SPEED: 12.0</text>
+  </g>
+
+  <!-- Branding -->
+  <g transform="translate(180, 580)">
+    <text font-family="Fredoka One, sans-serif" font-size="28" fill="#ffffff" text-anchor="middle">DON'T TOUCH PURPLE</text>
+    <rect y="8" x="-60" width="120" height="2" fill="#fda9ff" />
+  </g>
+</svg>

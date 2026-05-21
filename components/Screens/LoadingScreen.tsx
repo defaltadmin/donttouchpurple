@@ -33,7 +33,7 @@ export function LoadingScreen({
     <div
       className={`loading-screen${done && !showNameEntry ? " loading-screen--out" : ""}`}
       style={{
-        background: "linear-gradient(145deg,#0d0820,#1a0a3e)",
+        background: "linear-gradient(145deg,#151028,#1a0a3e)",
         fontFamily: "'Fredoka One',system-ui,sans-serif",
       }}
     >

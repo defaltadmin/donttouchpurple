@@ -20,14 +20,14 @@ export interface ShopTheme {
 }
 
 export const SHOP_THEMES: ShopTheme[] = [
-  { id:"default",  name:"Default",  cost:0,    colors:{bg:"#0d0820",purple:"#c026d3",accent:"#f0abfc",text:"#f0eaff"} },
+  { id:"default",  name:"Default",  cost:0,    colors:{bg:"#151028",purple:"#c026d3",accent:"#fda9ff",text:"#e7deff"} },
   { id:"neon",     name:"Neon",     cost:400,  colors:{bg:"#001a1a",purple:"#00ffe0",accent:"#00ffa0",text:"#e0fff8"} },
   { id:"midnight", name:"Midnight", cost:300,  colors:{bg:"#060614",purple:"#818cf8",accent:"#c7d2fe",text:"#e0e7ff"} },
   { id:"pastel",   name:"Pastel",   cost:150,  colors:{bg:"#f5e6ff",purple:"#c026d3",accent:"#f9a8d4",text:"#2d0a4e",textMuted:"rgba(45,10,78,0.65)"} },
   { id:"toxic",    name:"Toxic",    cost:200,  colors:{bg:"#021a0a",purple:"#22c55e",accent:"#4ade80",text:"#d1fae5",textMuted:"rgba(209,250,229,0.6)"} },
   { id:"inferno",  name:"Inferno",  cost:250,  colors:{bg:"#1a0500",purple:"#ef4444",accent:"#fca5a5",text:"#fee2e2",textMuted:"rgba(254,226,226,0.6)"} },
   { id:"ocean",    name:"Ocean",    cost:200,  colors:{bg:"#020d1a",purple:"#0ea5e9",accent:"#7dd3fc",text:"#e0f2fe",textMuted:"rgba(224,242,254,0.6)"} },
-  { id:"gold",     name:"Gold Rush",cost:300,  colors:{bg:"#1a1200",purple:"#f59e0b",accent:"#fbbf24",text:"#fef3c7",textMuted:"rgba(254,243,199,0.6)"} },
+  { id:"gold",     name:"Gold Rush",cost:300,  colors:{bg:"#1a1200",purple:"#f59e0b",accent:"#f9bd22",text:"#fef3c7",textMuted:"rgba(254,243,199,0.6)"} },
 ];
 
 // ─── Shop items — badges ──────────────────────────────────────────

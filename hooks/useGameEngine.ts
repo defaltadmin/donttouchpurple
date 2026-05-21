@@ -4,6 +4,7 @@ import { sessionManager } from "../utils/session";
 import { logger } from "../utils/logger";
 import type { GameConfig, GameEvent, GameSnapshot, Winner, StoredPowerups } from "../engine/types";
 import { LS_KEYS, GAME } from "../config/difficulty";
+import { haptics } from "../utils/haptics";
 import {
   setAudioMuted,
   setAudioVolume,
@@ -80,7 +81,6 @@ export interface UseGameEngineReturn {
   scoreFloats: { id: number; player: 1 | 2; idx: number; amount: number }[];
   lastGameScore: number | null;
   getAutoLowQuality: () => boolean;
-  submitScoreToLeaderboard: (score: number) => void;
   restoreSession: () => boolean;
   restoreSessionSnapshot: (data: Record<string, unknown>) => boolean;
   generateChallengeUrl: () => Promise<string>;
@@ -182,9 +182,11 @@ export function useGameEngine(
         case "scoreFloat": {
           const id = ++scoreFloatIdRef.current;
           setScoreFloats(prev => [...prev, { id, player: event.player, idx: event.idx, amount: event.amount }]);
-          botTapTimersRef.current.push(setTimeout(() => {
+          const floatTimer = setTimeout(() => {
             if (mountedRef.current) setScoreFloats(prev => prev.filter(f => f.id !== id));
-          }, 800));
+            botTapTimersRef.current = botTapTimersRef.current.filter(t => t !== floatTimer);
+          }, 800);
+          botTapTimersRef.current.push(floatTimer);
           break;
         }
         case "toast": toast$(event.message); break;
@@ -234,6 +236,10 @@ export function useGameEngine(
           break;
         case "gameOver": {
           const snap2 = engine.getSnapshot(); const seedAtGameOver = snap2.gameSeed;
+          // Death vignette flash + haptic burst
+          document.body.classList.add('death-flash');
+          setTimeout(() => document.body.classList.remove('death-flash'), 800);
+          haptics.damage();
           if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
           gameOverTimerRef.current = setTimeout(() => {
             if (!mountedRef.current) return;
@@ -243,35 +249,40 @@ export function useGameEngine(
           }, GAME.GAME_OVER_DELAY_MS);
           break;
         }
-        case "botTap":
+        case "botTap": {
           // dust spend is already done in engine, just trigger re-render via dustCallbacks
           if (dustCallbacks) dustCallbacks.spendDust(0);
           setBotTapHighlights(prev => ({
             ...prev,
             [event.player]: { ...prev[event.player], [event.idx]: Date.now() },
           }));
-          botTapTimersRef.current.push(setTimeout(() => {
+          const highlightTimer = setTimeout(() => {
             if (!mountedRef.current) return;
             setBotTapHighlights(prev => {
               const nextPlayer = { ...prev[event.player] };
               delete nextPlayer[event.idx];
               return { ...prev, [event.player]: nextPlayer };
             });
-          }, 420));
+            botTapTimersRef.current = botTapTimersRef.current.filter(t => t !== highlightTimer);
+          }, 420);
+          botTapTimersRef.current.push(highlightTimer);
           // Track per-tap dust cost for floating marker
           if (event.dustCost) {
-            const fx: BotTapFx = {  
+            const fx: BotTapFx = {
               id: `bot-fx-${event.player}-${event.idx}-${Date.now()}`,
               idx: event.idx,
               dustCost: event.dustCost,
               at: Date.now(),
             };
             setBotTapFx(prev => [...prev, fx]);
-            botTapTimersRef.current.push(setTimeout(() => {
+            const fxTimer = setTimeout(() => {
               if (mountedRef.current) setBotTapFx(prev => prev.filter(f => f.id !== fx.id));
-            }, 650));
+              botTapTimersRef.current = botTapTimersRef.current.filter(t => t !== fxTimer);
+            }, 650);
+            botTapTimersRef.current.push(fxTimer);
           }
           break;
+        }
         case "bossStart":
           onBossEvent?.(event.bossType);
           break;
@@ -287,16 +298,6 @@ export function useGameEngine(
       }
     });
 
-    const handleVisibility = () => {
-      if (!engineRef.current) return;
-      // Fix #4: Check phase to prevent pausing during gameover
-      const snap = engineRef.current.getSnapshot?.();
-      if (document.hidden && snap?.phase === 'playing') {
-        engineRef.current.pause();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
     return () => {
       mountedRef.current = false;
       engine.stopSessionPersistence();
@@ -306,7 +307,6 @@ export function useGameEngine(
       // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally read the latest ref value in cleanup
       const rafId = rafIdRef.current;
       if (rafId) cancelAnimationFrame(rafId);
-      document.removeEventListener("visibilitychange", handleVisibility);
       if (toastTimerRef.current)      clearTimeout(toastTimerRef.current);
       if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
       if (pwrToastP2TimerRef.current) clearTimeout(pwrToastP2TimerRef.current);
@@ -321,7 +321,8 @@ export function useGameEngine(
       botTapTimersRef.current.forEach(clearTimeout);
       botTapTimersRef.current = [];
     };
-  }, [config.mode, config.numPlayers, config.speedMult, config, dustCallbacks, onBombDefused, onBossEvent, onDamage, toast$]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- config object excluded; individual fields tracked to avoid unnecessary engine re-creation
+  }, [config.mode, config.numPlayers, config.speedMult, dustCallbacks, onBombDefused, onBossEvent, onDamage, toast$]);
 
   const startBot = useCallback(() => engineRef.current?.startBot(), []);
   const stopBot  = useCallback(() => engineRef.current?.stopBot(), []);
@@ -350,10 +351,6 @@ export function useGameEngine(
   const devTriggerBotTap = useCallback((player: 1 | 2, idx: number, dustCost?: number) => engineRef.current?.devTriggerBotTap(player, idx, dustCost), []);
   const devToggleBotAssist = useCallback((player: 1 | 2, enabled: boolean) => engineRef.current?.devToggleBotAssist(player, enabled), []);
   const getAutoLowQuality = useCallback(() => engineRef.current?.getAutoLowQuality() ?? false, []);
-
-  const submitScoreToLeaderboard = useCallback((score: number) => {
-    engineRef.current?.submitScoreToLeaderboard(score);
-  }, []);
 
   const generateChallengeUrl = useCallback(async (): Promise<string> => {
     return (await engineRef.current?.generateChallengeUrl()) ?? '';
@@ -392,6 +389,6 @@ export function useGameEngine(
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
     startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights, botTapFx, scoreFloats,
-    getAutoLowQuality, submitScoreToLeaderboard, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
+    getAutoLowQuality, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
   };
 }

@@ -68,14 +68,6 @@ class WebVitalsMonitor {
     }
   }
 
-  stopMonitoring(): void {
-    // web-vitals v4 doesn't expose unsubscribe — no-op
-  }
-
-  getMetrics(): WebVitalsMetrics {
-    return { ...this.metrics };
-  }
-
   private checkThresholds(metric: keyof WebVitalsMetrics, value: number): void {
     const thresholds = {
       cls:  { good: 0.1,  poor: 0.25 },
@@ -123,15 +115,6 @@ class WebVitalsMonitor {
       errorLogger.error('Failed to report Web Vitals metric', { name } as Record<string, string | number | boolean | undefined>);
     }
   }
-
-  exportMetrics(): Record<string, unknown> {
-    return {
-      ...this.metrics,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href
-    };
-  }
 }
 
 // Extend metrics service to handle Web Vitals
@@ -141,13 +124,11 @@ declare module '../services/metrics' {
   }
 }
 
-interface MetricsServiceExtended {
-  recordPerformanceMetric(metric: string, value: number, rating: string): void;
+const originalMetricsService = metricsService as unknown as {
+  recordPerformanceMetric: (metric: string, value: number, rating: string) => void;
   perfMetrics: Record<string, Record<string, { value: number; rating: string; timestamp: number }>>;
-}
-const originalMetricsService = metricsService as unknown as MetricsServiceExtended;
+};
 originalMetricsService.recordPerformanceMetric = function(
-  this: MetricsServiceExtended,
   metric: string,
   value: number,
   rating: string

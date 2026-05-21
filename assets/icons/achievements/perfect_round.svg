@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="perfectRoundGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f9bd22" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <filter id="perfectRoundGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="url(#perfectRoundGrad)" filter="url(#perfectRoundGlow)">
+    <circle cx="12" cy="12" r="10" opacity="0.2"/>
+    <path d="M12 7l1.5 3.5h3.5l-2.5 2.5 1 4-3.5-2.5-3.5 2.5 1-4-2.5-2.5h3.5z"/>
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5l1.5 1.5M5 19l1.5-1.5M17.5 6.5l1.5-1.5" stroke="url(#perfectRoundGrad)" stroke-width="1"/>
+  </g>
+</svg>

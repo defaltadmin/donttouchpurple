@@ -1,5 +1,5 @@
 export interface DailyObjective {
-  type: 'score' | 'tick' | 'streak' | 'speed' | 'boss_survive' | 'bomb_defuse' | 'survive_inversion';
+  type: 'score' | 'tick' | 'streak' | 'speed' | 'boss_survive' | 'bomb_defuse' | 'survive_inversion' | 'play_count' | 'no_damage';
   target: number;
   reward: number;
   description: string;
@@ -11,10 +11,13 @@ const OBJECTIVE_POOL: Array<Omit<DailyObjective, 'completed' | 'date'>> = [
   { type: 'score',            target: 80,  reward: 25,  description: 'Score 80+ in one game' },
   { type: 'score',            target: 120, reward: 35,  description: 'Score 120+' },
   { type: 'score',            target: 200, reward: 50,  description: 'Score 200+' },
+  { type: 'score',            target: 500, reward: 80,  description: 'Score 500+' },
   { type: 'tick',             target: 60,  reward: 20,  description: 'Survive to tick 60' },
   { type: 'tick',             target: 100, reward: 30,  description: 'Survive to tick 100' },
+  { type: 'tick',             target: 200, reward: 60,  description: 'Survive to tick 200' },
   { type: 'streak',           target: 10,  reward: 25,  description: 'Reach 10 streak' },
   { type: 'streak',           target: 20,  reward: 35,  description: 'Reach 20 streak' },
+  { type: 'streak',           target: 50,  reward: 70,  description: 'Reach 50 streak' },
   { type: 'speed',            target: 2.0, reward: 30,  description: 'Reach 2.0× speed' },
   { type: 'speed',            target: 3.0, reward: 40,  description: 'Reach 3.0× speed' },
   { type: 'boss_survive',     target: 1,   reward: 40,  description: 'Survive a Boss Event' },
@@ -22,9 +25,12 @@ const OBJECTIVE_POOL: Array<Omit<DailyObjective, 'completed' | 'date'>> = [
   { type: 'bomb_defuse',      target: 1,   reward: 30,  description: 'Defuse a Bomb 💣' },
   { type: 'bomb_defuse',      target: 3,   reward: 50,  description: 'Defuse 3 Bombs in one game' },
   { type: 'survive_inversion',target: 1,   reward: 45,  description: 'Survive an Inversion event 🔄' },
+  { type: 'play_count',       target: 3,   reward: 20,  description: 'Play 3 games today' },
+  { type: 'play_count',       target: 5,   reward: 35,  description: 'Play 5 games today' },
+  { type: 'no_damage',        target: 1,   reward: 60,  description: 'Complete a game with no damage' },
 ];
 
-export const DAILY_OBJECTIVE_COUNT = 3;
+const DAILY_OBJECTIVE_COUNT = 3;
 
 function dailySeed(dateStr: string): number {
   let hash = 0;
@@ -96,6 +102,8 @@ export interface BossObjectiveCounters {
   bossSurvived: number;
   bombsDefused: number;
   inversionSurvived: number;
+  gamesPlayedToday?: number;
+  noDamageGame?: boolean;
 }
 
 export function checkObjective(
@@ -108,7 +116,7 @@ export function checkObjective(
 ): boolean {
   if (objective.completed) return false;
   const speed = parseFloat(speedLabel);
-  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 };
+  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0, gamesPlayedToday: 0, noDamageGame: false };
   switch (objective.type) {
     case 'score':             return score >= objective.target;
     case 'tick':              return tick >= objective.target;
@@ -117,6 +125,8 @@ export function checkObjective(
     case 'boss_survive':      return c.bossSurvived >= objective.target;
     case 'bomb_defuse':       return c.bombsDefused >= objective.target;
     case 'survive_inversion': return c.inversionSurvived >= objective.target;
+    case 'play_count':        return (c.gamesPlayedToday ?? 0) >= objective.target;
+    case 'no_damage':         return c.noDamageGame ?? false;
     default:                  return false;
   }
 }
@@ -131,7 +141,7 @@ export function getObjectiveProgress(
 ): number {
   if (objective.completed) return 1;
   const speed = parseFloat(speedLabel);
-  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 };
+  const c = counters ?? { bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0, gamesPlayedToday: 0, noDamageGame: false };
   let current = 0;
   switch (objective.type) {
     case 'score':             current = score; break;
@@ -141,6 +151,8 @@ export function getObjectiveProgress(
     case 'boss_survive':      current = c.bossSurvived; break;
     case 'bomb_defuse':       current = c.bombsDefused; break;
     case 'survive_inversion': current = c.inversionSurvived; break;
+    case 'play_count':        current = c.gamesPlayedToday ?? 0; break;
+    case 'no_damage':         return c.noDamageGame ? 1 : 0;
   }
   return Math.min(1, current / (objective.target || 1));
 }

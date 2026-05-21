@@ -130,6 +130,8 @@ const STREAK_MILESTONES = [
   { day: 7, reward: 150 },
   { day: 14, reward: 300 },
   { day: 30, reward: 600 },
+  { day: 50, reward: 1000 },
+  { day: 100, reward: 2500 },
 ];
 
 function CheckinTab({ streak, reward, claimed, onClaim }: {

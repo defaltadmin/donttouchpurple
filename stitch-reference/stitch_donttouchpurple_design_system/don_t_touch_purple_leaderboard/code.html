@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HYPERDRIVE | Leaderboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&amp;family=Fredoka+One&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#6a3178",
+                    "surface-container-highest": "#36314b",
+                    "secondary-fixed-dim": "#f3aeff",
+                    "on-background": "#e7deff",
+                    "surface-variant": "#36314b",
+                    "on-tertiary": "#402d00",
+                    "inverse-surface": "#e7deff",
+                    "tertiary-fixed-dim": "#f9bd22",
+                    "on-surface-variant": "#d7c0d3",
+                    "surface-container-low": "#1d1830",
+                    "on-tertiary-fixed": "#261a00",
+                    "error-container": "#93000a",
+                    "surface-dim": "#151028",
+                    "on-surface": "#e7deff",
+                    "surface-tint": "#fda9ff",
+                    "on-primary-fixed": "#36003d",
+                    "primary": "#fda9ff",
+                    "surface-container-high": "#2c2640",
+                    "on-secondary-fixed-variant": "#682f76",
+                    "on-primary-container": "#fffafa",
+                    "background": "#151028",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "outline-variant": "#524151",
+                    "tertiary-fixed": "#ffdf9f",
+                    "surface-container-lowest": "#0f0a22",
+                    "primary-fixed-dim": "#fda9ff",
+                    "primary-container": "#c026d3",
+                    "on-primary-fixed-variant": "#7d008c",
+                    "outline": "#9f8a9d",
+                    "on-tertiary-container": "#fffaf6",
+                    "on-secondary": "#4e155d",
+                    "surface": "#151028",
+                    "inverse-primary": "#a400b7",
+                    "inverse-on-surface": "#322d47",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#936d00",
+                    "tertiary": "#f9bd22",
+                    "surface-container": "#211c35",
+                    "on-secondary-container": "#e4a0f0",
+                    "on-primary": "#580063",
+                    "secondary-fixed": "#fcd6ff",
+                    "primary-fixed": "#ffd6fb",
+                    "on-secondary-fixed": "#340042",
+                    "surface-bright": "#3b3650",
+                    "on-tertiary-fixed-variant": "#5c4300",
+                    "secondary": "#f3aeff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "md": "12px",
+                    "gutter": "8px",
+                    "sm": "8px",
+                    "margin-desktop": "24px",
+                    "xxl": "24px",
+                    "lg": "16px",
+                    "xl": "20px",
+                    "xs": "4px",
+                    "margin-mobile": "10px"
+            },
+            "fontFamily": {
+                    "body-base": ["Nunito"],
+                    "headline-lg": ["Fredoka One"],
+                    "display-lg": ["Fredoka One"],
+                    "body-bold": ["Nunito"],
+                    "headline-md": ["Fredoka One"],
+                    "label-caps": ["Nunito"],
+                    "headline-lg-mobile": ["Fredoka One"]
+            },
+            "fontSize": {
+                    "body-base": ["15px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "headline-lg": ["42px", {"lineHeight": "44px", "letterSpacing": "0.01em", "fontWeight": "900"}],
+                    "display-lg": ["76px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "body-bold": ["15px", {"lineHeight": "22px", "fontWeight": "800"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "label-caps": ["10px", {"lineHeight": "12px", "letterSpacing": "0.15em", "fontWeight": "900"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "36px", "fontWeight": "900"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+        .btn-3d {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.3);
+        }
+        .btn-3d:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 0 rgba(0, 0, 0, 0.3);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 0 rgba(0, 0, 0, 0.3);
+        }
+        .shimmer-sweep {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer-sweep::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        .champion-glow {
+            filter: drop-shadow(0 0 15px #fda9ff);
+            animation: pulse-glow 2s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            from { filter: drop-shadow(0 0 10px #fda9ff); }
+            to { filter: drop-shadow(0 0 25px #c026d3); }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #151028; }
+        ::-webkit-scrollbar-thumb { background: #36314b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #fda9ff; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-base selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar -->
+<header class="bg-surface-container/80 dark:bg-surface-container-low/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)] docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop py-md max-w-7xl mx-auto">
+<div class="font-display-lg text-primary italic tracking-tighter drop-shadow-[0_0_10px_rgba(253,169,255,0.8)] cursor-pointer">HYPERDRIVE</div>
+<nav class="hidden md:flex items-center gap-xl">
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors hover:bg-white/5 hover:scale-105 transition-all" href="#">How to Play</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-headline-md text-headline-md transition-all" href="#">Leaderboard</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors hover:bg-white/5 hover:scale-105 transition-all" href="#">Shop</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors hover:bg-white/5 hover:scale-105 transition-all" href="#">News</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">account_circle</button>
+<button class="btn-3d bg-primary text-on-primary px-lg py-xs rounded-lg font-headline-md text-[18px] shimmer-sweep">Play Now</button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xxl space-y-xxl">
+<!-- Hero Header -->
+<section class="text-center space-y-md">
+<h1 class="font-headline-lg text-headline-lg md:text-[64px] text-primary tracking-tight uppercase">Hall of Fame</h1>
+<p class="text-on-surface-variant text-headline-md max-w-2xl mx-auto opacity-80">The top 100 operators in the neon grid. Only the fastest survive the purple void.</p>
+</section>
+<!-- Current Champion Section -->
+<section class="flex justify-center">
+<div class="glass-panel w-full max-w-3xl rounded-[24px] p-lg md:p-xxl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg">
+<div class="bg-tertiary text-on-tertiary font-headline-md px-md py-xs rounded-full champion-glow text-[14px]">RANK 01</div>
+</div>
+<div class="flex flex-col md:flex-row items-center gap-xxl">
+<div class="relative">
+<div class="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-primary p-1 champion-glow overflow-hidden">
+<img alt="Current Champion Avatar" class="w-full h-full object-cover bg-surface-container" data-alt="A stylized digital avatar of a futuristic cyberpunk character with glowing neon facial markings, wearing a sleek black high-tech visor. The background is a dark deep-space void with faint purple grid lines. The lighting is dominated by a vibrant magenta and cyan bloom, creating a high-contrast synthwave aesthetic that matches the dark-cyberpunk arcade theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMVEvlOIE0TkyMOvGKoEkNQce5grEfLQeHTKZTKRfH8CJolg9aCmv7PksnS4puS0-aA9nuLftMVrh7hZSLU0E0wr6rkVnhX8r_y45OyilF7GTg32F-W2cm6gQlsp6FhycVyo-QeRP3Ky5w8F3GqdeLvri3xYkpAy78PAr0Xwg9TX8ymzHd21fJeThXKRd7MfqDMLZSwfX7Z-wdcv7GrceUYEDTV9ExzEd6-NlNpO0nrLpW8hlNdA38xx8LRWVzC1wvFMx40q6DFF9Y"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-on-primary font-label-caps px-md py-1 rounded-full whitespace-nowrap shadow-lg">CHAMPION</div>
+</div>
+<div class="flex-1 text-center md:text-left space-y-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white">NEON_STALKER</h2>
+<p class="text-primary font-label-caps tracking-[0.2em]">TITAN CATEGORY OPERATOR</p>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-white/5 p-md rounded-xl border border-white/5">
+<span class="text-label-caps text-on-surface-variant block mb-1">TOTAL SCORE</span>
+<span class="text-headline-md text-tertiary">2,490,120</span>
+</div>
+<div class="bg-white/5 p-md rounded-xl border border-white/5">
+<span class="text-label-caps text-on-surface-variant block mb-1">SURVIVAL TIME</span>
+<span class="text-headline-md text-primary">04:42.12</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Decorative Element -->
+<div class="absolute -bottom-12 -right-12 w-48 h-48 bg-primary/10 blur-[60px] rounded-full"></div>
+</div>
+</section>
+<!-- Filters & Leaderboard Table -->
+<section class="space-y-lg">
+<div class="flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="flex bg-surface-container-low p-1 rounded-xl border border-white/5 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-xl py-xs rounded-lg font-body-bold text-primary bg-primary/10 transition-all">All Time</button>
+<button class="flex-1 md:flex-none px-xl py-xs rounded-lg font-body-bold text-on-surface-variant hover:text-white transition-all">Weekly</button>
+<button class="flex-1 md:flex-none px-xl py-xs rounded-lg font-body-bold text-on-surface-variant hover:text-white transition-all">Daily</button>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant font-label-caps">
+<span class="material-symbols-outlined text-[18px]">info</span>
+                    LEADERBOARD UPDATES EVERY 5 MINUTES
+                </div>
+</div>
+<!-- Table Container -->
+<div class="glass-panel rounded-[24px] overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white/5 text-on-surface-variant font-label-caps text-[12px] tracking-wider uppercase">
+<th class="px-xl py-lg">Rank</th>
+<th class="px-xl py-lg">Player</th>
+<th class="px-xl py-lg">Survival Time</th>
+<th class="px-xl py-lg text-center">Peak Speed</th>
+<th class="px-xl py-lg text-right">Total Score</th>
+<th class="px-xl py-lg"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Row 1 (Champion handled above, but often mirrored in lists) -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-xl py-md font-headline-md text-tertiary">#01</td>
+<td class="px-xl py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary/20 p-0.5 border border-primary/50 overflow-hidden">
+<img alt="Player 01" class="w-full h-full" data-alt="Close up avatar of a digital player character with glowing neon blue skin and metallic purple hair. The character is set against a dark techno-void background. The lighting is harsh and dramatic, reflecting off the metallic surfaces in a vibrant synthwave style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCytzSf2UtXQHUBQXTi7mZ-RZVaYYQTzzdY_YQTxtwSqpcPUMfElqh6Byw1T2Y6-7_Xyt5vXkxO4IbFpsT-l_-mo6N8lsrweC0cJRyVumqIDIJxoijtd4dxlJ1xdXYYH6LTxyehY3eDtk_2CfD1gRfoONlykTr7Kd9gM_RKBC4pQLqsjEaR5PDRZteh7Fnkz0nbSZ7HrJKrQkQfHTVniCckXJ3-JYy5c76ub5etWIJV0tPXedJ64YNa0Bd2XFlEq79C5Y8n1_Y8OraD"/>
+</div>
+<span class="font-headline-md text-[18px] text-white">NEON_STALKER</span>
+</div>
+</td>
+<td class="px-xl py-md font-body-bold text-on-surface">04:42.12</td>
+<td class="px-xl py-md text-center">
+<span class="bg-error/10 text-error px-md py-xs rounded-full text-[12px] font-label-caps">Mach 4.2</span>
+</td>
+<td class="px-xl py-md text-right font-headline-md text-primary">2,490,120</td>
+<td class="px-xl py-md text-right">
+<button class="btn-3d bg-surface-container-highest text-on-surface px-md py-xs rounded-lg font-label-caps hover:bg-secondary-container transition-all">Challenge</button>
+</td>
+</tr>
+<!-- Top 10 Entries (Sample data) -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-xl py-md font-headline-md text-on-surface-variant">#02</td>
+<td class="px-xl py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary/20 p-0.5 border border-secondary/50 overflow-hidden">
+<img alt="Player 02" class="w-full h-full" data-alt="A futuristic avatar portrait of a player featuring a chrome-finished face mask and glowing cyan eyes. The setting is a dark neon-lit alleyway with purple and pink light trails. The overall vibe is intense and fast-paced, echoing a retro-future arcade world." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEVsTK5dfkZKOt0LjsWQVOyBHbMF8vkNQaaKfiILs2Zvo8UjzGlhmBRJQ-9az-Lr6B3zv150ecXntALSIYzY68QjD4frr2Yp9xQq8SDoN7OFVB8Ey-nm5AiSBo5auc1kM9IZQ7i4Dy5SoDvSv5b9Zhb82m1149nlKGu4MRn19zBS4RMSomkY7sZASx_3CKyMFoeH0vL2sxJNCXFuPk4-NsiDE1Lc8fCF8aVyNV1-n7cPs5kZ-Imj9yI3eBlct_U9zmCEtNCbmkEv1Q"/>
+</div>
+<span class="font-headline-md text-[18px] text-white">GHOST_RUNNER</span>
+</div>
+</td>
+<td class="px-xl py-md font-body-bold text-on-surface">04:38.05</td>
+<td class="px-xl py-md text-center">
+<span class="bg-error/10 text-error px-md py-xs rounded-full text-[12px] font-label-caps">Mach 4.1</span>
+</td>
+<td class="px-xl py-md text-right font-headline-md text-primary">2,312,400</td>
+<td class="px-xl py-md text-right">
+<button class="btn-3d bg-surface-container-highest text-on-surface px-md py-xs rounded-lg font-label-caps">Challenge</button>
+</td>
+</tr>
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-xl py-md font-headline-md text-on-surface-variant">#03</td>
+<td class="px-xl py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-white/10 p-0.5 border border-white/20 overflow-hidden">
+<img alt="Player 03" class="w-full h-full" data-alt="Digital art of a cyberpunk character wearing high-tech headphones with glowing magenta earcups. The background features retro-style wireframe mountains under a purple sun. The style is heavily stylized with crystalline textures and light-leaks, embodying a classic synthwave aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfXhz-0oeTbOBVxjUijS5yMdjMSsaO8kc6sORT9mVFq9UI0sGUaqFH4YuPALwv-UZB6kfGa6Km1gpuI1JVvoVxN7BJORP5N89t6irndAauxRMHy6PvkscWKGyA8B2Gk32xNPqEqArc5qDnstbhZ3_l2vMe4YDW1qETEf7_ulAT6cBBNqXueWls1dLNw-ImVmPlvVwjE6cFu03KlBkGFcgskUo_ThUt9qNHrhfVgezIdC1LVUEd3-wUf9rBLOWtzZKoVGczRDZKku9G"/>
+</div>
+<span class="font-headline-md text-[18px] text-white">VAPOR_X</span>
+</div>
+</td>
+<td class="px-xl py-md font-body-bold text-on-surface">04:31.90</td>
+<td class="px-xl py-md text-center">
+<span class="bg-error/10 text-error px-md py-xs rounded-full text-[12px] font-label-caps">Mach 4.0</span>
+</td>
+<td class="px-xl py-md text-right font-headline-md text-primary">2,150,880</td>
+<td class="px-xl py-md text-right">
+<button class="btn-3d bg-surface-container-highest text-on-surface px-md py-xs rounded-lg font-label-caps">Challenge</button>
+</td>
+</tr>
+<!-- Repeat for more rows -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-xl py-md font-headline-md text-on-surface-variant">#04</td>
+<td class="px-xl py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-white/10 p-0.5 border border-white/20 overflow-hidden">
+<img alt="Player 04" class="w-full h-full" data-alt="A neon-drenched avatar with glitchy pixel-art artifacts around the edges. The character has a punk-rock aesthetic with electric blue hair and a leather collar. The background is a dense grid of glowing data streams in purple and gold. High-intensity arcade vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKeyCLxovUeyLMo5eWphG1Pi78e_KD6CshndcFJmEt1Mcga-dN0UK0bx5ku9kHlkn58r2Y41wgr_A0xP-TTgfPL5ZlIkjygUruS6YAwq4gFKGkaTNK1MHZr4xdZcO6_uTeBJ3hzKOumM_UVKxrSYVGceC_MJU0g3IY8uKVZdylWn8N7V3lm5tWpcT_5Kac17f5vJPu28w2ng4hHnEw4hLkOVvsp5MnJreo_T5XJhg-udL4988A8FugHU02zEvZngIcnbOC_cgLD4LO"/>
+</div>
+<span class="font-headline-md text-[18px] text-white">GLITCH_BIT</span>
+</div>
+</td>
+<td class="px-xl py-md font-body-bold text-on-surface">04:15.22</td>
+<td class="px-xl py-md text-center">
+<span class="bg-error/10 text-error px-md py-xs rounded-full text-[12px] font-label-caps">Mach 3.8</span>
+</td>
+<td class="px-xl py-md text-right font-headline-md text-primary">1,980,500</td>
+<td class="px-xl py-md text-right">
+<button class="btn-3d bg-surface-container-highest text-on-surface px-md py-xs rounded-lg font-label-caps">Challenge</button>
+</td>
+</tr>
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-xl py-md font-headline-md text-on-surface-variant">#05</td>
+<td class="px-xl py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-white/10 p-0.5 border border-white/20 overflow-hidden">
+<img alt="Player 05" class="w-full h-full" data-alt="Avatar portrait of a racer wearing a yellow glowing helmet with a digital display. The environment is filled with motion blur effects in vibrant cyan and pink. The lighting is bright and energetic, with crystalline hairline borders on all edges." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP0IeMU_RrkCY0rRfdTRqVjhqJFDTaaRlu5AtcptoVrbkT3Sj382q8o00nsgGFQtcOecooVavT21EDHkw_mQnOKqW_iMrOLxtrqNeXIvzY67RulOoRB96UEaJjCBHGCHEEuxW7_P6abgkA_Jx0RXQ8SfW11XUYRhyjjavuQyV_kOLSj8carBZ6yGw-KxKZgo6XRWHk9vOXxgHnZAKgxvA2UsiDIldo1eIPcjOW5aE6LBEaQXEQ2gsOI0jl9uG91T06EFOtm1yMlfMq"/>
+</div>
+<span class="font-headline-md text-[18px] text-white">SPEED_DEMON</span>
+</div>
+</td>
+<td class="px-xl py-md font-body-bold text-on-surface">04:10.01</td>
+<td class="px-xl py-md text-center">
+<span class="bg-error/10 text-error px-md py-xs rounded-full text-[12px] font-label-caps">Mach 3.7</span>
+</td>
+<td class="px-xl py-md text-right font-headline-md text-primary">1,850,200</td>
+<td class="px-xl py-md text-right">
+<button class="btn-3d bg-surface-container-highest text-on-surface px-md py-xs rounded-lg font-label-caps">Challenge</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-lg bg-white/5 text-center">
+<button class="text-primary font-body-bold hover:underline transition-all">Show More Players</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Sticky Your Stats Bar -->
+<div class="fixed bottom-0 left-0 w-full z-40 px-margin-desktop pb-xl pointer-events-none">
+<div class="max-w-5xl mx-auto glass-panel rounded-full p-md border-primary/30 shadow-[0_-10px_40px_rgba(253,169,255,0.2)] pointer-events-auto transform transition-transform hover:translate-y-[-4px]">
+<div class="flex items-center justify-between gap-xl">
+<div class="flex items-center gap-md">
+<div class="bg-primary/20 w-12 h-12 rounded-full flex items-center justify-center font-headline-md text-primary border border-primary/40">#1,402</div>
+<div class="hidden sm:block">
+<div class="font-body-bold text-white leading-none">CYBER_USER_42</div>
+<div class="text-[10px] font-label-caps text-on-surface-variant uppercase tracking-widest">Your Current Rank</div>
+</div>
+</div>
+<div class="flex items-center gap-xxl">
+<div class="hidden md:block">
+<div class="text-[10px] font-label-caps text-on-surface-variant uppercase tracking-widest text-right">Best Score</div>
+<div class="font-headline-md text-tertiary">452,102</div>
+</div>
+<div class="hidden md:block">
+<div class="text-[10px] font-label-caps text-on-surface-variant uppercase tracking-widest text-right">Survival</div>
+<div class="font-headline-md text-primary">02:14.45</div>
+</div>
+<button class="btn-3d bg-primary text-on-primary px-xl py-sm rounded-full font-headline-md text-[16px] shimmer-sweep whitespace-nowrap">
+                        BEAT YOUR RECORD
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t-4 border-primary-container mt-xxl">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-desktop py-xxl gap-lg max-w-7xl mx-auto">
+<div class="font-headline-md text-secondary-fixed-dim">HYPERDRIVE</div>
+<div class="flex flex-wrap justify-center gap-xl">
+<a class="text-on-surface-variant hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-white transition-colors" href="#">Support</a>
+<a class="text-on-surface-variant hover:text-white transition-colors" href="#">Cookie Settings</a>
+</div>
+<div class="text-on-surface-variant font-body-base text-body-base opacity-60">© 2024 HYPERDRIVE ARCADE. ALL RIGHTS RESERVED.</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for table rows
+        document.querySelectorAll('tr.group').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                // Subtle scale effect or additional glow could be added here
+            });
+        });
+
+        // Add floating particles for atmospheric effect
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'fixed pointer-events-none rounded-full bg-primary/20 blur-sm';
+            const size = Math.random() * 10 + 5;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.top = `${Math.random() * 100}vh`;
+            particle.style.opacity = '0';
+            
+            document.body.appendChild(particle);
+            
+            const anim = particle.animate([
+                { opacity: 0, transform: 'translateY(0) scale(1)' },
+                { opacity: 0.4, transform: 'translateY(-100px) scale(1.5)' },
+                { opacity: 0, transform: 'translateY(-200px) scale(1)' }
+            ], {
+                duration: 4000 + Math.random() * 3000,
+                easing: 'ease-out'
+            });
+            
+            anim.onfinish = () => particle.remove();
+        }
+
+        setInterval(createParticle, 1000);
+    </script>
+</body></html>

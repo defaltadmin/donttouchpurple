@@ -2,6 +2,8 @@
 // Extracted from useGameEngine.ts — all Web Audio API logic lives here.
 // React-free: safe to import from engine layer or any hook.
 
+import { setHapticsEnabledForEngine } from "../utils/haptics";
+
 type SoundType = "ok" | "bad" | "tick" | "powerup" | "levelup" | "shuffle" | "rareStart" | "claim" | "bomb" | "bossStart";
 
 let _actx: AudioContext | null = null;
@@ -11,7 +13,10 @@ let _volume = 0.7;
 let _haptics = true;
 
 export function setAudioMuted(muted: boolean): void { _muted = muted; }
-export function setHapticsEnabled(enabled: boolean): void { _haptics = enabled; }
+export function setHapticsEnabled(enabled: boolean): void {
+  _haptics = enabled;
+  setHapticsEnabledForEngine(enabled);
+}
 export function setAudioVolume(v: number): void {
   _volume = Math.max(0, Math.min(1, v));
   if (_masterGain) _masterGain.gain.setValueAtTime(_volume, _masterGain.context.currentTime);

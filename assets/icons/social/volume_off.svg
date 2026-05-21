@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <filter id="glow-vol-off" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="none" stroke="#fda9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-vol-off)">
+    <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+    <path d="M23 9l-6 6M17 9l6 6" stroke="#c026d3"/>
+  </g>
+</svg>

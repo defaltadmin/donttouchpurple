@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="firstWinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f9bd22" />
+      <stop offset="100%" stop-color="#fb923c" />
+    </linearGradient>
+    <filter id="firstWinGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="url(#firstWinGrad)" filter="url(#firstWinGlow)">
+    <path d="M6 9V7h12v2c0 3.31-2.69 6-6 6s-6-2.69-6-6zM6 5H4a2 2 0 0 0 0 4h2M18 5h2a2 2 0 0 1 0 4h-2M12 15v4M8 20h8"/>
+    <path d="M12 2l1 2h2l-1.5 1.5.5 2.5-2-1.5-2 1.5.5-2.5L8 4h2l1-2z"/>
+  </g>
+</svg>

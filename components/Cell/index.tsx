@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
+import { Icon } from '../UI/Icon';
 
 interface CellProps {
   cell: ActiveCell;
@@ -168,16 +169,16 @@ export default function Cell({
       <div className="cell-icon">
         {(cell.type === 'medpack' || cell.type === 'shield' || cell.type === 'freeze' || cell.type === 'multiplier') ? (
           <span className="cell-icon-spring">
-            {cell.type === 'medpack' && '❤️'}
-            {cell.type === 'shield' && '🛡️'}
-            {cell.type === 'freeze' && '❄️'}
-            {cell.type === 'multiplier' && '×2'}
+            {cell.type === 'medpack' && <Icon name="medpack" size={26} />}
+            {cell.type === 'shield' && <Icon name="shield" size={26} />}
+            {cell.type === 'freeze' && <Icon name="freeze" size={26} />}
+            {cell.type === 'multiplier' && <Icon name="multiplier" size={26} />}
           </span>
         ) : null}
-        {isHold && '⏳'}
+        {isHold && <Icon name="clock" size={22} />}
         {isIce && (
           <div className="multi-tap-visual" aria-hidden="true">
-            <div className="multi-tap-core">✦</div>
+            <div className="multi-tap-core"><Icon name="ice" size={20} /></div>
             <div className="multi-tap-count">{cell.iceCount || 1}</div>
             <div className="multi-tap-pips">
               {Array.from({ length: Math.max(1, Math.min(4, cell.iceCount || 1)) }, (_, i) => (
@@ -222,7 +223,9 @@ export default function Cell({
 
       {/* Rare danger symbol */}
       {cell.shape && (
-        <span className="rare-danger-symbol" aria-label="Rare danger">⛔</span>
+        <span className="rare-danger-symbol" aria-label="Rare danger">
+          <Icon name="warning" size={20} />
+        </span>
       )}
 
       {botPulse && (

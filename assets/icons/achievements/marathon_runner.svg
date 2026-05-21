@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="marathonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fda9ff" />
+      <stop offset="100%" stop-color="#f3aeff" />
+    </linearGradient>
+    <filter id="marathonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#marathonGrad)" stroke-width="1.5" filter="url(#marathonGlow)">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 7v5l3 2" stroke-linecap="round"/>
+    <path fill="url(#marathonGrad)" d="M10 14h2l1 3-3-1z" stroke="none"/>
+    <circle cx="11" cy="13" r="1" fill="url(#marathonGrad)" stroke="none"/>
+  </g>
+</svg>
