@@ -56,6 +56,7 @@ export function useInputHandler({
   const onTapRef       = useRef(onTap);
   const onHoldStartRef = useRef(onHoldStart);
   const onHoldEndRef   = useRef(onHoldEnd);
+  const onPauseRef     = useRef(onPause);
 
   useEffect(() => { p1KeysRef.current  = p1Keys;     }, [p1Keys]);
   useEffect(() => { p2KeysRef.current  = p2Keys;     }, [p2Keys]);
@@ -66,6 +67,7 @@ export function useInputHandler({
   useEffect(() => { onTapRef.current       = onTap;       }, [onTap]);
   useEffect(() => { onHoldStartRef.current = onHoldStart; }, [onHoldStart]);
   useEffect(() => { onHoldEndRef.current   = onHoldEnd;   }, [onHoldEnd]);
+  useEffect(() => { onPauseRef.current     = onPause;     }, [onPause]);
 
   // ── Key → grid index resolver ──
   const resolveKey = useCallback((
@@ -96,7 +98,7 @@ export function useInputHandler({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (e.key === "Escape") { onPause(); return; }
+      if (e.key === "Escape") { onPauseRef.current(); return; }
 
       const i1 = resolveKey(e.key, p1KeysRef.current, p1StateRef.current);
       const i2 = npRef.current === 2
@@ -145,7 +147,7 @@ export function useInputHandler({
       window.removeEventListener("keydown", handleKeyDown);
       holdKeyTimers.forEach(id => clearTimeout(id));
     };
-  }, [enabled, onPause, resolveKey]);
+  }, [enabled, resolveKey]);
 
   // ── Pointer event factory (returned to caller for Cell components) ──
   // Note: pointer events are wired directly in PlayerPanel JSX via onTap/onHoldStart/onHoldEnd.

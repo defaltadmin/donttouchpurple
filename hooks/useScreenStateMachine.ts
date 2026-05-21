@@ -54,18 +54,15 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
   const updateProgress = useCallback((partial: Partial<PlayerProgress>) => {
     setProgress(prev => {
       const next = { ...prev, ...partial };
-      // Check for new unlocks automatically
-      const currentUnlocks = featureGates.load();
-      
-      (Object.keys(currentUnlocks) as FeatureId[]).forEach(id => {
-        if (!currentUnlocks[id] && featureGates.isUnlocked(id, next)) {
+      // Check for new unlocks automatically using cached state
+      (Object.keys(unlocks) as FeatureId[]).forEach(id => {
+        if (!unlocks[id] && featureGates.isUnlocked(id, next)) {
           featureGates.unlock(id);
         }
       });
-      
       return next;
     });
-  }, []);
+  }, [unlocks]);
 
   const canTransition = useCallback((to: Screen) => {
     if (to === current) return false;

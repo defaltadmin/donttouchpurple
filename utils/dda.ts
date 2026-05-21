@@ -61,9 +61,8 @@ export class DynamicDifficulty {
   }
 
   compute(): number {
-    this._checkEmergency();
-
     if (this.tickCount % this.adjustmentWindow !== 0) return this.currentSpawnMs;
+    this._checkEmergency();
     if (this.tickCount === 0 || this.lastAdjustedTickCount === this.tickCount) return this.currentSpawnMs;
     this.lastAdjustedTickCount = this.tickCount;
 

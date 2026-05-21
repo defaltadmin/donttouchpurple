@@ -302,6 +302,7 @@ export class GameEngine {
   start(forceSeed?: number): void {
     if (this._isDisposed) return; // Fix #2: Uninitialized/Disposed guard
     this.stop();
+    bossEngine.deactivate();
     rhythmFeedback.reset();
     sessionStorage.removeItem(this.SESSION_KEY);
     this.tickCount  = 0;

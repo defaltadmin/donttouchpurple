@@ -10,7 +10,7 @@ export const achievementSystem = {
   registry: new Map<string, Achievement>(),
   unlocked: new Set<string>(),
 
-  register(ach: Achievement) { this.registry.set(ach.id, ach); },
+  register(ach: Achievement) { if (!this.registry.has(ach.id)) this.registry.set(ach.id, ach); },
 
   isUnlocked(id: string) { return this.unlocked.has(id); },
 

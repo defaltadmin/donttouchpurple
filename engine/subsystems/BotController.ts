@@ -19,6 +19,7 @@ export interface BotCallbacks {
 export class BotController {
   private _active: { 1: boolean; 2: boolean } = { 1: false, 2: false };
   private _intervalRef: ReturnType<typeof setInterval> | null = null;
+  private _pendingTaps: ReturnType<typeof setTimeout>[] = [];
   private _dustSpentTotal = 0;
   private _rng: (() => number) | null = null;
 
@@ -72,7 +73,8 @@ export class BotController {
 
         const idx = cell.idx;
         const expectedType = cell.type;
-        setTimeout(() => {
+        const tapTimer = setTimeout(() => {
+          this._pendingTaps = this._pendingTaps.filter(t => t !== tapTimer);
           if (!this._active[1] || !this.callbacks.isPlaying()) return;
           // Verify cell at idx is still the same safe cell (could have been replaced by a new spawn)
           const current = this.callbacks.getActiveCells(1).find(c => c.idx === idx && !c.clicked);
@@ -80,6 +82,7 @@ export class BotController {
           this.callbacks.handleTap(1, idx);
           this.callbacks.emit({ type: 'botTap', player: 1, idx, dustCost: costPerTap });
         }, delay);
+        this._pendingTaps.push(tapTimer);
       }
     }, BALANCE.bot.checkIntervalMs);
   }
@@ -110,5 +113,10 @@ export class BotController {
     return { ...this._active };
   }
 
-  dispose(): void { this._stop(); this._active = { 1: false, 2: false }; }
+  dispose(): void {
+    this._stop();
+    this._pendingTaps.forEach(clearTimeout);
+    this._pendingTaps = [];
+    this._active = { 1: false, 2: false };
+  }
 }
