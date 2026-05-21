@@ -1,5 +1,103 @@
 # Don't Touch Purple — Changelog
 
+## [7.5.3] — 2026-05-21
+
+### Stitch Design System Integration
+- 8 new components: Icon, NeonText, GlassCard, CTABanner, FilterTabs, ChampionSpotlight, ParticleLayer, StatsBar
+- dtp-components.css design system (neon text, stat bar, CTA banner, filter tabs, reduced motion)
+- 75 SVG assets (achievements, powerups, stages, themes, social, brand)
+- Font loading optimized via `<link media="print" onload>` pattern
+
+### AAA Roadmap Phases 1–3
+- **Phase 1 (Android):** safe areas, touch targets, FPS cap, matchMedia null-checks, vibrate guards
+- **Phase 2 (Core Feel):** death flash, idle sway, reticle bloom, haptics, screen transitions
+- **Phase 3 (Retention):** 37 achievements, 19 daily objectives, 7 streak milestones
+
+### Dead Code & CSS Cleanup (~500 lines removed)
+- 11 files deleted (FirstRunOverlay, ScrambleText, ParticleWeb, Plasma, useAppInitialization/Orchestrator/Resources, useChallenges, useGameStartActions, usePWA, useZeroLatencyInput, SessionPersistor, preloader-v2)
+- dtp-components.css: unused neon variants, leaderboard table, card grid
+- game.css: overridden keyframes (screenShake, damage-glitch, fadeIn, titleShimmer), dead classes (dev-overlay, no-webgl, no-raf, rewards-hub, hub-*, dtp-pause-*, skip-link, dtp-locale-*, first-run-*), duplicate media queries
+- enhancements.css: unused CSS vars (--dur-slow, --dur-xslow, --glow-*)
+- performance.css: unused keyframes (safePulse, safeFade, safeSlide)
+- Config: dead exports removed (MAX_TUTORIAL_GAMES, BalanceConfig, DAILY_OBJECTIVE_COUNT)
+- App.tsx: duplicate SW registration, commented-out asset tiers
+- UIContext.tsx: dead provider (useUIContext never called)
+
+### Fixed — Stability (14 fixes)
+- **Double score submission:** removed submitScoreToLeaderboard from hook return (App.tsx has own path)
+- **Engine re-created too often:** removed dustRef from deps, removed config object from effect deps
+- **Double visibilitychange pause:** removed listener from useGameEngine (App.tsx handles it)
+- **botTapTimersRef unbounded growth:** timers self-cleanup after firing
+- **Shield/freeze achievement counters:** moved into powerup handling block (were in dead else branch)
+- **Session restore frozen:** added scheduleTick() + startSnapshotRaf() after restore
+- **Unsafe snapshotRef null cast:** typed as `GameSnapshot | null`, removed `as unknown as` cast
+- **Score URL mismatch:** score-sync.ts aligned to absolute URL matching App.tsx
+- **Bot pending taps fire after dispose:** track _pendingTaps, clear in dispose()
+- **bossEngine singleton dirty:** call bossEngine.deactivate() in GameEngine.start()
+- **DDA _checkEmergency every tick:** moved inside adjustmentWindow block
+- **Achievement re-registration:** guard register() with has() check
+- **onPause not ref-stabilized:** added onPauseRef pattern
+- **featureGates.load() every progress:** uses cached unlocks state
+
+### Fixed — Pointer & Input (5 fixes)
+- **pointercancel doesn't call onHoldEnd:** added handler to Cell and HoldCellDisplay
+- **HoldCellDisplay missing onPointerCancel:** same hold timer leak fix
+- **Inline arrows defeat React.memo:** pre-bound P1/P2 callbacks with useCallback in GameArea
+- **MagneticButton global mousemove:** changed to pointermove/pointerleave on button element
+- **Volume slider re-renders every pixel:** localVolume for display, onPointerUp commits final value
+
+### Fixed — Memory & Performance (10 fixes)
+- **IDB enqueue race condition:** count+delete+add wrapped in single readwrite transaction
+- **Blob URL never revoked:** revoke on new share + on ShareModal close
+- **AudioContext HMR leak:** exported destroyAudioContext() for HMR cleanup
+- **PerformanceObserver never disconnected:** stored refs, exposed disconnect()
+- **PwrBar RAF at 60fps during fade:** removed fading from RAF condition (CSS handles it)
+- **MouseTrail RAF with no particles:** track activeCount, skip tick when zero
+- **PurpleRain functions recreated:** moved makeShape/drawShape outside component
+- **Preloader wastes memory:** cache:'force-cache', skip arrayBuffer()
+- **i18n all locales loaded eagerly:** lazy-load non-English on demand
+- **Dust animation particle orphaned:** store cleanup ref, call on unmount
+
+### Fixed — Data & State (10 fixes)
+- **Session snapshot written to wrong storage:** sessionStorage.setItem (not localStorage)
+- **Firebase singleton consolidation:** getAppInstance() delegates to ensureFirebaseApp()
+- **GAME_MAX_ENERGY = 100 vs 5:** DustContext uses GAME.MAX_ENERGY
+- **Shake timer untracked:** _shakeTimer ref, cleared in reset()
+- **Seed fallback Date.now():** Math.random() seed prevents duplicate sequences
+- **Preview restores wrong theme:** originalThemeRef, only capture when no preview active
+- **Stored powerups memo stale:** storedVersion counter busts memo after purchase
+- **safeClose fires on unmounted:** mountedRef guard
+- **Heart loss animation wrong index:** track lossIdx from prevHealth
+- **configManager no subscribe:** added subscribe() with listener set
+
+### Fixed — UI & Visual (8 fixes)
+- **Score counter restarts on re-render:** finalScoreRef captures score once
+- **bugHref rebuilt every frame:** wrapped in React.useMemo
+- **Non-null assertions:** snapshot! replaced with snapshot?. optional chaining (BossOverlay, GameHeader)
+- **PauseOverlay stale now:** setInterval every 1s updates countdowns
+- **WhatsNew doesn't mark seen:** handleClose calls markWhatsNewSeen() internally
+- **EnergyBar interval restarts:** depend on isFull boolean, not energy value
+- **orientationMonitor.init() never called:** added init() before onChange
+- **Background map missing 3 entries:** added nebula, digital-rain, aurora-borealis
+
+### Fixed — Infrastructure & Security (6 fixes)
+- **SW origin check uses includes():** strict === equality
+- **sourcemap: false:** changed to 'hidden' for Sentry stack traces
+- **drop_console strips console.error:** removed, use pure_funcs only
+- **dust_wallet name squatting:** added uid == request.auth.uid guard
+- **Sentry DSN hardcoded:** moved to import.meta.env.VITE_SENTRY_DSN
+- **Dev password hardcoded:** moved to VITE_DEV_PASSWORD env var
+
+### Fixed — Config & Tests (5 fixes)
+- **DEFAULT_CONFIG.grid wrong:** aligned to 3×3, maxActiveCells 9
+- **devForceRare(boolean) wrong type:** fixed to use correct object type
+- **EVOLVE_PATTERNS duplicate:** removed duplicate at index 25, count updated to 27
+- **shop-storage no validation:** typeof checks on string fields
+- **useUIFlags lazy initializer:** simplified useState(() => false) to useState(false)
+
+### Fixed — Pre-existing Background Bugs
+- **Nebula/DigitalRain/AuroraBorealis:** undefined 'active' refs, missing default exports, unused tick counter
+
 ## [7.5.1] — 2026-05-16
 
 ### Fixed
