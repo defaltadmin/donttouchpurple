@@ -41,7 +41,7 @@ export function activeToCellsP(
       if (!maskSet.has(i)) cells[i] = "void" as CellType;
     }
   }
-  active.forEach(c => { if (!c.clicked) cells[c.idx] = c.type; });
+  active.forEach(c => { if (!c.clicked && c.idx >= 0 && c.idx < cells.length) cells[c.idx] = c.type; });
   return cells;
 }
 
@@ -83,10 +83,9 @@ export function spawnActive(
   // Use pre-computed base table — only adjust medpack weight dynamically
   const medpackWeight = (!godMode && health < GAME.MAX_HEARTS) ? MEDPACK_BASE_WEIGHT + 10 : (godMode ? 0 : MEDPACK_BASE_WEIGHT);
   const totalWeight = BASE_POWERUP_WEIGHT + medpackWeight;
-  const effectiveTotal = powerupEligible ? totalWeight : totalWeight * 0.4;
   if (powerupEligible && totalWeight > 0) {
     const roll = rng() * 100;
-    if (roll < effectiveTotal) {
+    if (roll < totalWeight) {
       let cursor = 0;
       // Check medpack first
       if (medpackWeight > 0) {

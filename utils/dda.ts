@@ -20,6 +20,7 @@ export class DynamicDifficulty {
 
   private _consecutiveDeaths = 0;
   private _recentReactions: number[] = [];
+  private _lastAttemptTime = 0;
   private readonly MAX_REACTION_SAMPLES = 8;
   private readonly DEATH_SPIKE_THRESHOLD = 2;
   private readonly REACTION_SPIKE_PCT = 0.85;
@@ -52,6 +53,7 @@ export class DynamicDifficulty {
     // Non-lethal miss (shield block): neither counter changes
 
     this.tickCount++;
+    this._lastAttemptTime = Date.now();
     this.metrics.accuracy =
       (this.metrics.accuracy * (this.tickCount - 1) + (hit ? 1 : 0)) / this.tickCount;
     this.metrics.avgReactionMs =
@@ -61,7 +63,8 @@ export class DynamicDifficulty {
   }
 
   compute(): number {
-    if (this.tickCount % this.adjustmentWindow !== 0) return this.currentSpawnMs;
+    const isAfk = this._lastAttemptTime > 0 && Date.now() - this._lastAttemptTime > 5000;
+    if (this.tickCount % this.adjustmentWindow !== 0 && !isAfk) return this.currentSpawnMs;
     this._checkEmergency();
     if (this.tickCount === 0 || this.lastAdjustedTickCount === this.tickCount) return this.currentSpawnMs;
     this.lastAdjustedTickCount = this.tickCount;

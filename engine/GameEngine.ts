@@ -88,6 +88,7 @@ export class GameEngine {
   private inputBuffer = new InputBuffer();
   private _sessionAutoSaveInterval: ReturnType<typeof setInterval> | null = null;
   private fpsHistory: number[] = [];
+  private fpsIdx = 0;
   private autoLowQuality = false;
   private lowQualityThreshold = 40;
   // Snapshot cache fields
@@ -112,6 +113,7 @@ export class GameEngine {
   private _difficultyEmergencyHandler: (() => void) | null = null;
   private _lastFocusedCell = '0';
   private _config = configManager.get();
+  private _configUnsub: (() => void) | null = null;
   private dda = new DynamicDifficulty(1200);
   private daily = new DailyChallenge();
   private _lastTapTime = 0;
@@ -130,6 +132,7 @@ export class GameEngine {
   private _bossActive = false;
   private _bombDefuseCount = 0;
   private _shieldCollected = 0;
+  private _tookDamage = false;
   private _freezeCollected = 0;
   private _purpleTaps = 0;
   private _tickProcessor = new TickProcessor();
@@ -192,6 +195,7 @@ export class GameEngine {
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
     }).catch(e => logError('Settings module failed', e));
+    this._configUnsub = configManager.subscribe(cfg => { this._config = cfg; });
     this._bossCompleteHandler = () => {
       this._bossActive = false;
       achievementSystem.unlock('boss_defeat');
@@ -211,7 +215,7 @@ export class GameEngine {
     gamepadManager.init();
     this._gamepadUnsub = gamepadManager.on((btn, state) => {
       if (state !== 'press') return;
-      if (btn === 'a' || btn === 'dpad_up') this.handleTap(1, parseInt(this._lastFocusedCell) || 0);
+      if (btn === 'a' || btn === 'dpad_up') { const v = parseInt(this._lastFocusedCell); this.handleTap(1, Number.isFinite(v) ? v : 0); }
       if (btn === 'start') {
         if (this.paused) this.resume();
         else this.pause();
@@ -266,15 +270,10 @@ export class GameEngine {
   }
 
   private _applySettings(s: { reducedMotion?: boolean; liteMode?: boolean }) {
-    if (s.liteMode !== undefined) {
-      this.skipParticles = s.liteMode;
-    }
     if (s.reducedMotion !== undefined) {
       this.devRotationSpeed = s.reducedMotion ? 0.5 : 1;
     }
   }
-
-  private skipParticles = false;
 
   setConfig(cfg: typeof this._config) { this._config = cfg; }
 
@@ -317,6 +316,10 @@ export class GameEngine {
     this._deltaTimers = [];
     this._bossActive = false;
     this._deathSlowdown = false;
+    this._shieldCollected = 0;
+    this._freezeCollected = 0;
+    this._purpleTaps = 0;
+    this._tookDamage = false;
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
@@ -336,7 +339,7 @@ export class GameEngine {
       this.config.storage?.saveStoredPowerups(updated);
     }
     this.p1 = makePS(bonusHearts, hasMult, stored);
-    this.p2 = makePS(bonusHearts, hasMult, stored);
+    this.p2 = makePS(bonusHearts, hasMult, this.config.numPlayers === 2 ? { freeze: 0, shield: 0, mult: 0, heart: 0 } : stored);
     this.p1.nextShuffleTick = 40 + Math.floor(this.rng() * 20); // K2: first shuffle at tick 40-60
     this.p2.nextShuffleTick = 40 + Math.floor(this.rng() * 20);
     this.tapBuffer  = { 1: null, 2: null };
@@ -470,6 +473,7 @@ export class GameEngine {
 destroy(): void {
     this._isDisposed = true;
     this._settingsUnsub?.();
+    this._configUnsub?.();
     this._gamepadUnsub?.();
     if (this._bossCompleteHandler) window.removeEventListener('dtp:boss:complete', this._bossCompleteHandler);
     if (this._bossShieldBreakHandler) window.removeEventListener('dtp:boss:shield-break', this._bossShieldBreakHandler);
@@ -635,7 +639,7 @@ destroy(): void {
           else {
             this.dda.recordAttempt(false, 0, true);
             if (ref.streak >= 5) this.emit({ type: "toast", message: `🔥 ${ref.streak} streak lost!` });
-            ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0;
+            ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0; this._tookDamage = true;
             this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
             this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
             this.hitPause(ref.health < 1 ? 200 : 40); // Death: 200ms, damage: 40ms
@@ -843,8 +847,7 @@ destroy(): void {
 
   updatePerformanceMetrics(frameTime: number): void {
     const fps = 1000 / Math.max(frameTime, 1);
-    this.fpsHistory.push(fps);
-    if (this.fpsHistory.length > 60) this.fpsHistory.shift();
+    if (this.fpsHistory.length < 60) { this.fpsHistory.push(fps); } else { this.fpsHistory[this.fpsIdx] = fps; this.fpsIdx = (this.fpsIdx + 1) % 60; }
     const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
     if (!this.autoLowQuality && avgFps < this.lowQualityThreshold) {
       this.autoLowQuality = true;
@@ -1027,7 +1030,8 @@ destroy(): void {
       // #16 fix: fast-forward RNG to match tickCount so post-restore spawns
       // use the correct position in the seed sequence.
       this.rng = mulberry32(this.gameSeed);
-      const rngStepsToSkip = Math.min((data.tickCount as number) ?? 0, GAME.HUMAN_LIMIT_TICK + 100); // Cap to prevent infinite loop from tampered data
+      const rawTick = typeof data.tickCount === 'number' ? data.tickCount : 0;
+      const rngStepsToSkip = Math.min(rawTick, GAME.HUMAN_LIMIT_TICK + 100); // Cap to prevent infinite loop from tampered data
       for (let i = 0; i < rngStepsToSkip; i++) this.rng();
       this.tickCount = rngStepsToSkip;
       this.evolveTick = (data.evolveTick as number) ?? 0;
@@ -1119,23 +1123,25 @@ private triggerGameOver(winner: Winner): void {
     }
 
     // Game count achievements
-    const gamesPlayed = parseInt(localStorage.getItem('dtp-games-played') || '0') + 1;
+    const gamesPlayed = Math.max(0, Math.min(99999, parseInt(localStorage.getItem('dtp-games-played') || '0') || 0)) + 1;
     localStorage.setItem('dtp-games-played', String(gamesPlayed));
     achievementSystem.check('games_50', () => gamesPlayed >= 50);
     achievementSystem.check('games_200', () => gamesPlayed >= 200);
 
-    // Perfect round — no damage taken (health still at max)
-    achievementSystem.check('perfect_round', () => this.p1.health >= GAME.MAX_HEARTS && this.tickCount > 100);
+    // Perfect round — no damage taken
+    achievementSystem.check('perfect_round', () => !this._tookDamage && this.tickCount > 100);
 
     // Reset per-game counters
     this._shieldCollected = 0;
     this._freezeCollected = 0;
     this._purpleTaps = 0;
+    this._tookDamage = false;
 
     // Death slow-motion: visually slow for 600ms before cleanup
     if (this._deathCleanupTimer) clearTimeout(this._deathCleanupTimer);
     this._deathCleanupTimer = setTimeout(() => {
       this._deathCleanupTimer = null;
+      if (this.phase !== 'gameover') return; // New game started during cleanup window
       this._deathSlowdown = false;
       this.tapBuffer = { 1: null, 2: null };
       this.holdTimers.clear();

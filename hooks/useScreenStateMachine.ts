@@ -1,6 +1,6 @@
 /* Centralized screen transitions + feature-gated UI state */
 import { useState, useCallback, useEffect } from 'react';
-import { featureGates, PlayerProgress, FeatureId } from '../utils/featureGates';
+import { featureGates, PlayerProgress, FeatureId, ALL_FEATURE_IDS } from '../utils/featureGates';
 import { logger } from '../utils/logger';
 
 export type Screen =
@@ -54,8 +54,8 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
   const updateProgress = useCallback((partial: Partial<PlayerProgress>) => {
     setProgress(prev => {
       const next = { ...prev, ...partial };
-      // Check for new unlocks automatically using cached state
-      (Object.keys(unlocks) as FeatureId[]).forEach(id => {
+      // Check for new unlocks automatically using all feature IDs
+      ALL_FEATURE_IDS.forEach(id => {
         if (!unlocks[id] && featureGates.isUnlocked(id, next)) {
           featureGates.unlock(id);
         }

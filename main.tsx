@@ -6,6 +6,7 @@ import { scoreSync } from './utils/score-sync'
 import { GameProvider } from './contexts/GameContext'
 import { DustProvider } from './contexts/DustContext'
 
+declare const __APP_VERSION__: string;
 const IS_PROD = window.location.hostname === 'game.mscarabia.com';
 
 if (IS_PROD) {
@@ -13,6 +14,7 @@ if (IS_PROD) {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN || '',
       environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'production',
+      release: __APP_VERSION__,
       sendDefaultPii: false,
       integrations: [
         Sentry.browserTracingIntegration(),

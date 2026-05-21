@@ -19,11 +19,14 @@ interface ScorePayload {
 
 let _cachedToken: string | null = null;
 let _tokenExpiry = 0;
+let _refreshPromise: Promise<string> | null = null;
 
 async function getFirebaseToken(env: Env): Promise<string> {
   if (_cachedToken && Date.now() < _tokenExpiry - 60_000) return _cachedToken;
+  if (_refreshPromise) return _refreshPromise;
 
-  const now = Math.floor(Date.now() / 1000);
+  _refreshPromise = (async () => {
+    const now = Math.floor(Date.now() / 1000);
   const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claim = btoa(JSON.stringify({
     iss: env.GCP_SERVICE_ACCOUNT_EMAIL,
@@ -52,10 +55,17 @@ async function getFirebaseToken(env: Env): Promise<string> {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
   });
-  const json = await res.json<{ access_token: string; expires_in: number }>();
-  _cachedToken = json.access_token;
-  _tokenExpiry = Date.now() + json.expires_in * 1000;
-  return _cachedToken;
+    const json = await res.json<{ access_token: string; expires_in: number }>();
+    _cachedToken = json.access_token;
+    _tokenExpiry = Date.now() + json.expires_in * 1000;
+    return _cachedToken;
+  })();
+
+  try {
+    return await _refreshPromise;
+  } finally {
+    _refreshPromise = null;
+  }
 }
 
 export default {
@@ -81,7 +91,7 @@ export default {
       if (typeof data.score !== 'number' || data.score < 0 || data.score > 9999) {
         return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      if (!data.initials || typeof data.initials !== 'string' || data.initials.length > 8) {
+      if (!data.initials || typeof data.initials !== 'string' || data.initials.length > 8 || !/^[a-zA-Z0-9_ ]{1,8}$/.test(data.initials)) {
         return new Response(JSON.stringify({ error: 'Invalid initials' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
       if (!data.mode || !['classic', 'evolve'].includes(data.mode)) {

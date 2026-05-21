@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import gsap from "gsap";
 import type { GameMode, Winner } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Icon } from "../UI/Icon";
@@ -25,11 +25,19 @@ export function getMessage(score: number): string {
 
 function NewBestBanner() {
   const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const ctx = gsap.context(() => {
+      gsap.from(ref.current, { scale: 0, opacity: 0, duration: 0.5, delay: 0.3, ease: "back.out(1.7)" });
+    });
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.3 }}
+    <div
+      ref={ref}
       style={{
         fontFamily: "var(--font-game)",
         fontSize: 14, letterSpacing: 3, textTransform: "uppercase" as const,
@@ -43,7 +51,7 @@ function NewBestBanner() {
       }}
     >
       ✨ {t('gameover.new_best')} ✨
-    </motion.div>
+    </div>
   );
 }
 
@@ -69,23 +77,38 @@ export function GameOver({
   const finalScoreRef = useRef(p1Score);
   const [displayScore, setDisplayScore] = useState(0);
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const scoreObj = useRef({ val: 0 });
 
   useEffect(() => {
     const score = finalScoreRef.current;
-    if (is2P || score === 0) { setTimeout(() => setDisplayScore(score), 0); return; }
-    let start: number | null = null;
-    const duration = Math.min(1200, 400 + score * 8);
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const elapsed = ts - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayScore(Math.round(eased * score));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    const raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-   
+    if (is2P || score === 0) { setDisplayScore(score); return; }
+
+    const ctx = gsap.context(() => {
+      // Score count-up
+      scoreObj.current.val = 0;
+      gsap.to(scoreObj.current, {
+        val: score,
+        duration: Math.min(1.2, 0.4 + score * 0.008),
+        ease: "power3.out",
+        snap: { val: 1 },
+        onUpdate: () => setDisplayScore(Math.round(scoreObj.current.val)),
+      });
+
+      // Button stagger entrance
+      if (actionsRef.current) {
+        const buttons = actionsRef.current.querySelectorAll(".btn-primary, .btn-ghost, .go-small-actions");
+        gsap.from(buttons, {
+          opacity: 0, y: 20,
+          duration: 0.4,
+          stagger: 0.08,
+          ease: "back.out(1.5)",
+          delay: 0.2,
+        });
+      }
+    });
+
+    return () => ctx.revert();
   }, [is2P]);
 
   const bugHref = React.useMemo(() => `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
@@ -128,33 +151,20 @@ export function GameOver({
         </>
       )}
 
-      <motion.div
-        className="go-actions"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: {},
-          visible: { transition: { staggerChildren: 0.08 } },
-        }}
-      >
-        <motion.button
+      <div className="go-actions" ref={actionsRef}>
+        <button
           className="btn-primary btn-large"
           onClick={onAgain}
-          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
-        >▶ {t('gameover.again')}</motion.button>
-        <motion.button
+        >▶ {t('gameover.again')}</button>
+        <button
           className="btn-ghost"
           onClick={() => setShowShareModal(true)}
-          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
-        >🔗 {t('gameover.share')}</motion.button>
-        <motion.div
-          className="go-small-actions"
-          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 25 } } }}
-        >
+        >🔗 {t('gameover.share')}</button>
+        <div className="go-small-actions">
           <button className="btn-icon" onClick={onLeaderboard}><Icon name="trophy" size={20} /></button>
           <button className="btn-icon" onClick={onMenu}>☰</button>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {showShareModal && (
         <div className="modal-overlay" onClick={() => setShowShareModal(false)} onKeyDown={e => { if (e.key === 'Escape') setShowShareModal(false); }} role="dialog" aria-modal="true" aria-label={t('gameover.share_title')} tabIndex={-1} ref={shareTrapRef}>

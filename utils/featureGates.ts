@@ -85,6 +85,8 @@ const FEATURE_DEFINITIONS: Record<FeatureId, Omit<FeatureGate, 'unlocked'>> = {
   },
 };
 
+export const ALL_FEATURE_IDS = Object.keys(FEATURE_DEFINITIONS) as FeatureId[];
+
 export const featureGates = {
   STORAGE_KEY: 'dtp:feature-unlocks',
   

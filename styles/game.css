@@ -1447,12 +1447,16 @@ text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
   text-align: center;
 }
 .loading-screen--out { opacity: 0; transform: scale(1.05); pointer-events: none; }
-.loading-logo { font-family: 'Fredoka One', system-ui, sans-serif; font-size: clamp(26px,8vw,44px); color: #e7deff; text-align: center; letter-spacing: 0.5px; }
+.loading-logo { font-family: 'Fredoka One', system-ui, sans-serif; font-size: clamp(26px,8vw,44px); color: #e7deff; text-align: center; letter-spacing: 0.5px; text-shadow: 0 0 40px rgba(192,38,211,0.8); }
 .loading-purple { color: #c026d3; text-shadow: 0 0 24px rgba(192,38,211,0.7); }
 .loading-sub { font-family: 'Nunito', system-ui, sans-serif; font-size: 13px; color: rgba(240,234,255,0.45); font-weight: 700; letter-spacing: 0.3px; }
-.loading-bar-track { width: min(280px, 80vw); height: 10px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; border: 1px solid rgba(192,38,211,0.25); }
+.loading-bar-section { width: min(280px, 80vw); margin-top: 20px; }
+.loading-bar-track { width: 100%; height: 10px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; border: 1px solid rgba(192,38,211,0.25); }
 .loading-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #7c3aed, #c026d3, #fda9ff); transition: width 0.25s ease; box-shadow: 0 0 14px rgba(192,38,211,0.6); }
-.loading-pct { font-family: 'Fredoka One', system-ui, sans-serif; font-size: 13px; color: rgba(192,38,211,0.65); }
+.loading-pct { font-family: 'Fredoka One', system-ui, sans-serif; font-size: 13px; color: rgba(192,38,211,0.65); margin-top: 8px; }
+.loading-name-input { width: 100%; margin-bottom: 12px; }
+.loading-name-submit { width: 100%; padding: 12px; }
+.loading-name-error { color: #f87171; font-size: 12px; margin-top: 8px; font-family: var(--font-ui); }
 
 
 /* Sidebar overlay: left=monitor, right=controls */
@@ -1660,8 +1664,8 @@ body[data-tuning-open] .gpanel-wrap {
 .loading-orb-3 { width:140px; height:140px; background:rgba(253,169,255,0.15); top:50%; left:50%; transform:translate(-50%,-50%); animation:orbFloat 5s ease-in-out infinite; }
 
 /* ── Loading name entry ── */
-.loading-name-entry { display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:8px; }
-.loading-name-label { font-family:var(--font-ui); font-size:14px; font-weight:800; color:rgba(240,234,255,0.7); }
+.loading-name-entry { display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px; width:min(320px,90vw); background:rgba(255,255,255,0.05); padding:24px; border-radius:24px; border:1px solid rgba(192,38,211,0.3); backdrop-filter:blur(10px); }
+.loading-name-label { font-family:var(--font-ui); font-size:14px; font-weight:800; color:rgba(240,234,255,0.7); margin-bottom:12px; }
 .loading-name-row { display:flex; gap:8px; align-items:center; }
 
 /* ── Leaderboard mode chip ── */

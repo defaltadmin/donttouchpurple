@@ -51,6 +51,8 @@ export interface TickContext {
   readonly rng: () => number;
 }
 
+const _slotsCache = new WeakMap<{ cols: number; rows: number; mask: number[] | null }, Set<number>>();
+
 export class TickProcessor {
   processTick(ctx: TickContext): void {
     try {
@@ -121,7 +123,8 @@ export class TickProcessor {
       const patIdx = ref.patternIdx;
       const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
       if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
-      const validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i));
+      let validSlots = _slotsCache.get(pat);
+      if (!validSlots) { validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)); _slotsCache.set(pat, validSlots); }
       const dangerColor = ctx.rareMode.active ? ctx.rareMode.color : "purple";
       ctx._isInverted = ctx.bossEvent?.type === "inversion" && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
       ctx._isBlackout  = ctx.bossEvent?.type === "blackout"  && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
@@ -131,7 +134,7 @@ export class TickProcessor {
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
-        const isMiss = ctx._isInverted ? c.type === "purple" && !isPwr : c.type !== dangerColor && !isPwr;
+        const isMiss = ctx._isInverted ? c.type === "purple" : c.type !== dangerColor && !isPwr;
         if (isMiss) {
           const dmg = mode === "evolve" ? 0.5 : 1;
           if (!ctx.devGodMode) {
@@ -232,7 +235,9 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
       logError("[TickProcessor] processTick crashed:", err);
       errorTracker.capture(err instanceof Error ? err : new Error(String(err)), { phase: 'processTick', tick: ctx.tickCount });
       ctx.emit({ type: "toast", message: "⚠️ Engine error — game ended" });
-      ctx.triggerGameOver(null);
+      try { ctx.triggerGameOver(null); } catch (inner) {
+        logError("[TickProcessor] triggerGameOver failed in catch:", inner);
+      }
     }
   }
 
@@ -243,9 +248,9 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
 
     ref.nextShuffleTick = ctx.tickCount + BALANCE.shuffle.minInterval + Math.floor(ctx.rng() * BALANCE.shuffle.bonusInterval);
 
-    const { cols, rows, mask } = pat;
-    const total = cols * rows;
-    const validSlots = new Set<number>(mask ?? Array.from({ length: total }, (_, i) => i));
+    const { cols, rows } = pat;
+    let validSlots = _slotsCache.get(pat);
+    if (!validSlots) { validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)); _slotsCache.set(pat, validSlots); }
 
     const occupied = new Set<number>(ref.active.filter(c => !c.clicked).map(c => c.idx));
     const empty = [...validSlots].filter(i => !occupied.has(i));
@@ -339,7 +344,7 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
     ctx.addDeltaTimer(`bomb_${player}_${idx}`, BALANCE.bomb.fuseTimeMs, () => {
       if (!ctx.activeBomb || ctx.activeBomb.idx !== idx || ctx.activeBomb.player !== player) return;
       const stillActive = ref.active.find(c => c.idx === idx && c.type === "bomb" && !c.clicked);
-      if (!stillActive) return;
+      if (!stillActive) { if (ctx.activeBomb?.idx === idx) ctx.activeBomb = null; return; }
       stillActive.clicked = true;
       ctx.activeBomb = null;
       if (!ctx.devGodMode) {

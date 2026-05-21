@@ -7,7 +7,8 @@ export const seedManager = {
   initOrRestore(): number {
     const saved = sessionStorage.getItem(this.STORAGE_KEY);
     if (saved) {
-      this.currentSeed = parseInt(saved, 10) || ((Math.random() * 0xffffffff) >>> 0);
+      const parsed = parseInt(saved, 10);
+      this.currentSeed = Number.isFinite(parsed) ? parsed : ((Math.random() * 0xffffffff) >>> 0);
       logger.info('Seed restored after crash', this.currentSeed);
     } else {
       this.currentSeed = ((Math.random() * 0xffffffff) >>> 0);

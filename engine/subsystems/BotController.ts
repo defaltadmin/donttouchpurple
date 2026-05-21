@@ -54,14 +54,16 @@ export class BotController {
       const delay = Math.max(BALANCE.bot.minDelayMs, BALANCE.bot.baseDelayMs - this._dustSpentTotal * BALANCE.bot.delayReductionPerTap);
       const accuracy = botCfg.getAccuracy();
       const danger = this.callbacks.getDangerColor();
+      const inverted = this.callbacks.isInverted();
       const costPerTap = BALANCE.bot.baseCostPerTap;
       const rng = this._rng ?? Math.random;
 
       for (const cell of this.callbacks.getActiveCells(1)) {
         if (cell.clicked) continue;
         if ((cell.type as string) === 'void') continue;
-        if (cell.type === danger) continue;
         if (cell.type === 'hold' || cell.type === 'ice') continue;
+        // During inversion: purple is safe, everything else is dangerous
+        if (inverted ? cell.type !== danger : cell.type === danger) continue;
         if (rng() > accuracy) continue;
 
         const dustNow = botCfg.getDust();

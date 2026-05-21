@@ -7,7 +7,7 @@ export const scoreSync = {
   async queue(score: number, mode: 'classic' | 'evolve' = 'evolve') {
     const rawInitials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
     const initials = rawInitials.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON';
-    const pending = { score, initials, mode, attempts: 0, nextRetry: Date.now() };
+    const pending = { score, initials, mode, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}` };
 
     if (navigator.onLine) {
       const success = await this._submit(pending);
@@ -22,7 +22,7 @@ export const scoreSync = {
     }
   },
 
-  async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number }): Promise<boolean> {
+  async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number; sessionId?: string }): Promise<boolean> {
     try {
       const res = await fetch('https://game.mscarabia.com/api/submit-score', {
         method: 'POST',
@@ -32,7 +32,7 @@ export const scoreSync = {
           initials: String(item.initials || 'ANON').replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON',
           mode: ['classic', 'evolve'].includes(item.mode) ? item.mode : 'classic',
           tick: typeof item.tick === 'number' ? item.tick : 0,
-          sessionId: crypto.randomUUID?.() || `sess-${Date.now()}`,
+          sessionId: item.sessionId || crypto.randomUUID?.() || `sess-${Date.now()}`,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

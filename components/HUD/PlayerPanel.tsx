@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import gsap from "gsap";
 import Cell from "../Cell";
 import { Hearts } from "./Hearts";
 import { useRef, useEffect, useState } from "react";
@@ -102,7 +103,24 @@ export const PlayerPanel = memo(function PlayerPanel({
   const gridRef = useRef<HTMLDivElement>(null);
   const botBtnRef = useRef<HTMLButtonElement>(null);
   const dustCleanupRef = useRef<(() => void) | null>(null);
+  const prevStageRef = useRef(ps.gridStage);
   useEffect(() => () => { dustCleanupRef.current?.(); }, []);
+
+  // GSAP stagger on grid stage change — center-out entrance for all cells
+  useEffect(() => {
+    if (!gridRef.current || ps.gridStage === prevStageRef.current) return;
+    prevStageRef.current = ps.gridStage;
+    const cells = gridRef.current.querySelectorAll('.cell:not(.cell-void)');
+    if (cells.length === 0) return;
+    gsap.from(cells, {
+      scale: 0,
+      opacity: 0,
+      duration: 0.35,
+      stagger: { amount: 0.25, from: "center" },
+      ease: "back.out(1.7)",
+      clearProps: "scale,opacity",
+    });
+  }, [ps.gridStage]);
 
   const spinClass = snapshot?.spinCfg
     ? (snapshot.spinCfg.direction === 1 ? "gpanel--cw" : "gpanel--ccw")
@@ -257,45 +275,31 @@ export const PlayerPanel = memo(function PlayerPanel({
   );
 });
 
-// ─── Sliding Cell (K5) — RAF-driven slide animation ─────────────
+// ─── Sliding Cell (K5) — GSAP-driven slide animation ─────────────
 function SlidingCell({
   idx, fromIdx, startMs, cols, durationMs, children,
 }: {
   idx: number; fromIdx: number; startMs: number; cols: number; durationMs: number;
   children: React.ReactNode;
 }) {
-  const [style, setStyle] = useState<React.CSSProperties>(() =>
-    computeSlideStyle(idx, fromIdx, cols, startMs, durationMs)
-  );
-  const rafRef = useRef<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const animate = () => {
-      const s = computeSlideStyle(idx, fromIdx, cols, startMs, durationMs);
-      setStyle(s);
-      if (Date.now() - startMs < durationMs) {
-        rafRef.current = requestAnimationFrame(animate);
-      }
-    };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    if (!ref.current) return;
+    const dCol = (fromIdx % cols) - (idx % cols);
+    const dRow = Math.floor(fromIdx / cols) - Math.floor(idx / cols);
+    const elapsed = (Date.now() - startMs) / 1000;
+    const dur = Math.max(0.01, durationMs / 1000 - elapsed);
+    const ctx = gsap.context(() => {
+      gsap.fromTo(ref.current,
+        { xPercent: dCol * 100, yPercent: dRow * 100 },
+        { xPercent: 0, yPercent: 0, duration: dur, ease: 'power2.out' }
+      );
+    }, ref);
+    return () => ctx.revert();
   }, [idx, fromIdx, cols, startMs, durationMs]);
 
-  return <div className="cell--sliding" style={style}>{children}</div>;
-}
-
-function computeSlideStyle(
-  idx: number, fromIdx: number, cols: number, startMs: number, durationMs: number
-): React.CSSProperties {
-  const elapsed = Date.now() - startMs;
-  const progress = Math.min(1, elapsed / durationMs);
-  const eased = 1 - Math.pow(1 - progress, 2);
-  const dCol = (fromIdx % cols) - (idx % cols);
-  const dRow = Math.floor(fromIdx / cols) - Math.floor(idx / cols);
-  return {
-    transform: `translate(${dCol * (1 - eased) * 100}%, ${dRow * (1 - eased) * 100}%)`,
-    zIndex: 5,
-  };
+  return <div ref={ref} className="cell--sliding" style={{ zIndex: 5 }}>{children}</div>;
 }
 
 // ─── Hold Cell Display (I2) ───────────────────────────────

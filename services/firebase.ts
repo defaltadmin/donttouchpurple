@@ -72,8 +72,9 @@ async function ensureAuth(): Promise<void> {
       const auth = getAuth(app as FirebaseAppInstance);
       if (auth.currentUser) return; // Already signed in
       await signInAnonymously(auth);
-    } catch {
+    } catch (err) {
       // Auth failure is non-fatal — Firestore rules will reject unauthenticated writes
+      console.warn('[firebase] Auth failed, Firestore ops will be unauthenticated:', err);
       authReady = null; // Allow retry
     }
   })();
@@ -165,7 +166,7 @@ export async function fbLogEvent(name: string, params: Record<string, string | n
 
 export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
   const db = await getDB();
-  if (!db) throw new Error("no db");
+  if (!db) return [];
   const modules = await ensureFirebaseModules();
   const q = modules.query(modules.collection(db, "lb_global"), modules.orderBy("score", "desc"), modules.limit(20));
   const snap = await modules.getDocs(q);
@@ -186,11 +187,16 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const safeName = name.trim().slice(0, 20);
   if (!db || !safeName) return;
   const modules = await ensureFirebaseModules();
+  const { getAuth } = await import("firebase/auth");
+  const app = await ensureFirebaseApp();
+  const auth = getAuth(app as FirebaseAppInstance);
+  if (!auth.currentUser) return;
   // Cap dust to prevent client-side manipulation — max realistic lifetime dust is ~50000
   const cappedDust = Math.max(0, Math.min(50000, Math.floor(dust)));
   await modules.setDoc(modules.doc(db, "dust_wallet", safeName), {
     name: safeName,
     dust: cappedDust,
+    uid: auth.currentUser.uid,
     ts: modules.serverTimestamp(),
   });
 }

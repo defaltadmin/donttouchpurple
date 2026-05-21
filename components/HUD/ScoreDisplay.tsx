@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import gsap from "gsap";
 import type { PlayerState } from "../../engine/types";
 import { speedLabel, speedPct } from "../../engine/DifficultyScaler";
 import { Hearts } from "./Hearts";
@@ -7,49 +8,38 @@ import { useTranslation } from "../../hooks/useTranslation";
 // ─── Score Count-Up Animation ─────────────────────────────────────
 function ScoreCountUp({ score }: { score: number }) {
   const [display, setDisplay] = useState(score);
-  const [bump, setBump] = useState(false);
+  const elRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef(score);
-  const rafRef = useRef<number | null>(null);
+  const objRef = useRef({ val: 0 });
 
   useEffect(() => {
     if (score === prevRef.current) return;
     const from = prevRef.current;
     const to = score;
     prevRef.current = score;
+    objRef.current.val = from;
 
-    // Trigger scale bump
-    setBump(true);
-    const bumpTimer = setTimeout(() => setBump(false), 150);
+    // Single GSAP tween: count-up + scale bump
+    const ctx = gsap.context(() => {
+      gsap.to(objRef.current, {
+        val: to,
+        duration: 0.12,
+        ease: "power3.out",
+        snap: { val: 1 },
+        onUpdate: () => setDisplay(Math.round(objRef.current.val)),
+      });
+      // Scale bump with overshoot
+      gsap.fromTo(elRef.current,
+        { scale: 1.15 },
+        { scale: 1, duration: 0.25, ease: "back.out(2)" }
+      );
+    });
 
-    // Animate count-up over ~120ms with overshoot
-    const start = performance.now();
-    const duration = 120;
-    const animate = (now: number) => {
-      const elapsed = now - start;
-      const t = Math.min(1, elapsed / duration);
-      // Overshoot curve: ease-out with slight bounce
-      const eased = t < 1 ? 1 - Math.pow(1 - t, 3) : 1;
-      const current = Math.round(from + (to - from) * eased);
-      setDisplay(current);
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      } else {
-        setDisplay(to);
-      }
-    };
-    rafRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      clearTimeout(bumpTimer);
-    };
+    return () => ctx.revert();
   }, [score]);
 
   return (
-    <div
-      className={`hud-val${bump ? ' hud-val--bump' : ''}`}
-      style={{ transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-    >
+    <div ref={elRef} className="hud-val">
       {display}
     </div>
   );

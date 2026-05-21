@@ -51,7 +51,10 @@ export const achievementSystem = {
         const ach = this.registry.get(id);
         if (ach) ach.unlocked = true;
       }
-    } catch {}
+    } catch (err) {
+      logger.warn('[achievements] Failed to load, resetting:', err);
+      this.unlocked = new Set();
+    }
   },
 
   getProgress(): { total: number; unlocked: number; list: Achievement[] } {

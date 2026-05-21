@@ -181,7 +181,7 @@ export function useGameEngine(
         case "sound": playSound(event.name, event.pitchMult); break;
         case "scoreFloat": {
           const id = ++scoreFloatIdRef.current;
-          setScoreFloats(prev => [...prev, { id, player: event.player, idx: event.idx, amount: event.amount }]);
+          setScoreFloats(prev => [...prev.slice(-9), { id, player: event.player, idx: event.idx, amount: event.amount }]);
           const floatTimer = setTimeout(() => {
             if (mountedRef.current) setScoreFloats(prev => prev.filter(f => f.id !== id));
             botTapTimersRef.current = botTapTimersRef.current.filter(t => t !== floatTimer);
@@ -235,6 +235,7 @@ export function useGameEngine(
           rareSplashTimerRef.current = setTimeout(() => { if (mountedRef.current) setRareSplash(null); }, GAME.RARE_SPLASH_MS);
           break;
         case "gameOver": {
+          if (!engineRef.current) break;
           const snap2 = engine.getSnapshot(); const seedAtGameOver = snap2.gameSeed;
           // Death vignette flash + haptic burst
           document.body.classList.add('death-flash');

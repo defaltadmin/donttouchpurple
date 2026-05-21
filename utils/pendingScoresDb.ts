@@ -23,6 +23,7 @@ export function openPendingScoresDb(): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       dbInstance = request.result;
+      dbInstance.onclose = () => { dbInstance = null; };
       resolve(dbInstance);
     };
 
@@ -49,6 +50,7 @@ export async function addPendingScore(scoreData: Omit<PendingScore, 'id' | 'time
     const req = store.add(entry);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
+    tx.onerror = () => reject(tx.error);
   });
 }
 

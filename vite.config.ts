@@ -7,28 +7,45 @@ import compression from 'vite-plugin-compression'
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    compression({ algorithm: 'brotliCompress', threshold: 10240 }),
-    compression({ algorithm: 'gzip' }),
-    visualizer({ open: false, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
-    {
-      name: 'sw-version-inject',
-      writeBundle() {
-        const swPath = 'dist/sw.js'
-        try {
-          let sw = readFileSync(swPath, 'utf-8')
-          sw = sw.replaceAll('dtp-v__SW_VERSION__', `dtp-v${pkg.version}`)
-          writeFileSync(swPath, sw)
-          console.log(`[sw-inject] Cache name set to dtp-v${pkg.version}`)
-        } catch (e) {
-          console.warn('[sw-inject] Failed to inject version into sw.js', e)
-        }
+// Build plugins array — Sentry sourcemap upload only when auth token is present
+const plugins = [
+  react(),
+  compression({ algorithm: 'brotliCompress', threshold: 10240 }),
+  compression({ algorithm: 'gzip' }),
+  visualizer({ open: false, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
+  {
+    name: 'sw-version-inject',
+    writeBundle() {
+      const swPath = 'dist/sw.js'
+      try {
+        let sw = readFileSync(swPath, 'utf-8')
+        sw = sw.replaceAll('dtp-v__SW_VERSION__', `dtp-v${pkg.version}`)
+        writeFileSync(swPath, sw)
+        console.log(`[sw-inject] Cache name set to dtp-v${pkg.version}`)
+      } catch (e) {
+        console.warn('[sw-inject] Failed to inject version into sw.js', e)
       }
     }
-  ],
+  }
+]
+
+// Conditionally add Sentry sourcemap upload plugin when auth token is available
+if (process.env.SENTRY_AUTH_TOKEN) {
+  const { sentryVitePlugin } = await import('@sentry/vite-plugin')
+  plugins.push(
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: { name: pkg.version },
+      sourcemaps: { assets: './dist/**' },
+    })
+  )
+}
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins,
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
@@ -69,7 +86,7 @@ export default defineConfig({
 
           // Services - split heavy ones (but not Firebase/Sentry since lazy)
           if (id.includes('services/')) {
-            if (id.includes('errorLogger.ts') || id.includes('metrics.ts')) return 'services-monitoring';
+            if (id.includes('errorLogger.ts') || id.includes('metrics.ts') || id.includes('web-vitals.ts')) return 'services-monitoring';
             return 'services-core';
           }
         },

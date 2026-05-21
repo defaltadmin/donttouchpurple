@@ -41,9 +41,11 @@ export const idb = {
       const countReq = store.count();
       countReq.onsuccess = () => {
         if (countReq.result >= 100) {
-          store.openCursor().onsuccess = (e) => {
+          const cursorReq = store.openCursor();
+          cursorReq.onsuccess = (e) => {
             (e.target as IDBRequest<IDBCursorWithValue>).result?.delete();
           };
+          cursorReq.onerror = () => { /* cursor eviction is best-effort */ };
         }
         store.add({ ...score, queuedAt: Date.now() });
       };

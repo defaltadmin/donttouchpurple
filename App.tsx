@@ -17,7 +17,7 @@ import { configManager } from "./utils/game-config";
 import { errorTracker } from "./utils/error-tracker";
 import { scoreCardGen } from "./utils/score-card";
 import { privacyManager } from "./utils/privacy";
-import { webVitalsMonitor } from "./utils/web-vitals";
+import { webVitalsMonitor } from "./services/web-vitals";
 import { stateGuard } from "./utils/state-guard";
 import { challengeLink } from "./utils/challenge-link";
 import { orientationMonitor } from "./utils/orientation";
