@@ -14,7 +14,7 @@ export function useUIFlags() {
   const [showRotatePrompt, setShowRotatePrompt] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showEnergyPopup, setShowEnergyPopup] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLoginStreak, setShowLoginStreak] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showRewardsHub, setShowRewardsHub] = useState(false);

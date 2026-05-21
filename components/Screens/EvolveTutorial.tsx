@@ -1,5 +1,5 @@
 // components/Screens/EvolveTutorial.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TUTORIAL_STEPS } from '../../config/tutorial';
 
 interface EvolveTutorialProps {
@@ -8,9 +8,52 @@ interface EvolveTutorialProps {
   currentStep?: number;
 }
 
+function renderVisual(highlight: string) {
+  if (highlight === 'basics') {
+    return (
+      <div className="tutorial-grid-demo">
+        <div className="tutorial-demo-cell tutorial-demo-cell--safe">Tap</div>
+        <div className="tutorial-demo-cell tutorial-demo-cell--danger">Avoid</div>
+        <div className="tutorial-demo-cell tutorial-demo-cell--safe">Tap</div>
+        <div className="tutorial-demo-cell tutorial-demo-cell--empty" />
+      </div>
+    );
+  }
+  if (highlight === 'rare') {
+    return (
+      <div className="tutorial-warning-demo">
+        <span className="tutorial-warning-chip">Don't touch red</span>
+        <div className="tutorial-demo-row">
+          <div className="tutorial-demo-cell tutorial-demo-cell--safe">Safe</div>
+          <div className="tutorial-demo-cell tutorial-demo-cell--rare">Avoid</div>
+        </div>
+      </div>
+    );
+  }
+  if (highlight === 'powerup') {
+    return (
+      <div className="tutorial-powerups">
+        <div className="tutorial-pwr"><span className="tutorial-pwr-icon">♥</span><span className="tutorial-pwr-label">Heal</span></div>
+        <div className="tutorial-pwr"><span className="tutorial-pwr-icon">◈</span><span className="tutorial-pwr-label">Shield</span></div>
+        <div className="tutorial-pwr"><span className="tutorial-pwr-icon">❄</span><span className="tutorial-pwr-label">Slow</span></div>
+        <div className="tutorial-pwr"><span className="tutorial-pwr-icon">2x</span><span className="tutorial-pwr-label">Score</span></div>
+      </div>
+    );
+  }
+  return (
+    <div className="tutorial-shapes">
+      <div className="tutorial-shape tutorial-shape--circle" />
+      <div className="tutorial-shape tutorial-shape--triangle" />
+      <div className="tutorial-shape tutorial-shape--diamond" />
+    </div>
+  );
+}
+
 export default function EvolveTutorial({ isOpen, onClose, currentStep = 0 }: EvolveTutorialProps) {
   const [step, setStep] = useState(currentStep);
   const current = TUTORIAL_STEPS[step];
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -20,68 +63,28 @@ export default function EvolveTutorial({ isOpen, onClose, currentStep = 0 }: Evo
 
   useEffect(() => {
     if (!current || !current.duration) return;
-    
+
     const timer = setTimeout(() => {
       if (step < TUTORIAL_STEPS.length - 1) {
         setStep(step + 1);
       } else {
-        onClose();
+        onCloseRef.current();
       }
     }, current.duration);
 
     return () => clearTimeout(timer);
-  }, [step, current, onClose]);
+  }, [step, current]);
+
+  const isLast = step === TUTORIAL_STEPS.length - 1;
+  const goNext = useCallback(() => {
+    if (isLast) onCloseRef.current();
+    else setStep(step + 1);
+  }, [isLast, step]);
 
   if (!isOpen || !current) return null;
 
   const c = current;
   const isAutoAdvance = (c.duration ?? 0) > 0;
-  const isLast = step === TUTORIAL_STEPS.length - 1;
-  const goNext = () => {
-    if (isLast) onClose();
-    else setStep(step + 1);
-  };
-
-  const renderVisual = () => {
-    if (current.highlight === 'basics') {
-      return (
-        <div className="tutorial-grid-demo">
-          <div className="tutorial-demo-cell tutorial-demo-cell--safe">Tap</div>
-          <div className="tutorial-demo-cell tutorial-demo-cell--danger">Avoid</div>
-          <div className="tutorial-demo-cell tutorial-demo-cell--safe">Tap</div>
-          <div className="tutorial-demo-cell tutorial-demo-cell--empty" />
-        </div>
-      );
-    }
-    if (current.highlight === 'rare') {
-      return (
-        <div className="tutorial-warning-demo">
-          <span className="tutorial-warning-chip">Don't touch red</span>
-          <div className="tutorial-demo-row">
-            <div className="tutorial-demo-cell tutorial-demo-cell--safe">Safe</div>
-            <div className="tutorial-demo-cell tutorial-demo-cell--rare">Avoid</div>
-          </div>
-        </div>
-      );
-    }
-    if (current.highlight === 'powerup') {
-      return (
-        <div className="tutorial-powerups">
-          <div className="tutorial-pwr"><span className="tutorial-pwr-icon">♥</span><span className="tutorial-pwr-label">Heal</span></div>
-          <div className="tutorial-pwr"><span className="tutorial-pwr-icon">◈</span><span className="tutorial-pwr-label">Shield</span></div>
-          <div className="tutorial-pwr"><span className="tutorial-pwr-icon">❄</span><span className="tutorial-pwr-label">Slow</span></div>
-          <div className="tutorial-pwr"><span className="tutorial-pwr-icon">2x</span><span className="tutorial-pwr-label">Score</span></div>
-        </div>
-      );
-    }
-    return (
-      <div className="tutorial-shapes">
-        <div className="tutorial-shape tutorial-shape--circle" />
-        <div className="tutorial-shape tutorial-shape--triangle" />
-        <div className="tutorial-shape tutorial-shape--diamond" />
-      </div>
-    );
-  };
 
   return (
     <div className="tutorial-overlay">
@@ -90,14 +93,14 @@ export default function EvolveTutorial({ isOpen, onClose, currentStep = 0 }: Evo
           <span className="tutorial-step-counter">
             {step + 1} / {TUTORIAL_STEPS.length}
           </span>
-          <button className="tutorial-close-btn" onClick={onClose}>✕</button>
+          <button className="tutorial-close-btn" onClick={() => onCloseRef.current()}>✕</button>
         </div>
 
         <h2 className="tutorial-title">{current.title}</h2>
         <p className="tutorial-body">{current.body}</p>
 
         <div className="tutorial-visual">
-          {renderVisual()}
+          {renderVisual(current.highlight ?? '')}
           <div className="tutorial-visual-hint">{current.hint}</div>
         </div>
 
@@ -108,7 +111,7 @@ export default function EvolveTutorial({ isOpen, onClose, currentStep = 0 }: Evo
         </div>
 
         <div className="tutorial-actions">
-          <button className="tutorial-skip" onClick={onClose}>Skip</button>
+          <button className="tutorial-skip" onClick={() => onCloseRef.current()}>Skip</button>
           <button 
             className="tutorial-next"
             disabled={isAutoAdvance}

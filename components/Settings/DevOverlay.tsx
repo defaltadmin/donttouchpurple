@@ -162,6 +162,7 @@ export function DevOverlay({
   onSpawnSpecialCell, onTriggerBotTap, onToggleBotAssist,
 }: DevOverlayProps) {
   const [tickMs, setTickMs] = useState<number[]>([]);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth > 900);
   const [tuningOpen, setTuningOpen] = useState(false);
   const [spawnType, setSpawnType] = useState<"ice" | "hold" | "bomb" | "rare">("ice");
   const [spawnPlayer, setSpawnPlayer] = useState<1 | 2>(1);
@@ -173,6 +174,12 @@ export function DevOverlay({
   useEffect(() => { lastTickRef.current = Date.now(); }, []);
 
   useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth > 900);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  useEffect(() => {
     if (tuningOpen) document.body.setAttribute("data-tuning-open", "true");
     else document.body.removeAttribute("data-tuning-open");
     return () => document.body.removeAttribute("data-tuning-open");
@@ -182,11 +189,13 @@ export function DevOverlay({
     const now = Date.now();
     const delta = now - lastTickRef.current;
     lastTickRef.current = now;
-    setTickMs(prev => [...prev.slice(-(SPARKLINE_CAP - 1)), delta]);
-  }, [tick]);
+    // Only accumulate tick data when the tick graph section could be visible
+    if (tuningOpen || isDesktop) {
+      setTickMs(prev => [...prev.slice(-(SPARKLINE_CAP - 1)), delta]);
+    }
+  }, [tick, tuningOpen, isDesktop]);
 
   const copySeed = () => { navigator.clipboard?.writeText(String(gameSeed)).catch(() => {}); };
-  const isDesktop = typeof window !== "undefined" && window.innerWidth > 900;
 
   return (
     <div className={`devs-overlay${tuningOpen ? " devs-overlay--tuning-open" : ""}`}>
@@ -417,7 +426,7 @@ export function DevUnlockModal({ onUnlock, onClose }: { onUnlock: () => void; on
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const attempt = () => {
-    if (import.meta.env.DEV && pw === "mscarabia") { onUnlock(); }
+    if (import.meta.env.DEV && pw === (import.meta.env.VITE_DEV_PASSWORD || "mscarabia")) { onUnlock(); }
     else { setErr(true); setPw(""); setTimeout(() => setErr(false), 1200); }
   };
 

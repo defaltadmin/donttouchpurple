@@ -5,7 +5,6 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { scoreSync } from './utils/score-sync'
 import { GameProvider } from './contexts/GameContext'
 import { DustProvider } from './contexts/DustContext'
-import { UIProvider } from './contexts/UIContext'
 
 const IS_PROD = window.location.hostname === 'game.mscarabia.com';
 
@@ -45,9 +44,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <GameProvider>
         <DustProvider>
-          <UIProvider>
             <App />
-          </UIProvider>
         </DustProvider>
       </GameProvider>
     </ErrorBoundary>
