@@ -311,11 +311,10 @@ describe("GameEngine", () => {
       engine.startBot();
       expect(engine.isBotActive()).toBe(true);
       
-      // Advance to trigger interval
+      // Advance for bot interval + reaction delay
       vi.advanceTimersByTime(1100);
-      // Advance to trigger setTimeout reaction
       vi.advanceTimersByTime(500);
-      
+
       expect(engine.getSnapshot().p1.active[0].clicked).toBe(true);
 
       engine.stopBot();
@@ -324,10 +323,10 @@ describe("GameEngine", () => {
 
     it("allows forcing rare mode via dev tools", () => {
       engine.start();
-      eng(engine).devForceRare(true);
+      eng(engine).devForceRare({ color: 'gold', cssColor: '#ffd700' });
       expect(engine.getSnapshot().rareMode.active).toBe(true);
-      
-      eng(engine).devForceRare(false);
+
+      eng(engine).devForceRare(null);
       expect(engine.getSnapshot().rareMode.active).toBe(false);
     });
 

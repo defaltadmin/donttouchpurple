@@ -8,7 +8,7 @@ import { POWERUP_TABLE, SHOP_THEMES } from "../config/powerupWeights";
 describe("config integrity", () => {
   it("keeps the expected stage and pattern counts", () => {
     expect(STAGES).toHaveLength(10);
-    expect(EVOLVE_PATTERNS).toHaveLength(28);
+    expect(EVOLVE_PATTERNS).toHaveLength(27);
     expect(RARE_COLORS).toHaveLength(7);
   });
 

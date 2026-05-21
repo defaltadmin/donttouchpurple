@@ -35,9 +35,9 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    sourcemap: false,
+    sourcemap: 'hidden',
     minify: 'terser',
-    terserOptions: { compress: { drop_console: true, drop_debugger: true, pure_funcs: ['console.log', 'console.info'] }, mangle: { safari10: true }, format: { comments: false } },
+    terserOptions: { compress: { drop_debugger: true, pure_funcs: ['console.log', 'console.info', 'console.debug'] }, mangle: { safari10: true }, format: { comments: false } },
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
