@@ -29,9 +29,9 @@ export const GameHeader = React.memo(function GameHeader({
         onClick={onLogoClick}>
         {t('header.dont_touch')}{" "}
         <span className="txt-p" style={rareActive
-          ? { color: snapshot!.rareMode.cssColor, textShadow: `0 0 20px ${snapshot!.rareMode.cssColor}99`, transition:"color 0.5s, text-shadow 0.5s" }
+          ? { color: snapshot?.rareMode.cssColor ?? '', textShadow: `0 0 20px ${snapshot?.rareMode.cssColor ?? ''}99`, transition:"color 0.5s, text-shadow 0.5s" }
           : {}}>
-          {rareActive ? snapshot!.rareMode.color.charAt(0).toUpperCase() + snapshot!.rareMode.color.slice(1) : t('header.purple')}
+          {rareActive ? (snapshot?.rareMode.color ?? '').charAt(0).toUpperCase() + (snapshot?.rareMode.color ?? '').slice(1) : t('header.purple')}
         </span>
       </span>
       {screen === "playing" && practiceMode && <span className="practice-badge">∞ {t('header.practice')}</span>}

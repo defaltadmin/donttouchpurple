@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import type { GameSnapshot, GameMode } from "../../engine/types";
 import type { ShopData } from "../../utils/shop-storage";
 import { PwrBar } from "./PwrBar";
@@ -75,6 +75,19 @@ export const GameArea = React.memo(function GameArea({
   onLeaderboard, onMenu, onShare, onCopyChallenge,
   onActivateFreeze, onActivateShield, onToggleBot,
 }: GameAreaProps) {
+  const onTapP1 = useCallback((i: number) => onTap(1, i), [onTap]);
+  const onHoldStartP1 = useCallback((i: number) => onHoldStart(1, i), [onHoldStart]);
+  const onHoldEndP1 = useCallback((i: number) => onHoldEnd(1, i), [onHoldEnd]);
+  const onActivateFreezeP1 = useCallback(() => onActivateFreeze(1), [onActivateFreeze]);
+  const onActivateShieldP1 = useCallback(() => onActivateShield(1), [onActivateShield]);
+  const onToggleBotP1 = useCallback(() => onToggleBot(1), [onToggleBot]);
+  const onTapP2 = useCallback((i: number) => onTap(2, i), [onTap]);
+  const onHoldStartP2 = useCallback((i: number) => onHoldStart(2, i), [onHoldStart]);
+  const onHoldEndP2 = useCallback((i: number) => onHoldEnd(2, i), [onHoldEnd]);
+  const onActivateFreezeP2 = useCallback(() => onActivateFreeze(2), [onActivateFreeze]);
+  const onActivateShieldP2 = useCallback(() => onActivateShield(2), [onActivateShield]);
+  const onToggleBotP2 = useCallback(() => onToggleBot(2), [onToggleBot]);
+
   return (
     <div className="game-area">
       <GridErrorBoundary onRestart={() => { onMenu(); setTimeout(onStartGame, 100); }}>
@@ -117,8 +130,8 @@ export const GameArea = React.memo(function GameArea({
         {is2P && <EnergyDrop active={pwrToastP2?.includes("⚡") ?? false} />}
 
         <PlayerPanel ps={snapshot.p1} anim={snapshot.p1.anim}
-          onTap={i => { onTap(1, i); }}
-          onHoldStart={i => onHoldStart(1, i)} onHoldEnd={i => onHoldEnd(1, i)}
+          onTap={onTapP1}
+          onHoldStart={onHoldStartP1} onHoldEnd={onHoldEndP1}
           keyLabels={p1Keys} showKeys={inputMode === "keyboard"} pressing={pressing1}
           label={is2P ? "P1" : null} heartAnim={heartAnimP1} mode={gameMode}
           colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid1}
@@ -129,11 +142,11 @@ export const GameArea = React.memo(function GameArea({
           levelUpBadge={levelUpBadge}
           storedFreezeCharges={snapshot.p1.storedFreezeCharges}
           storedShieldCharges={snapshot.p1.storedShieldCharges}
-          onActivateFreeze={() => onActivateFreeze(1)}
-          onActivateShield={() => onActivateShield(1)}
+          onActivateFreeze={onActivateFreezeP1}
+          onActivateShield={onActivateShieldP1}
           showStoredPwr={screen === "playing"}
           practiceMode={practiceMode}
-          onToggleBotAssist={() => onToggleBot(1)}
+          onToggleBotAssist={onToggleBotP1}
           showBotAssist={screen === "playing"}
           isBotActive={botAssistActive[1]}
           botTapHighlights={botTapHighlights[1]}
@@ -141,8 +154,8 @@ export const GameArea = React.memo(function GameArea({
           scoreFloats={scoreFloats.filter(f => f.player === 1)} />
         {is2P && (
           <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
-            onTap={i => { onTap(2, i); }}
-            onHoldStart={i => onHoldStart(2, i)} onHoldEnd={i => onHoldEnd(2, i)}
+            onTap={onTapP2}
+            onHoldStart={onHoldStartP2} onHoldEnd={onHoldEndP2}
             keyLabels={p2Keys} showKeys={inputMode === "keyboard"} pressing={pressing2}
             label="P2" heartAnim={heartAnimP2} mode={gameMode}
             colorblind={cbActive} cbFilter={cbFilter} is2P={is2P} shakeGrid={screenShake && !reducedMotion && shakeGrid2}
@@ -152,11 +165,11 @@ export const GameArea = React.memo(function GameArea({
             pwrToast={pwrToastP2}
             storedFreezeCharges={snapshot.p2.storedFreezeCharges}
             storedShieldCharges={snapshot.p2.storedShieldCharges}
-            onActivateFreeze={() => onActivateFreeze(2)}
-            onActivateShield={() => onActivateShield(2)}
+            onActivateFreeze={onActivateFreezeP2}
+            onActivateShield={onActivateShieldP2}
             showStoredPwr={screen === "playing"}
             practiceMode={practiceMode}
-            onToggleBotAssist={() => onToggleBot(2)}
+            onToggleBotAssist={onToggleBotP2}
             showBotAssist={screen === "playing" && is2P}
             isBotActive={botAssistActive[2]}
             botTapHighlights={botTapHighlights[2]}

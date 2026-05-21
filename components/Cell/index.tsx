@@ -155,7 +155,7 @@ export default function Cell({
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
-      onPointerCancel={() => setIsTouched(false)}
+      onPointerCancel={() => { setIsTouched(false); if (isHold && onHoldEnd) onHoldEnd(cell.idx); }}
       data-shape={shape}
       style={{ '--cb-type': cell.type } as React.CSSProperties}
     >

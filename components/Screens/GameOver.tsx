@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { GameMode, Winner } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -66,28 +66,31 @@ export function GameOver({
   const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
   const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
+  const finalScoreRef = useRef(p1Score);
   const [displayScore, setDisplayScore] = useState(0);
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
 
   useEffect(() => {
-    if (is2P || p1Score === 0) { setTimeout(() => setDisplayScore(p1Score), 0); return; }
+    const score = finalScoreRef.current;
+    if (is2P || score === 0) { setTimeout(() => setDisplayScore(score), 0); return; }
     let start: number | null = null;
-    const duration = Math.min(1200, 400 + p1Score * 8);
+    const duration = Math.min(1200, 400 + score * 8);
     const step = (ts: number) => {
       if (!start) start = ts;
       const elapsed = ts - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayScore(Math.round(eased * p1Score));
+      setDisplayScore(Math.round(eased * score));
       if (progress < 1) requestAnimationFrame(step);
     };
     const raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [p1Score, is2P]);
+   
+  }, [is2P]);
 
-  const bugHref = `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
+  const bugHref = React.useMemo(() => `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
     `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.href}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
-  )}`;
+  )}`, [p1Score, mode, gameSeed, tick, p1.health, spinLevel, p1.streak]);
 
   return (
     <>
