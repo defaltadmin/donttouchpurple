@@ -17,7 +17,9 @@ export function useDustEconomy(playerName: string) {
   });
 
   const dustRef = useRef(dust);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { dustRef.current = dust; }, [dust]);
+  useEffect(() => () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); }, []);
 
   const persistDust = useCallback((d: number) => {
     try { localStorage.setItem(LS_KEYS.DUST, d.toString()); } catch {}
@@ -41,7 +43,8 @@ export function useDustEconomy(playerName: string) {
     setDust(newDust);
     dustRef.current = newDust;
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
-    fbSyncDust(playerName, newDust).catch(() => {});
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => fbSyncDust(playerName, newDust).catch(() => {}), 5000);
     logResourceEvent("Source", "Dust", source, "earned", amount);
     return newDust;
   }, [playerName]);

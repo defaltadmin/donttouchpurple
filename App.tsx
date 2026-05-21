@@ -1198,7 +1198,10 @@ export default function App() {
   const handleShareScore = useCallback(async (score: number, hearts: number, time: number) => {
     try {
       const url = await scoreCardGen.generate({ score, hearts, time, seed: '' });
-      setShareUrl(url);
+      setShareUrl(prev => {
+        if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+        return url;
+      });
       setShowShare(true);
     } catch (e) { logger.error('Share generation failed', e); }
   }, [setShareUrl, setShowShare]);
@@ -1511,7 +1514,10 @@ export default function App() {
       )}
 
       {showShare && shareUrl && (
-        <ShareModal shareUrl={shareUrl} onClose={() => setShowShare(false)} />
+        <ShareModal shareUrl={shareUrl} onClose={() => {
+          if (shareUrl?.startsWith('blob:')) URL.revokeObjectURL(shareUrl);
+          setShowShare(false);
+        }} />
       )}
 
       {showSettings && (
