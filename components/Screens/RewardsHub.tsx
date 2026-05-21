@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { DailyChallenge } from "./DailyChallengesPopup";
 import { playSoundEffect } from "../../hooks/useGameEngine";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -63,7 +63,9 @@ export function RewardsHub({
   };
 
   const closedRef = useRef(false);
-  const safeClose = () => { if (!closedRef.current) { closedRef.current = true; onClose(); } };
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  const safeClose = () => { if (!closedRef.current && mountedRef.current) { closedRef.current = true; onClose(); } };
 
   const handleClaimLogin = () => {
     onClaimLogin();

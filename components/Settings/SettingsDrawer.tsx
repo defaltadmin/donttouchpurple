@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { PillRow } from "./PillRow";
 import { i18n, type Locale } from "../../utils/i18n";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -63,6 +63,8 @@ export function SettingsDrawer({
 }: SettingsDrawerProps) {
   const { t } = useTranslation();
   const trapRef = useFocusTrap<HTMLDivElement>(true);
+  const [localVolume, setLocalVolume] = useState(volume);
+  const commitVolume = useCallback((v: number) => { setVolume(v); }, [setVolume]);
   const handleLocaleChange = (lang: Locale) => {
     i18n.set(lang);
     setCurrentLocale?.(lang);
@@ -100,8 +102,9 @@ export function SettingsDrawer({
               min="0"
               max="1"
               step="0.05"
-              value={muted ? 0 : volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              value={muted ? 0 : localVolume}
+              onChange={(e) => setLocalVolume(parseFloat(e.target.value))}
+              onPointerUp={(e) => commitVolume(parseFloat((e.target as HTMLInputElement).value))}
               disabled={muted}
             />
             <span className="vol-pct">{muted ? t('settings.muted_label') : `${Math.round(volume * 100)}%`}</span>

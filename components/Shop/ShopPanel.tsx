@@ -64,20 +64,21 @@ export function ShopPanel({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewTimeoutRef = useRef<number | null>(null);
   const buyAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const originalThemeRef = useRef(shopData.equippedTheme);
 
   const handlePreview = useCallback((themeId: string) => {
     if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
-    const originalTheme = shopData.equippedTheme;
+    if (!previewId) originalThemeRef.current = shopData.equippedTheme;
     const updated = { ...shopData, equippedTheme: themeId };
     saveShopData(updated);
     setPreviewId(themeId);
 
     previewTimeoutRef.current = window.setTimeout(() => {
-      const restored = { ...shopData, equippedTheme: originalTheme };
+      const restored = { ...shopData, equippedTheme: originalThemeRef.current };
       saveShopData(restored);
       setPreviewId(null);
     }, 10000);
-  }, [shopData, saveShopData]);
+  }, [shopData, saveShopData, previewId]);
 
   const spend = useCallback((cost: number): boolean => {
     if (devMode) return true;
@@ -175,9 +176,12 @@ export function ShopPanel({
     if (itemId === "heart1") saveStoredPowerups({ ...stored, heart: stored.heart + 1 });
     if (itemId === "heart2") saveStoredPowerups({ ...stored, heart: stored.heart + 2 });
     triggerBuyAnim(itemId);
+    setStoredVersion(v => v + 1);
   };
 
-  const stored = useMemo(() => loadStoredPowerups(), [loadStoredPowerups]);
+  const [storedVersion, setStoredVersion] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- storedVersion busts memo after purchases
+  const stored = useMemo(() => loadStoredPowerups(), [loadStoredPowerups, storedVersion]);
 
   useEffect(() => {
     return () => {
