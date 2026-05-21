@@ -850,10 +850,12 @@ export default function App() {
         if (snapshotRef.current?.phase === "playing") {
           pauseEngine();
           const snap = snapshotRef.current;
-          stateGuard.safeStore('dtp:session', {
-            ts: Date.now(),
-            engineSnapshot: { hearts: snap.p1?.health ?? 1, score: snap.p1?.score ?? 0, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
-          });
+          try {
+            sessionStorage.setItem('dtp:session', JSON.stringify({
+              ts: Date.now(),
+              engineSnapshot: { hearts: snap.p1?.health ?? 1, score: snap.p1?.score ?? 0, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
+            }));
+          } catch { /* quota exceeded — non-fatal */ }
         }
       } else if (document.visibilityState === 'visible') {
         if (snapshotRef.current?.phase === "paused") {

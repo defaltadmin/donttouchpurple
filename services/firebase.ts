@@ -195,14 +195,8 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   });
 }
 
-let appInstance: FirebaseAppInstance | null = null;
-
 async function getAppInstance(): Promise<FirebaseAppInstance> {
-  if (appInstance) return appInstance;
-  const { getApps, initializeApp } = await import("firebase/app");
-  if (getApps().length) { appInstance = getApps()[0] as FirebaseAppInstance; return appInstance; }
-  appInstance = initializeApp(FIREBASE_CONFIG) as unknown as FirebaseAppInstance;
-  return appInstance;
+  return ensureFirebaseApp() as Promise<FirebaseAppInstance>;
 }
 
 export function getDeviceId(): string {

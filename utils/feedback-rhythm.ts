@@ -4,6 +4,7 @@ const MULTIPLIER_STEPS = [1, 1.2, 1.5, 2.0, 2.5];
 
 export const rhythmFeedback = {
   state: { count: 0, lastTap: 0, multiplier: 1 } as ComboState,
+  _shakeTimer: null as ReturnType<typeof setTimeout> | null,
 
   recordTap() {
     const now = performance.now();
@@ -16,13 +17,21 @@ export const rhythmFeedback = {
     return this.state.multiplier;
   },
 
-  reset() { this.state = { count: 0, lastTap: 0, multiplier: 1 }; this._dispatch(); },
+  reset() {
+    if (this._shakeTimer) { clearTimeout(this._shakeTimer); this._shakeTimer = null; }
+    this.state = { count: 0, lastTap: 0, multiplier: 1 };
+    this._dispatch();
+  },
 
   _dispatch() {
     window.dispatchEvent(new CustomEvent('dtp:combo', { detail: { ...this.state } }));
     if (this.state.count > 0 && this.state.count % 5 === 0) {
+      if (this._shakeTimer) clearTimeout(this._shakeTimer);
       document.documentElement.style.setProperty('--shake-intensity', '1');
-      setTimeout(() => document.documentElement.style.setProperty('--shake-intensity', '0'), 150);
+      this._shakeTimer = setTimeout(() => {
+        document.documentElement.style.setProperty('--shake-intensity', '0');
+        this._shakeTimer = null;
+      }, 150);
     }
   }
 };

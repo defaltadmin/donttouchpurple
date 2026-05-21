@@ -34,22 +34,19 @@ export const idb = {
   },
 
   async enqueue(score: QueuedScore): Promise<void> {
-    // Cap queue size to prevent unbounded growth
-    const count = await this.count();
-    if (count >= 100) {
-      if (process.env.NODE_ENV === 'development') console.warn('Score queue full (100), dropping oldest entry');
-      const db = await this.open();
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const store = tx.objectStore(this.STORE);
-      const cursor = store.openCursor();
-      cursor.onsuccess = () => {
-        if (cursor.result) cursor.result.delete(); // Delete oldest
-      };
-    }
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.STORE, 'readwrite');
-      tx.objectStore(this.STORE).add({ ...score, queuedAt: Date.now() });
+      const store = tx.objectStore(this.STORE);
+      const countReq = store.count();
+      countReq.onsuccess = () => {
+        if (countReq.result >= 100) {
+          store.openCursor().onsuccess = (e) => {
+            (e.target as IDBRequest<IDBCursorWithValue>).result?.delete();
+          };
+        }
+        store.add({ ...score, queuedAt: Date.now() });
+      };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
