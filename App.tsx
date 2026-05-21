@@ -72,6 +72,9 @@ const WarpGate      = lazy(() => import("./components/Backgrounds/WarpGate"));
 const PulseField    = lazy(() => import("./components/Backgrounds/PulseField"));
 const GlitchGrid    = lazy(() => import("./components/Backgrounds/GlitchGrid"));
 const AmbientFlow   = lazy(() => import("./components/Backgrounds/AmbientFlow"));
+const Nebula        = lazy(() => import("./components/Backgrounds/Nebula"));
+const DigitalRain   = lazy(() => import("./components/Backgrounds/DigitalRain"));
+const AuroraBorealis = lazy(() => import("./components/Backgrounds/AuroraBorealis"));
 import { MouseFollower } from "./components/Backgrounds/MouseFollower";
 import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
@@ -734,6 +737,9 @@ export default function App() {
     'pulse-field': { component: PulseField },
     'glitch-grid': { component: GlitchGrid },
     'ambient-flow': { component: AmbientFlow },
+    'nebula': { component: Nebula },
+    'digital-rain': { component: DigitalRain },
+    'aurora-borealis': { component: AuroraBorealis },
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 
@@ -1212,6 +1218,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    orientationMonitor.init();
     const unsub = orientationMonitor.onChange(isLand => {
       setShowRotatePrompt(isLand);
     });

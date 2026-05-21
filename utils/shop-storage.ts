@@ -13,17 +13,19 @@ export function loadShopData(): ShopData {
     const r = localStorage.getItem(LS_KEYS.SHOP);
     if (r) {
       const data = JSON.parse(r);
+      const str = (v: unknown, d: string) => typeof v === 'string' ? v : d;
+      const arr = (v: unknown, d: string[]) => Array.isArray(v) ? v : d;
       return {
-        unlockedThemes: data.unlockedThemes || data.ownedThemes || ["default"],
-        equippedTheme:  data.equippedTheme || "default",
-        unlockedBadges: data.unlockedBadges || data.ownedBadges || [],
-        equippedBadge:  data.equippedBadge || "",
-        unlockedSkins:  data.unlockedSkins || data.ownedSkins || ["default"],
-        equippedSkin:   data.equippedSkin || "default",
-        unlockedBackgrounds: data.unlockedBackgrounds || ["default"],
-        equippedBackground: data.equippedBackground || "default",
-        unlockedTrails: data.unlockedTrails || ["default"],
-        equippedTrail: data.equippedTrail || "default"
+        unlockedThemes: arr(data.unlockedThemes || data.ownedThemes, ["default"]),
+        equippedTheme:  str(data.equippedTheme, "default"),
+        unlockedBadges: arr(data.unlockedBadges || data.ownedBadges, []),
+        equippedBadge:  str(data.equippedBadge, ""),
+        unlockedSkins:  arr(data.unlockedSkins || data.ownedSkins, ["default"]),
+        equippedSkin:   str(data.equippedSkin, "default"),
+        unlockedBackgrounds: arr(data.unlockedBackgrounds, ["default"]),
+        equippedBackground: str(data.equippedBackground, "default"),
+        unlockedTrails: arr(data.unlockedTrails, ["default"]),
+        equippedTrail: str(data.equippedTrail, "default")
       };
     }
   } catch { /* invalid JSON, return defaults */ }

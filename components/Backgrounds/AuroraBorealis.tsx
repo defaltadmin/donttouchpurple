@@ -21,7 +21,6 @@ export function AuroraBorealis({ reducedMotion: _reducedMotion }: { reducedMotio
   }, [register, pause, resume]);
 
   useEffect(() => {
-    if (!active) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     let tick = 0;
@@ -123,6 +122,6 @@ export function AuroraBorealis({ reducedMotion: _reducedMotion }: { reducedMotio
     };
   }, []);
 
-  if (!active) return null;
   return <canvas ref={canvasRef} className="background-canvas" />;
 }
+export default AuroraBorealis;

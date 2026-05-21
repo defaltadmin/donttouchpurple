@@ -17,6 +17,54 @@ interface Shape {
 
 export interface PurpleRainHandle { pause: () => void; resume: () => void; }
 
+const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
+  const types: Shape["type"][] = ["square", "circle", "triangle"];
+  const size        = 18 + Math.random() * 72;
+  const opacityBase = 0.06 + Math.random() * 0.09;
+  return {
+    x: Math.random() * canvasW,
+    y: y ?? -size - Math.random() * canvasH,
+    size, speed: 0.18 + Math.random() * 0.32,
+    opacity: opacityBase, opacityTarget: opacityBase, opacityBase,
+    opacityRange:  0.04 + Math.random() * 0.06,
+    breathPhase:   Math.random() * Math.PI * 2,
+    breathSpeed:   0.004 + Math.random() * 0.008,
+    type:   types[Math.floor(Math.random() * 3)],
+    filled: Math.random() > 0.5,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.002,
+  };
+};
+
+const drawShape = (ctx: CanvasRenderingContext2D, s: Shape, purple: string) => {
+  ctx.save();
+  ctx.globalAlpha = s.opacity;
+  ctx.strokeStyle = purple;
+  ctx.fillStyle   = purple;
+  ctx.lineWidth   = 1.5;
+  ctx.translate(s.x, s.y);
+  ctx.rotate(s.rotation);
+
+  if (s.type === "circle") {
+    ctx.beginPath();
+    ctx.arc(0, 0, s.size / 2, 0, Math.PI * 2);
+    if (s.filled) ctx.fill(); else ctx.stroke();
+  } else if (s.type === "square") {
+    const h = s.size / 2;
+    if (s.filled) ctx.fillRect(-h, -h, s.size, s.size);
+    else ctx.strokeRect(-h, -h, s.size, s.size);
+  } else {
+    const r = s.size / 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r * 0.866, r * 0.5);
+    ctx.lineTo(-r * 0.866, r * 0.5);
+    ctx.closePath();
+    if (s.filled) ctx.fill(); else ctx.stroke();
+  }
+  ctx.restore();
+};
+
 const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotion = false }, ref) => {
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const animationRef   = useRef<number | null>(null);
@@ -44,54 +92,6 @@ const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotio
       animationRef.current = null;
     }
   }, []);
-
-  const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
-    const types: Shape["type"][] = ["square", "circle", "triangle"];
-    const size        = 18 + Math.random() * 72;
-    const opacityBase = 0.06 + Math.random() * 0.09;
-    return {
-      x: Math.random() * canvasW,
-      y: y ?? -size - Math.random() * canvasH,
-      size, speed: 0.18 + Math.random() * 0.32,
-      opacity: opacityBase, opacityTarget: opacityBase, opacityBase,
-      opacityRange:  0.04 + Math.random() * 0.06,
-      breathPhase:   Math.random() * Math.PI * 2,
-      breathSpeed:   0.004 + Math.random() * 0.008,
-      type:   types[Math.floor(Math.random() * 3)],
-      filled: Math.random() > 0.5,
-      rotation: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.002,
-    };
-  };
-
-  const drawShape = (ctx: CanvasRenderingContext2D, s: Shape, purple: string) => {
-    ctx.save();
-    ctx.globalAlpha = s.opacity;
-    ctx.strokeStyle = purple;
-    ctx.fillStyle   = purple;
-    ctx.lineWidth   = 1.5;
-    ctx.translate(s.x, s.y);
-    ctx.rotate(s.rotation);
-
-    if (s.type === "circle") {
-      ctx.beginPath();
-      ctx.arc(0, 0, s.size / 2, 0, Math.PI * 2);
-      if (s.filled) ctx.fill(); else ctx.stroke();
-    } else if (s.type === "square") {
-      const h = s.size / 2;
-      if (s.filled) ctx.fillRect(-h, -h, s.size, s.size);
-      else ctx.strokeRect(-h, -h, s.size, s.size);
-    } else {
-      const r = s.size / 2;
-      ctx.beginPath();
-      ctx.moveTo(0, -r);
-      ctx.lineTo(r * 0.866, r * 0.5);
-      ctx.lineTo(-r * 0.866, r * 0.5);
-      ctx.closePath();
-      if (s.filled) ctx.fill(); else ctx.stroke();
-    }
-    ctx.restore();
-  };
 
   const animate = useCallback((time: number) => {
     if (time - lastFrameRef.current < frameInterval) {

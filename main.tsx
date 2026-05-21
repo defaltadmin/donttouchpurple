@@ -12,8 +12,8 @@ const IS_PROD = window.location.hostname === 'game.mscarabia.com';
 if (IS_PROD) {
   import('@sentry/react').then((Sentry) => {
     Sentry.init({
-      dsn: 'https://f1800fa06950669a685e5900121ed53a@o4511311285190656.ingest.de.sentry.io/4511311305506896',
-      environment: 'production',
+      dsn: import.meta.env.VITE_SENTRY_DSN || '',
+      environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'production',
       sendDefaultPii: false,
       integrations: [
         Sentry.browserTracingIntegration(),

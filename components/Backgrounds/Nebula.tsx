@@ -21,7 +21,6 @@ export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: bool
   }, [register, pause, resume]);
 
   useEffect(() => {
-    if (!active) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     let tick = 0;
@@ -104,6 +103,6 @@ export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: bool
     };
   }, []);
 
-  if (!active) return null;
   return <canvas ref={canvasRef} className="background-canvas" />;
 }
+export default Nebula;

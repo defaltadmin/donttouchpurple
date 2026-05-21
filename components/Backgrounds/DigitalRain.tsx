@@ -21,12 +21,10 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
   }, [register, pause, resume]);
 
   useEffect(() => {
-    if (!active) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const fontSize = 14;
     const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
-
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -68,7 +66,6 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
         drops[i] += 0.5 + Math.random() * 0.5;
       }
 
-      _tick++;
       rafRef.current = requestAnimationFrame(draw);
     };
     drawRef.current = draw;
@@ -80,6 +77,6 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
     };
   }, []);
 
-  if (!active) return null;
   return <canvas ref={canvasRef} className="background-canvas" />;
 }
+export default DigitalRain;

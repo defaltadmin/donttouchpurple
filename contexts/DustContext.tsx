@@ -2,7 +2,7 @@
 // Isolates dust/energy/shop economy state.
 // Updates here never trigger game grid re-renders.
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
-import { LS_KEYS } from "../config/difficulty";
+import { LS_KEYS, GAME } from "../config/difficulty";
 
 export interface EnergyData { current: number; max: number; lastRefill: number; }
 export interface ShopData { [key: string]: unknown; }
@@ -37,12 +37,10 @@ function loadInitialDust(): number {
 function loadInitialEnergy(): EnergyData {
   try {
     const r = localStorage.getItem(LS_KEYS.ENERGY);
-    if (r) { const d = JSON.parse(r); return { current: d.current ?? d.count ?? GAME_MAX_ENERGY, max: GAME_MAX_ENERGY, lastRefill: d.lastRefill ?? Date.now() }; }
+    if (r) { const d = JSON.parse(r); return { current: d.current ?? d.count ?? GAME.MAX_ENERGY, max: GAME.MAX_ENERGY, lastRefill: d.lastRefill ?? Date.now() }; }
   } catch {}
-  return { current: GAME_MAX_ENERGY, max: GAME_MAX_ENERGY, lastRefill: Date.now() };
+  return { current: GAME.MAX_ENERGY, max: GAME.MAX_ENERGY, lastRefill: Date.now() };
 }
-
-const GAME_MAX_ENERGY = 100;
 
 function loadInitialShop(): ShopData {
   try {

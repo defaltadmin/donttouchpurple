@@ -13,21 +13,13 @@ class I18nManager {
 
   async init() {
     try {
-      const [en, ...others] = await Promise.allSettled([
-        import(`../locales/en.json`).then(m => m.default),
-        import(`../locales/es.json`).then(m => m.default).catch(() => ({})),
-        import(`../locales/ja.json`).then(m => m.default).catch(() => ({})),
-        import(`../locales/pt.json`).then(m => m.default).catch(() => ({})),
-        import(`../locales/fr.json`).then(m => m.default).catch(() => ({})),
-      ]);
-      if (en.status === 'fulfilled') this.dicts.en = en.value;
+      const en = await import(`../locales/en.json`).then(m => m.default).catch(() => ({}));
+      this.dicts.en = en;
       this._fallback = this.dicts.en || {};
-      others.forEach((p, i) => {
-        if (p.status === 'fulfilled' && p.value) {
-          const langs: Locale[] = ['es', 'ja', 'pt', 'fr'];
-          this.dicts[langs[i]] = p.value;
-        }
-      });
+      // Lazy-load the user's saved locale if non-English
+      if (this._current !== 'en' && !this.dicts[this._current]) {
+        await this._loadLocale(this._current);
+      }
       logger.info('🌍 i18n dictionaries loaded');
     } catch (e) {
       logger.warn('i18n fallback load failed', e);
@@ -35,9 +27,17 @@ class I18nManager {
     }
   }
 
+  private async _loadLocale(lang: Locale): Promise<void> {
+    try {
+      const m = await import(`../locales/${lang}.json`);
+      this.dicts[lang] = m.default;
+    } catch { /* locale unavailable */ }
+  }
+
   get current() { return this._current; }
-  set(lang: Locale) {
-    if (!this.dicts[lang]) { logger.warn(`Locale ${lang} not loaded`); return; }
+  async set(lang: Locale) {
+    if (!this.dicts[lang]) await this._loadLocale(lang);
+    if (!this.dicts[lang]) { logger.warn(`Locale ${lang} not available`); return; }
     this._current = lang;
     localStorage.setItem(STORAGE_KEY, lang);
     window.dispatchEvent(new CustomEvent('dtp:locale-change', { detail: lang }));
