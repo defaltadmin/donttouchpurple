@@ -76,7 +76,6 @@ export class GameEngine {
   private tapBuffer: Record<1 | 2, { idx: number; ts: number } | null> = { 1: null, 2: null };
   private static readonly TAP_BUFFER_MS = GAME.TAP_BUFFER_MS;
   private   devGodMode     = false;
-  devMode        = false;
   private devFreezeTime  = false;
   private devForcedPwr: "shield" | "freeze" | "heart" | null = null;
   private devRotationSpeed = 1;
@@ -817,7 +816,6 @@ destroy(): void {
   getDevRotationSpeed(): number { return this.devRotationSpeed; }
 
   devSpawnSpecialCell(player: 1 | 2, type: "ice" | "hold" | "bomb" | "rare", idx?: number): void {
-    if (!this.devMode) return;
     const target = player === 1 ? this.p1 : this.p2;
     if (!target.alive) return;
     const slot = idx !== undefined ? idx : Math.floor(this.rng() * Math.max(target.active.length, 1));
@@ -836,12 +834,10 @@ destroy(): void {
   }
 
   devTriggerBotTap(player: 1 | 2, idx: number, dustCost = 3): void {
-    if (!this.devMode) return;
     this.emit({ type: "botTap", player, idx, dustCost });
   }
 
   devToggleBotAssist(player: 1 | 2, enabled: boolean): void {
-    if (!this.devMode) return;
     this.setBotAssist(player, enabled);
   }
 
