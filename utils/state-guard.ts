@@ -29,7 +29,15 @@ export const stateGuard = {
   sanitize<T extends Record<string, unknown>>(raw: unknown, defaults: T): T {
     if (!raw || typeof raw !== 'object') return defaults;
     const clean: Record<string, unknown> = {};
-    for (const k of Object.keys(defaults)) clean[k] = (raw as Record<string, unknown>)[k] ?? defaults[k];
+    for (const k of Object.keys(defaults)) {
+      const val = (raw as Record<string, unknown>)[k];
+      // Reject mismatched types — use default instead
+      if (val != null && typeof val !== typeof defaults[k]) {
+        clean[k] = defaults[k];
+      } else {
+        clean[k] = val ?? defaults[k];
+      }
+    }
     return clean as T;
   }
 };

@@ -212,7 +212,10 @@ export default function App() {
     h.hydrateAll();
   }, []);
 
-  const [playerName, setPlayerName] = useState(() => localStorage.getItem(LS_KEYS.PLAYER_NAME) || "");
+  const [playerName, setPlayerName] = useState(() => {
+    const raw = localStorage.getItem(LS_KEYS.PLAYER_NAME) || "";
+    return raw.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8);
+  });
   const { dust, dustRef, setDust, addDust, spendDust, persistDust, getBotAccuracy } = useDustEconomy(playerName);
   const scoreSubmittedRef = useRef(false);
 
@@ -879,9 +882,7 @@ export default function App() {
       }
     };
     const handleUnload = () => {
-      if (snapshotRef.current?.phase === "playing") {
-        navigator.sendBeacon?.('/api/telemetry', JSON.stringify({ event: 'tab_close', ts: Date.now() }));
-      }
+      // Session persistence on tab close is handled by visibilitychange listener above
     };
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('beforeunload', handleUnload);

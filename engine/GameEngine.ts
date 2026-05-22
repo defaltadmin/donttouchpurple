@@ -886,8 +886,9 @@ destroy(): void {
   }
 
   restoreFromSession(data: { hearts?: number; score?: number; timeLeft?: number }): void {
-    if (data.hearts != null) this.p1.health = data.hearts;
-    if (data.score != null) this.p1.score = data.score;
+    if (!this.p1) return;
+    if (data.hearts != null) this.p1.health = Math.max(0, Math.min(GAME.MAX_HEARTS, data.hearts));
+    if (data.score != null) this.p1.score = Math.max(0, Math.min(9999, Math.floor(data.score)));
     if (data.timeLeft != null) this.tickCount = Math.max(0, GAME.HUMAN_LIMIT_TICK - data.timeLeft);
   }
 

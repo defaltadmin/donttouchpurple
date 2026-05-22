@@ -426,7 +426,7 @@ export function DevUnlockModal({ onUnlock, onClose }: { onUnlock: () => void; on
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const attempt = () => {
-    if (import.meta.env.DEV && pw === (import.meta.env.VITE_DEV_PASSWORD || "mscarabia")) { onUnlock(); }
+    if (import.meta.env.DEV && import.meta.env.VITE_DEV_PASSWORD && pw === import.meta.env.VITE_DEV_PASSWORD) { onUnlock(); }
     else { setErr(true); setPw(""); setTimeout(() => setErr(false), 1200); }
   };
 

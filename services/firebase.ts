@@ -207,6 +207,10 @@ async function getAppInstance(): Promise<FirebaseAppInstance> {
 
 export function getDeviceId(): string {
   try {
+    // Only persist device ID if telemetry consent is granted
+    if (localStorage.getItem('dtp:telemetry-consent') !== 'true') {
+      return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
     const key = "dtp-device-id";
     let id = localStorage.getItem(key);
     if (!id) {
@@ -226,7 +230,8 @@ export async function fbGetStreak(opts?: { clientDate?: string }): Promise<numbe
     const { getFunctions, httpsCallable } = await import("firebase/functions");
     const func = httpsCallable(getFunctions(app), "updateStreak");
     const result = await func({ clientDate: opts?.clientDate, deviceId: getDeviceId() });
-    return (result.data as { streak: number }).streak;
+    const s = (result.data as { streak?: unknown }).streak;
+    return typeof s === 'number' && isFinite(s) ? Math.max(0, Math.min(999, Math.floor(s))) : getLocalStreakFallback();
   } catch {
     return getLocalStreakFallback();
   }
