@@ -66,6 +66,7 @@ export const configManager = {
       }
       logger.info('Config loaded', this.current);
     } catch (e) { logger.warn('Config load failed, using defaults', e); }
+    this._listeners.forEach(cb => cb(this.current));
     return this.current;
   },
 

@@ -959,7 +959,7 @@ export default function App() {
     const id = setTimeout(() => {
       const tapPlayer = (active: typeof snapshot.p1.active, player: 1 | 2) => {
         active
-          .filter(cell => !cell.clicked && cell.type !== dangerColor)
+          .filter(cell => !cell.clicked && (snapshot.isInverted ? cell.type === 'purple' : cell.type !== dangerColor))
           .forEach(cell => handleTap(player, cell.idx));
         // Handle hold cells: simulate a full hold
         active
@@ -1178,12 +1178,10 @@ export default function App() {
 
   useEffect(() => {
     const processQueue = () => {
-      const raw = localStorage.getItem('dtp:achievement-toasts');
-      if (!raw) return;
-      const queue = JSON.parse(raw);
+      const queue: { id: string; name: string; icon: string; desc: string; ts: number }[] = safeGetJSON('dtp:achievement-toasts', []);
       if (queue.length > 0) {
         setAchievementQueue(prev => [...prev, queue[0]]);
-        localStorage.setItem('dtp:achievement-toasts', JSON.stringify(queue.slice(1)));
+        safeSet('dtp:achievement-toasts', JSON.stringify(queue.slice(1)));
         toastTimeoutRef.current = setTimeout(processQueue, 3500);
       }
     };
@@ -1325,10 +1323,11 @@ export default function App() {
   const handleChallengeClaim = (challengeId: string, reward: number) => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const CHALLENGES_KEY = `dtp-challenges-${todayStr}`;
-    const claimed: string[] = JSON.parse(localStorage.getItem(CHALLENGES_KEY) ?? '[]');
+    const claimed: string[] = safeGetJSON(CHALLENGES_KEY, []);
+    if (claimed.includes(challengeId)) return; // prevent double-claim
     claimed.push(challengeId);
-    localStorage.setItem(CHALLENGES_KEY, JSON.stringify(claimed));
-    addDust(reward, 'DailyChallenge');
+    safeSet(CHALLENGES_KEY, JSON.stringify(claimed));
+    addDust(isNaN(reward) ? 0 : reward, 'DailyChallenge');
     setDailyChallenges(buildDailyChallenges(todayStr));
   };
 
@@ -1357,11 +1356,11 @@ export default function App() {
     weekStart.setDate(now.getDate() - now.getDay());
     const weekKey = weekStart.toISOString().slice(0, 10);
     const WEEKLY_CLAIMED_KEY = `dtp-weekly-claimed-${weekKey}`;
-    const claimed: string[] = JSON.parse(localStorage.getItem(WEEKLY_CLAIMED_KEY) ?? '[]');
+    const claimed: string[] = safeGetJSON(WEEKLY_CLAIMED_KEY, []);
+    if (claimed.includes(taskId)) return; // prevent double-claim
     claimed.push(taskId);
-    localStorage.setItem(WEEKLY_CLAIMED_KEY, JSON.stringify(claimed));
-    const safeReward = isNaN(reward) ? 0 : reward;
-    addDust(safeReward, 'WeeklyTask');
+    safeSet(WEEKLY_CLAIMED_KEY, JSON.stringify(claimed));
+    addDust(isNaN(reward) ? 0 : reward, 'WeeklyTask');
     setWeeklyTasks(buildWeeklyTasks());
   };
 

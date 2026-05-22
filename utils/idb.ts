@@ -1,4 +1,5 @@
 export interface QueuedScore {
+  id?: number;
   score: number;
   initials: string;
   mode: string;
@@ -54,6 +55,28 @@ export const idb = {
     });
   },
 
+  async peekAll(): Promise<QueuedScore[]> {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, 'readonly');
+      const req = tx.objectStore(this.STORE).getAll();
+      req.onsuccess = () => resolve((req.result || []) as QueuedScore[]);
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async removeItems(ids: number[]): Promise<void> {
+    if (ids.length === 0) return;
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      const store = tx.objectStore(this.STORE);
+      for (const id of ids) store.delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
   async dequeueAll(): Promise<QueuedScore[]> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
@@ -62,7 +85,10 @@ export const idb = {
       const req = store.getAll();
       req.onsuccess = () => {
         const items = (req.result || []) as QueuedScore[];
-        store.clear();
+        // Delete individually after read — don't bulk-clear before caller processes
+        for (const item of items) {
+          if (item.id != null) store.delete(item.id);
+        }
         tx.oncomplete = () => resolve(items);
         tx.onerror = () => reject(tx.error);
       };

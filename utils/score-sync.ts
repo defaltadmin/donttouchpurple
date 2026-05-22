@@ -45,27 +45,29 @@ export const scoreSync = {
   async flush() {
     if (!navigator.onLine) return;
 
-    const pending = await idb.dequeueAll();
+    const pending = await idb.peekAll();
     if (pending.length === 0) return;
 
     logger.info(`🔄 Flushing ${pending.length} offline scores`);
 
+    const succeededIds: number[] = [];
     const now = Date.now();
     for (const item of pending) {
       // Exponential backoff: skip items not yet due for retry
       const nextRetry = item.nextRetry ?? 0;
-      if (nextRetry > now) {
-        await idb.enqueue(item); // re-queue as-is, not yet time
-        continue;
-      }
+      if (nextRetry > now) continue;
 
       const success = await this._submit(item);
-      if (!success) {
+      if (success) {
+        if (item.id != null) succeededIds.push(item.id);
+      } else {
         const attempts = (item.attempts || 0) + 1;
         const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
         await idb.enqueue({ ...item, attempts, nextRetry: Date.now() + backoffMs });
       }
     }
+    // Only delete items that were successfully submitted
+    if (succeededIds.length > 0) await idb.removeItems(succeededIds);
   },
 
   _onlineHandler: (null as (() => void) | null),

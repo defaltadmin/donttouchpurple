@@ -1,5 +1,5 @@
 /* Centralized screen transitions + feature-gated UI state */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { featureGates, PlayerProgress, FeatureId, ALL_FEATURE_IDS } from '../utils/featureGates';
 import { logger } from '../utils/logger';
 
@@ -40,6 +40,8 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
   });
 
   const [unlocks, setUnlocks] = useState<Record<string, boolean>>(() => featureGates.load());
+  const unlocksRef = useRef(unlocks);
+  useEffect(() => { unlocksRef.current = unlocks; }, [unlocks]);
 
   // Listen for external unlocks
   useEffect(() => {
@@ -56,13 +58,13 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
       const next = { ...prev, ...partial };
       // Check for new unlocks automatically using all feature IDs
       ALL_FEATURE_IDS.forEach(id => {
-        if (!unlocks[id] && featureGates.isUnlocked(id, next)) {
+        if (!unlocksRef.current[id] && featureGates.isUnlocked(id, next)) {
           featureGates.unlock(id);
         }
       });
       return next;
     });
-  }, [unlocks]);
+  }, []);
 
   const canTransition = useCallback((to: Screen) => {
     if (to === current) return false;

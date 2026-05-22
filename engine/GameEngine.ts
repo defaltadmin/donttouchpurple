@@ -31,7 +31,7 @@ import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellShape, GameConfig, GameEvent,
   GameSnapshot, PlayerState, RareColorMode, Winner,
-  BossEvent, BossEventType, HoldCell,
+  BossEvent, BossEventType, HoldCell, CellType,
 } from "./types";
 import {
   activeToCellsP, spawnActive,
@@ -646,6 +646,9 @@ destroy(): void {
             if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
           }
         } else { this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop"); }
+        // Count purple taps for secret achievement (danger branch: normal play where purple is dangerous)
+        this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
+        achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
       } else {
       cell.clicked = true; this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop");
       if (this._bossActive) bossEngine.onSafeTap();
@@ -681,9 +684,6 @@ destroy(): void {
       achievementSystem.check('speed_3x', () => currentSpeed >= 3.0);
       achievementSystem.check('shield_5', () => (this._shieldCollected ?? 0) >= 5);
       achievementSystem.check('freeze_5', () => (this._freezeCollected ?? 0) >= 5);
-      // Secret: tap purple 10 times in one game
-      this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
-      achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
       // Secret: score 500+ at 3x speed
       achievementSystem.check('secret_speed_run', () => ref.score >= 500 && currentSpeed >= 3.0);
     }
@@ -1021,10 +1021,17 @@ destroy(): void {
         logError(`[GameEngine] Session snapshot version ${snapshotVersion} < current ${GameEngine.SESSION_SNAPSHOT_VERSION}, discarding`);
         return false;
       }
-      // Ensure p1/p2 exist before restoring
+      // Create p1/p2 from snapshot if engine wasn't started (e.g. resume on reload)
       if (!this.p1 || !this.p2) {
-        logError('Session restore failed: engine not initialized');
-        return false;
+        const n = 25; // 5×5 max grid
+        const mkPlayer = (): PlayerState => ({
+          cells: Array(n).fill('inactive') as CellType[], active: [], score: 0, streak: 0, alive: true,
+          health: GAME.MAX_HEARTS, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0,
+          gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 40,
+          anim: {} as Record<number, string>,
+        });
+        if (!this.p1) this.p1 = mkPlayer();
+        if (!this.p2) this.p2 = mkPlayer();
       }
       this.gameSeed = data.gameSeed as number;
       // #16 fix: fast-forward RNG to match tickCount so post-restore spawns
@@ -1046,6 +1053,33 @@ destroy(): void {
       this._bossActive = (data._bossActive as boolean) ?? false;
       if (data.bossEngineActive) bossEngine.activate((data.bossEngineShieldHits as number) ?? 5);
       this.activeBomb = data.activeBomb ? { idx: (data.activeBomb as Record<string, unknown>).idx as number, expiresAt: (data.activeBomb as Record<string, unknown>).expiresAt as number, player: (data.activeBomb as Record<string, unknown>).player as 1 | 2 } : null;
+      // Re-register bomb delta timer if bomb is still active
+      if (this.activeBomb) {
+        const bombRemaining = Math.max(0, this.activeBomb.expiresAt - Date.now());
+        const bombPlayer = this.activeBomb.player;
+        const bombIdx = this.activeBomb.idx;
+        const bombRef = bombPlayer === 1 ? this.p1 : this.p2;
+        this.addDeltaTimer(`bomb_${bombPlayer}_${bombIdx}`, bombRemaining, () => {
+          if (!this.activeBomb || this.activeBomb.idx !== bombIdx || this.activeBomb.player !== bombPlayer) return;
+          const stillActive = bombRef.active.find(c => c.idx === bombIdx && c.type === "bomb" && !c.clicked);
+          if (!stillActive) { if (this.activeBomb?.idx === bombIdx) this.activeBomb = null; return; }
+          this.activeBomb = null;
+          stillActive.clicked = true;
+          if (!this.devGodMode) {
+            if (bombRef.shieldCount > 0) { bombRef.shieldCount -= 1; bombRef.shield = bombRef.shieldCount > 0; }
+            else {
+              const dmg = this.config.mode === "evolve" ? 0.5 : 1;
+              bombRef.health = Math.max(0, bombRef.health - dmg); bombRef.shield = false;
+              this._tookDamage = true;
+              this.emit({ type: "damage", player: bombPlayer });
+              this.emit({ type: "shake", player: bombPlayer });
+              if (bombRef.health < 1) { bombRef.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (bombPlayer === 1 ? "p2" : "p1")); }
+            }
+          }
+          this.emit({ type: "bombExplode", player: bombPlayer });
+          this.emit({ type: "toast", message: "💥 Bomb exploded!" });
+        });
+      }
       this.dda.reset((data.ddaSpawnRate as number) ?? 1200);
       const p1 = data.p1 as Record<string, unknown> | undefined;
       if (p1) {

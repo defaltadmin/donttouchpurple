@@ -10,7 +10,15 @@ export function useEnergyStore() {
   const [energyData, setEnergyData] = useState<EnergyData>(() => {
     try {
       const stored = localStorage.getItem(LS_KEYS.ENERGY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored) as EnergyData;
+        // Validate parsed data to guard against tampered/corrupt storage
+        if (typeof parsed.count === 'number' && isFinite(parsed.count)
+            && typeof parsed.lastRegen === 'number' && isFinite(parsed.lastRegen)
+            && parsed.lastRegen <= Date.now() + 60_000) {
+          return { count: Math.max(0, Math.min(GAME.MAX_ENERGY, parsed.count)), lastRegen: parsed.lastRegen };
+        }
+      }
     } catch {}
     return { count: GAME.MAX_ENERGY, lastRegen: Date.now() };
   });

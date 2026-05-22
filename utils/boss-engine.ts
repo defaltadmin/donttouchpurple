@@ -71,6 +71,7 @@ export const bossEngine = {
   },
 
   deactivate() {
+    if (!this.state.active) return;
     this.state.active = false;
     this.resetCombo();
     window.dispatchEvent(new CustomEvent('dtp:boss:complete', { detail: {} }));

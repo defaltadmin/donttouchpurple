@@ -39,7 +39,7 @@ export function useDustEconomy(playerName: string) {
   const addDust = useCallback((amount: number, source: string): number => {
     if (isNaN(amount) || !isFinite(amount) || amount <= 0) return dustRef.current;
     const base = isNaN(dustRef.current) ? 0 : dustRef.current;
-    const newDust = base + amount;
+    const newDust = Math.min(9_999_999, base + amount);
     setDust(newDust);
     dustRef.current = newDust;
     localStorage.setItem(LS_KEYS.DUST, newDust.toString());
@@ -59,8 +59,10 @@ export function useDustEconomy(playerName: string) {
     setDust(newDust);
     dustRef.current = newDust;
     try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => fbSyncDust(playerName, newDust).catch(() => {}), 5000);
     logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
-  }, [getLifetimeDustSpent]);
+  }, [getLifetimeDustSpent, playerName]);
 
   return { dust, dustRef, setDust, addDust, spendDust, persistDust, getLifetimeDustSpent, getBotAccuracy };
 }

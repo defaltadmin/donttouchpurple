@@ -30,9 +30,17 @@ export const achievementSystem = {
     ach.date = new Date().toISOString();
     this.unlocked.add(id);
     localStorage.setItem(ACH_KEY, JSON.stringify([...this.unlocked]));
-    const queue = JSON.parse(localStorage.getItem(TOAST_KEY) || '[]');
-    queue.push({ id, name: ach.name, icon: ach.icon, ts: Date.now() });
-    localStorage.setItem(TOAST_KEY, JSON.stringify(queue.slice(-5)));
+    try {
+      const queue = JSON.parse(localStorage.getItem(TOAST_KEY) || '[]');
+      queue.push({ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() });
+      localStorage.setItem(TOAST_KEY, JSON.stringify(queue.slice(-5)));
+    } catch {
+      // Corrupt toast queue — reset and retry
+      try {
+        const fresh = [{ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() }];
+        localStorage.setItem(TOAST_KEY, JSON.stringify(fresh));
+      } catch { /* localStorage unavailable — skip toast */ }
+    }
     logger.info('🏆 Achievement unlocked:', ach.name.replace(/[\r\n]/g, ''));
     window.dispatchEvent(new CustomEvent('dtp:achievement', { detail: ach }));
     if (privacyManager.getConsent()) {
