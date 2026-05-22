@@ -893,7 +893,7 @@ destroy(): void {
 
   submitScoreToLeaderboard(score: number): void {
     if (this._isDisposed) return;
-    scoreSync.queue(score);
+    scoreSync.queue(score, this.config.mode, this.tickCount);
   }
 
   async generateChallengeUrl(): Promise<string> {

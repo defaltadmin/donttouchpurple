@@ -297,8 +297,8 @@ export default function App() {
 
   const [paused, setPaused]         = useState(false);
   const [devMode, setDevMode]       = useState(false);
-  // Give 99999 dust when dev mode is enabled
-  useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
+  // Give 99999 dust when dev mode is enabled (dev builds only)
+  useEffect(() => { if (import.meta.env.DEV && devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
   const [godMode, setGodMode]       = useState(false);
   const [devFreezeTime, setDevFreezeTime] = useState(false);
    const [devRotationSpeed, setDevRotationSpeed] = useState(1);
@@ -393,10 +393,10 @@ export default function App() {
     }
   }, [toast$]);
 
-  // Dev Toggle — type //dev// in name field (legacy) OR type d→d→p on menu screen
+  // Dev Toggle — type d→d→p on menu screen (dev builds only)
   const devKeyBuffer = useRef<string[]>([]);
   useEffect(() => {
-    if (devMode) return;
+    if (!import.meta.env.DEV || devMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (screen !== "menu") return;
       devKeyBuffer.current = [...devKeyBuffer.current.slice(-2), e.key.toLowerCase()];

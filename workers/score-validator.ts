@@ -70,9 +70,40 @@ async function getFirebaseToken(env: Env): Promise<string> {
 
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': 'https://dont-touch-purple.web.app',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
     }
+
+    // Origin validation
+    const origin = request.headers.get('Origin') ?? '';
+    const allowedOrigins = [
+      'https://dont-touch-purple.web.app',
+      'https://dont-touch-purple.firebaseapp.com',
+      'https://game.mscarabia.com',
+    ];
+    // Allow same-origin requests (no Origin header) and whitelisted origins
+    if (origin && !allowedOrigins.includes(origin)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const corsHeaders: Record<string, string> = {
+      'Access-Control-Allow-Origin': origin || 'https://dont-touch-purple.web.app',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
 
     try {
       const data = await request.json<ScorePayload>();
@@ -83,28 +114,28 @@ export default {
       let attempts: number[] = (await env.RATE_LIMIT_KV.get(rateKey, { type: 'json' })) ?? [];
       attempts = attempts.filter(ts => now - ts < 60_000);
       if (attempts.length >= 8) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       attempts.push(now);
       await env.RATE_LIMIT_KV.put(rateKey, JSON.stringify(attempts), { expirationTtl: 90 });
 
       if (typeof data.score !== 'number' || data.score < 0 || data.score > 9999) {
-        return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (!data.initials || typeof data.initials !== 'string' || data.initials.length > 8 || !/^[a-zA-Z0-9_ ]{1,8}$/.test(data.initials)) {
-        return new Response(JSON.stringify({ error: 'Invalid initials' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Invalid initials' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (!data.mode || !['classic', 'evolve'].includes(data.mode)) {
-        return new Response(JSON.stringify({ error: 'Invalid mode' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Invalid mode' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (typeof data.tick !== 'number' || data.tick < 0) {
-        return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (data.score > data.tick * 15 + 300) {
-        return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (typeof data.sessionId !== 'string' || data.sessionId.length < 8) {
-        return new Response(JSON.stringify({ error: 'Missing session' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Missing session' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
       const token = await getFirebaseToken(env);
@@ -119,6 +150,7 @@ export default {
           date: { stringValue: data.date ?? new Date().toISOString().split('T')[0] },
           ts: { timestampValue: new Date().toISOString() },
           sessionId: { stringValue: data.sessionId },
+          tick: { integerValue: (data.tick ?? 0).toString() },
         },
       };
 
@@ -129,13 +161,13 @@ export default {
       });
 
       if (!fbRes.ok) {
-        return new Response(JSON.stringify({ error: 'Database error' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Database error' }), { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
-      return new Response(JSON.stringify({ success: true, score: data.score }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true, score: data.score }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     } catch (err) {
       console.error('Worker error:', err);
-      return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
   },
 } satisfies ExportedHandler<Env>;

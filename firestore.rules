@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function validInitials() {
       let ini = request.resource.data.initials;
-      return ini is string && ini.size() >= 1 && ini.size() <= 8;
+      return ini is string && ini.size() >= 1 && ini.size() <= 8 && ini.matches('^[a-zA-Z0-9_ ]+$');
     }
 
     function validBadge() {
@@ -42,7 +42,7 @@ service cloud.firestore {
            request.resource.data.tick >= 0 &&
            request.resource.data.tick <= 600 &&
            request.resource.data.score <= request.resource.data.tick * 15 + 300)) &&
-        request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick']);
+        request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick', 'sessionId']);
       allow update, delete: if false;
     }
 

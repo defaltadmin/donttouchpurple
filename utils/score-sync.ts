@@ -3,11 +3,19 @@ import { logger } from './logger';
 import { LS_KEYS } from '../config/difficulty';
 import { idb } from './idb';
 
+async function getAuthToken(): Promise<string | undefined> {
+  try {
+    const { getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    return await auth.currentUser?.getIdToken();
+  } catch { return undefined; }
+}
+
 export const scoreSync = {
-  async queue(score: number, mode: 'classic' | 'evolve' = 'evolve') {
+  async queue(score: number, mode: 'classic' | 'evolve' = 'evolve', tick = 0) {
     const rawInitials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
     const initials = rawInitials.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON';
-    const pending = { score, initials, mode, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}` };
+    const pending = { score, initials, mode, tick, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}` };
 
     if (navigator.onLine) {
       const success = await this._submit(pending);
@@ -24,9 +32,10 @@ export const scoreSync = {
 
   async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number; sessionId?: string }): Promise<boolean> {
     try {
+      const token = await getAuthToken();
       const res = await fetch('https://game.mscarabia.com/api/submit-score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           score: Math.max(0, Math.min(9999, Math.floor(item.score || 0))),
           initials: String(item.initials || 'ANON').replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON',
