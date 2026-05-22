@@ -74,9 +74,9 @@ describe("GameEngine", () => {
   });
 
   it("damages the player when safe cells are not tapped in time", () => {
-    // Override the engine's seeded rng to always return 0.99 (forces safe/non-purple cells)
-    eng(engine).rng = () => 0.99;
     engine.start();
+    // Override the engine's seeded rng AFTER start() (start resets rng to mulberry32)
+    eng(engine).rng = () => 0.99;
 
     vi.advanceTimersByTime(4_100);
 
@@ -106,9 +106,9 @@ describe("GameEngine", () => {
   });
 
   it("increases score when a safe cell is tapped", () => {
-    // Override rng to return 0.5 — produces regular (non-purple, non-powerup) cells
-    eng(engine).rng = () => 0.5;
     engine.start();
+    // Override rng AFTER start() (start resets rng to mulberry32)
+    eng(engine).rng = () => 0.5;
     vi.advanceTimersByTime(2_100);
 
     const active = latestActive(engine);

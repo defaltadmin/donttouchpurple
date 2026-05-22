@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
       fail-fast: false
 
     steps:
@@ -58,7 +58,7 @@ jobs:
           NODE_ENV: production
 
       - name: Upload Build Artifact
-        if: matrix.node-version == '20' && github.ref == 'refs/heads/main'
+        if: matrix.node-version == '22' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
