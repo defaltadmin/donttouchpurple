@@ -15,6 +15,10 @@ const AmbientFlow   = lazy(() => import("../Backgrounds/AmbientFlow"));
 const Nebula        = lazy(() => import("../Backgrounds/Nebula"));
 const DigitalRain   = lazy(() => import("../Backgrounds/DigitalRain"));
 const AuroraBorealis = lazy(() => import("../Backgrounds/AuroraBorealis"));
+const Galaxy         = lazy(() => import("../Backgrounds/Galaxy"));
+const Hyperspeed     = lazy(() => import("../Backgrounds/Hyperspeed"));
+const Silk           = lazy(() => import("../Backgrounds/Silk"));
+const Lightning      = lazy(() => import("../Backgrounds/Lightning"));
 
 const BG_MAP: Record<string, ComponentType<{ reducedMotion?: boolean }>> = {
   'default': PurpleRain,
@@ -32,6 +36,10 @@ const BG_MAP: Record<string, ComponentType<{ reducedMotion?: boolean }>> = {
   'nebula': Nebula,
   'digital-rain': DigitalRain,
   'aurora-borealis': AuroraBorealis,
+  'galaxy': Galaxy,
+  'hyperspeed': Hyperspeed,
+  'silk': Silk,
+  'lightning': Lightning,
 };
 
 interface BackgroundControllerProps {

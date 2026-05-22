@@ -3,6 +3,7 @@ import type { DailyChallenge } from "./DailyChallengesPopup";
 import { playSoundEffect } from "../../hooks/useGameEngine";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { BounceCards } from "./BounceCards";
 
 // ─── Types ────────────────────────────────────────────────
 export interface WeeklyTask {
@@ -217,8 +218,46 @@ function WeeklyTab({ tasks, onClaim }: {
   if (tasks.length === 0) {
     return <div className="hub-empty">{t('rewards.no_weekly')}</div>;
   }
+
+  const completedTasks = tasks.filter(t => t.completed);
+
   return (
     <div className="hub-tasks-list">
+      {/* BounceCards fan for completed weekly tasks */}
+      {completedTasks.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <BounceCards
+            cards={completedTasks.map(task => (
+              <div key={task.id} className="bounce-card-inner" style={{
+                width: 120, height: 160, borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(192,38,211,0.3), rgba(124,58,237,0.3))',
+                border: '1px solid rgba(255,255,255,0.15)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 8, padding: 12, backdropFilter: 'blur(8px)',
+              }}>
+                <span style={{ fontSize: 28 }}>✓</span>
+                <span style={{ fontSize: 11, color: 'var(--text)', textAlign: 'center', lineHeight: 1.3 }}>
+                  {task.description}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)' }}>
+                  +{task.reward}
+                </span>
+              </div>
+            ))}
+            containerWidth={Math.min(360, 300)}
+            containerHeight={200}
+            animationDelay={0.2}
+            transformStyles={
+              completedTasks.length <= 3
+                ? ['rotate(8deg) translate(-70px)', 'rotate(-3deg)', 'rotate(-8deg) translate(70px)']
+                : ['rotate(10deg) translate(-140px)', 'rotate(5deg) translate(-70px)', 'rotate(-3deg)', 'rotate(-10deg) translate(70px)', 'rotate(2deg) translate(140px)']
+            }
+            enableHover={false}
+          />
+        </div>
+      )}
+
+      {/* All tasks list */}
       {tasks.map(t => (
         <TaskRow
           key={t.id}

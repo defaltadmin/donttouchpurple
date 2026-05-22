@@ -1,5 +1,5 @@
 // components/Cell/index.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 import { Icon } from '../UI/Icon';
@@ -103,6 +103,55 @@ export default function Cell({
   // ── Touch feedback: immediate visual response on pointer down ──
   const [isTouched, setIsTouched] = useState(false);
 
+  // ── ClickSpark: canvas spark burst on tap ──
+  const sparkCanvasRef = useRef<HTMLCanvasElement>(null);
+  const sparksRef = useRef<{ x: number; y: number; angle: number; startTime: number }[]>([]);
+
+  useEffect(() => {
+    const canvas = sparkCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let rafId: number;
+    const SPARK_DURATION = 350;
+    const draw = (ts: number) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      sparksRef.current = sparksRef.current.filter(s => {
+        const elapsed = ts - s.startTime;
+        if (elapsed >= SPARK_DURATION) return false;
+        const p = elapsed / SPARK_DURATION;
+        const eased = p * (2 - p);
+        const dist = eased * 14;
+        const len = 8 * (1 - eased);
+        ctx.strokeStyle = cell.type === 'purple' ? '#ff2200' : '#c026d3';
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 1 - eased;
+        ctx.beginPath();
+        ctx.moveTo(s.x + dist * Math.cos(s.angle), s.y + dist * Math.sin(s.angle));
+        ctx.lineTo(s.x + (dist + len) * Math.cos(s.angle), s.y + (dist + len) * Math.sin(s.angle));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        return true;
+      });
+      rafId = requestAnimationFrame(draw);
+    };
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, [cell.type]);
+
+  const emitSparks = useCallback((e: React.PointerEvent) => {
+    const canvas = sparkCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const now = performance.now();
+    const count = 8;
+    sparksRef.current.push(...Array.from({ length: count }, (_, i) => ({
+      x, y, angle: (2 * Math.PI * i) / count, startTime: now,
+    })));
+  }, []);
+
   // ── Ice hit flash tracking ──
   const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
   const [iceFlash, setIceFlash] = useState(false);
@@ -117,9 +166,10 @@ export default function Cell({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cell.type === 'ice' ? cell.iceCount : false]);
 
-  const handlePointerDown = (_e: React.PointerEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (isClicked) return;
     setIsTouched(true); // Instant visual feedback
+    emitSparks(e);
     if (isHold && onHoldStart) {
       onHoldStart(cell.idx);
     } else {
@@ -159,6 +209,14 @@ export default function Cell({
       data-shape={shape}
       style={{ '--cb-type': cell.type } as React.CSSProperties}
     >
+      {/* ClickSpark canvas overlay */}
+      <canvas
+        ref={sparkCanvasRef}
+        width={120}
+        height={120}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}
+      />
+
       {/* Shape background layer */}
       <div className={`cell-shape-overlay ${shapeClass}`} />
 

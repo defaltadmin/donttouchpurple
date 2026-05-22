@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SHOP_BADGES, SHOP_POWERUPS, SHOP_SKINS, SHOP_THEMES, SHOP_BACKGROUNDS, SHOP_TRAILS } from "../../config/powerupWeights";
 import { useTranslation } from "../../hooks/useTranslation";
+import { SpotlightCard } from "./SpotlightCard";
 
 interface StoredPowerups {
   freeze: number;
@@ -355,7 +356,7 @@ export function ShopPanel({
       {tab === "backgrounds" && (
         <>
           <div className="shop-hint">{t('shop.hint_backgrounds')}</div>
-          <div className="shop-grid">
+          <SpotlightCard className="shop-grid" spotlightColor="rgba(128, 0, 255, 0.2)">
             {SHOP_BACKGROUNDS.map((bg) => {
               const owned = shopData.unlockedBackgrounds.includes(bg.id);
               const equipped = shopData.equippedBackground === bg.id;
@@ -378,7 +379,7 @@ export function ShopPanel({
                 </div>
               );
             })}
-          </div>
+          </SpotlightCard>
         </>
       )}
 

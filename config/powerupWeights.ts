@@ -128,7 +128,7 @@ export interface ShopBackground {
   icon: string;
   cost: number;
   desc: string;
-  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "PulseField" | "GlitchGrid" | "AmbientFlow" | "Nebula" | "DigitalRain" | "AuroraBorealis" | "none";
+  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "PulseField" | "GlitchGrid" | "AmbientFlow" | "Nebula" | "DigitalRain" | "AuroraBorealis" | "Galaxy" | "Hyperspeed" | "Silk" | "Lightning" | "none";
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
@@ -147,4 +147,8 @@ export const SHOP_BACKGROUNDS: ShopBackground[] = [
   { id: "nebula",           name: "Nebula",            icon: "🌌", cost: 500, desc: "Deep space nebula with twinkling stars", component: "Nebula" },
   { id: "digital-rain",     name: "Digital Rain",       icon: "💻", cost: 450, desc: "Purple matrix-style falling characters", component: "DigitalRain" },
   { id: "aurora-borealis",  name: "Aurora Borealis",   icon: "🌈", cost: 600, desc: "Northern lights shimmer in purple", component: "AuroraBorealis" },
+  { id: "galaxy",           name: "Galaxy",            icon: "🌀", cost: 550, desc: "WebGL galaxy with twinkling stars", component: "Galaxy" },
+  { id: "hyperspeed",       name: "Hyperspeed",        icon: "⚡", cost: 500, desc: "Speed lines racing toward you", component: "Hyperspeed" },
+  { id: "silk",             name: "Silk",              icon: "🧵", cost: 400, desc: "Flowing fabric waves in purple", component: "Silk" },
+  { id: "lightning",        name: "Lightning",         icon: "⚡", cost: 450, desc: "Electric bolts crackling in purple", component: "Lightning" },
 ];

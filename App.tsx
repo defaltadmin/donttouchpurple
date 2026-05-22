@@ -75,6 +75,10 @@ const AmbientFlow   = lazy(() => import("./components/Backgrounds/AmbientFlow"))
 const Nebula        = lazy(() => import("./components/Backgrounds/Nebula"));
 const DigitalRain   = lazy(() => import("./components/Backgrounds/DigitalRain"));
 const AuroraBorealis = lazy(() => import("./components/Backgrounds/AuroraBorealis"));
+const Galaxy         = lazy(() => import("./components/Backgrounds/Galaxy"));
+const Hyperspeed     = lazy(() => import("./components/Backgrounds/Hyperspeed"));
+const Silk           = lazy(() => import("./components/Backgrounds/Silk"));
+const Lightning      = lazy(() => import("./components/Backgrounds/Lightning"));
 import { MouseFollower } from "./components/Backgrounds/MouseFollower";
 import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
@@ -740,6 +744,10 @@ export default function App() {
     'nebula': { component: Nebula },
     'digital-rain': { component: DigitalRain },
     'aurora-borealis': { component: AuroraBorealis },
+    'galaxy': { component: Galaxy },
+    'hyperspeed': { component: Hyperspeed },
+    'silk': { component: Silk },
+    'lightning': { component: Lightning },
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 

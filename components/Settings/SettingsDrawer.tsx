@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { PillRow } from "./PillRow";
+import { ElasticSlider } from "./ElasticSlider";
 import { i18n, type Locale } from "../../utils/i18n";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
@@ -96,17 +97,22 @@ export function SettingsDrawer({
             >
               {muted ? "🔇" : volume < 0.4 ? "🔈" : volume < 0.7 ? "🔉" : "🔊"}
             </button>
-            <input
-              type="range"
-              className="vol-slider"
-              min="0"
-              max="1"
-              step="0.05"
-              value={muted ? 0 : localVolume}
-              onChange={(e) => setLocalVolume(parseFloat(e.target.value))}
-              onPointerUp={(e) => commitVolume(parseFloat((e.target as HTMLInputElement).value))}
-              disabled={muted}
-            />
+            <div style={{ flex: 1 }}>
+              <ElasticSlider
+                value={muted ? 0 : Math.round(localVolume * 100)}
+                onChange={(v) => {
+                  const normalized = v / 100;
+                  setLocalVolume(normalized);
+                  commitVolume(normalized);
+                }}
+                min={0}
+                max={100}
+                step={5}
+                disabled={muted}
+                leftLabel="🔈"
+                rightLabel="🔊"
+              />
+            </div>
             <span className="vol-pct">{muted ? t('settings.muted_label') : `${Math.round(volume * 100)}%`}</span>
           </div>
         </div>

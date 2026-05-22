@@ -61,73 +61,61 @@ function PillRow<T extends string | number>({
   );
 }
 
-// ─── Magnetic Button ───────────────────────────────────────────────
+// ─── Magnetic Button (React Bits Magnet pattern) ──────────────────
 function MagneticButton({ children, onClick, className = "", disabled = false }: {
   children: React.ReactNode; onClick: () => void; className?: string; disabled?: boolean;
 }) {
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const posRef = useRef({ x: 0, y: 0 });
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isActive, setIsActive] = useState(false);
   const isFinePointer = useRef(false);
 
   useEffect(() => {
-    // Check if device has fine pointer (mouse) vs coarse (touch)
     isFinePointer.current = window.matchMedia?.("(pointer: fine)")?.matches ?? false;
     const mq = window.matchMedia?.("(pointer: fine)");
-    const handleMediaChange = (e: MediaQueryListEvent) => { isFinePointer.current = e.matches; };
-    mq?.addEventListener("change", handleMediaChange);
-
-    const btn = btnRef.current;
-    if (!btn) return;
-
-    const getRect = () => btn.getBoundingClientRect();
+    const handleChange = (e: MediaQueryListEvent) => { isFinePointer.current = e.matches; };
+    mq?.addEventListener("change", handleChange);
 
     const handleMove = (e: MouseEvent) => {
-      if (!isFinePointer.current) return; // Skip on touch devices
-      const rect = getRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const dx = e.clientX - centerX;
-      const dy = e.clientY - centerY;
-      const dist = Math.hypot(dx, dy);
+      if (!isFinePointer.current || !wrapperRef.current) return;
+      const { left, top, width, height } = wrapperRef.current.getBoundingClientRect();
+      const centerX = left + width / 2;
+      const centerY = top + height / 2;
+      const distX = Math.abs(centerX - e.clientX);
+      const distY = Math.abs(centerY - e.clientY);
+      const padding = 100;
 
-      if (dist < 80) {
-        const pull = (1 - dist / 80) * 0.25;
-        posRef.current = { x: dx * pull, y: dy * pull };
-        // Haptic feedback on snap
-        if (dist < 40 && navigator.vibrate) navigator.vibrate(2);
+      if (distX < width / 2 + padding && distY < height / 2 + padding) {
+        setIsActive(true);
+        setPosition({ x: (e.clientX - centerX) / 2, y: (e.clientY - centerY) / 2 });
       } else {
-        posRef.current = { x: 0, y: 0 };
+        setIsActive(false);
+        setPosition({ x: 0, y: 0 });
       }
-      btn.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
     };
 
-    const handleLeave = () => {
-      posRef.current = { x: 0, y: 0 };
-      btn.style.transform = "";
-    };
-
-    const handleTouchStart = () => {
-      // Reset transform immediately on touch to prevent laggy feel
-      posRef.current = { x: 0, y: 0 };
-      btn.style.transform = "";
-    };
-
-    btn.addEventListener("pointermove", handleMove);
-    btn.addEventListener("pointerleave", handleLeave);
-    btn.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("mousemove", handleMove);
     return () => {
-      btn.removeEventListener("pointermove", handleMove);
-      btn.removeEventListener("pointerleave", handleLeave);
-      btn.removeEventListener("touchstart", handleTouchStart);
-      mq?.removeEventListener("change", handleMediaChange);
+      window.removeEventListener("mousemove", handleMove);
+      mq?.removeEventListener("change", handleChange);
     };
   }, []);
 
   return (
-    <button ref={btnRef} className={className} onClick={onClick} disabled={disabled}
-      style={{ transition: "transform 0.1s ease-out" }}>
-      {children}
-    </button>
+    <div ref={wrapperRef} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        className={className}
+        onClick={onClick}
+        disabled={disabled}
+        style={{
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          transition: isActive ? "transform 0.3s ease-out" : "transform 0.5s ease-in-out",
+          willChange: "transform",
+        }}
+      >
+        {children}
+      </button>
+    </div>
   );
 }
 
