@@ -68,11 +68,14 @@ export function ElasticSlider({
     setOverflow(0);
   };
 
-  // Animate overflow back to 0
+  // Animate overflow back to 0 with early exit
   useEffect(() => {
-    if (!isDragging && overflow !== 0) {
+    if (!isDragging && Math.abs(overflow) > 0.5) {
       const id = requestAnimationFrame(() => {
-        setOverflow(prev => prev * 0.85);
+        setOverflow(prev => {
+          const next = prev * 0.85;
+          return Math.abs(next) < 0.5 ? 0 : next;
+        });
       });
       return () => cancelAnimationFrame(id);
     }

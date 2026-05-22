@@ -151,6 +151,7 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resizeCanvas);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [reducedMotion]);
 
