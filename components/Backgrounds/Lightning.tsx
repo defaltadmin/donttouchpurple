@@ -138,13 +138,14 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
     let rafId: number;
 
     const render = () => {
+      rafId = requestAnimationFrame(render);
+      if (document.hidden) return;
       resizeCanvas();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(iResLoc, canvas.width, canvas.height);
       gl.uniform1f(iTimeLoc, (performance.now() - startTime) / 1000.0);
       gl.uniform1f(uSpeedLoc, speed);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      rafId = requestAnimationFrame(render);
     };
     rafId = requestAnimationFrame(render);
 

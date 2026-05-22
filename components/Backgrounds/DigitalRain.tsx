@@ -69,7 +69,8 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
       rafRef.current = requestAnimationFrame(draw);
     };
     drawRef.current = draw;
-    draw();
+    const drawIfVisible = () => { if (!document.hidden) draw(); else rafRef.current = requestAnimationFrame(drawIfVisible); };
+    drawIfVisible();
 
     return () => {
       cancelAnimationFrame(rafRef.current);

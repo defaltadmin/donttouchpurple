@@ -190,6 +190,7 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      if (document.hidden) return;
       program.uniforms.uTime.value = t * 0.001;
       program.uniforms.uStarSpeed.value = (t * 0.001 * 0.5) / 10.0;
       // Smooth mouse lerp

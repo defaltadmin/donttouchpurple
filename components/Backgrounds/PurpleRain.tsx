@@ -94,10 +94,9 @@ const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotio
   }, []);
 
   const animate = useCallback((time: number) => {
-    if (time - lastFrameRef.current < frameInterval) {
-      animationRef.current = requestAnimationFrame(animate);
-      return;
-    }
+    animationRef.current = requestAnimationFrame(animate);
+    if (document.hidden) return;
+    if (time - lastFrameRef.current < frameInterval) return;
     lastFrameRef.current = time;
 
     const canvas = canvasRef.current;

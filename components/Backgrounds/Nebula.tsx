@@ -95,7 +95,8 @@ export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: bool
       rafRef.current = requestAnimationFrame(draw);
     };
     drawRef.current = draw;
-    draw();
+    const drawIfVisible = () => { if (!document.hidden) draw(); else rafRef.current = requestAnimationFrame(drawIfVisible); };
+    drawIfVisible();
 
     return () => {
       cancelAnimationFrame(rafRef.current);

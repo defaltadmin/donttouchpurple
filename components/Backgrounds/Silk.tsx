@@ -92,6 +92,7 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      if (document.hidden) return;
       program.uniforms.uTime.value = t * 0.001;
       renderer.render({ scene: mesh });
     }
