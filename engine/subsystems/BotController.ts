@@ -62,8 +62,8 @@ export class BotController {
         if (cell.clicked) continue;
         if ((cell.type as string) === 'void') continue;
         if (cell.type === 'hold' || cell.type === 'ice') continue;
-        // During inversion: purple is safe, everything else is dangerous
-        if (inverted ? cell.type !== danger : cell.type === danger) continue;
+        // During inversion: only purple is safe; normal play: skip danger color
+        if (inverted ? cell.type !== 'purple' : cell.type === danger) continue;
         if (rng() > accuracy) continue;
 
         const dustNow = botCfg.getDust();

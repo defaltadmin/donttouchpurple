@@ -85,7 +85,7 @@ export function useInputHandler({
     for (const i of validSlots) {
       const row = Math.floor(i / sd.cols);
       const col = i % sd.cols;
-      if (keys[row * 4 + col] === k) return i;
+      if (keys[row * sd.cols + col] === k) return i;
     }
     return -1;
   }, []);

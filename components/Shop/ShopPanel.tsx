@@ -49,6 +49,9 @@ export function ShopPanel({
   persistDust,
 }: ShopPanelProps) {
   const { t } = useTranslation();
+  // Ref to track latest dust for spend() — avoids stale closure on rapid purchases
+  const dustRef = useRef(dust);
+  dustRef.current = dust;
   const [shopData, setShopData] = useState(() => loadShopData());
   const [tab, setTab] = useState<"backgrounds" | "themes" | "badges" | "skins" | "powerups" | "trails">(() => {
     try {
@@ -83,12 +86,14 @@ export function ShopPanel({
 
   const spend = useCallback((cost: number): boolean => {
     if (devMode) return true;
-    if (dust < cost) return false;
-    const newDust = dust - cost;
+    const currentDust = dustRef.current;
+    if (currentDust < cost) return false;
+    const newDust = currentDust - cost;
+    dustRef.current = newDust; // Update ref immediately to prevent stale reads
     persistDust(newDust);
     onDustChange(newDust);
     return true;
-  }, [devMode, dust, persistDust, onDustChange]);
+  }, [devMode, persistDust, onDustChange]);
 
   const triggerBuyAnim = useCallback((id: string) => {
     setBuyAnim(id);

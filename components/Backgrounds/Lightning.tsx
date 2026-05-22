@@ -1,8 +1,9 @@
 // components/Backgrounds/Lightning.tsx — WebGL electric bolt effect (adapted from React Bits)
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ctxVersion, setCtxVersion] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -149,12 +150,19 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
     };
     rafId = requestAnimationFrame(render);
 
+    const onContextLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(rafId); };
+    const onContextRestored = () => setCtxVersion(v => v + 1);
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, ctxVersion]);
 
   return (
     <canvas

@@ -14,7 +14,7 @@ function openScoreDb(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('pendingScores')) {
-        db.createObjectStore('pendingScores', { keyPath: 'id' });
+        db.createObjectStore('pendingScores', { keyPath: 'id', autoIncrement: true });
       }
     };
     req.onsuccess = () => resolve(req.result);

@@ -1,5 +1,5 @@
 // components/Backgrounds/Silk.tsx — OGL flowing fabric effect (adapted from React Bits)
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 
 const vertex = `
@@ -58,6 +58,7 @@ void main() {
 
 export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
   const ctnRef = useRef<HTMLDivElement>(null);
+  const [ctxVersion, setCtxVersion] = useState(0);
 
   useEffect(() => {
     if (!ctnRef.current) return;
@@ -99,13 +100,20 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
     animateId = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
 
+    const onContextLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(animateId); };
+    const onContextRestored = () => setCtxVersion(v => v + 1);
+    gl.canvas.addEventListener('webglcontextlost', onContextLost);
+    gl.canvas.addEventListener('webglcontextrestored', onContextRestored);
+
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
+      gl.canvas.removeEventListener('webglcontextlost', onContextLost);
+      gl.canvas.removeEventListener('webglcontextrestored', onContextRestored);
       ctn.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, ctxVersion]);
 
   return (
     <div ref={ctnRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />

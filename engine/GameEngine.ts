@@ -63,7 +63,8 @@ export class GameEngine {
   private iMult      = 1;
   private paused     = false;
   private phase: GameSnapshot["phase"] = "playing";
-  private holdTimers = new Map<string, { cell: ActiveCell, player: 1 | 2 }>();
+  private holdTimers = new Map<string, { cell: ActiveCell, player: 1 | 2, generation: number }>();
+  private holdGeneration = 0;
   private dirty      = true;
 
   private rng: () => number = () => Math.random();
@@ -717,16 +718,17 @@ destroy(): void {
       this.removeDeltaTimer(`hold_${key}`);
       this.holdTimers.delete(key);
     }
+    const gen = ++this.holdGeneration;
     this.addDeltaTimer(`hold_${key}`, GAME.HOLD_TIMEOUT_MS, () => {
       const entry = this.holdTimers.get(key);
-      if (!entry || entry.cell.clicked) return;
+      if (!entry || entry.generation !== gen || entry.cell.clicked) return;
       (entry.cell as HoldCell).holdStart = undefined;
       this.dirty = true;
       this.triggerCellAnim(entry.player, entry.cell.idx, "shake");
       this.emitSnapshot();
       this.holdTimers.delete(key);
     });
-    this.holdTimers.set(key, { cell, player });
+    this.holdTimers.set(key, { cell, player, generation: gen });
     this.dirty = true;
     this.emitSnapshot();
   }
@@ -980,6 +982,7 @@ destroy(): void {
       bossEvent: this.bossEvent ? { type: this.bossEvent.type, endsAt: this.bossEvent.endsAt } : null,
       nextBossTriggerScore: this.nextBossTriggerScore,
       _bossActive: this._bossActive,
+      _hitPauseUntil: this._hitPauseUntil,
       bossEngineActive: bossEngine.state.active,
       bossEngineShieldHits: bossEngine.state.shieldHits,
       activeBomb: this.activeBomb ? { idx: this.activeBomb.idx, expiresAt: this.activeBomb.expiresAt, player: this.activeBomb.player } : null,

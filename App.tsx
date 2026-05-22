@@ -375,6 +375,7 @@ export default function App() {
   const toast$ = useCallback((msg: string) => {
     if (toastRef.current) clearTimeout(toastRef.current);
     setToast(msg);
+    setLiveMessage(msg);
     toastRef.current = setTimeout(() => setToast(null), GAME.TOAST_DURATION_MS);
   }, []);
 
@@ -468,6 +469,7 @@ export default function App() {
   const handleEngineGameOver = useCallback(async (engineWinner: Winner, p1Score: number, p2Score: number, gameSeed?: number) => {
     // TRANSITION FIRST — prevents soft lock if async work fails
     setScreen("gameover");
+    setLiveMessage(`Game over. Score: ${p1Score}`);
     setPaused(false);
     setPrevBest(gameMode === "classic" ? best1 : best2);
 
@@ -903,6 +905,11 @@ export default function App() {
     const id = setTimeout(() => setLiveMessage(''), 2000);
     return () => clearTimeout(id);
   }, [liveMessage]);
+
+  // Feed engine toasts to live region for screen readers
+  useEffect(() => {
+    if (engineToast) setLiveMessage(engineToast);
+  }, [engineToast]);
 
   const closeSettings = useCallback(() => {
     setShowSettings(false);

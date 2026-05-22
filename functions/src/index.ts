@@ -7,7 +7,9 @@ function dateString(d: Date): string {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
-export const updateStreak = functions.https.onCall(async (data, _context) => {
+export const updateStreak = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Must be signed in");
+
   const deviceId: string | undefined = data?.deviceId;
   if (!deviceId) throw new functions.https.HttpsError("invalid-argument", "deviceId required");
 

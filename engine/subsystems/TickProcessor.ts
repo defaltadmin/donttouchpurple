@@ -270,9 +270,13 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
     for (let i = 0; i < Math.min(shuffleCount, candidates.length); i++) {
       if (empty.length === 0) break;
 
-      const cIdx = Math.floor(ctx.rng() * candidates.length);
-      const cell = candidates[cIdx];
-      if (moved.includes(cell.idx)) continue;
+      // Pick a candidate that hasn't been moved yet (retry up to candidates.length times)
+      let cell: typeof candidates[number] | null = null;
+      for (let attempt = 0; attempt < candidates.length; attempt++) {
+        const cIdx = Math.floor(ctx.rng() * candidates.length);
+        if (!moved.includes(candidates[cIdx].idx)) { cell = candidates[cIdx]; break; }
+      }
+      if (!cell) continue;
 
       const adjacent = this._getAdjacentSlots(cell.idx, cols, rows, validSlots)
         .filter(s => !occupied.has(s) && !moved.includes(s));

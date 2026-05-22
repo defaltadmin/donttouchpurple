@@ -107,41 +107,16 @@ export default function Cell({
   const sparkCanvasRef = useRef<HTMLCanvasElement>(null);
   const sparksRef = useRef<{ x: number; y: number; angle: number; startTime: number }[]>([]);
 
+  // Spark rendering is driven by emitSparks — no idle RAF loop needed
   useEffect(() => {
-    const canvas = sparkCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let rafId: number;
-    const SPARK_DURATION = 350;
-    const draw = (ts: number) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      sparksRef.current = sparksRef.current.filter(s => {
-        const elapsed = ts - s.startTime;
-        if (elapsed >= SPARK_DURATION) return false;
-        const p = elapsed / SPARK_DURATION;
-        const eased = p * (2 - p);
-        const dist = eased * 14;
-        const len = 8 * (1 - eased);
-        ctx.strokeStyle = cell.type === 'purple' ? '#ff2200' : '#c026d3';
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = 1 - eased;
-        ctx.beginPath();
-        ctx.moveTo(s.x + dist * Math.cos(s.angle), s.y + dist * Math.sin(s.angle));
-        ctx.lineTo(s.x + (dist + len) * Math.cos(s.angle), s.y + (dist + len) * Math.sin(s.angle));
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        return true;
-      });
-      rafId = requestAnimationFrame(draw);
-    };
-    rafId = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafId);
-  }, [cell.type]);
+    return () => { if (sparkRafRef.current) cancelAnimationFrame(sparkRafRef.current); };
+  }, []);
 
+  const sparkRafRef = useRef(0);
   const emitSparks = useCallback((e: React.PointerEvent) => {
     const canvas = sparkCanvasRef.current;
     if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -150,7 +125,34 @@ export default function Cell({
     sparksRef.current.push(...Array.from({ length: count }, (_, i) => ({
       x, y, angle: (2 * Math.PI * i) / count, startTime: now,
     })));
-  }, []);
+    // Restart RAF loop if it was idle
+    if (!sparkRafRef.current && ctx) {
+      const SPARK_DURATION = 350;
+      const draw = (ts: number) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        sparksRef.current = sparksRef.current.filter(s => {
+          const elapsed = ts - s.startTime;
+          if (elapsed >= SPARK_DURATION) return false;
+          const p = elapsed / SPARK_DURATION;
+          const eased = p * (2 - p);
+          const dist = eased * 14;
+          const len = 8 * (1 - eased);
+          ctx.strokeStyle = cell.type === 'purple' ? '#ff2200' : '#c026d3';
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 1 - eased;
+          ctx.beginPath();
+          ctx.moveTo(s.x + dist * Math.cos(s.angle), s.y + dist * Math.sin(s.angle));
+          ctx.lineTo(s.x + (dist + len) * Math.cos(s.angle), s.y + (dist + len) * Math.sin(s.angle));
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          return true;
+        });
+        if (sparksRef.current.length > 0) sparkRafRef.current = requestAnimationFrame(draw);
+        else sparkRafRef.current = 0;
+      };
+      sparkRafRef.current = requestAnimationFrame(draw);
+    }
+  }, [cell.type]);
 
   // ── Ice hit flash tracking ──
   const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
@@ -184,6 +186,13 @@ export default function Cell({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onTap(cell.idx);
+    }
+  };
+
   const cbClass = colorblindMode ? `cb-pattern cb-${cell.type}` : '';
 
   return (
@@ -199,13 +208,14 @@ export default function Cell({
         ${bombUrgent ? 'bomb--urgent' : ''}
         ${cbClass}
       `.trim()}
-      role="button"
-      tabIndex={-1}
+      role="gridcell"
+      tabIndex={isClicked ? -1 : 0}
       aria-label={`${cell.type === 'purple' ? 'Danger: purple cell' : cell.type === 'bomb' ? 'Bomb cell' : `Tap ${cell.type} cell`}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerCancel={() => { setIsTouched(false); if (isHold && onHoldEnd) onHoldEnd(cell.idx); }}
+      onKeyDown={handleKeyDown}
       data-shape={shape}
       style={{ '--cb-type': cell.type } as React.CSSProperties}
     >

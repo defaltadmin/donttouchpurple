@@ -40,6 +40,6 @@ export const scoreCardGen = {
     ctx.font = '40px monospace';
     ctx.fillText('game.mscarabia.com', canvas.width / 2, 1700);
 
-    return new Promise((resolve) => canvas.toBlob((blob) => resolve(URL.createObjectURL(blob!)), 'image/png'));
+    return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob ? URL.createObjectURL(blob) : ''), 'image/png'));
   }
 };

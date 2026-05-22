@@ -154,6 +154,8 @@ export const PlayerPanel = memo(function PlayerPanel({
         <div className={shakeGrid ? "gpanel-shake-wrap shake-grid" : "gpanel-shake-wrap"}>
           <div
             ref={gridRef}
+            role="grid"
+            aria-label={`Game grid ${cols} by ${rows}`}
             className={`gpanel${skinClass ? " " + skinClass : ""} ${spinClass}${showKeys ? " keyboard-mode" : ""}${isBotActive ? " gpanel--bot-active" : ""}`}
             style={{
               "--cell": cellVar,
