@@ -957,6 +957,7 @@ export default function App() {
     const botMs = Math.max(BOT_HUMAN_MIN_MS, tickMs * 0.85)
       + (Math.random() - 0.5) * BOT_REACTION_JITTER;
 
+    const holdTimers: ReturnType<typeof setTimeout>[] = [];
     const id = setTimeout(() => {
       const tapPlayer = (active: typeof snapshot.p1.active, player: 1 | 2) => {
         active
@@ -967,13 +968,13 @@ export default function App() {
           .filter((cell): cell is HoldCell => !cell.clicked && cell.type === "hold")
           .forEach(cell => {
             handleHoldStart(player, cell.idx);
-            setTimeout(() => handleHoldEnd(player, cell.idx), (cell.holdRequired ?? 800) + 50);
+            holdTimers.push(setTimeout(() => handleHoldEnd(player, cell.idx), (cell.holdRequired ?? 800) + 50));
           });
       };
       tapPlayer(snapshot.p1.active, 1);
       if (numPlayers === 2 && snapshot.p2) tapPlayer(snapshot.p2.active, 2);
     }, botMs);
-    return () => clearTimeout(id);
+    return () => { clearTimeout(id); holdTimers.forEach(clearTimeout); };
   }, [devAutoPlay, snapshot, handleTap, handleHoldStart, handleHoldEnd, numPlayers]);
 
   const { pressP1, pressP2 } = useInputHandler({

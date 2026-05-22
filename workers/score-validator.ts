@@ -27,35 +27,39 @@ async function getFirebaseToken(env: Env): Promise<string> {
 
   _refreshPromise = (async () => {
     const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claim = btoa(JSON.stringify({
-    iss: env.GCP_SERVICE_ACCOUNT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/datastore',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now,
-  }));
+    // base64url encoding (no padding, + → -, / → _)
+    const toBase64Url = (s: string) => btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const header = toBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+    const claim = toBase64Url(JSON.stringify({
+      iss: env.GCP_SERVICE_ACCOUNT_EMAIL,
+      scope: 'https://www.googleapis.com/auth/datastore',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now,
+    }));
 
-  const pemStr = atob(env.GCP_SERVICE_ACCOUNT_KEY_B64);
-  const pemBody = pemStr.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
-  const keyBuffer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0)).buffer;
+    const pemStr = atob(env.GCP_SERVICE_ACCOUNT_KEY_B64);
+    const pemBody = pemStr.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+    const keyBuffer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0)).buffer;
 
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8', keyBuffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false, ['sign'],
-  );
-  const toSign = new TextEncoder().encode(`${header}.${claim}`);
-  const sigBuffer = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, toSign);
-  const sig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
-  const jwt = `${header}.${claim}.${sig}`;
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8', keyBuffer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['sign'],
+    );
+    const toSign = new TextEncoder().encode(`${header}.${claim}`);
+    const sigBuffer = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, toSign);
+    const sig = toBase64Url(String.fromCharCode(...new Uint8Array(sigBuffer)));
+    const jwt = `${header}.${claim}.${sig}`;
 
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-  });
-    const json = await res.json<{ access_token: string; expires_in: number }>();
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+    });
+    if (!res.ok) throw new Error(`OAuth token request failed: ${res.status}`);
+    const json = await res.json<{ access_token?: string; expires_in?: number }>();
+    if (!json.access_token || typeof json.expires_in !== 'number') throw new Error('OAuth response missing access_token');
     _cachedToken = json.access_token;
     _tokenExpiry = Date.now() + json.expires_in * 1000;
     return _cachedToken;

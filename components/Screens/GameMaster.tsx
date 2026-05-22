@@ -40,21 +40,30 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
       if (!response.ok) throw new Error("Failed to reach Game Master");
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = "";
 
       setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
-
-        assistantContent += decoder.decode(value);
+      if (!reader) {
+        // Non-streaming fallback: read entire response at once
+        const text = await response.text();
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1].content = assistantContent;
+          updated[updated.length - 1].content = text;
           return updated;
         });
+      } else {
+        const decoder = new TextDecoder();
+        let assistantContent = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          assistantContent += decoder.decode(value);
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1].content = assistantContent;
+            return updated;
+          });
+        }
       }
     } catch (err) {
       logger.error("AI Error:", err);
