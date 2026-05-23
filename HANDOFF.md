@@ -16,7 +16,7 @@
 | Check | Status |
 |-------|--------|
 | Typecheck | 0 errors |
-| Tests | 162/162 pass (16 files) |
+| Tests | 161/161 pass (16 files) |
 | Build | Clean |
 | Lint | 0 errors, 0 warnings (note: .agent/skills/ has pre-existing errors from autoskills, not DTP code) |
 | Audit | 0 vulnerabilities (ws CVE-2026-45736 fixed via pnpm.overrides) |
@@ -58,6 +58,8 @@ App.tsx (state machine)
 | `config-balance` | Game balance, difficulty, grid patterns, powerup weights | Tuning and economy |
 | `security-audit` | Firebase rules, CSP, XSS, state tampering | Security hardening |
 | `performance` | CWV, bundle size, GPU, memory, render perf | Optimization |
+| `hooks-state` | useGameEngine bridge, custom hooks, contexts, state machines | Hooks layer |
+| `infrastructure-deploy` | Vite config, Firebase Hosting, Cloudflare Workers, CI/CD | Build pipeline |
 
 ## Key Files to Read First
 
@@ -173,6 +175,14 @@ pnpm audit        # Dependency vulnerability check
 - Dark UI polish: tight surfaces, translucent borders, heavy shadows, pill buttons
 - PlayStation/Spotify design patterns applied to CSS
 
+### 2026-05-23 (session 3) — Deep Audit (24 bugs fixed, 8 agents)
+- **Hooks audit** (9 fixes): useOffsetCursor RAF restart, useScoreSubmission functional updates + type interface, useEnergyStore safeSet x3, useDustEconomy try-catch, useGameEngine death-flash timeout tracking + useEffect deps, useDailyProgress dead code removal + todayStr dedup
+- **Utils audit** (8 fixes): analytics.ts safeSet x2, error-tracker.ts try-catch + safeSet, achievements.ts try-catch, featureGates.ts safeSet, game-config.ts safeSet, settings.ts volume clamping + quota safety, challenge-link.ts import.meta.env.PROD, idb.ts remove dead dequeueAll
+- **Performance audit** (3 fixes): PurpleRain double RAF, MouseTrail double RAF, PulseField per-frame canvas resize
+- **Config audit** (3 fixes): DifficultyScaler live overrides (was frozen at module load), removed dead BALANCE.survival.startTick/maxScoreCap, namespaced bombPulse keyframes
+- **Score-sync** (1 fix): delete failed items before re-enqueueing to prevent unbounded queue growth
+- hooks-state agent + infrastructure-deploy agent created (8 total agents)
+
 ## What's Pending / Next Steps
 
 ### High Priority
@@ -189,8 +199,6 @@ pnpm audit        # Dependency vulnerability check
 ### Lower Priority
 8. **CocoIndex Code** — semantic code search alongside CodeGraph (pip install cocoindex)
 9. **prompts.chat MCP** — prompt library server
-10. **Hooks-state agent** — bridge layer specialist (14 custom hooks)
-11. **Infrastructure-deploy agent** — build/deploy config specialist
 
 ### Retention/Polish Backlog
 - Feature gate progress bar on menu
