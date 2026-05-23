@@ -13,8 +13,11 @@ async function getAuthToken(): Promise<string | undefined> {
 
 export const scoreSync = {
   async queue(score: number, mode: 'classic' | 'evolve' = 'evolve', tick = 0) {
-    const rawInitials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
-    const initials = rawInitials.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON';
+    let initials = 'ANON';
+    try {
+      const rawInitials = localStorage.getItem(LS_KEYS.PLAYER_NAME) || 'ANON';
+      initials = rawInitials.replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON';
+    } catch { /* storage denied */ }
     const pending = { score, initials, mode, tick, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}` };
 
     if (navigator.onLine) {
@@ -72,14 +75,19 @@ export const scoreSync = {
         if (item.id != null) succeededIds.push(item.id);
       } else {
         if (item.id != null) failedIds.push(item.id);
-        const attempts = (item.attempts || 0) + 1;
-        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
-        await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
       }
     }
-    // Delete all processed items (both succeeded and failed, since failed were re-enqueued)
+    // Delete all processed items first to prevent duplicates if page closes mid-flush
     const toDelete = [...succeededIds, ...failedIds];
     if (toDelete.length > 0) await idb.removeItems(toDelete);
+    // Re-enqueue failed items with updated backoff
+    for (const id of failedIds) {
+      const item = pending.find(p => p.id === id);
+      if (!item) continue;
+      const attempts = (item.attempts || 0) + 1;
+      const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
+      await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
+    }
   },
 
   _onlineHandler: (null as (() => void) | null),

@@ -90,7 +90,7 @@ import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjective
 import { fbFetchTop20Global } from "./services/firebase";
 import { initGA, logProgressionEvent } from "./services/gameanalytics";
 import { safeGetJSON, safeSet } from "./utils/storage";
-import { addPendingScore } from "./utils/pendingScoresDb";
+import { scoreSync } from "./utils/score-sync";
 import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachine";
 import { PauseOverlay } from "./components/Screens/PauseOverlay";
 import { EnergyPopup } from "./components/Screens/EnergyPopup";
@@ -529,39 +529,18 @@ export default function App() {
     setInitials(playerName || "Player");
     setIE(false);
 
-    // Auto-submit score through Cloudflare Worker (with offline fallback)
-    // Wrapped in try/catch — screen transition already happened, this is fire-and-forget
+    // Auto-submit score through scoreSync (with offline fallback)
     try {
-      const autoEntry = {
-        score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
-        initials: playerName || "Player",
-        mode: gameMode,
-        badge: shopData.equippedBadge,
-        date: new Date().toISOString().split("T")[0],
-        tick: snapshotRef.current?.tick || 0
-      };
+      const submitVal = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
 
-      if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
+      if (submitVal > 0 && !scoreSubmittedRef.current) {
         scoreSubmittedRef.current = true;
 
         try {
-          const response = await fetch('https://game.mscarabia.com/api/submit-score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(autoEntry)
-          });
-
-          if (!response.ok) throw new Error('Worker rejected');
+          await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0);
           toast$("🏆 Score submitted to global leaderboard!");
-
         } catch {
-          logger.warn("Worker offline, queuing score");
-          await addPendingScore(autoEntry);
-
-          if ('serviceWorker' in navigator && 'SyncManager' in window) {
-            const reg = await navigator.serviceWorker.ready;
-            (reg as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync?.register('dtp-score-submit');
-          }
+          logger.warn("Score sync failed");
           toast$("💾 Score saved offline — will sync soon");
         }
       }

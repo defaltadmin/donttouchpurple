@@ -111,7 +111,8 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const updateChallengeProgress = useCallback((p1Score: number, tick: number) => {
-    const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
+    const ts = new Date().toISOString().slice(0, 10);
+    const PROGRESS_KEY = `dtp-challenge-progress-${ts}`;
     let progress: Record<string, number> = {};
     try { progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}'); } catch {}
 
@@ -122,7 +123,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
     if (ps >= 5) progress['streak5'] = ps;
 
     safeSet(PROGRESS_KEY, JSON.stringify(progress));
-    setDailyChallenges(buildDailyChallenges(todayStr));
+    setDailyChallenges(buildDailyChallenges(ts));
 
     // Weekly task progress (UTC)
     const now2 = new Date();
@@ -141,7 +142,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
     weeklyProgress['bothmode'] = modesPlayed.size;
     safeSet(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
     setWeeklyTasks(buildWeeklyTasks());
-  }, [todayStr, peakStreakRef]);
+  }, [peakStreakRef]);
 
   const handleLoginStreakClaim = useCallback(() => {
     const todayStr = new Date().toDateString();
@@ -203,6 +204,8 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
           const completed = markObjectiveComplete(i);
           if (completed) {
             setDailyObjectives(prev => prev.map((o, idx) => idx === i ? completed : o));
+            // Only unlock daily_master when an objective is actually completed
+            import('../utils/achievements').then(m => m.achievementSystem.unlock('daily_master')).catch(() => {});
             const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
             addDust(safeReward, 'DailyObjective');
             setTimeout(() => {

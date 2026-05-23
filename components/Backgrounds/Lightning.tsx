@@ -141,7 +141,6 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
     const render = () => {
       rafId = requestAnimationFrame(render);
       if (document.hidden) return;
-      resizeCanvas();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(iResLoc, canvas.width, canvas.height);
       gl.uniform1f(iTimeLoc, (performance.now() - startTime) / 1000.0);

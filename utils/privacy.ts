@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { LS_KEYS } from '../config/difficulty';
 
 const DTP_KEYS = [
   'dtp:session', 'dtp:settings', 'dtp:events', 'dtp:errors',
@@ -9,6 +10,10 @@ const DTP_KEYS = [
   'dtp_muted', 'dtp_volume', 'dtp_haptics', 'dtp_screen_shake', 'dtp_reduced_motion',
   'dtp-best-classic', 'dtp-best-evolve', 'dtp-daily-completed', 'dtp-obj-streak',
   'dtp-games-played', 'dtp-challenge-progress', 'dtp:daily-complete',
+  // Derived from LS_KEYS — covers GDPR personal data
+  LS_KEYS.PLAYER_NAME, LS_KEYS.DUST, LS_KEYS.ENERGY, LS_KEYS.SHOP,
+  LS_KEYS.STORED_PWR, LS_KEYS.WEEKLY_BONUS, LS_KEYS.LB_CLASSIC, LS_KEYS.LB_EVOLVE,
+  LS_KEYS.PRIVACY_OK, LS_KEYS.ONBOARD_SEEN, LS_KEYS.P1_KEYS, LS_KEYS.P2_KEYS,
 ];
 
 export const privacyManager = {

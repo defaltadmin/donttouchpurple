@@ -8,7 +8,8 @@ export function PrivacyBanner({ onDismiss }: PrivacyBannerProps) {
   useEffect(() => {
     const id = setTimeout(onDismiss, 6000);
     return () => clearTimeout(id);
-  }, [onDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="privacy-banner">

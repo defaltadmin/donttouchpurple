@@ -74,6 +74,7 @@ export function GameOver({
   const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
   const finalScoreRef = useRef(p1Score);
   const [displayScore, setDisplayScore] = useState(0);
@@ -112,8 +113,10 @@ export function GameOver({
     return () => ctx.revert();
   }, [is2P]);
 
+  useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
+
   const bugHref = React.useMemo(() => `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
-    `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.href}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
+    `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.pathname}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
   )}`, [p1Score, mode, gameSeed, tick, p1.health, spinLevel, p1.streak]);
 
   return (
@@ -217,7 +220,8 @@ export function GameOver({
                 const url = `https://dont-touch-purple.web.app/?seed=${gameSeed}&mode=${mode}`;
                 navigator.clipboard.writeText(`I scored ${p1Score} in Don't Touch Purple! Can you beat me?\n${url}`).then(() => {
                   setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
+                  if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+                  copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
                 }).catch(() => {});
               }}>{copied ? "✓ Copied!" : "📋 Copy Link"}</button>
               <button className="btn-ghost" onClick={() => setShowShareModal(false)}>{t('ui.cancel')}</button>

@@ -60,16 +60,30 @@ export class TickProcessor {
     const now = performance.now();
     const delta = Math.min(now - ctx._lastTickTs, 100);
     ctx._lastTickTs = now;
-    // Snapshot current timers; callbacks may add new ones via addDeltaTimer()
+    // Snapshot current timers; callbacks may add/remove via addDeltaTimer/removeDeltaTimer
     const snapshot = [...ctx._deltaTimers];
-    const kept = snapshot.filter(timer => {
+    const expiredCallbacks: Array<() => void> = [];
+    const kept: typeof ctx._deltaTimers = [];
+
+    for (const timer of snapshot) {
       timer.remaining -= delta;
-      if (timer.remaining <= 0) { timer.callback(); return false; }
-      return true;
-    });
-    // Preserve any timers added during callbacks (they were pushed after snapshot)
-    const added = ctx._deltaTimers.slice(snapshot.length);
-    ctx._deltaTimers = [...kept, ...added];
+      if (timer.remaining <= 0) {
+        expiredCallbacks.push(timer.callback);
+      } else {
+        kept.push(timer);
+      }
+    }
+
+    // Fire expired callbacks (may modify ctx._deltaTimers via add/removeDeltaTimer)
+    for (const cb of expiredCallbacks) cb();
+
+    // After callbacks: newly added timers are those NOT in the snapshot (by reference)
+    const snapshotSet = new Set(snapshot);
+    const newlyAdded = ctx._deltaTimers.filter(t => !snapshotSet.has(t));
+
+    // kept = non-expired from snapshot MINUS any removed by callbacks via removeDeltaTimer
+    const currentSet = new Set(ctx._deltaTimers);
+    ctx._deltaTimers = [...kept.filter(t => currentSet.has(t)), ...newlyAdded];
 
     // If a delta timer callback triggered game over, bail out of the rest of the tick
     if (ctx.phase !== "playing") return;

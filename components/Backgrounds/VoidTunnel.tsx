@@ -116,7 +116,7 @@ export default function VoidTunnel() {
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = window.innerWidth + 'px';
       canvas.style.height = window.innerHeight + 'px';
-      ctxRef.current?.scale(dpr, dpr);
+      ctxRef.current?.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener('resize', resize);

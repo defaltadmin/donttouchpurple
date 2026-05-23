@@ -1157,9 +1157,8 @@ private triggerGameOver(winner: Winner): void {
       if (this.config.mode === "evolve") achievementSystem.unlock('evolve_win');
     }
 
-    // Game count achievements
+    // Game count achievements — read current count; hook layer handles the localStorage increment
     const gamesPlayed = Math.max(0, Math.min(99999, parseInt(localStorage.getItem('dtp-games-played') || '0') || 0)) + 1;
-    localStorage.setItem('dtp-games-played', String(gamesPlayed));
     achievementSystem.check('games_50', () => gamesPlayed >= 50);
     achievementSystem.check('games_200', () => gamesPlayed >= 200);
 
@@ -1194,7 +1193,7 @@ private triggerGameOver(winner: Winner): void {
     this.dda.reset(this._config.grid.spawnRateMs);
     if (!this.daily.isTodayComplete()) {
       this.daily.markComplete(this.p1.score, this.tickCount);
-      achievementSystem.unlock('daily_master');
+      // daily_master unlock moved to useDailyProgress — only fires when checkObjective confirms completion
     }
   }
 

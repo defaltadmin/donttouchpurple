@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { LS_KEYS } from "../config/difficulty";
 
+function safeGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
 export function useUIFlags() {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsFromPause, setSettingsFromPause] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(() => !localStorage.getItem(LS_KEYS.PRIVACY_OK));
+  const [showPrivacy, setShowPrivacy] = useState(() => !safeGet(LS_KEYS.PRIVACY_OK));
   const [showNameEntry, setShowNameEntry] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -18,13 +22,13 @@ export function useUIFlags() {
   const [showLoginStreak, setShowLoginStreak] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showRewardsHub, setShowRewardsHub] = useState(false);
-  const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && localStorage.getItem('dtp:dev') === 'true');
+  const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && safeGet('dtp:dev') === 'true');
   const [showDevUnlock, setShowDevUnlock] = useState(false);
   const [showBuildDeploy, setShowBuildDeploy] = useState(false);
 
   const EVOLVE_TUTORIAL_SEEN_KEY = 'dtp-evolve-tutorial-seen';
   const [evolveTutorialSeen, setEvolveTutorialSeen] = useState(() =>
-    Boolean(localStorage.getItem(EVOLVE_TUTORIAL_SEEN_KEY))
+    Boolean(safeGet(EVOLVE_TUTORIAL_SEEN_KEY))
   );
 
   return {

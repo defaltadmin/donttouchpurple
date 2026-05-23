@@ -112,10 +112,6 @@ export function MouseTrail({
 
     const animate = () => {
       if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return; }
-      if (activeCount === 0) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return;
-      }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       activeCount = 0;

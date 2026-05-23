@@ -1,6 +1,7 @@
 import { logger } from './logger';
 import { privacyManager } from './privacy';
 import { analytics } from './analytics';
+import { safeSet } from './storage';
 
 export interface Achievement { id: string; name: string; desc: string; icon: string; unlocked: boolean; date?: string; }
 const ACH_KEY = 'dtp:achievements';
@@ -29,17 +30,14 @@ export const achievementSystem = {
     ach.unlocked = true;
     ach.date = new Date().toISOString();
     this.unlocked.add(id);
-    try { localStorage.setItem(ACH_KEY, JSON.stringify([...this.unlocked])); } catch {}
+    safeSet(ACH_KEY, JSON.stringify([...this.unlocked]));
     try {
       const queue = JSON.parse(localStorage.getItem(TOAST_KEY) || '[]');
       queue.push({ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() });
-      localStorage.setItem(TOAST_KEY, JSON.stringify(queue.slice(-5)));
+      safeSet(TOAST_KEY, JSON.stringify(queue.slice(-5)));
     } catch {
       // Corrupt toast queue — reset and retry
-      try {
-        const fresh = [{ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() }];
-        localStorage.setItem(TOAST_KEY, JSON.stringify(fresh));
-      } catch { /* localStorage unavailable — skip toast */ }
+      safeSet(TOAST_KEY, JSON.stringify([{ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() }]));
     }
     logger.info('🏆 Achievement unlocked:', ach.name.replace(/[\r\n]/g, ''));
     window.dispatchEvent(new CustomEvent('dtp:achievement', { detail: ach }));

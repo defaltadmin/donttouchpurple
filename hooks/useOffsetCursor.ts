@@ -46,6 +46,7 @@ export function useOffsetCursor(enabled: boolean, rootRef: React.RefObject<HTMLD
     };
 
     const animate = () => {
+      if (document.hidden || !activeRef.current) { rafRef.current = null; return; }
       const ease = 0.18;
       const dx = targetRef.current.x - posRef.current.x;
       const dy = targetRef.current.y - posRef.current.y;
@@ -54,9 +55,11 @@ export function useOffsetCursor(enabled: boolean, rootRef: React.RefObject<HTMLD
         posRef.current.x += dx * ease;
         posRef.current.y += dy * ease;
         setPos({ x: posRef.current.x, y: posRef.current.y, visible: true });
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        // Settled — stop RAF; next pointermove will restart it
+        rafRef.current = null;
       }
-
-      rafRef.current = requestAnimationFrame(animate);
     };
 
     el.addEventListener('pointermove', move, { passive: true });

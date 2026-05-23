@@ -35,6 +35,7 @@ export const gamepadManager = {
 
     const poll = () => {
       if (!this.connected) { this._polling = false; return; }
+      if (document.hidden) { requestAnimationFrame(poll); return; }
       const pad = navigator.getGamepads()[this.activeId!];
       if (!pad) { requestAnimationFrame(poll); return; }
 

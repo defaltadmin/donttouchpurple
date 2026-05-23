@@ -163,7 +163,7 @@ export function markObjectiveComplete(index: number = 0): DailyObjective | null 
   if (entries.some(e => e.date === today && e.index === index)) return null;
 
   entries.push({ date: today, index });
-  localStorage.setItem('dtp-daily-completed', JSON.stringify(entries));
+  try { localStorage.setItem('dtp-daily-completed', JSON.stringify(entries)); } catch { /* quota or private mode */ }
 
   incrementObjectiveStreak();
 

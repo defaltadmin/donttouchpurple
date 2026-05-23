@@ -4,6 +4,7 @@ import { safeSet } from '../utils/storage';
 import { logger } from '../utils/logger';
 import { safeSentry } from '../services/sentry';
 import { getMessage } from '../components/Screens/GameOver';
+import { scoreSync } from '../utils/score-sync';
 type FirebaseModule = typeof import('../services/firebase');
 
 interface ScoreSubmissionOptions {
@@ -55,9 +56,17 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
   const [initials, setInitials] = useState("");
   const [ie, setIE] = useState(false);
 
+  // Refs for synchronous reads in callbacks (avoids stale closures)
+  const winsRef = useRef(wins);
+  const deathsRef = useRef(deaths);
+  const gamesPlayedRef = useRef(gamesPlayed);
+  const best1Ref = useRef(best1);
+  const best2Ref = useRef(best2);
+
   const incrementGamesPlayed = useCallback(() => {
     setGamesPlayed(prev => {
       const next = prev + 1;
+      gamesPlayedRef.current = next;
       safeSet('dtp-games-played', String(next));
       if (next === 1) {
         safeSet('dtp-show-rewards-after-first-game', '1');
@@ -72,20 +81,20 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
     p2Score: number,
     gameSeed?: number
   ): Promise<number> => {
-    const { gameMode, numPlayers, playerName, shopBadge, addDust, machine, getFirebase, logProgressionEvent, toast$, snapshotRef } = opts;
+    const { gameMode, numPlayers, playerName, addDust, machine, getFirebase, logProgressionEvent, toast$, snapshotRef } = opts;
 
-    // Update progress tracking (use functional updates to avoid stale closures)
+    // Update progress tracking (use refs + functional updates for safe synchronous reads)
     let newWins = 0;
     let newDeaths = 0;
     let newGames = 0;
-    setWins(prev => { newWins = prev + (engineWinner === "p1" ? 1 : 0); return newWins; });
-    setDeaths(prev => { newDeaths = prev + (p1Score === 0 ? 1 : 0); return newDeaths; });
-    setGamesPlayed(prev => { newGames = prev + 1; return newGames; });
+    setWins(prev => { newWins = prev + (engineWinner === "p1" ? 1 : 0); winsRef.current = newWins; return newWins; });
+    setDeaths(prev => { newDeaths = prev + (p1Score === 0 ? 1 : 0); deathsRef.current = newDeaths; return newDeaths; });
+    setGamesPlayed(prev => { newGames = prev + 1; gamesPlayedRef.current = newGames; return newGames; });
     safeSet('dtp:wins', newWins.toString());
     safeSet('dtp:deaths', newDeaths.toString());
 
     machine.updateProgress({
-      bestScore: Math.max(best1, best2, Math.max(p1Score, p2Score)),
+      bestScore: Math.max(best1Ref.current, best2Ref.current, Math.max(p1Score, p2Score)),
       gamesPlayed: newGames,
       wins: newWins,
       deaths: newDeaths
@@ -94,9 +103,9 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
 
     if (gameMode === "classic") {
-      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
+      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); best1Ref.current = nb; safeSet(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
     } else {
-      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
+      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); best2Ref.current = nb; safeSet(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
     }
 
     const earned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
@@ -126,37 +135,16 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
 
     // Auto-submit score through Cloudflare Worker (with offline fallback)
     try {
-      const autoEntry = {
-        score: numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score),
-        initials: playerName || "Player",
-        mode: gameMode,
-        badge: shopBadge,
-        date: new Date().toISOString().split("T")[0],
-        tick: snapshotRef.current?.tick || 0
-      };
+      const submitScore_val = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
 
-      if (autoEntry.score > 0 && !scoreSubmittedRef.current) {
+      if (submitScore_val > 0 && !scoreSubmittedRef.current) {
         scoreSubmittedRef.current = true;
 
         try {
-          const response = await fetch('https://game.mscarabia.com/api/submit-score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(autoEntry)
-          });
-
-          if (!response.ok) throw new Error('Worker rejected');
+          await scoreSync.queue(submitScore_val, gameMode, snapshotRef.current?.tick || 0);
           toast$("🏆 Score submitted to global leaderboard!");
-
         } catch {
-          logger.warn("Worker offline, queuing score");
-          const { addPendingScore } = await import('../utils/pendingScoresDb');
-          await addPendingScore(autoEntry);
-
-          if ('serviceWorker' in navigator && 'SyncManager' in window) {
-            const reg = await navigator.serviceWorker.ready;
-            (reg as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync?.register('dtp-score-submit');
-          }
+          logger.warn("Score sync failed");
           toast$("💾 Score saved offline — will sync soon");
         }
       }
@@ -165,7 +153,7 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
     }
 
     return gameHighScore;
-  }, [opts, wins, deaths, gamesPlayed, best1, best2]);
+  }, [opts]);
 
   return {
     gamesPlayed, best1, best2, wins, deaths,
