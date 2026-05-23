@@ -64,6 +64,7 @@ App.tsx (state machine)
 | [security-audit](docs/agents/security-audit.md) | Firebase rules, CSP, XSS, state tampering, input validation | sonnet |
 | [performance](docs/agents/performance.md) | Core Web Vitals, bundle size, GPU, memory leaks, render perf | sonnet |
 | [hooks-state](docs/agents/hooks-state.md) | useGameEngine bridge, custom hooks, contexts, state machines | sonnet |
+| [infrastructure-deploy](docs/agents/infrastructure-deploy.md) | Vite config, Firebase Hosting, Cloudflare Workers, CI/CD | sonnet |
 
 ## Full docs
 

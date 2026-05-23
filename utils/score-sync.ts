@@ -60,6 +60,7 @@ export const scoreSync = {
     logger.info(`🔄 Flushing ${pending.length} offline scores`);
 
     const succeededIds: number[] = [];
+    const failedIds: number[] = [];
     const now = Date.now();
     for (const item of pending) {
       // Exponential backoff: skip items not yet due for retry
@@ -70,13 +71,15 @@ export const scoreSync = {
       if (success) {
         if (item.id != null) succeededIds.push(item.id);
       } else {
+        if (item.id != null) failedIds.push(item.id);
         const attempts = (item.attempts || 0) + 1;
         const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
-        await idb.enqueue({ ...item, attempts, nextRetry: Date.now() + backoffMs });
+        await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
       }
     }
-    // Only delete items that were successfully submitted
-    if (succeededIds.length > 0) await idb.removeItems(succeededIds);
+    // Delete all processed items (both succeeded and failed, since failed were re-enqueued)
+    const toDelete = [...succeededIds, ...failedIds];
+    if (toDelete.length > 0) await idb.removeItems(toDelete);
   },
 
   _onlineHandler: (null as (() => void) | null),
