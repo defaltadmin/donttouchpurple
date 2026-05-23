@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Play the Game
+    url: https://dont-touch-purple.web.app
+    about: Try the live game before reporting an issue
+  - name: Documentation
+    url: https://github.com/defaltadmin/donttouchpurple/wiki
+    about: Check the wiki for game mechanics, backgrounds, and achievements

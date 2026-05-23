@@ -1,99 +1,124 @@
+<div align="center">
+
 # Don't Touch Purple
 
-![CI](https://github.com/defaltadmin/donttouchpurple/actions/workflows/ci.yml/badge.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-7.5.3-green.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)
-![Vite](https://img.shields.io/badge/Vite-6.x-646cff.svg)
-![Tests](https://img.shields.io/badge/tests-162%20passed-brightgreen.svg)
+**A fast-paced reflex grid-tapping game. Tap every color except purple. How long can you survive?**
 
-> **A reflex game where you must never touch purple.**
+[![CI Pipeline](https://github.com/defaltadmin/donttouchpurple/actions/workflows/ci.yml/badge.svg)](https://github.com/defaltadmin/donttouchpurple/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Tests](https://img.shields.io/badge/Tests-161%20passed-4CAF50?logo=vitest&logoColor=white)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[PLAY NOW](https://defaltadmin.github.io/donttouchpurple)** — No download. No signup. Just play.
+<a href="https://dont-touch-purple.web.app">
+  <img src="opengraph.jpg" alt="Don't Touch Purple - Fast-paced reflex game" width="600">
+</a>
 
----
+**[Play Now](https://dont-touch-purple.web.app)** | 
+**[Wiki](https://github.com/defaltadmin/donttouchpurple/wiki)** | 
+**[Design System](DESIGN.md)** | 
+**[Agent Docs](llms.txt)**
 
-## What is this?
-
-A fast-paced browser game that tests your reflexes. Tap colored cells to score points — but if you touch a purple cell, it's over. Simple to learn. Brutal to master.
-
-The game gets harder the longer you survive. Grids expand. Boss events shake things up. Rare color modes force you to relearn what's safe. And just when you think you've got it figured out, the **Blackout** hits and you can't see anything at all.
+</div>
 
 ---
 
 ## Game Modes
 
-### Classic
-Pure reflex training. 3x3 grid. How long can you survive?
-
-### Evolve
-Progressive difficulty. Grids expand from 3x3 to 7x7+. Boss events, rare colors, and special cells keep you guessing.
-
-**Boss Events:**
-- **Storm** — Cells shuffle at lightning speed
-- **Inversion** — Safe and danger colors swap
-- **Blackout** — The grid goes dark. Tap by memory.
-
-**Special Cells:**
-- Shield — Blocks one mistake
-- Freeze — Pauses the game for 1 second
-- Multiplier — Double points for a limited time
-- Medpack — Restores a heart
-- Ice — Freezes a cell in place
-- Bomb — Removes a heart. Don't tap it.
-
----
+| Mode | Description |
+|------|-------------|
+| **Classic** | Race the clock. Tap every non-purple cell before time runs out. Miss a cell and time bleeds away. |
+| **Evolve** | Survive the endless wave. The grid evolves, speeds up, and throws new mechanics at you. How far can you go? |
 
 ## Features
 
-- **37 achievements** to unlock
-- **Dust economy** — Earn currency to unlock backgrounds and power-ups
-- **Bot Assist** — AI companion that taps safe cells for you (costs dust)
-- **12 animated backgrounds** — GPU-accelerated canvas effects (Galaxy, Silk, Hyperspeed, Aurora, and more)
-- **Hyper-Juice UI** — Mouse-reactive spotlights, magnetic buttons, liquid trails
-- **Lottie animations** — Animated achievement toasts and boss intros
-- **5 languages** — English, Spanish, French, Japanese, Portuguese
-- **PWA** — Install on any device, works offline
-- **Gamepad support** — Play with a controller
-- **Leaderboard** — Global high scores via Firebase
-
----
+- **50+ achievements** across 8 categories — from casual to speedrun-tier
+- **Daily objectives** with streak tracking and a rotating challenge seed
+- **Global leaderboard** powered by Cloudflare Workers + Firebase
+- **Bot assist mode** — toggle AI control for any player
+- **12 WebGL backgrounds** — Nebula, Aurora, StarWarp, VoidTunnel, DigitalRain, Lightning, PulseField, and more (OGL)
+- **Shop and currency** — earn dust, unlock backgrounds, badges, and themes
+- **Challenge links** — share a seeded game with friends via URL
+- **PWA installable** — works offline, feels native on mobile and desktop
+- **Accessibility** — reduced motion, colorblind-safe palette, haptics toggle, screen shake control
+- **Sentry + GameAnalytics** — real-time error tracking and player analytics
 
 ## Tech Stack
 
 | Layer | Technology |
-|---|---|
-| UI | React 19, TypeScript 5, Vite 6 |
-| Animation | GSAP, Framer Motion, CSS keyframes, dotlottie-web, OGL (WebGL) |
-| Backend | Firebase (Firestore, Analytics, Auth, App Check) |
-| Testing | Vitest (162 unit tests), Playwright (E2E) |
-| CI/CD | GitHub Actions → GitHub Pages auto-deploy |
-| Security | CSP headers, score validation worker, rate limiting |
-
----
+|-------|-----------|
+| UI | React 19, TypeScript 5, CSS custom properties (MD3 tokens) |
+| Build | Vite 7, Rollup, PostCSS |
+| Backgrounds | OGL (WebGL), GSAP, Framer Motion, dotlottie-web |
+| Backend | Firebase 12 (Auth, Firestore, Hosting, Analytics, App Check) |
+| Workers | Cloudflare Workers (leaderboard proxy, score validation) |
+| Testing | Vitest 4, Playwright (E2E) |
+| CI/CD | GitHub Actions, semantic-release |
+| Monitoring | Sentry, GameAnalytics, web-vitals |
 
 ## Quick Start
 
 ```bash
+git clone https://github.com/defaltadmin/donttouchpurple.git
+cd donttouchpurple
 pnpm install
-pnpm dev          # Start dev server
-pnpm typecheck    # TypeScript check
-pnpm test         # Run unit tests
-pnpm build        # Production build
+pnpm dev          # Opens http://localhost:5173
 ```
 
----
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Dev server with HMR |
+| `pnpm typecheck` | TypeScript validation |
+| `pnpm test` | Unit tests (Vitest) |
+| `pnpm test:e2e` | End-to-end tests (Playwright) |
+| `pnpm build` | Production build |
+| `pnpm lint` | ESLint with auto-fix |
+| `pnpm analyze` | Bundle size breakdown |
+
+## Architecture
+
+```
+App.tsx (state machine)
+  |- engine/           Pure game logic (zero React imports)
+  |   |- GameEngine.ts    Core loop, scoring, session
+  |   |- subsystems/      TickProcessor, CellLifecycle, boss events
+  |   |- RNG, CellTypes
+  |- components/       React UI layer
+  |   |- Screens/         Menu, GameOver, Privacy, Settings
+  |   |- HUD/             PlayerPanel, GameArea, PauseOverlay
+  |   |- Backgrounds/     12 OGL/WebGL themes
+  |   |- Shop/            ShopPanel, cosmetics
+  |- hooks/            useGameEngine bridge, custom hooks
+  |- services/         Firebase, Sentry, analytics
+  |- workers/          Cloudflare Worker proxy
+  |- config/           Balance, difficulty, patterns, powerup weights
+  |- utils/            IDB queue, score-sync, privacy, achievements
+```
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [DESIGN.md](DESIGN.md) | Design tokens, palette, typography, layout rules |
+| [AGENTS.md](AGENTS.md) | Agent instructions, architecture, 8 domain-specific agent definitions |
+| [llms.txt](llms.txt) | AI agent project overview |
+| [llms-full.txt](llms-full.txt) | Full reference with APIs, config, and structure |
+| [CHANGELOG.md](CHANGELOG.md) | Auto-generated release history |
+| [Wiki](https://github.com/defaltadmin/donttouchpurple/wiki) | Game mechanics, modes, achievements, backgrounds, bot assist, leaderboard |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, code style, and PR process.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, code style, and PR process.
 
----
+## Security
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and supported versions.
 
 ## License
 
-[MIT](LICENSE) — Free to play, free to fork, free to learn from.
-
----
-
-**Built with React, TypeScript, and a stubborn refusal to touch purple.**
+[MIT](LICENSE) - Copyright (c) 2025-2026 defaltadmin

@@ -1,0 +1,33 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      vite:
+        patterns: ["vite", "@vitejs/*", "rollup"]
+      firebase:
+        patterns: ["firebase", "@firebase/*"]
+      testing:
+        patterns: ["vitest", "@vitest/*", "playwright", "@playwright/*"]
+      linting:
+        patterns: ["eslint", "@eslint/*", "typescript-eslint"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "ci"
+      - "dependencies"
+    commit-message:
+      prefix: "ci(deps)"

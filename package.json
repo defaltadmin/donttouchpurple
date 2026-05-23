@@ -1,8 +1,31 @@
 {
   "name": "dont-touch-purple",
-  "private": true,
   "version": "7.5.3",
+  "private": true,
+  "description": "Fast-paced reflex grid-tapping game. Two modes, 50+ achievements, global leaderboard, 12 WebGL backgrounds. React 19 + TypeScript + Firebase.",
   "type": "module",
+  "license": "MIT",
+  "author": "defaltadmin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/defaltadmin/donttouchpurple.git"
+  },
+  "homepage": "https://dont-touch-purple.web.app",
+  "bugs": {
+    "url": "https://github.com/defaltadmin/donttouchpurple/issues"
+  },
+  "keywords": [
+    "game",
+    "arcade",
+    "reflex",
+    "reaction-time",
+    "webgl",
+    "pwa",
+    "react",
+    "typescript",
+    "firebase",
+    "vite"
+  ],
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
