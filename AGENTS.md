@@ -66,6 +66,7 @@ App.tsx (state machine)
 
 ## Full docs
 
+- **[HANDOFF.md](HANDOFF.md)** — **READ THIS FIRST** in any new session. Master handoff with full project state, what's done, and what's next.
 - [llms.txt](llms.txt) — AI agent project overview
 - [DESIGN.md](DESIGN.md) — Design tokens and palette
 - [CLAUDE.md](CLAUDE.md) — Detailed project instructions
