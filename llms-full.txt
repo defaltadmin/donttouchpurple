@@ -1,0 +1,164 @@
+# Don't Touch Purple — Full Reference
+
+> A reflex-based grid-tapping game where players tap cells to score while avoiding purple. Built with React 19, TypeScript 5, Vite 7, Firebase, and OGL/WebGL backgrounds.
+
+Don't Touch Purple is a fast-paced reaction game with progressively harder stages, special cells (shield, freeze, multiplier, bomb, medpack), boss events, rare color modes, 37 achievements, 12 GPU-accelerated backgrounds, bot assist, and a global leaderboard. Two game modes: Classic (fixed 3x3) and Evolve (progressive grid stages with boss encounters).
+
+## Tech Stack
+
+- **Frontend:** React 19, TypeScript 5, Vite 7, Framer Motion 12, GSAP 3.15
+- **Rendering:** OGL 1.0 (WebGL backgrounds), Canvas API, dotlottie-web
+- **Backend:** Firebase 12 (Firestore, Auth, Analytics), Cloudflare Workers
+- **Testing:** Vitest 4.1, Playwright 1.59, jsdom
+- **Build:** Vite, PostCSS, autoprefixer, cssnano, terser, rollup-plugin-visualizer
+- **CI/CD:** GitHub Actions, semantic-release, Firebase Hosting
+- **Monitoring:** Sentry 10, GameAnalytics, Microsoft Clarity, web-vitals
+
+## Project Structure
+
+```
+├── App.tsx                          Main state machine, game lifecycle orchestrator
+├── main.tsx                         Entry point, root render
+├── engine/                          Pure game logic (zero React)
+│   ├── GameEngine.ts                Main game loop, player state, boss events
+│   ├── botController.ts             Bot assist AI
+│   ├── achievements.ts              37 achievement tracker
+│   ├── rng.ts                       Deterministic PRNG (mulberry32)
+│   └── subsystems/
+│       ├── TickProcessor.ts         Per-tick cell spawning, rare color, difficulty
+│       ├── CellLifecycle.ts         Cell click handling, special cell effects
+│       ├── BossEngine.ts            Boss event logic
+│       └── ScoreSync.ts             Score queue, IndexedDB persistence
+├── components/
+│   ├── Cell/index.tsx               Cell rendering, click handling
+│   ├── Animations/                  EnergyDrop, FreezeDrop, ShieldDrop
+│   ├── Backgrounds/                 17 OGL/WebGL themes (GPU-accelerated)
+│   ├── HUD/                         PlayerPanel, GameArea, ScoreFloat, EnergyBar, Hearts, BossOverlay
+│   ├── Layout/                      ParticleLayer
+│   ├── Leaderboard/                 LeaderboardPanel, ChampionSpotlight
+│   ├── Screens/                     StartScreen, GameOver, HowToPlay, RewardsHub, Shop, PauseOverlay, DailyChallenges, ShareModal, GameMaster
+│   └── Settings/                    DevOverlay, BuildDeploySection
+├── hooks/
+│   └── useGameEngine.ts             React ↔ Engine bridge (snapshot provider)
+├── services/
+│   ├── firebase.ts                  Firebase init, Firestore, Analytics, Auth
+│   ├── firestoreService.ts          Score submission, leaderboard queries
+│   └── scoreSync.ts                 Offline queue, batched writes, IDB
+├── workers/
+│   └── scoreWorker.ts               Cloudflare Worker score proxy
+├── config/
+│   ├── game.ts                      Balance constants, difficulty curves
+│   ├── patterns.ts                  Grid cell patterns per stage
+│   └── difficulty.ts                Scaling parameters
+├── utils/
+│   ├── audio.ts                     Sound effects
+│   ├── i18n.ts                      Internationalization
+│   ├── session.ts                   Session management
+│   └── analytics.ts                 Event tracking
+├── docs/
+│   ├── agents/                      Domain-specific agent definitions
+│   └── wiki/                        Community knowledge base (8 pages)
+├── DESIGN.md                        MD3 design tokens, Hyper-Juice Arcade palette
+├── AGENTS.md                        Universal AI tool instructions
+├── llms.txt                         AI agent discoverability (this file)
+└── CLAUDE.md                        Detailed project instructions
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        App.tsx                              │
+│  (Main screen state machine, game lifecycle orchestration)  │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+   ┌──────────┐ ┌──────────┐ ┌──────────┐
+   │ Engine   │ │Components│ │ Services │
+   │ (pure    │ │ (React   │ │ (Firebase│
+   │  logic)  │ │  UI)     │ │  Auth)   │
+   └──────────┘ └──────────┘ └──────────┘
+        │             │
+        ▼             ▼
+   ┌─────────────────────────────────────────────────────────┐
+   │ config/ — Game balance, difficulty, grid patterns       │
+   └─────────────────────────────────────────────────────────┘
+```
+
+## Key APIs
+
+### GameEngine (engine/GameEngine.ts)
+- `start(mode, stage)` — Initialize game session
+- `tick(dt)` — Process one game frame
+- `handleClick(cellIndex)` — Process player input
+- `pause() / resume()` — Pause control
+- `getSnapshot()` — Current game state for UI
+
+### TickProcessor (engine/subsystems/TickProcessor.ts)
+- `processTick(cells, dt, difficulty)` — Spawn cells, apply rare color chance
+- `calculateDifficulty(tick, stage)` — Progressive difficulty scaling
+
+### CellLifecycle (engine/subsystems/CellLifecycle.ts)
+- `handleCellClick(cell, state)` — Process tap, return score delta + effects
+- Special cell effects: shield, freeze, multiplier, bomb, medpack, ice
+
+### useGameEngine (hooks/useGameEngine.ts)
+- Returns `{ snapshot, actions }` — React hook wrapping engine
+- Snapshot includes: score, health, energy, combo, cells, stage, boss state
+
+### ScoreSync (engine/subsystems/ScoreSync.ts)
+- `queue(score, tickCount)` — Offline-capable score submission
+- `flush()` — Batch send to Firestore via Cloudflare Worker
+
+## Configuration
+
+### Game Balance (config/game.ts)
+- Grid sizes: 3x3 (classic) → 3x3 to 9x9 (evolve stages)
+- Cell spawn rate, lifetime, difficulty curve parameters
+- Special cell probabilities per stage
+- Boss event thresholds
+
+### Design Tokens (DESIGN.md)
+- MD3 color system: Hyper-Juice Arcade dark-cyberpunk palette
+- Surface, primary, secondary, tertiary, error color scales
+- CSS custom properties via `--md-*` prefix
+
+### Firebase (firebase.json)
+- Hosting: single-page app with clean URLs
+- Firestore: scores collection, leaderboard queries
+- Security rules: server timestamps (ts == request.time)
+- App Check: enabled for production
+
+## Development
+
+```bash
+pnpm dev          # Dev server (localhost:5173)
+pnpm typecheck    # TypeScript validation
+pnpm test         # Unit tests (vitest, 162 tests)
+pnpm test:e2e     # E2E tests (Playwright)
+pnpm build        # Production build
+pnpm lint         # ESLint fix
+pnpm release      # semantic-release workflow
+```
+
+## Game Modes
+
+- **Classic:** 3x3 grid, fixed difficulty, best score tracking
+- **Evolve:** Progressive grid stages (3x3 → 9x9), boss events every 5 stages, rare color modes (inverted, grayscale, neon)
+
+## Special Cells
+
+- Red = danger (tap others, not red)
+- Shield = protects 1 hit
+- Freeze = pause for 1 sec
+- Multiplier = 2x score
+- Medpack = +1 heart
+- Ice = stops cell for 2 sec
+- Bomb = removes 1 heart
+
+## Links
+
+- Game: https://defaltadmin.github.io/donttouchpurple
+- GitHub: https://github.com/defaltadmin/donttouchpurple
+- Wiki: https://github.com/defaltadmin/donttouchpurple/wiki
