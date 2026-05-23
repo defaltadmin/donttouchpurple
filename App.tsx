@@ -341,7 +341,7 @@ export default function App() {
         const safeStreak = typeof fbStreak === 'number' && isFinite(fbStreak) ? fbStreak : streak;
         setLoginStreakCount(safeStreak);
         try {
-          localStorage.setItem("dtp_login_streak", JSON.stringify({
+          safeSet("dtp_login_streak", JSON.stringify({
             count: safeStreak,
             lastDate: new Date().toDateString()
           }));
@@ -1274,7 +1274,7 @@ export default function App() {
     safeSet('dtp-games-played', String(next));
     setGamesPlayed(next);
     if (next === 1) {
-      localStorage.setItem('dtp-show-rewards-after-first-game', '1');
+      safeSet('dtp-show-rewards-after-first-game', '1');
     }
     const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
     safeSentry.addBreadcrumb({
@@ -1323,7 +1323,7 @@ export default function App() {
   // --- Daily Rewards handlers (Phase C) ---
   const handleLoginStreakClaim = () => {
     const todayStr = new Date().toISOString().slice(0, 10);
-    localStorage.setItem('dtp-login-claimed', todayStr);
+    safeSet('dtp-login-claimed', todayStr);
     const safeReward = (isNaN(loginStreakReward) || !isFinite(loginStreakReward)) ? 50 : loginStreakReward;
     addDust(safeReward, 'LoginStreak');
     setShowLoginStreak(false);
@@ -1423,7 +1423,7 @@ export default function App() {
         done={loadDone}
         showNameEntry={showNameEntry}
         onNameSubmit={(name) => {
-          localStorage.setItem(LS_KEYS.PLAYER_NAME, name);
+          safeSet(LS_KEYS.PLAYER_NAME, name);
           setPlayerName(name);
           setShowNameEntry(false);
           setAppReady(true);
@@ -1595,7 +1595,7 @@ export default function App() {
               current={playerName}
               onDevTrigger={() => { setShowNameEntry(false); setShowDevUnlock(true); }}
               onSubmit={(name) => {
-                localStorage.setItem(LS_KEYS.PLAYER_NAME, name);
+                safeSet(LS_KEYS.PLAYER_NAME, name);
                 setPlayerName(name);
                 setShowNameEntry(false);
               }}
