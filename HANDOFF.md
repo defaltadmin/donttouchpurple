@@ -187,9 +187,10 @@ pnpm audit        # Dependency vulnerability check
 
 ### High Priority
 1. **AI Review Round 2** — Prompts ready in `.review-packet/`. Send to Codex + Sonnet (zip) and DeepSeek (markdown). Collect, triage, fix, verify.
-2. **Gameplay trailer** (15-30s) — needs screen recording
-3. **Screenshots** (5-6 key moments) — needs screen capture
-4. **App Check enforcement** — code complete, needs deploy + monitoring mode verification + enforcement toggle in Firebase Console
+2. **Amazon Q deep audit** — Prompt ready at `.review-packet/prompt-amazon-q.md`. Paste into Amazon Q chat. Collect results, triage, fix, verify.
+3. **Gameplay trailer** (15-30s) — needs screen recording
+4. **Screenshots** (5-6 key moments) — needs screen capture
+5. **App Check enforcement** — code complete, needs deploy + monitoring mode verification + enforcement toggle in Firebase Console
 
 ### Medium Priority
 5. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds (content ready in `.github/LAUNCH.md`)
