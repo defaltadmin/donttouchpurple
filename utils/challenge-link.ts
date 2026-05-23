@@ -9,7 +9,7 @@ const HMAC_SECRET: string =
   (import.meta as { env?: Record<string, string> }).env?.VITE_CHALLENGE_SECRET || '';
 
 const SIGNING_ENABLED = !!HMAC_SECRET;
-const IS_PROD = typeof window !== "undefined" && window.location.hostname === "game.mscarabia.com";
+const IS_PROD = typeof window !== "undefined" && import.meta.env.PROD;
 
 async function _importKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey(

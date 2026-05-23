@@ -40,8 +40,12 @@ class SettingsManager {
   get() { return this._settings; }
 
   set(partial: Partial<GameSettings>) {
-    Object.assign(this._settings, partial);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this._settings));
+    const clamped: Partial<GameSettings> = { ...partial };
+    if (typeof clamped.masterVolume === 'number') clamped.masterVolume = Math.max(0, Math.min(1, clamped.masterVolume));
+    if (typeof clamped.sfxVolume === 'number') clamped.sfxVolume = Math.max(0, Math.min(1, clamped.sfxVolume));
+    if (typeof clamped.musicVolume === 'number') clamped.musicVolume = Math.max(0, Math.min(1, clamped.musicVolume));
+    Object.assign(this._settings, clamped);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._settings)); } catch {}
     this.apply();
     this._listeners.forEach(cb => cb({ ...this._settings }));
   }
