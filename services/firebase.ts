@@ -208,8 +208,8 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const app = await ensureFirebaseApp();
   const auth = getAuth(app as FirebaseAppInstance);
   if (!auth.currentUser) return;
-  // Cap dust to prevent client-side manipulation — max realistic lifetime dust is ~50000
-  const cappedDust = Math.max(0, Math.min(50000, Math.floor(dust)));
+  // Match client-side max from useDustEconomy (9,999,999)
+  const cappedDust = Math.max(0, Math.min(9_999_999, Math.floor(dust)));
   await modules.setDoc(modules.doc(db, "dust_wallet", safeName), {
     name: safeName,
     dust: cappedDust,

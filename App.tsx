@@ -190,6 +190,13 @@ export default function App() {
   const [wins, setWins] = useState(() => parseInt(localStorage.getItem('dtp:wins') || '0', 10));
   const [deaths, setDeaths] = useState(() => parseInt(localStorage.getItem('dtp:deaths') || '0', 10));
 
+  // Refs for synchronous reads in handleEngineGameOver (avoids stale closures)
+  const winsRef = useRef(wins);
+  const deathsRef = useRef(deaths);
+  const gamesPlayedRef = useRef(gamesPlayed);
+  const best1Ref = useRef(best1);
+  const best2Ref = useRef(best2);
+
   const machine = useScreenStateMachine({
     bestScore: Math.max(best1, best2),
     gamesPlayed,
@@ -472,7 +479,7 @@ export default function App() {
     setScreen("gameover");
     setLiveMessage(`Game over. Score: ${p1Score}`);
     setPaused(false);
-    setPrevBest(gameMode === "classic" ? best1 : best2);
+    setPrevBest(gameMode === "classic" ? best1Ref.current : best2Ref.current);
 
     safeSentry.addBreadcrumb({
       category: "game",
@@ -502,27 +509,30 @@ export default function App() {
     logProgressionEvent("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
 
-    // Update progress tracking
-    const newWins = wins + (engineWinner === "p1" ? 1 : 0);
-    const newDeaths = deaths + (p1Score === 0 ? 1 : 0);
-    const newGames = gamesPlayed + 1;
+    // Update progress tracking (use refs for synchronous reads)
+    const newWins = winsRef.current + (engineWinner === "p1" ? 1 : 0);
+    const newDeaths = deathsRef.current + (p1Score === 0 ? 1 : 0);
+    const newGames = gamesPlayedRef.current + 1;
 
-    setWins(newWins);
-    setDeaths(newDeaths);
+    setWins(prev => { winsRef.current = newWins; return newWins; });
+    setDeaths(prev => { deathsRef.current = newDeaths; return newDeaths; });
+    setGamesPlayed(prev => { gamesPlayedRef.current = newGames; return newGames; });
     safeSet('dtp:wins', newWins.toString());
     safeSet('dtp:deaths', newDeaths.toString());
+    safeSet('dtp-games-played', String(newGames));
+    if (newGames === 1) safeSet('dtp-show-rewards-after-first-game', '1');
 
     machine.updateProgress({
-      bestScore: Math.max(best1, best2, gameHighScore),
+      bestScore: Math.max(best1Ref.current, best2Ref.current, gameHighScore),
       gamesPlayed: newGames,
       wins: newWins,
       deaths: newDeaths
     });
 
     if (gameMode === "classic") {
-      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
+      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); best1Ref.current = nb; safeSet(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
     } else {
-      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
+      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); best2Ref.current = nb; safeSet(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
     }
     setShareMsg(getMessage(earned));
     setGameSeedState(gameSeed ?? snapshotRef.current?.gameSeed ?? 0);
@@ -586,7 +596,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, best1, best2, gameMode, wins, deaths, gamesPlayed, machine, shopData, addDust, setScreen, updateChallengeProgress]);
+  }, [numPlayers, playerName, toast$, gameMode, machine, shopData, addDust, setScreen, updateChallengeProgress]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {
@@ -848,13 +858,8 @@ export default function App() {
       if (document.visibilityState === 'hidden') {
         if (snapshotRef.current?.phase === "playing") {
           pauseEngine();
-          const snap = snapshotRef.current;
-          try {
-            sessionStorage.setItem('dtp:session', JSON.stringify({
-              ts: Date.now(),
-              engineSnapshot: { hearts: snap.p1?.health ?? 1, score: snap.p1?.score ?? 0, timeLeft: GAME.HUMAN_LIMIT_TICK - snap.tick, isPaused: snap.paused }
-            }));
-          } catch { /* quota exceeded — non-fatal */ }
+          // Engine's autoSaveSession() writes the full snapshot with gameSeed
+          // — no need to write a partial one here that the resume validator would reject
         }
       } else if (document.visibilityState === 'visible') {
         if (snapshotRef.current?.phase === "paused") {
@@ -863,14 +868,9 @@ export default function App() {
         }
       }
     };
-    const handleUnload = () => {
-      // Session persistence on tab close is handled by visibilitychange listener above
-    };
     window.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('beforeunload', handleUnload);
     return () => {
       window.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('beforeunload', handleUnload);
     };
   }, [pauseEngine, resumeEngine]);
 
@@ -1183,10 +1183,8 @@ export default function App() {
       const saved = localStorage.getItem('dtp:daily');
       if (saved) {
         try {
-          const { seed, completed } = JSON.parse(saved);
-          const today = new Date().toISOString().split('T')[0];
-          const expected = btoa(today + '-donttouchpurple-daily').slice(0, 12);
-          setDailyComplete(seed === expected && completed);
+          const { completed } = JSON.parse(saved);
+          setDailyComplete(!!completed);
         } catch { setDailyComplete(false); }
       }
     };
@@ -1719,7 +1717,7 @@ export default function App() {
           <div className="dtp-dev-grid">
             <label><input type="checkbox" checked={showFps} onChange={() => setShowFps(!showFps)} /> FPS</label>
             <label><input type="checkbox" checked={showDevPanel} onChange={() => { setShowDevPanel(false); localStorage.removeItem('dtp:dev'); }} /> Disable Dev</label>
-            <button onClick={() => { if (!confirm('Clear ALL local progress, settings & cache? This cannot be undone.')) return; localStorage.clear(); location.reload(); }} className="dtp-dev-btn">Clear Storage & Reload</button>
+            <button onClick={() => { if (!confirm('Clear ALL local progress, settings & cache? This cannot be undone.')) return; privacyManager.deleteAll(); location.reload(); }} className="dtp-dev-btn">Clear Storage & Reload</button>
             <button onClick={() => settingsManager.set({ ...settingsManager.get() })} className="dtp-dev-btn">Re-apply Settings</button>
           </div>
           <small>Ctrl+Shift+D to toggle</small>
