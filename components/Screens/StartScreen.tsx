@@ -269,7 +269,7 @@ export function StartScreen({
   return (
     <>
       <ParticleLayer count={25} />
-      <div className="menu-card screen-slide" role="main" aria-label="Game menu">
+      <div className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card">
       {pendingReplaySeed && (
         <div className="replay-banner">
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>

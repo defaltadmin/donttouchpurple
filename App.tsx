@@ -1789,7 +1789,7 @@ export default function App() {
           <div className={`hud-card hud-card--score${snapshot.p1.streak >= 10 ? " streak--high" : snapshot.p1.streak >= 5 ? " streak--mid" : ""}`}>
             <div className="hud-lbl">Score</div>
             <div className="hud-score-row">
-              <div className={`hud-val${snapshot.p1.score > (gameMode === "classic" ? best1 : best2) && snapshot.p1.score > 0 ? " hud-val--pb" : ""}`}>
+              <div data-testid="hud-score" className={`hud-val${snapshot.p1.score > (gameMode === "classic" ? best1 : best2) && snapshot.p1.score > 0 ? " hud-val--pb" : ""}`}>
                 {snapshot.p1.score}
               </div>
               {snapshot.p1.streak >= 3 && <div className="combo-wrap">×{snapshot.p1.streak}</div>}

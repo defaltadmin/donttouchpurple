@@ -156,6 +156,7 @@ export const PlayerPanel = memo(function PlayerPanel({
             ref={gridRef}
             role="grid"
             aria-label={`Game grid ${cols} by ${rows}`}
+            data-testid="game-grid"
             className={`gpanel${skinClass ? " " + skinClass : ""} ${spinClass}${showKeys ? " keyboard-mode" : ""}${isBotActive ? " gpanel--bot-active" : ""}`}
             style={{
               "--cell": cellVar,

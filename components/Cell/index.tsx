@@ -208,6 +208,7 @@ export default function Cell({
         ${bombUrgent ? 'bomb--urgent' : ''}
         ${cbClass}
       `.trim()}
+      data-testid="grid-cell"
       role="gridcell"
       tabIndex={isClicked ? -1 : 0}
       aria-label={`${cell.type === 'purple' ? 'Danger: purple cell' : cell.type === 'bomb' ? 'Bomb cell' : `Tap ${cell.type} cell`}`}

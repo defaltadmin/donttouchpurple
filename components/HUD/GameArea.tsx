@@ -97,7 +97,7 @@ export const GameArea = React.memo(function GameArea({
         <PwrBar ps={snapshot.p1} rareMode={snapshot.rareMode} />
 
         {screen === "gameover" && (
-          <div className="go-overlay">
+          <div className="go-overlay" data-testid="gameover">
             <GameOver
               p1Score={snapshot.p1.score}
               p2Score={snapshot.p2?.score || 0}

@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
 /** Clear the name-entry gate if it appears, then wait for the menu. */
 async function clearOnboarding(page: Page) {
   // Wait for either the name input (first run) or the menu card (returning user)
-  await page.waitForSelector('.menu-card, input[placeholder="Your name"]', { timeout: 15000 });
+  await page.waitForSelector('[data-testid="menu-card"], input[placeholder="Your name"]', { timeout: 15000 });
 
   const nameInput = page.locator('input[placeholder="Your name"]');
   if (await nameInput.isVisible()) {
@@ -14,14 +14,14 @@ async function clearOnboarding(page: Page) {
   }
 
   // Wait for the menu card to be ready
-  await expect(page.locator('.menu-card')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('[data-testid="menu-card"]')).toBeVisible({ timeout: 10000 });
 }
 
 /** Navigate to the game screen from the menu. */
 async function startGameFromMenu(page: Page) {
   // The play button has aria-label="Start new game" and text "▶ PLAY!"
   await page.getByRole('button', { name: /play!/i }).click();
-  await expect(page.locator('.game-grid')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('[data-testid="game-grid"]')).toBeVisible({ timeout: 8000 });
 }
 
 // ── beforeEach: land on menu, gate cleared ───────────────────────────────────
@@ -42,22 +42,22 @@ test.beforeEach(async ({ page }) => {
 test.describe('Core Game Flow', () => {
   test('Loads menu and navigates to game grid', async ({ page }) => {
     // Menu is already visible from beforeEach
-    await expect(page.locator('.menu-card')).toBeVisible();
+    await expect(page.locator('[data-testid="menu-card"]')).toBeVisible();
     await startGameFromMenu(page);
-    await expect(page.locator('.game-grid')).toBeVisible();
-    await expect(page.locator('.hud-val').first()).toBeVisible();
-    await expect(page.locator('.pause-overlay')).not.toBeVisible();
+    await expect(page.locator('[data-testid="game-grid"]')).toBeVisible();
+    await expect(page.locator('[data-testid="hud-score"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="pause-overlay"]')).not.toBeVisible();
   });
 
   test('Grid responds to pointer input & updates score', async ({ page }) => {
     await startGameFromMenu(page);
     await page.waitForTimeout(1000);
 
-    const scoreEl = page.locator('.hud-val').first();
+    const scoreEl = page.locator('[data-testid="hud-score"]').first();
     await expect(scoreEl).toBeVisible();
     const initialScore = parseInt((await scoreEl.textContent()) || '0', 10);
 
-    const cell = page.locator('.game-grid-cell').first();
+    const cell = page.locator('[data-testid="grid-cell"]').first();
     await cell.click({ force: true });
     await page.waitForTimeout(400);
 
@@ -70,11 +70,11 @@ test.describe('Core Game Flow', () => {
     await page.waitForTimeout(800);
 
     await page.keyboard.press('Escape');
-    await expect(page.locator('.pause-overlay')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="pause-overlay"]')).toBeVisible({ timeout: 3000 });
     await expect(page.locator('.pause-title')).toContainText('PAUSED');
 
     await page.getByRole('button', { name: /resume/i }).click();
-    await expect(page.locator('.pause-overlay')).toBeHidden({ timeout: 3000 });
+    await expect(page.locator('[data-testid="pause-overlay"]')).toBeHidden({ timeout: 3000 });
   });
 
   test('Game over screen appears after losing all hearts', async ({ page }) => {
@@ -83,14 +83,14 @@ test.describe('Core Game Flow', () => {
 
     // Repeatedly click purple cells to drain hearts
     for (let i = 0; i < 10; i++) {
-      const purpleCell = page.locator('.game-grid-cell.purple, .cell--purple').first();
+      const purpleCell = page.locator('[data-testid="grid-cell"].purple, [data-testid="grid-cell"].cell--purple').first();
       if (await purpleCell.isVisible()) {
         await purpleCell.click({ force: true });
         await page.waitForTimeout(150);
       }
     }
 
-    await expect(page.locator('.go-overlay, .game-over, .gameover-screen')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="gameover"]')).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -129,7 +129,7 @@ test.describe('Game Modes', () => {
   test('Classic mode loads a 3×3 grid', async ({ page }) => {
     // Classic pill is already selected by default
     await startGameFromMenu(page);
-    const cells = page.locator('.game-grid-cell');
+    const cells = page.locator('[data-testid="grid-cell"]');
     await expect(cells.first()).toBeVisible();
     expect(await cells.count()).toBe(9);
   });
@@ -138,7 +138,7 @@ test.describe('Game Modes', () => {
     // Click the Evolve pill option
     await page.locator('.pill-opt', { hasText: /evolve/i }).click();
     await startGameFromMenu(page);
-    await expect(page.locator('.game-grid')).toBeVisible();
+    await expect(page.locator('[data-testid="game-grid"]')).toBeVisible();
   });
 });
 
@@ -165,7 +165,7 @@ test.describe('Performance & Reliability', () => {
     await startGameFromMenu(page);
     await page.waitForTimeout(2000);
 
-    const cells = page.locator('.game-grid-cell');
+    const cells = page.locator('[data-testid="grid-cell"]');
     for (let i = 0; i < 5; i++) {
       await cells.nth(i % 9).click({ force: true });
       await page.waitForTimeout(80);
@@ -186,7 +186,7 @@ test.describe('Performance & Reliability', () => {
   test('Handles offline mode gracefully', async ({ page, context }) => {
     await context.setOffline(true);
     // Already on menu from beforeEach — just verify it still renders
-    await expect(page.locator('.menu-card')).toBeVisible();
+    await expect(page.locator('[data-testid="menu-card"]')).toBeVisible();
     await context.setOffline(false);
   });
 });
