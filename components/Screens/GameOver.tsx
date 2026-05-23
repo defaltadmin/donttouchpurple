@@ -73,6 +73,7 @@ export function GameOver({
 }: GameOverProps) {
   const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
   const finalScoreRef = useRef(p1Score);
   const [displayScore, setDisplayScore] = useState(0);
@@ -212,6 +213,13 @@ export function GameOver({
                   a.click();
                 } catch { /* canvas not available */ }
               }}>🖼️ Save Card</button>
+              <button className="btn-ghost" onClick={() => {
+                const url = `https://dont-touch-purple.web.app/?seed=${gameSeed}&mode=${mode}`;
+                navigator.clipboard.writeText(`I scored ${p1Score} in Don't Touch Purple! Can you beat me?\n${url}`).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }).catch(() => {});
+              }}>{copied ? "✓ Copied!" : "📋 Copy Link"}</button>
               <button className="btn-ghost" onClick={() => setShowShareModal(false)}>{t('ui.cancel')}</button>
             </div>
           </div>
