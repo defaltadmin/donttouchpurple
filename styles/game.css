@@ -3693,14 +3693,14 @@ input[type="range"] { accent-color: var(--theme-primary, #fda9ff); width: 120px;
   position: absolute; inset: 0; border-radius: inherit;
   border: 2px solid transparent; pointer-events: none; z-index: 3;
   background: radial-gradient(circle, transparent 60%, rgba(239,68,68, calc(0.6 - var(--bomb-remaining) / 100)));
-  animation: bombPulse calc(var(--bomb-remaining) * 1s) ease-in-out infinite;
+  animation: bombPulseRing calc(var(--bomb-remaining) * 1s) ease-in-out infinite;
 }
 .bomb-timer-ring::after {
   content: ''; position: absolute; inset: 2px; border-radius: inherit;
   border: 2px solid rgba(239,68,68, calc(0.8 - var(--bomb-remaining) / 100));
   animation: bombScale calc(var(--bomb-remaining) * 0.8s) ease-in-out infinite alternate;
 }
-@keyframes bombPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 4px rgba(239,68,68,0); } }
+@keyframes bombPulseRing { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 4px rgba(239,68,68,0); } }
 @keyframes bombScale { from { transform: scale(1); } to { transform: scale(0.96); } }
 
 /* 🎨 RARE DANGER SYMBOL */

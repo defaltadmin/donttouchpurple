@@ -14,8 +14,9 @@ export default function PulseField({ rareColor }: Props) {
   const { start, stop } = useSafeRaf(() => {
     const c = cvs.current; if (!c) return;
     const ctx = ctxRef.current; if (!ctx) return;
-    const W = c.width = window.innerWidth;
-    const H = c.height = window.innerHeight;
+    if (c.width !== window.innerWidth) c.width = window.innerWidth;
+    if (c.height !== window.innerHeight) c.height = window.innerHeight;
+    const W = c.width, H = c.height;
     const t = performance.now() * 0.001 * BASE_SPEED;
 
     ctx.fillStyle = "rgba(13,13,26,0.18)";

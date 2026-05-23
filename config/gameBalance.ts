@@ -20,14 +20,12 @@ export const BALANCE = {
   },
 
   survival: {
-    startTick: 60,
     interval: 20,
     lateThreshold: 200,
     midThreshold: 120,
     lateAmount: 5,
     midAmount: 3,
     earlyAmount: 2,
-    maxScoreCap: 9999,
   },
 
   boss: {

@@ -29,7 +29,7 @@ export const achievementSystem = {
     ach.unlocked = true;
     ach.date = new Date().toISOString();
     this.unlocked.add(id);
-    localStorage.setItem(ACH_KEY, JSON.stringify([...this.unlocked]));
+    try { localStorage.setItem(ACH_KEY, JSON.stringify([...this.unlocked])); } catch {}
     try {
       const queue = JSON.parse(localStorage.getItem(TOAST_KEY) || '[]');
       queue.push({ id, name: ach.name, icon: ach.icon, desc: ach.desc, ts: Date.now() });

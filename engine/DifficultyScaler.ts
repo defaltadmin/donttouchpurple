@@ -1,33 +1,34 @@
 import { DIFFICULTY } from "../config/difficulty";
 import { difficultyOverrides } from "../config/difficultyOverrides";
 
-// ─── Resolved overrides (computed once at module load) ────────────
-const _INIT_MS = difficultyOverrides.INIT_MS ?? DIFFICULTY.INIT_MS;
-const _MIN_MS = difficultyOverrides.MIN_MS ?? DIFFICULTY.MIN_MS;
-const _DECAY_EXP = difficultyOverrides.DECAY_EXP ?? DIFFICULTY.DECAY_EXP;
-const _DECAY_EVERY = difficultyOverrides.DECAY_EVERY ?? DIFFICULTY.DECAY_EVERY;
-const _SPIN_BASE_DURATION = difficultyOverrides.SPIN_BASE_DURATION ?? DIFFICULTY.SPIN_BASE_DURATION;
-const _SPIN_GROWTH = difficultyOverrides.SPIN_GROWTH ?? DIFFICULTY.SPIN_GROWTH;
-const _SPIN_SPEED_CAP = difficultyOverrides.SPIN_SPEED_CAP ?? DIFFICULTY.SPIN_SPEED_CAP;
-const _SPIN_EPOCH_LEVELS = difficultyOverrides.SPIN_EPOCH_LEVELS ?? DIFFICULTY.SPIN_EPOCH_LEVELS;
+// ─── Read overrides on each call (not at module load) ─────────────
+function _initMs() { return difficultyOverrides.INIT_MS ?? DIFFICULTY.INIT_MS; }
+function _minMs() { return difficultyOverrides.MIN_MS ?? DIFFICULTY.MIN_MS; }
+function _decayExp() { return difficultyOverrides.DECAY_EXP ?? DIFFICULTY.DECAY_EXP; }
+function _decayEvery() { return difficultyOverrides.DECAY_EVERY ?? DIFFICULTY.DECAY_EVERY; }
+function _spinBaseDuration() { return difficultyOverrides.SPIN_BASE_DURATION ?? DIFFICULTY.SPIN_BASE_DURATION; }
+function _spinGrowth() { return difficultyOverrides.SPIN_GROWTH ?? DIFFICULTY.SPIN_GROWTH; }
+function _spinSpeedCap() { return difficultyOverrides.SPIN_SPEED_CAP ?? DIFFICULTY.SPIN_SPEED_CAP; }
+function _spinEpochLevels() { return difficultyOverrides.SPIN_EPOCH_LEVELS ?? DIFFICULTY.SPIN_EPOCH_LEVELS; }
 
 // ─── Tick interval (ms) ───────────────────────────────────────────
 export function computeMs(tick: number, mult = 1): number {
   return Math.max(
-    _MIN_MS,
-    _INIT_MS * Math.pow(_DECAY_EXP, Math.floor(tick / _DECAY_EVERY)) * mult
+    _minMs(),
+    _initMs() * Math.pow(_decayExp(), Math.floor(tick / _decayEvery())) * mult
   );
 }
 
 // ─── Speed display helpers ────────────────────────────────────────
 export function speedLabel(tick: number, frozen: boolean): string {
-  return (_INIT_MS / computeMs(tick, frozen ? 1.4 : 1)).toFixed(1) + "×";
+  return (_initMs() / computeMs(tick, frozen ? 1.4 : 1)).toFixed(1) + "×";
 }
 
 export function speedPct(tick: number): number {
+  const initMs = _initMs(), minMs = _minMs();
   return Math.max(
     4,
-    ((_INIT_MS - computeMs(tick)) / (_INIT_MS - _MIN_MS)) * 96
+    ((initMs - computeMs(tick)) / (initMs - minMs)) * 96
   );
 }
 
@@ -51,9 +52,9 @@ export function getSpinConfig(
   level: number,
   gameSeed: number
 ): { duration: number; direction: 1 | -1 } {
-  const rawDur = _SPIN_BASE_DURATION * Math.pow(1 - _SPIN_GROWTH, level);
-  const duration = Math.max(_SPIN_SPEED_CAP, rawDur);
-  const epoch = Math.floor(level / _SPIN_EPOCH_LEVELS);
+  const rawDur = _spinBaseDuration() * Math.pow(1 - _spinGrowth(), level);
+  const duration = Math.max(_spinSpeedCap(), rawDur);
+  const epoch = Math.floor(level / _spinEpochLevels());
   const epochSeed = (gameSeed ^ (epoch * 0x9e3779b9)) >>> 0;
   const rng = mulberry32(epochSeed);
   const direction: 1 | -1 = rng() > 0.5 ? 1 : -1;

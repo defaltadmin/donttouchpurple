@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BALANCE } from "../config/gameBalance";
+import { GAME } from "../config/difficulty";
 
 describe("BALANCE.rare", () => {
   it("has sane trigger interval for rare mode", () => {
@@ -47,7 +48,7 @@ describe("BALANCE.bot", () => {
 
 describe("BALANCE.survival", () => {
   it("has strictly increasing tick thresholds", () => {
-    expect(BALANCE.survival.startTick).toBeLessThan(BALANCE.survival.midThreshold);
+    expect(GAME.SURVIVAL_BONUS_START_TICK).toBeLessThan(BALANCE.survival.midThreshold);
     expect(BALANCE.survival.midThreshold).toBeLessThan(BALANCE.survival.lateThreshold);
   });
 
@@ -58,10 +59,6 @@ describe("BALANCE.survival", () => {
 
   it("has positive interval", () => {
     expect(BALANCE.survival.interval).toBeGreaterThan(0);
-  });
-
-  it("defines a max score cap", () => {
-    expect(BALANCE.survival.maxScoreCap).toBeGreaterThan(0);
   });
 });
 

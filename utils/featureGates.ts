@@ -1,5 +1,6 @@
 /* Progressive feature unlocking: lock advanced modes behind milestones */
 import { logger } from './logger';
+import { safeSet } from './storage';
 
 export type FeatureId = 
   | 'evolve_mode'      // Unlock after 500 score in classic
@@ -104,7 +105,7 @@ export const featureGates = {
 
   // Save unlock state
   save(state: Record<FeatureId, boolean>) {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+    safeSet(this.STORAGE_KEY, JSON.stringify(state));
   },
 
   // Get default state: only basics unlocked for new players

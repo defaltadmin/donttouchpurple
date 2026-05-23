@@ -1455,11 +1455,11 @@ body.damage-pulse::after {
 .cell.bomb {
   background: radial-gradient(circle at 40% 35%, #ff6622 0%, #991100 70%, #550000 100%);
   border: 2px solid #ff4400;
-  animation: bombPulse 0.5s ease-in-out infinite alternate;
+  animation: bombPulseGlow 0.5s ease-in-out infinite alternate;
   overflow: visible;
   z-index: 10;
 }
-@keyframes bombPulse {
+@keyframes bombPulseGlow {
   from {
     box-shadow: 0 0 10px 3px rgba(255,68,0,0.5), inset 0 0 12px rgba(255,100,0,0.2);
     transform: scale(1);

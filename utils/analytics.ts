@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { safeSet } from './storage';
 
 type EventName = 'game_start' | 'game_over' | 'retry' | 'pause' | 'settings_change' | 'achievement_unlocked';
 interface GameEvent { name: EventName; ts: number; payload?: Record<string, unknown>; }
@@ -13,7 +14,7 @@ export const analytics = {
     const queue = this._getQueue();
     queue.push(evt);
     if (queue.length > MAX_QUEUE) queue.shift();
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    safeSet(QUEUE_KEY, JSON.stringify(queue));
     this._flush();
   },
 
@@ -26,7 +27,7 @@ export const analytics = {
     if (!queue.length || !navigator.onLine) return;
     try {
       logger.debug('Analytics flushed', queue.length, 'events');
-      localStorage.setItem(QUEUE_KEY, '[]');
+      safeSet(QUEUE_KEY, '[]');
     } catch { logger.warn('Analytics flush failed'); }
   }
 };

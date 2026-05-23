@@ -121,7 +121,6 @@ const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotio
       drawShape(ctx, s, purple);
     }
 
-    animationRef.current = requestAnimationFrame(animate);
   }, [reducedMotion, frameInterval]);
 
   const resume = useCallback(() => {

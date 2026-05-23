@@ -77,25 +77,6 @@ export const idb = {
     });
   },
 
-  async dequeueAll(): Promise<QueuedScore[]> {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const store = tx.objectStore(this.STORE);
-      const req = store.getAll();
-      req.onsuccess = () => {
-        const items = (req.result || []) as QueuedScore[];
-        // Delete individually after read — don't bulk-clear before caller processes
-        for (const item of items) {
-          if (item.id != null) store.delete(item.id);
-        }
-        tx.oncomplete = () => resolve(items);
-        tx.onerror = () => reject(tx.error);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  },
-
   async count(): Promise<number> {
     const db = await this.open();
     return new Promise((resolve, reject) => {

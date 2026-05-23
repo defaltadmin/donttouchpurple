@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { safeSet } from './storage';
 
 function clamp(val: unknown, min: number, max: number, fallback: number): number {
   const n = typeof val === 'number' ? val : fallback;
@@ -70,7 +71,7 @@ export const configManager = {
     return this.current;
   },
 
-  save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.current)); },
+  save() { safeSet(STORAGE_KEY, JSON.stringify(this.current)); },
 
   get() { return this.current; },
 
