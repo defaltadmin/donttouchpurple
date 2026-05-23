@@ -76,6 +76,7 @@ describe("GameEngine", () => {
   it("damages the player when safe cells are not tapped in time", () => {
     engine.start();
     // Override the engine's seeded rng AFTER start() (start resets rng to mulberry32)
+    // 0.99 > purpleChance (0.28-0.35) + minPowerupWeight, so only safe cells spawn
     eng(engine).rng = () => 0.99;
 
     vi.advanceTimersByTime(4_100);
@@ -89,11 +90,9 @@ describe("GameEngine", () => {
     engine.start();
     vi.advanceTimersByTime(2_100);
 
-    const snapshot = engine.getSnapshot();
-    const existingCell = snapshot.p1.active.find((cell) => !cell.clicked);
+    const existingCell = eng(engine).p1.active.find((cell: any) => !cell.clicked);
     if (existingCell) {
       existingCell.type = "purple";
-      (engine as unknown as { p1: typeof snapshot.p1 }).p1 = snapshot.p1;
     }
 
     const purpleCell = latestActive(engine).find((cell) => cell.type === "purple");
@@ -132,13 +131,10 @@ describe("GameEngine", () => {
       spawnedAt: Date.now(),
     };
 
-    const snapshot = engine.getSnapshot();
-    snapshot.p1.active = [holdCell];
-    snapshot.p1.cells = Array(25).fill("inactive");
-    snapshot.p1.cells[0] = "hold";
-
-    // Patch private state through the snapshot source object to keep the test scoped to engine behavior.
-    (engine as unknown as { p1: typeof snapshot.p1 }).p1 = snapshot.p1;
+    // Mutate live engine state directly for test reliability
+    eng(engine).p1.active = [holdCell];
+    eng(engine).p1.cells = Array(25).fill("inactive");
+    eng(engine).p1.cells[0] = "hold";
 
     engine.handleHoldStart(1, 0);
     vi.advanceTimersByTime(750);
@@ -152,12 +148,10 @@ describe("GameEngine", () => {
     let winner: Winner | undefined;
     engine.start();
 
-    const snapshot = engine.getSnapshot();
-    snapshot.p1.health = 1;
-    snapshot.p1.active = [{ idx: 0, type: "purple", clicked: false }];
-    snapshot.p1.cells = Array(25).fill("inactive");
-    snapshot.p1.cells[0] = "purple";
-    (engine as unknown as { p1: typeof snapshot.p1 }).p1 = snapshot.p1;
+    eng(engine).p1.health = 1;
+    eng(engine).p1.active = [{ idx: 0, type: "purple", clicked: false }];
+    eng(engine).p1.cells = Array(25).fill("inactive");
+    eng(engine).p1.cells[0] = "purple";
 
     engine.handleTap(1, 0);
 
@@ -185,10 +179,8 @@ describe("GameEngine", () => {
   describe("Critical Path Logic", () => {
     it("prevents hold soft-lock with a 5s safety timer", () => {
       engine.start();
-      
-      const snapshot = engine.getSnapshot();
-      snapshot.p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000, spawnedAt: Date.now() }];
-      eng(engine).p1 = snapshot.p1;
+
+      eng(engine).p1.active = [{ idx: 0, clicked: false, type: "hold", holdRequired: 1000, spawnedAt: Date.now() }];
 
       engine.handleHoldStart(1, 0);
       const holdCell = engine.getSnapshot().p1.active[0] as HoldCell;

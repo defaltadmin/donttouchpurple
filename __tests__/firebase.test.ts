@@ -25,6 +25,26 @@ describe("firebase service helpers", () => {
       badge: "legend_badgescript",
     });
 
+    // badge: undefined should not appear in result
+    const withoutBadge = normalizeGlobalScoreEntry({
+      score: 100,
+      initials: "AAA",
+      date: "2026-05-01",
+      mode: "classic",
+      badge: undefined,
+    });
+    expect(withoutBadge.badge).toBeUndefined();
+
+    // badge: '' should not appear in result
+    const emptyBadge = normalizeGlobalScoreEntry({
+      score: 100,
+      initials: "AAA",
+      date: "2026-05-01",
+      mode: "classic",
+      badge: '',
+    });
+    expect(emptyBadge.badge).toBeUndefined();
+
     vi.useRealTimers();
   });
 });

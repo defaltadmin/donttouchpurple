@@ -12,6 +12,15 @@ describe("config integrity", () => {
     expect(RARE_COLORS).toHaveLength(7);
   });
 
+  it("validates evolve pattern mask indices are within bounds", () => {
+    EVOLVE_PATTERNS.forEach(p => {
+      if (p.mask) {
+        const maxIdx = p.cols * p.rows;
+        p.mask.forEach(i => expect(i).toBeLessThan(maxIdx));
+      }
+    });
+  });
+
   it("defines sane difficulty and game values", () => {
     expect(DIFFICULTY.INIT_MS).toBeGreaterThan(DIFFICULTY.MIN_MS);
     expect(DIFFICULTY.DECAY_EXP).toBeGreaterThan(0);

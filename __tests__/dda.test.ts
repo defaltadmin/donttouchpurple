@@ -11,8 +11,7 @@ describe('DynamicDifficulty', () => {
     const dda = new DynamicDifficulty(1000);
     for (let i = 0; i < 10; i++) dda.recordAttempt(true, 200, false);
     const newRate = dda.compute();
-    expect(newRate).toBeLessThan(1000);
-    expect(newRate).toBeGreaterThanOrEqual(400);
+    expect(newRate).toBe(880);
   });
 
   it('adjusts at most once for the same attempt window', () => {

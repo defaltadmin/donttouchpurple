@@ -81,6 +81,8 @@ describe('Fractional Health Bug Fix', () => {
 
     // Add a delta timer that mirrors the TickProcessor bomb callback so we execute
     // the same production logic during the test, then run a tick to trigger it.
+    // NOTE: This mirrors TickProcessor.ts:362 — if bomb logic changes there, update here too.
+    // devSpawnSpecialCell doesn't create delta timers, so we add one manually.
     engine.addDeltaTimer('bomb_1_0', 0, () => {
       const ctx = eng(engine)._tickCtx;
       const ref = eng(engine).p1;

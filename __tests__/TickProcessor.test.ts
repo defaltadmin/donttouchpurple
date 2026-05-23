@@ -183,13 +183,16 @@ describe('TickProcessor', () => {
       });
       processor.processTick(ctx);
       expect(ctx.p1.active.some(c => c.type === 'ice')).toBe(true);
+      // Verify no non-ice cells were spawned alongside
+      expect(ctx.p1.active.filter(c => c.type !== 'ice').length).toBe(0);
     });
 
     it('sets humanlimit phase when tick limit reached', () => {
       const events: GameEvent[] = [];
-      const ctx = makeCtx(events, { tickCount: 99998 });
+      const ctx = makeCtx(events, { tickCount: 419 }); // HUMAN_LIMIT_TICK = 420
       processor.processTick(ctx);
-      expect(ctx.tickCount).toBe(99999);
+      expect(ctx.tickCount).toBe(420);
+      expect(ctx.phase).toBe('humanlimit');
     });
   });
 });
