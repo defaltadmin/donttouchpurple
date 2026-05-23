@@ -1,5 +1,5 @@
 // components/Settings/ElasticSlider.tsx — Springy slider (adapted from React Bits)
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { memo, useCallback, useRef, useState, useEffect } from 'react';
 
 const MAX_OVERFLOW = 50;
 
@@ -21,7 +21,7 @@ interface ElasticSliderProps {
   rightLabel?: string;
 }
 
-export function ElasticSlider({
+export const ElasticSlider = memo(function ElasticSlider({
   value,
   onChange,
   min = 0,
@@ -124,4 +124,4 @@ export function ElasticSlider({
       <span style={{ fontSize: 18, transition: 'transform 0.2s', transform: `scale(${scale})` }}>{rightLabel}</span>
     </div>
   );
-}
+});

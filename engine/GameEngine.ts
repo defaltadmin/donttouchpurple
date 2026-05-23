@@ -1044,6 +1044,7 @@ destroy(): void {
       this.evolveTick = (data.evolveTick as number) ?? 0;
       this.cellShape = (data.cellShape as CellShape) ?? "square";
       this.spinLevel = (data.spinLevel as number) ?? 0;
+      if (data._hitPauseUntil != null) this._hitPauseUntil = Math.max(0, data._hitPauseUntil as number);
       if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode as Record<string, unknown>, this.rareMode as unknown as Record<string, unknown>) as unknown as RareColorMode;
       this._isInverted = (data.isInverted as boolean) ?? false;
       this.p1.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;

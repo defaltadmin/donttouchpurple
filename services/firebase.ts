@@ -226,6 +226,7 @@ export function getDeviceId(): string {
 export async function fbGetStreak(opts?: { clientDate?: string }): Promise<number> {
   try {
     if (!IS_PROD) return getLocalStreakFallback();
+    await ensureAuth();
     const app = await getAppInstance();
     const { getFunctions, httpsCallable } = await import("firebase/functions");
     const func = httpsCallable(getFunctions(app), "updateStreak");

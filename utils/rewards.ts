@@ -58,8 +58,9 @@ export function buildDailyChallenges(dateStr: string): DailyChallenge[] {
 
 export function buildWeeklyTasks(): WeeklyTask[] {
   const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
+  // Use UTC for consistent week boundaries across timezones
+  const utcDay = now.getUTCDay();
+  const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - utcDay));
   const weekKey = weekStart.toISOString().slice(0, 10);
   const WEEKLY_PROGRESS_KEY = `dtp-weekly-progress-${weekKey}`;
   const WEEKLY_CLAIMED_KEY  = `dtp-weekly-claimed-${weekKey}`;

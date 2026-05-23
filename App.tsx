@@ -444,13 +444,13 @@ export default function App() {
     if (finalTick >= 60) progress['survive60'] = finalTick;
     if (peakStreakRef.current >= 5) progress['streak5'] = peakStreakRef.current;
 
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    safeSet(PROGRESS_KEY, JSON.stringify(progress));
     setDailyChallenges(buildDailyChallenges(todayStr));
 
-    // Weekly task progress
+    // Weekly task progress (UTC for consistency across timezones)
     const now2 = new Date();
-    const weekStart2 = new Date(now2);
-    weekStart2.setDate(now2.getDate() - now2.getDay());
+    const utcDay2 = now2.getUTCDay();
+    const weekStart2 = new Date(Date.UTC(now2.getUTCFullYear(), now2.getUTCMonth(), now2.getUTCDate() - utcDay2));
     const weekKey2 = weekStart2.toISOString().slice(0, 10);
     const WEEKLY_PROGRESS_KEY2 = `dtp-weekly-progress-${weekKey2}`;
     let weeklyProgress: Record<string, number> = {};
@@ -460,9 +460,9 @@ export default function App() {
     const modesKey = `dtp-weekly-modes-${weekKey2}`;
     const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
     modesPlayed.add(gameMode);
-    localStorage.setItem(modesKey, JSON.stringify([...modesPlayed]));
+    safeSet(modesKey, JSON.stringify([...modesPlayed]));
     weeklyProgress['bothmode'] = modesPlayed.size;
-    localStorage.setItem(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
+    safeSet(WEEKLY_PROGRESS_KEY2, JSON.stringify(weeklyProgress));
     setWeeklyTasks(buildWeeklyTasks());
   }, [gameMode]);
 
@@ -508,8 +508,8 @@ export default function App() {
 
     setWins(newWins);
     setDeaths(newDeaths);
-    localStorage.setItem('dtp:wins', newWins.toString());
-    localStorage.setItem('dtp:deaths', newDeaths.toString());
+    safeSet('dtp:wins', newWins.toString());
+    safeSet('dtp:deaths', newDeaths.toString());
 
     machine.updateProgress({
       bestScore: Math.max(best1, best2, gameHighScore),
@@ -519,9 +519,9 @@ export default function App() {
     });
 
     if (gameMode === "classic") {
-      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
+      setBest1((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_CLASSIC, nb.toString()); return nb; });
     } else {
-      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); localStorage.setItem(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
+      setBest2((b: number) => { const nb = Math.max(b, gameHighScore); safeSet(LS_KEYS.BEST_EVOLVE, nb.toString()); return nb; });
     }
     setShareMsg(getMessage(earned));
     setGameSeedState(gameSeed ?? snapshotRef.current?.gameSeed ?? 0);
@@ -1271,7 +1271,7 @@ export default function App() {
     pbFlashedRef.current = false;
     setBossCounters({ bossSurvived: 0, bombsDefused: 0, inversionSurvived: 0 });
     const next = gamesPlayed + 1;
-    localStorage.setItem('dtp-games-played', String(next));
+    safeSet('dtp-games-played', String(next));
     setGamesPlayed(next);
     if (next === 1) {
       localStorage.setItem('dtp-show-rewards-after-first-game', '1');
@@ -1361,8 +1361,8 @@ export default function App() {
 
   const handleClaimWeekly = (taskId: string, reward: number) => {
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    const utcDay = now.getUTCDay();
+    const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - utcDay));
     const weekKey = weekStart.toISOString().slice(0, 10);
     const WEEKLY_CLAIMED_KEY = `dtp-weekly-claimed-${weekKey}`;
     const claimed: string[] = safeGetJSON(WEEKLY_CLAIMED_KEY, []);

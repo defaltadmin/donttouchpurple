@@ -1,5 +1,5 @@
 // components/Shop/SpotlightCard.tsx — Hover spotlight effect (adapted from React Bits)
-import { useRef, type ReactNode } from 'react';
+import { memo, useRef, type ReactNode } from 'react';
 
 interface SpotlightCardProps {
   children: ReactNode;
@@ -7,7 +7,7 @@ interface SpotlightCardProps {
   spotlightColor?: string;
 }
 
-export function SpotlightCard({
+export const SpotlightCard = memo(function SpotlightCard({
   children,
   className = '',
   spotlightColor = 'rgba(192, 38, 211, 0.25)',
@@ -33,4 +33,4 @@ export function SpotlightCard({
       {children}
     </div>
   );
-}
+});
