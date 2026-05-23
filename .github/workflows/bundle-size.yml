@@ -17,8 +17,22 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'pnpm'
+        node-version: '22'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: false
+
+    - name: Cache Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pnpm-store
+          node_modules
+        key: pnpm-${{ runner.os }}-node22-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-node22-
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -59,18 +73,18 @@ jobs:
 
           const body = `## 📊 Bundle Size Analysis
 
-**Status:** ${report.passed ? '✅ Passed' : '❌ Failed'}
+          **Status:** ${report.passed ? '✅ Passed' : '❌ Failed'}
 
-### Files:
-${report.files.map(formatFile).join('\n')}
+          ### Files:
+          ${report.files.map(formatFile).join('\n')}
 
-### Totals:
-- **JS:** ${Math.round(report.totals.js / 1024)}KB
-- **CSS:** ${Math.round(report.totals.css / 1024)}KB
-- **Total:** ${Math.round(report.totals.total / 1024)}KB (limit: ${Math.round(600)}KB)
-${recommendations}
+          ### Totals:
+          - **JS:** ${Math.round(report.totals.js / 1024)}KB
+          - **CSS:** ${Math.round(report.totals.css / 1024)}KB
+          - **Total:** ${Math.round(report.totals.total / 1024)}KB (limit: ${Math.round(600)}KB)
+          ${recommendations}
 
-[View detailed report](https://github.com/${process.env.REPO}/actions/runs/${process.env.RUN_ID})`;
+          [View detailed report](https://github.com/${process.env.REPO}/actions/runs/${process.env.RUN_ID})`;
 
           github.rest.issues.createComment({
             issue_number: context.issue.number,
