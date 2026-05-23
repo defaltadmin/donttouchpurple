@@ -1,7 +1,14 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { GameSnapshot } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { LottiePlayer } from "../UI/LottiePlayer";
+
+const BOSS_LOTTIE_MAP: Record<string, string> = {
+  storm: "/assets/lottie/boss-storm.json",
+  inversion: "/assets/lottie/boss-inversion.json",
+  blackout: "/assets/lottie/boss-blackout.json",
+};
 
 interface BossOverlayProps {
   snapshot: GameSnapshot | null;
@@ -16,15 +23,41 @@ export const BossOverlay = React.memo(function BossOverlay({
   snapshot, screen, bossUi, comboPop, rareSplash, reducedMotion,
 }: BossOverlayProps) {
   const { t } = useTranslation();
+  const [bossIntroDone, setBossIntroDone] = useState(false);
+  const bossType = snapshot?.bossEvent?.type;
+
+  // Reset intro state when a new boss event starts
+  useEffect(() => {
+    if (bossType) {
+      setBossIntroDone(reducedMotion); // skip intro if reduced motion
+    } else {
+      setBossIntroDone(false);
+    }
+  }, [bossType, reducedMotion]);
   return (
     <>
-      {/* Boss Banner */}
+      {/* Boss Banner with optional Lottie intro */}
       {snapshot?.bossEvent && screen === "playing" && (
-        <div className={`boss-banner boss-banner--${snapshot.bossEvent.type}`}>
-          {snapshot.bossEvent.type === "storm"     && `⚡ ${t('boss.storm')} ⚡`}
-          {snapshot.bossEvent.type === "inversion" && `🔄 ${t('boss.inversion')} 🔄`}
-          {snapshot.bossEvent.type === "blackout"  && `🌑 ${t('boss.blackout')} 🌑`}
-        </div>
+        <>
+          {!reducedMotion && bossType && BOSS_LOTTIE_MAP[bossType] && !bossIntroDone && (
+            <div className="boss-intro-lottie">
+              <LottiePlayer
+                src={BOSS_LOTTIE_MAP[bossType]}
+                autoplay
+                reducedMotion={reducedMotion}
+                onComplete={() => setBossIntroDone(true)}
+                style={{ width: 200, height: 200 }}
+              />
+            </div>
+          )}
+          {bossIntroDone && (
+            <div className={`boss-banner boss-banner--${snapshot.bossEvent.type}`}>
+              {snapshot.bossEvent.type === "storm"     && `⚡ ${t('boss.storm')} ⚡`}
+              {snapshot.bossEvent.type === "inversion" && `🔄 ${t('boss.inversion')} 🔄`}
+              {snapshot.bossEvent.type === "blackout"  && `🌑 ${t('boss.blackout')} 🌑`}
+            </div>
+          )}
+        </>
       )}
 
       {/* Shield Boss UI */}

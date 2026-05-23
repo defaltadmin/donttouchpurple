@@ -6,6 +6,21 @@ interface Message {
   content: string;
 }
 
+// Multi-provider failover chain (inspired by freellmapi pattern)
+interface Provider {
+  name: string;
+  url: string;
+  cooldownUntil: number;
+}
+
+function getProviders(): Provider[] {
+  return [
+    { name: "primary", url: import.meta.env.VITE_GAMEMASTER_URL || "/api/gamemaster", cooldownUntil: 0 },
+    { name: "gemini-free", url: import.meta.env.VITE_GEMINI_FALLBACK_URL || "", cooldownUntil: 0 },
+    { name: "groq-free", url: import.meta.env.VITE_GROQ_FALLBACK_URL || "", cooldownUntil: 0 },
+  ].filter(p => p.url);
+}
+
 export function GameMaster({ onBack }: { onBack: () => void }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -13,6 +28,7 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const providersRef = useRef<Provider[]>(getProviders());
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -29,56 +45,78 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
     setInput("");
     setIsLoading(true);
 
-    try {
-      const endpoint = import.meta.env.VITE_GAMEMASTER_URL || '/api/gamemaster';
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
-      });
+    const now = Date.now();
+    let lastError: Error | null = null;
 
-      if (!response.ok) throw new Error("Failed to reach Game Master");
+    for (const provider of providersRef.current) {
+      // Skip providers on cooldown
+      if (provider.cooldownUntil > now) continue;
 
-      const reader = response.body?.getReader();
-
-      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
-
-      if (!reader) {
-        // Non-streaming fallback: read entire response at once
-        const text = await response.text();
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1].content = text;
-          return updated;
+      try {
+        const response = await fetch(provider.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: newMessages }),
         });
-      } else {
-        const decoder = new TextDecoder();
-        let assistantContent = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          assistantContent += decoder.decode(value);
+
+        // Rate limited or server error — cooldown and try next
+        if (response.status === 429 || response.status === 503) {
+          provider.cooldownUntil = now + 60_000; // 60s cooldown
+          lastError = new Error(`${provider.name}: ${response.status}`);
+          continue;
+        }
+
+        if (!response.ok) throw new Error(`${provider.name}: ${response.status}`);
+
+        const reader = response.body?.getReader();
+        setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+        if (!reader) {
+          const text = await response.text();
           setMessages(prev => {
             const updated = [...prev];
-            updated[updated.length - 1].content = assistantContent;
+            updated[updated.length - 1].content = text;
             return updated;
           });
+        } else {
+          const decoder = new TextDecoder();
+          let assistantContent = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            assistantContent += decoder.decode(value);
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1].content = assistantContent;
+              return updated;
+            });
+          }
         }
+
+        // Success — break out of provider loop
+        setIsLoading(false);
+        return;
+      } catch (err) {
+        lastError = err as Error;
+        if (provider.name !== "primary") {
+          provider.cooldownUntil = now + 60_000;
+        }
+        continue;
       }
-    } catch (err) {
-      logger.error("AI Error:", err);
-      setMessages(prev => [...prev, { role: "assistant", content: "Error: Could not connect to the void." }]);
-    } finally {
-      setIsLoading(false);
     }
+
+    // All providers failed
+    logger.error("AI Error (all providers):", lastError);
+    setMessages(prev => [...prev, { role: "assistant", content: "Error: Could not connect to the void." }]);
+    setIsLoading(false);
   };
 
   return (
     <div className="game-over gamemaster-screen" style={{ zIndex: 1000 }}>
       <div className="game-over__content">
         <h1 className="game-over__title">Game Master</h1>
-        
-        <div 
+
+        <div
           ref={scrollRef}
           className="gamemaster-chat"
           style={{
@@ -103,9 +141,9 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
         </div>
 
         <div className="gamemaster-input-row" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <input 
-            type="text" 
-            value={input} 
+          <input
+            type="text"
+            value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask for advice..."
@@ -118,8 +156,8 @@ export function GameMaster({ onBack }: { onBack: () => void }) {
               color: '#fff'
             }}
           />
-          <button 
-            className="go-btn go-btn--primary" 
+          <button
+            className="go-btn go-btn--primary"
             onClick={handleSend}
             disabled={isLoading}
             style={{ padding: '0.8rem 1.5rem', minWidth: 'auto' }}

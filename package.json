@@ -28,6 +28,7 @@
     "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-web": "^0.74.0",
     "@microsoft/clarity": "^1.0.2",
     "@sentry/react": "^10.51.0",
     "agentation": "^3.0.2",

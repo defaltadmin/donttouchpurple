@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
+import { LottiePlayer } from "../UI/LottiePlayer";
 
 interface LoadingScreenProps {
   progress: number;
@@ -31,6 +32,13 @@ export function LoadingScreen({
 
   return (
     <div className={`loading-screen${done && !showNameEntry ? " loading-screen--out" : ""}`}>
+      <LottiePlayer
+        src="/assets/lottie/loading-ambient.json"
+        autoplay
+        loop
+        className="loading-lottie"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.2, pointerEvents: "none", zIndex: 0 }}
+      />
       <div className="loading-orb loading-orb-1" />
       <div className="loading-orb loading-orb-2" />
       <div className="loading-orb loading-orb-3" />

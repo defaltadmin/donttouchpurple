@@ -65,6 +65,7 @@ export default defineConfig({
           // React ecosystem
           if (id.includes('node_modules')) {
             if (id.includes('framer-motion')) return 'framer-motion';
+            if (id.includes('@lottiefiles') || id.includes('dotlottie')) return 'lottie';
             if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
             if (id.includes('@sentry')) return 'sentry';
             if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';

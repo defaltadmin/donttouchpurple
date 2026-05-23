@@ -4,6 +4,7 @@ import "./styles/enhancements.css";
 import "./styles/dtp-components.css";
 import { logger } from "./utils/logger";
 import { Icon } from "./components/UI/Icon";
+import { LottiePlayer } from "./components/UI/LottiePlayer";
 import type { IconName } from "./components/UI/Icon";
 import { settingsManager } from "./utils/settings";
 import { audioEngine } from "./utils/audio";
@@ -1891,9 +1892,16 @@ export default function App() {
           {achievementQueue.map((a, i) => (
             <div key={a.id} className="dtp-toast-achievement" style={{ animationDelay: `${i * 0.1}s` }}>
               <span className="dtp-toast-icon">
-                {ACHIEVEMENT_ICON_MAP[a.icon]
-                  ? <Icon name={ACHIEVEMENT_ICON_MAP[a.icon]} size={24} />
-                  : a.icon}
+                {ACHIEVEMENT_ICON_MAP[a.icon] && !reducedMotion
+                  ? <LottiePlayer
+                      src={`/assets/lottie/${ACHIEVEMENT_ICON_MAP[a.icon]}.json`}
+                      autoplay
+                      reducedMotion={reducedMotion}
+                      style={{ width: 32, height: 32 }}
+                    />
+                  : ACHIEVEMENT_ICON_MAP[a.icon]
+                    ? <Icon name={ACHIEVEMENT_ICON_MAP[a.icon]} size={24} />
+                    : a.icon}
               </span>
               <div className="dtp-toast-content">
                 <strong><Icon name="trophy" size={16} /> {a.name}</strong>

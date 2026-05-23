@@ -190,3 +190,79 @@ The shape language is consistently "Soft-Geometric."
 ### HUD & Feedback
 - **Stat Cards:** Compact glass panels with 14px corners. Point updates trigger a "bloom" animation where the text scales up by 12% and casts a temporary neon shadow.
 - **Toggles:** Dark glass tracks with 3D capsule thumbs that use spring transitions (`cubic-bezier(0.34, 1.56, 0.64, 1)`).
+
+## Elevation Tiers (z-index)
+
+| Tier | z-index | Usage | Examples |
+|------|---------|-------|---------|
+| L0 Background | 0 | Full-screen canvas layers | Galaxy, Silk, Hyperspeed backgrounds |
+| L1 Game Content | 1-10 | Grid, HUD elements | Game grid, score display, hearts, energy bar |
+| L2 Floating UI | 10-100 | Floating panels, tooltips | Settings drawer, quick settings, gamepad badge |
+| L3 Overlay | 100-1000 | Modal overlays | Pause overlay, energy popup, shop panel, GameMaster |
+| L4 Toast | 200 | Boss intro Lottie overlay | Boss event intro animations |
+| L5 System | 9999-10001 | System-level toasts | Daily badge, achievement toast stack |
+
+## Do's and Don'ts
+
+### Animation
+- **Do** use `cubic-bezier(0.34, 1.56, 0.64, 1)` for spring transitions on interactive elements
+- **Do** use `will-change: transform` on animated layers to promote GPU compositing
+- **Do** check `reducedMotion` before adding any new animation
+- **Do** use CSS keyframes for ambient/looping motion (pulses, shimmers, glows)
+- **Do** use GSAP for complex imperative sequences (score count-up, staggered entrances)
+- **Do** use framer-motion for React mount/unmount transitions (modals, overlays)
+- **Do** use dotlottie-web for pre-made animated assets (achievements, boss intros)
+- **Don't** animate `box-shadow` on mobile — use pseudo-elements or opacity instead
+- **Don't** add a 5th animation library — 4 systems (CSS, GSAP, framer-motion, dotlottie) is the ceiling
+- **Don't** run RAF when CSS handles the effect (fade/transition) — triggers expensive subtree re-renders
+
+### Accessibility
+- **Do** respect `prefers-reduced-motion` — disable decorative animations, keep functional transitions
+- **Do** respect `prefers-reduced-data: reduce` — skip loading Lottie/animation assets
+- **Do** use `aria-live="polite"` on dynamic content (toasts, score updates)
+- **Do** maintain 4.5:1 minimum contrast ratio for text on backgrounds
+- **Do** ensure touch targets are minimum 44x44px on mobile
+
+### Performance
+- **Do** use `React.lazy` + `Suspense` for heavy components (shop, backgrounds, leaderboard)
+- **Do** use `React.memo` on components rendered in expensive contexts (grid cells, HUD elements)
+- **Do** use the manual chunk strategy in vite.config.ts — keep lottie, gsap, framer-motion in separate chunks
+- **Don't** import from `engine/` inside React components — use `hooks/useGameEngine` bridge
+- **Don't** import full libraries when a single function suffices (e.g., `lodash/get` not `lodash`)
+
+## Responsive Behavior
+
+| Breakpoint | Width | Layout | Cell Size | Margins |
+|------------|-------|--------|-----------|---------|
+| Mobile Small | < 375px | Single column, full bleed | 64-80px | 8px |
+| Mobile | 375-599px | Single column, compact | 80-96px | 10px |
+| Tablet | 600-1023px | Centered, wider grid | 96-112px | 16px |
+| Desktop | 1024px+ | Centered, max 520px | 112-128px | 24px |
+
+- **Safe Areas:** All floating UI respects `env(safe-area-inset-*)` for notches and dynamic islands
+- **Thumb Zone:** Primary actions (tap, swipe) stay in the lower 60% of the viewport on mobile
+- **Grid Scaling:** Grid cells scale proportionally with viewport width, capped at 520px container
+
+## Motion & Animation Systems
+
+| System | Use For | Don't Use For |
+|--------|---------|---------------|
+| **CSS @keyframes** | Ambient loops (pulse, shimmer, glow), simple state transitions | Complex sequences, physics-based motion |
+| **GSAP** | Score count-up, staggered button entrances, pointer-following, timeline choreography | Mount/unmount transitions, declarative state changes |
+| **framer-motion** | Modal enter/exit, layout animations, spring physics for React components | Ambient loops, imperative sequences, canvas animations |
+| **dotlottie-web** | Pre-made animated assets (achievement celebrations, boss intros, loading ambiance) | Code-driven interactive animations, procedural effects |
+
+- **Reduced Motion Override:** When `settings.reducedMotion` is true, all decorative animations stop. Functional transitions (screen slides, button feedback) remain but use `duration: 0`.
+- **Lite Mode:** On low-end devices, disable particle layers, background canvas effects, and Lottie animations.
+
+## Agent Prompt Guide
+
+When modifying this codebase, follow these rules:
+
+1. **Engine isolation:** Never import React in `engine/` files. Use `hooks/useGameEngine` to bridge.
+2. **Animation selection:** CSS for ambient loops, GSAP for imperative sequences, framer-motion for React transitions, dotlottie for pre-made assets. No 5th library.
+3. **i18n:** All user-facing strings must use `useTranslation()` hook with typed `I18nKey` strings. No hardcoded text.
+4. **Settings:** Check `reducedMotion` before adding any animation. Check `prefers-reduced-data` before loading assets.
+5. **Performance:** Use `React.memo` for grid cells and HUD elements. Use `React.lazy` for shop, backgrounds, leaderboard.
+6. **Tokens:** Use CSS custom properties from `styles/game.css` and motion tokens from `styles/fx-enhancements.css`. Don't hardcode colors or timing values.
+7. **Testing:** Run `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test` before any commit.
