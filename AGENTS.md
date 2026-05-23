@@ -53,6 +53,17 @@ App.tsx (state machine)
   └── config/ (balance, patterns, difficulty)
 ```
 
+## Domain-Specific Agents
+
+| Agent | Scope | Model |
+|-------|-------|-------|
+| [game-engine](docs/agents/game-engine.md) | GameEngine, TickProcessor, CellLifecycle, boss events, RNG | sonnet |
+| [ui-components](docs/agents/ui-components.md) | React UI, screens, HUD, backgrounds, cells | sonnet |
+| [firebase-services](docs/agents/firebase-services.md) | Firestore, Auth, Analytics, App Check, Hosting | sonnet |
+| [config-balance](docs/agents/config-balance.md) | Game balance, difficulty scaling, grid patterns, powerup weights | sonnet |
+| [security-audit](docs/agents/security-audit.md) | Firebase rules, CSP, XSS, state tampering, input validation | sonnet |
+| [performance](docs/agents/performance.md) | Core Web Vitals, bundle size, GPU, memory leaks, render perf | sonnet |
+
 ## Full docs
 
 - [llms.txt](llms.txt) — AI agent project overview

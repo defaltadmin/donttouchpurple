@@ -7,9 +7,11 @@
 :root {
   --bg: #151028;
   --bg2: rgba(255,255,255,0.06);
-  --bg3: #36314b;
-  --glass: #211c35;
-  --glass-border: #524151;
+  --bg3: #1e1838;
+  --glass: #231d3a;
+  --glass-border: rgba(200,180,255,0.15);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.16);
   --text: #e7deff;
   --muted: #9f8a9d;
   --purple: #c026d3;
@@ -41,6 +43,8 @@
   --bg3: rgba(100,60,180,0.14);
   --glass: rgba(255,255,255,0.7);
   --glass-border: rgba(140,90,210,0.22);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.06);
   --text: #1a0a2e;
   --muted: rgba(60,20,100,0.55);
   --purple: #7c3aed;
@@ -651,10 +655,13 @@ body.death-flash::after {
   background: linear-gradient(135deg, #7c3aed, #9333ea, #c026d3);
   color: var(--text);
   border: none;
-  border-radius: var(--r);
+  border-radius: 9999px;
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-game);
   font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
   cursor: pointer;
   box-shadow: 0 4px 0 #6b21a8, 0 6px 16px rgba(192,38,211,0.35);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -667,11 +674,12 @@ body.death-flash::after {
   transform: translateY(2px) scale(0.98);
   box-shadow: 0 2px 0 #6b21a8;
 }
-.btn-sm { padding: 9px 14px; font-size: 13px; }
+.btn-sm { padding: 9px 14px; font-size: 13px; letter-spacing: 1px; }
 
 .btn-ghost {
-  background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.12);
-  color: var(--text); padding: 10px 18px; border-radius: 14px;
+  background: transparent;
+  border: 1px solid rgba(200,180,255,0.15);
+  color: var(--text); padding: 10px 18px; border-radius: 9999px;
   font-family: var(--font-game); font-size: 14px; cursor: pointer; transition: all 0.15s;
   box-shadow: 0 3px 0 rgba(0,0,0,0.3);
 }
@@ -753,7 +761,7 @@ body.death-flash::after {
 }
 .hud-card {
   flex: 1; background: linear-gradient(145deg, rgba(45,16,96,0.6), rgba(13,8,32,0.7));
-  border: 2px solid rgba(192,38,211,0.2); border-radius: 14px; padding: 8px 10px;
+  border: 1px solid var(--glass-border); border-radius: 14px; padding: 8px 10px;
   display: flex; flex-direction: column; gap: 1px;
   box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
   transition: border-color 0.3s;
