@@ -1302,6 +1302,7 @@ export default function App() {
   const handleLoginStreakClaim = () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     safeSet('dtp-login-claimed', todayStr);
+    setLoginClaimedToday(true);
     const safeReward = (isNaN(loginStreakReward) || !isFinite(loginStreakReward)) ? 50 : loginStreakReward;
     addDust(safeReward, 'LoginStreak');
     setShowLoginStreak(false);
@@ -1363,7 +1364,10 @@ export default function App() {
   const is2P = numPlayers === 2;
   const cbFilter = getCBFilterStyle(colorblindMode);
   const cbActive = colorblindMode !== "none";
-  const loginClaimedToday = localStorage.getItem('dtp-login-claimed') === new Date().toISOString().slice(0, 10);
+  const [loginClaimedToday, setLoginClaimedToday] = useState(() => {
+    try { return localStorage.getItem('dtp-login-claimed') === new Date().toISOString().slice(0, 10); }
+    catch { return false; }
+  });
   const rewardsBadgeCount = countUnclaimedRewards(loginClaimedToday, dailyChallenges, weeklyTasks);
 
   const equippedTheme = SHOP_THEMES.find(t => t.id === shopData.equippedTheme) || SHOP_THEMES[0];

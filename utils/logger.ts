@@ -1,4 +1,5 @@
-const isDev = import.meta.env.DEV || localStorage.getItem('DEBUG') === 'true';
+let isDev = import.meta.env.DEV;
+try { isDev = isDev || localStorage.getItem('DEBUG') === 'true'; } catch { /* storage blocked */ }
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 

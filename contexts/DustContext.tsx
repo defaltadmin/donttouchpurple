@@ -64,8 +64,9 @@ export function DustProvider({ children }: { children: React.ReactNode }) {
 
   const addDust = useCallback((amount: number, _source?: string): number => {
     let next = 0;
-    setDust(prev => { next = prev + amount; dustRef.current = next; return next; });
-    return next || dustRef.current + amount; // fallback for synchronous read
+    setDust(prev => { next = prev + amount; return next; });
+    dustRef.current = next || dustRef.current + amount;
+    return dustRef.current;
   }, []);
 
   const spendDust = useCallback((amount: number): boolean => {

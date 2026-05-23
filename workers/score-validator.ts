@@ -74,12 +74,19 @@ async function getFirebaseToken(env: Env): Promise<string> {
 
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
-    // Handle CORS preflight
+    // Handle CORS preflight — reflect validated origin (don't hardcode)
+    const allowedOrigins = [
+      'https://dont-touch-purple.web.app',
+      'https://dont-touch-purple.firebaseapp.com',
+      'https://game.mscarabia.com',
+    ];
     if (request.method === 'OPTIONS') {
+      const reqOrigin = request.headers.get('Origin') ?? '';
+      const allowOrigin = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://dont-touch-purple.web.app';
       return new Response(null, {
         status: 204,
         headers: {
-          'Access-Control-Allow-Origin': 'https://dont-touch-purple.web.app',
+          'Access-Control-Allow-Origin': allowOrigin,
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'Access-Control-Max-Age': '86400',
@@ -91,13 +98,8 @@ export default {
       return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Origin validation
+    // Origin validation (allowedOrigins declared above in CORS section)
     const origin = request.headers.get('Origin') ?? '';
-    const allowedOrigins = [
-      'https://dont-touch-purple.web.app',
-      'https://dont-touch-purple.firebaseapp.com',
-      'https://game.mscarabia.com',
-    ];
     // Allow same-origin requests (no Origin header) and whitelisted origins
     if (origin && !allowedOrigins.includes(origin)) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
@@ -113,7 +115,7 @@ export default {
       const data = await request.json<ScorePayload>();
       const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
 
-      const rateKey = `rate:${ip}:${(data.initials ?? 'anon').toLowerCase()}`;
+      const rateKey = `rate:${ip}`;
       const now = Date.now();
       let attempts: number[] = (await env.RATE_LIMIT_KV.get(rateKey, { type: 'json' })) ?? [];
       attempts = attempts.filter(ts => now - ts < 60_000);
@@ -135,7 +137,8 @@ export default {
       if (typeof data.tick !== 'number' || data.tick < 0) {
         return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
-      if (data.score > data.tick * 15 + 300) {
+      const safeTick = Math.min(data.tick, 1200); // ~20min at 60fps cap
+      if (data.score > safeTick * 15 + 300) {
         return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (typeof data.sessionId !== 'string' || data.sessionId.length < 8) {

@@ -10,11 +10,11 @@ const CORE_ASSETS = [
 
 function openScoreDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('dtp-pending-scores', 1);
+    const req = indexedDB.open('dtp-offline-queue', 1);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains('pendingScores')) {
-        db.createObjectStore('pendingScores', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains('scores')) {
+        db.createObjectStore('scores', { keyPath: 'id', autoIncrement: true });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -48,8 +48,8 @@ self.addEventListener('sync', (event) => {
         try {
           const db = await openScoreDb();
           const allScores = await new Promise<any[]>((resolve, reject) => {
-            const tx = db.transaction('pendingScores', 'readonly');
-            const req = tx.objectStore('pendingScores').getAll();
+            const tx = db.transaction('scores', 'readonly');
+            const req = tx.objectStore('scores').getAll();
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
           });
@@ -75,8 +75,8 @@ self.addEventListener('sync', (event) => {
                 headers: { 'Content-Type': 'application/json' }
               });
               if (res.ok) {
-                const tx = db.transaction('pendingScores', 'readwrite');
-                tx.objectStore('pendingScores').delete(score.id);
+                const tx = db.transaction('scores', 'readwrite');
+                tx.objectStore('scores').delete(score.id);
                 await new Promise(r => { tx.oncomplete = r; });
               }
             } catch (e) {

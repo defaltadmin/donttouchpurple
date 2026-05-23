@@ -107,52 +107,5 @@ export class ErrorLogger {
   }
 }
 
-// Safe wrapper using centralized getSentry (no duplicate lazy-load)
-export const safeSentry = {
-  captureException: async (error: unknown, hint?: Record<string, unknown>) => {
-    try {
-      const Sentry = await getSentry();
-      Sentry.captureException(error, hint as Record<string, unknown> | undefined);
-    } catch {}
-  },
-
-  captureMessage: async (message: string, level?: string) => {
-    try {
-      const Sentry = await getSentry();
-      Sentry.captureMessage(message, level as 'info' | 'warning' | 'error' | 'fatal');
-    } catch {}
-  },
-
-  setUser: async (user: Record<string, unknown> | null) => {
-    try {
-      const Sentry = await getSentry();
-      Sentry.setUser(user as { id?: string; email?: string } | null);
-    } catch {}
-  },
-
-  setTag: async (key: string, value: string) => {
-    try {
-      const Sentry = await getSentry();
-      Sentry.setTag(key, value);
-    } catch {}
-  },
-
-  addBreadcrumb: async (breadcrumb: Record<string, unknown>) => {
-    try {
-      const Sentry = await getSentry();
-      Sentry.addBreadcrumb(breadcrumb as unknown as import('@sentry/react').Breadcrumb);
-    } catch {}
-  },
-
-  flush: async (timeout?: number) => {
-    try {
-      const Sentry = await getSentry();
-      return await Sentry.flush(timeout);
-    } catch {
-      return false;
-    }
-  }
-};
-
 // Export singleton
 export const errorLogger = ErrorLogger.getInstance();
