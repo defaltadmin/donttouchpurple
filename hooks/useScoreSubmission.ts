@@ -34,6 +34,10 @@ export interface ScoreSubmissionReturn {
   setIE: React.Dispatch<React.SetStateAction<boolean>>;
   incrementGamesPlayed: () => void;
   submitScore: (engineWinner: 'p1' | 'p2' | null, p1Score: number, p2Score: number, gameSeed?: number) => Promise<number>;
+  shareMsg: string;
+  gameSeedState: number;
+  initials: string;
+  ie: boolean;
 }
 
 export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissionReturn {
@@ -52,13 +56,15 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
   const [ie, setIE] = useState(false);
 
   const incrementGamesPlayed = useCallback(() => {
-    const next = gamesPlayed + 1;
-    safeSet('dtp-games-played', String(next));
-    setGamesPlayed(next);
-    if (next === 1) {
-      safeSet('dtp-show-rewards-after-first-game', '1');
-    }
-  }, [gamesPlayed]);
+    setGamesPlayed(prev => {
+      const next = prev + 1;
+      safeSet('dtp-games-played', String(next));
+      if (next === 1) {
+        safeSet('dtp-show-rewards-after-first-game', '1');
+      }
+      return next;
+    });
+  }, []);
 
   const submitScore = useCallback(async (
     engineWinner: 'p1' | 'p2' | null,
@@ -68,13 +74,13 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
   ): Promise<number> => {
     const { gameMode, numPlayers, playerName, shopBadge, addDust, machine, getFirebase, logProgressionEvent, toast$, snapshotRef } = opts;
 
-    // Update progress tracking
-    const newWins = wins + (engineWinner === "p1" ? 1 : 0);
-    const newDeaths = deaths + (p1Score === 0 ? 1 : 0);
-    const newGames = gamesPlayed + 1;
-
-    setWins(newWins);
-    setDeaths(newDeaths);
+    // Update progress tracking (use functional updates to avoid stale closures)
+    let newWins = 0;
+    let newDeaths = 0;
+    let newGames = 0;
+    setWins(prev => { newWins = prev + (engineWinner === "p1" ? 1 : 0); return newWins; });
+    setDeaths(prev => { newDeaths = prev + (p1Score === 0 ? 1 : 0); return newDeaths; });
+    setGamesPlayed(prev => { newGames = prev + 1; return newGames; });
     safeSet('dtp:wins', newWins.toString());
     safeSet('dtp:deaths', newDeaths.toString());
 
@@ -168,5 +174,5 @@ export function useScoreSubmission(opts: ScoreSubmissionOptions): ScoreSubmissio
     setShareMsg, setGameSeedState, setInitials, setIE,
     shareMsg, gameSeedState, initials, ie,
     incrementGamesPlayed, submitScore,
-  } as ScoreSubmissionReturn & { shareMsg: string; gameSeedState: number; initials: string; ie: boolean };
+  };
 }

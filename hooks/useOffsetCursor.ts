@@ -25,19 +25,23 @@ export function useOffsetCursor(enabled: boolean, rootRef: React.RefObject<HTMLD
         }
         return;
       }
+      const wasActive = activeRef.current;
       activeRef.current = true;
       targetRef.current = { x: e.clientX, y: e.clientY - 40 };
+      if (!wasActive) rafRef.current = requestAnimationFrame(animate);
     };
 
     const leave = () => {
       activeRef.current = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       setPos({ x: 0, y: 0, visible: false });
     };
 
     const cancel = () => {
       activeRef.current = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       setPos(prev => ({ ...prev, visible: false }));
     };
 

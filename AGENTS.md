@@ -63,6 +63,7 @@ App.tsx (state machine)
 | [config-balance](docs/agents/config-balance.md) | Game balance, difficulty scaling, grid patterns, powerup weights | sonnet |
 | [security-audit](docs/agents/security-audit.md) | Firebase rules, CSP, XSS, state tampering, input validation | sonnet |
 | [performance](docs/agents/performance.md) | Core Web Vitals, bundle size, GPU, memory leaks, render perf | sonnet |
+| [hooks-state](docs/agents/hooks-state.md) | useGameEngine bridge, custom hooks, contexts, state machines | sonnet |
 
 ## Full docs
 

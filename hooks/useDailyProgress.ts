@@ -109,8 +109,6 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
   }, [getFirebase]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const WEEKLY_PROGRESS_KEY = `dtp-weekly-progress-${new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - new Date().getUTCDay())).toISOString().slice(0, 10)}`;
 
   const updateChallengeProgress = useCallback((p1Score: number, tick: number) => {
     const PROGRESS_KEY = `dtp-challenge-progress-${todayStr}`;
@@ -236,7 +234,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
     return () => window.removeEventListener('dtp:daily-complete', handle);
   }, [todayStr]);
 
-  const loginClaimedToday = localStorage.getItem('dtp-login-claimed') === new Date().toDateString();
+  const loginClaimedToday = localStorage.getItem('dtp-login-claimed') === todayStr;
   const rewardsBadgeCount = countUnclaimedRewards(loginClaimedToday, dailyChallenges, weeklyTasks);
 
   return {

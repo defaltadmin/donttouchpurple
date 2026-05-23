@@ -42,7 +42,7 @@ export function useDustEconomy(playerName: string) {
     const newDust = Math.min(9_999_999, base + amount);
     setDust(newDust);
     dustRef.current = newDust;
-    localStorage.setItem(LS_KEYS.DUST, newDust.toString());
+    try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => fbSyncDust(playerName, newDust).catch(() => {}), 5000);
     logResourceEvent("Source", "Dust", source, "earned", amount);

@@ -103,7 +103,7 @@ export function useGameEngine(
   const mountedRef = useRef(true);
   const onGameOverRef = useRef(onGameOver);
 
-  useEffect(() => { onGameOverRef.current = onGameOver; });
+  useEffect(() => { onGameOverRef.current = onGameOver; }, [onGameOver]);
 
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -135,6 +135,7 @@ export function useGameEngine(
   const shake1TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shake2TimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameOverTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deathFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const botTapTimersRef    = useRef<ReturnType<typeof setTimeout>[]>([]);
   const peakStreakRef     = useRef(0);
 
@@ -239,7 +240,8 @@ export function useGameEngine(
           const snap2 = engine.getSnapshot(); const seedAtGameOver = snap2.gameSeed;
           // Death vignette flash + haptic burst
           document.body.classList.add('death-flash');
-          setTimeout(() => document.body.classList.remove('death-flash'), 800);
+          if (deathFlashTimerRef.current) clearTimeout(deathFlashTimerRef.current);
+          deathFlashTimerRef.current = setTimeout(() => document.body.classList.remove('death-flash'), 800);
           haptics.damage();
           if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
           gameOverTimerRef.current = setTimeout(() => {
@@ -318,6 +320,7 @@ export function useGameEngine(
       if (shake1TimerRef.current)     clearTimeout(shake1TimerRef.current);
       if (shake2TimerRef.current)     clearTimeout(shake2TimerRef.current);
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
+      if (deathFlashTimerRef.current) clearTimeout(deathFlashTimerRef.current);
       // Fix #9: Cap botTapTimersRef cleanup to prevent unbounded growth
       botTapTimersRef.current.forEach(clearTimeout);
       botTapTimersRef.current = [];

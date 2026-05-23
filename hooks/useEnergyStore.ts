@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GAME, LS_KEYS } from "../config/difficulty";
+import { safeSet } from "../utils/storage";
 
 interface EnergyData {
   count: number;
@@ -42,7 +43,7 @@ export function useEnergyStore() {
         const newLastRegen = ed.lastRegen + gained * GAME.ENERGY_REGEN_MS;
         const newEd = { count: newCount, lastRegen: newLastRegen };
         setEnergyData(newEd);
-        localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+        safeSet(LS_KEYS.ENERGY, JSON.stringify(newEd));
       }
     }, 10000);
     return () => clearInterval(id);
@@ -52,7 +53,7 @@ export function useEnergyStore() {
     if (energyDataRef.current.count <= 0) return false;
     setEnergyData(prev => {
       const newEd = { ...prev, count: prev.count - 1 };
-      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      safeSet(LS_KEYS.ENERGY, JSON.stringify(newEd));
       return newEd;
     });
     return true;
@@ -62,7 +63,7 @@ export function useEnergyStore() {
     setEnergyData(prev => {
       const newCount = Math.min(GAME.MAX_ENERGY, prev.count + amount);
       const newEd = { count: newCount, lastRegen: Date.now() };
-      localStorage.setItem(LS_KEYS.ENERGY, JSON.stringify(newEd));
+      safeSet(LS_KEYS.ENERGY, JSON.stringify(newEd));
       return newEd;
     });
   }, []);
