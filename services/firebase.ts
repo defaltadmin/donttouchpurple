@@ -108,11 +108,11 @@ async function ensureFirebaseApp(): Promise<unknown> {
   // Initialize App Check in production to prevent programmatic abuse
   if (IS_PROD) {
     try {
-      const { initializeAppCheck, ReCaptchaV3Provider } = await import("firebase/app-check");
+      const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import("firebase/app-check");
       const siteKey = import.meta.env.VITE_FIREBASE_RECAPTCHA_SITE_KEY;
       if (siteKey) {
         initializeAppCheck(firebaseApp as Parameters<typeof initializeAppCheck>[0], {
-          provider: new ReCaptchaV3Provider(siteKey),
+          provider: new ReCaptchaEnterpriseProvider(siteKey),
           isTokenAutoRefreshEnabled: true,
         });
       }
