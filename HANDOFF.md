@@ -6,7 +6,7 @@
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
 - **Stack**: React 19, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
-- **Version**: 7.5.3 (as of 2026-05-23)
+- **Version**: 7.5.3 (as of 2026-05-24)
 - **Live**: https://defaltadmin.github.io/donttouchpurple
 - **GitHub**: https://github.com/defaltadmin/donttouchpurple
 - **Branch**: main (all work merged)
@@ -16,10 +16,11 @@
 | Check | Status |
 |-------|--------|
 | Typecheck | 0 errors |
-| Tests | 161/161 pass (16 files) |
+| Tests | 164/164 pass (16 files) |
 | Build | Clean |
 | Lint | 0 errors, 0 warnings (note: .agent/skills/ has pre-existing errors from autoskills, not DTP code) |
 | Audit | 0 vulnerabilities (ws CVE-2026-45736 fixed via pnpm.overrides) |
+| Production Audit | 70/70 issues resolved (5 Critical, 13 High, 25 Medium, 17 Low — all fixed) |
 
 ## Architecture Quick Reference
 
@@ -113,6 +114,16 @@ App.tsx (state machine)
 | marketingskills | ~/.openclaude/skills/marketingskills/ | 40+ marketing skills (ASO, SEO, launch) |
 | CodeGraph | .codegraph/ (185 files indexed) | Sub-ms symbol/edge queries |
 | autoskills | 27 stack-matched skills | Auto-loaded skill recommendations |
+| agentmemory | MCP server (53 tools) | Persistent memory across sessions, hybrid search |
+| intlayer | npm + MCP server | i18n with 231-language AI translation, visual editor |
+| pinme | skill (glitternetwork/pinme) | Cloudflare Workers + D1 + IPFS deployment CLI |
+| phantom-ui | npm (@aejkatappaja/phantom-ui) | Structure-aware skeleton loader (8kb) |
+| extract-design-system | skill | Extract design tokens from existing UI |
+| impeccable | skill | Web perf + accessibility auditing |
+| runcomfy + agentspace | skills | AI image/video generation (gpt-image-2, flux-2-klein) |
+| caveman | skill | Ultra-compressed communication mode |
+| bun | ~/.bun/bin/bun.exe (1.3.14) | Faster installs for CI (not full pnpm replacement) |
+| cc-switch | Desktop app (winget: farion1231.CC-Switch) | Multi-AI CLI manager — hot-switch providers, MCP panel, cost tracking |
 
 ## Commands
 
@@ -183,23 +194,46 @@ pnpm audit        # Dependency vulnerability check
 - **Score-sync** (1 fix): delete failed items before re-enqueueing to prevent unbounded queue growth
 - hooks-state agent + infrastructure-deploy agent created (8 total agents)
 
+### 2026-05-24 — Bug Fixes + Production Audit + Tool Installation (14 commits)
+- **4 game bugs fixed**: elastic play button (clamped ±8px), dev mode password (removed DEV guard), multiple backgrounds (CSS orbs + ParticleLayer gated), grid spawn (memoized onBossEvent/onBombDefused)
+- **Cell memoization**: React.memo on Cell, stable callbacks via ref pattern, botTapFx Map O(1), scoreFloats memoized
+- **5-vector production audit**: 70 findings (Security 14, Stability 21, Error Handling 10, Performance 2, Logic 23)
+  - **5 Critical**: bomb shuffle desync, key-grid 5x5 mismatch, analytics/error tracker no-op flush
+  - **13 High**: worker auth bypass, CSP missing domain, dust/tick cap mismatch, fbSyncDust doc ID collision, GDPR gap, _timeouts leak, _deathCleanupTimer leak, _bombDefuseCount not reset, i18n replaceAll, scoreFloats stale
+  - **25 Medium**: sessionId cap, badge validation, safeStore retry, boss_defeat exploit, death-flash CSS, flush mutex, restore clears, BotController P2, screen machine stale closure, atomic IDB, dead code cleanup
+  - **17 Low**: all fixed (GSAP kill, element-scoped listeners, visibility checks, gamepad release, blob URL revoke, challenge-link score 0)
+- **ALL 70/70 issues resolved** across 4 fix commits (ec759e6, 8759068, ebccea5, 63f7cc3)
+- **New tools installed**: agentmemory MCP, intlayer i18n, pinme deploy skill, phantom-ui, 6 skills.sh skills, bun 1.3.14
+- **12-factor-agents principles** added to AGENTS.md
+- **Multiplayer roadmap** saved (Cloudflare Durable Objects + WebSockets)
+- **Review materials**: dtp-deepseek-review.md (7K lines), dtp-sonnet-review.zip (380KB, 186 files), DOCUMENTATION.md
+- **MEMORY.md warning**: index entries too long (25.8KB, limit 24.4KB). Trim entries if memory fails to load.
+
 ## What's Pending / Next Steps
 
+### Immediate — AI Review
+1. **Send review materials to other AIs**:
+   - **Sonnet**: Upload `dtp-sonnet-review.zip` (380KB, 186 files) with prompt from `.review-packet/prompt-sonnet.md`
+   - **DeepSeek**: Paste `dtp-deepseek-review.md` (7K lines) — best security reviewer
+   - **Codex**: Use `.review-packet/prompt-codex.md` — may hit token limit, prioritize engine + firebase
+2. **Collect, triage, fix, verify** — same workflow as previous reviews
+
 ### High Priority
-1. **AI Review Round 2** — Prompts ready in `.review-packet/`. Send to Codex + Sonnet (zip) and DeepSeek (markdown). Collect, triage, fix, verify.
-2. **Amazon Q deep audit** — Prompt ready at `.review-packet/prompt-amazon-q.md`. Paste into Amazon Q chat. Collect results, triage, fix, verify.
 3. **Gameplay trailer** (15-30s) — needs screen recording
 4. **Screenshots** (5-6 key moments) — needs screen capture
 5. **App Check enforcement** — code complete, needs deploy + monitoring mode verification + enforcement toggle in Firebase Console
+6. **cc-switch setup** — installed via winget (farion1231.CC-Switch v3.15.0). Open it, configure providers (Claude Code, Codex, Gemini CLI). Add MCP servers (codegraph, agentmemory). Set up usage tracking.
 
 ### Medium Priority
-5. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds (content ready in `.github/LAUNCH.md`)
-6. **Product Hunt** — listing content ready in `.github/LAUNCH.md`
-7. **FreeLLMAPI setup** — self-hostable multi-provider review endpoint; needs user to configure API keys
+7. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds (content ready in `.github/LAUNCH.md`)
+8. **Product Hunt** — listing content ready in `.github/LAUNCH.md`)
+9. **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets. Architecture saved in memory. Start with 1v1 competitive mode.
+10. **intlayer migration** — replace current i18n system with intlayer (per-component dictionaries, AI translation, MCP server)
+11. **OpenRouter provider** — user was setting OPENROUTER_API_KEY. Configure as provider in cc-switch or OpenClaude.
 
 ### Lower Priority
-8. **CocoIndex Code** — semantic code search alongside CodeGraph (pip install cocoindex)
-9. **prompts.chat MCP** — prompt library server
+12. **CocoIndex Code** — semantic code search alongside CodeGraph
+13. **prompts.chat MCP** — prompt library server
 
 ### Retention/Polish Backlog
 - Feature gate progress bar on menu
