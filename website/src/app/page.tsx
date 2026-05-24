@@ -47,8 +47,10 @@ function randomCell(id: number): Cell {
   };
 }
 
+const INITIAL_CARDS = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => randomCell(i));
+
 export default function Home() {
-  const [grid, setGrid] = useState<Cell[]>([]);
+  const [grid, setGrid] = useState<Cell[]>(INITIAL_CARDS);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bossActive, setBossActive] = useState(false);
@@ -61,24 +63,17 @@ export default function Home() {
   const scoreRef = useRef<HTMLDivElement>(null);
   const bossRef = useRef<HTMLDivElement>(null);
 
-  // Initialize grid
+  // Entrance animations
   useEffect(() => {
-    const cells: Cell[] = [];
-    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-      cells.push({ ...randomCell(i), scale: 0, opacity: 0 });
-    }
-    setGrid(cells);
-
-    // Stagger in
     const tl = gsap.timeline();
-    cells.forEach((_, i) => {
-      tl.to(`.cell-${i}`, {
-        scale: 1,
-        opacity: 1,
-        duration: 0.3,
-        ease: 'back.out(2)',
-      }, i * 0.05);
-    });
+    // Stagger cells in
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      tl.fromTo(`.cell-${i}`,
+        { scale: 0, opacity: 0, rotation: -10 },
+        { scale: 1, opacity: 1, rotation: 0, duration: 0.25, ease: 'back.out(2.5)' },
+        i * 0.04
+      );
+    }
 
     // Title entrance
     tl.from(titleRef.current, {
