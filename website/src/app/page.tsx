@@ -1,264 +1,208 @@
-import Link from "next/link";
+'use client';
 
-const PLAY_URL = "https://defaltadmin.github.io/donttouchpurple";
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import Link from 'next/link';
 
-const features = [
-  {
-    title: "Boss Events",
-    description:
-      "Every 30 seconds, a boss attacks. Bomb Surge floods the grid with explosives. Inversion Storm scrambles your brain. Survive them for bonus dust.",
-    icon: " ",
-  },
-  {
-    title: "15 Animated Backgrounds",
-    description:
-      "Galaxy, Hyperspeed, Silk, Lightning, Nebula, Digital Rain, and more. Each one is a live WebGL shader running behind the chaos.",
-    icon: " ",
-  },
-  {
-    title: "Special Cells",
-    description:
-      "Bombs, shields, freezes, multipliers, slides, invisibility, corruption, duplication, portals, time slow, mirror, inversion, split screen. Every tap matters.",
-    icon: " ",
-  },
-  {
-    title: "4 Game Modes",
-    description:
-      "Classic for the purists. Evolve for the challenge seekers. Practice for the learners. Daily Challenge for the competitive.",
-    icon: " ",
-  },
-  {
-    title: "37 Achievements",
-    description:
-      "Dust economy, shop system, and a progression loop that keeps you coming back. Unlock backgrounds, power-ups, and bragging rights.",
-    icon: " ",
-  },
-  {
-    title: "Global Leaderboards",
-    description:
-      "Compete worldwide. Weekly resets keep it fresh. Your best scores are saved and ranked against every player.",
-    icon: " ",
-  },
-];
+const PLAY_URL = 'https://donttouchpurple.pages.dev';
 
-const specialCells = [
-  { name: "Bomb", color: "#ff4444", desc: "Explodes on timeout" },
-  { name: "Shield", color: "#4488ff", desc: "Blocks one hit" },
-  { name: "Freeze", color: "#44ddff", desc: "Stops the timer" },
-  { name: "Multiplier", color: "#ffdd44", desc: "2x score boost" },
-  { name: "Slide", color: "#44ff88", desc: "Moves across grid" },
-  { name: "Invisible", color: "#888888", desc: "Hidden until tapped" },
-  { name: "Corruption", color: "#aa44ff", desc: "Spreads to neighbors" },
-  { name: "Portal", color: "#ff44aa", desc: "Teleports on tap" },
-  { name: "Time Slow", color: "#44aaff", desc: "Slows everything" },
-  { name: "Mirror", color: "#ffaaff", desc: "Reflects inputs" },
-  { name: "Inversion", color: "#ff8844", desc: "Flips the rules" },
-  { name: "Split", color: "#88ff44", desc: "Divides the grid" },
+const PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100,
+  delay: Math.random() * 8,
+  duration: 6 + Math.random() * 6,
+  size: 3 + Math.random() * 5,
+  color: ['#fda9ff', '#f3aeff', '#f9bd22', '#c026d3'][Math.floor(Math.random() * 4)],
+}));
+
+const CELLS = [
+  { color: '#4488ff', label: 'Shield', delay: 0.2 },
+  { color: '#f9bd22', label: '2x', delay: 0.4 },
+  { color: '#44ddff', label: 'Freeze', delay: 0.6 },
+  { color: '#ff4444', label: 'Bomb', delay: 0.8 },
+  { color: '#44ff88', label: 'Slide', delay: 1.0 },
+  { color: '#ff44aa', label: 'Portal', delay: 1.2 },
 ];
 
 export default function Home() {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
+  const btnRef = useRef<HTMLAnchorElement>(null);
+  const cellsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const featuresRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Title entrance
+      gsap.from(titleRef.current, {
+        y: 60,
+        opacity: 0,
+        duration: 1,
+        ease: 'back.out(1.4)',
+      });
+
+      // Subtitle
+      gsap.from(subtitleRef.current, {
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        delay: 0.3,
+        ease: 'power2.out',
+      });
+
+      // Play button
+      gsap.from(btnRef.current, {
+        scale: 0,
+        opacity: 0,
+        duration: 0.6,
+        delay: 0.6,
+        ease: 'back.out(2)',
+      });
+
+      // Cell previews stagger
+      cellsRef.current.forEach((el, i) => {
+        if (!el) return;
+        gsap.from(el, {
+          scale: 0,
+          rotation: -15 + Math.random() * 30,
+          opacity: 0,
+          duration: 0.5,
+          delay: 0.8 + i * 0.1,
+          ease: 'back.out(2.5)',
+        });
+        // Float animation
+        gsap.to(el, {
+          y: -8,
+          duration: 2 + Math.random() * 2,
+          delay: 1.5 + i * 0.2,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+        });
+      });
+
+      // Features fade in
+      if (featuresRef.current) {
+        gsap.from(featuresRef.current.children, {
+          y: 20,
+          opacity: 0,
+          duration: 0.5,
+          delay: 1.4,
+          stagger: 0.1,
+          ease: 'power2.out',
+        });
+      }
+    });
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-surface grid-bg">
-      {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-4 text-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div className="h-screen w-screen bg-mesh grid-lines relative flex flex-col items-center justify-center overflow-hidden">
+      {/* Floating particles */}
+      {PARTICLES.map((p) => (
+        <div
+          key={p.id}
+          className="particle"
+          style={{
+            left: `${p.left}%`,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+          }}
+        />
+      ))}
 
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight glow mb-4">
-            Don&apos;t Touch
-            <span className="block text-primary">Purple</span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-foreground/70 max-w-2xl mx-auto mb-8">
-            Tap every color. Avoid purple. Survive boss events.
-            <br />
-            How long can you last?
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href={PLAY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="gradient-border rounded-full px-8 py-4 text-lg font-semibold text-surface-dim hover:scale-105 transition-transform glow-box"
+      {/* Cell previews floating around */}
+      <div className="absolute inset-0 pointer-events-none">
+        {CELLS.map((cell, i) => (
+          <div
+            key={cell.label}
+            ref={(el) => { cellsRef.current[i] = el; }}
+            className="absolute"
+            style={{
+              left: `${15 + (i % 3) * 30}%`,
+              top: `${20 + Math.floor(i / 3) * 45}%`,
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-xs font-bold text-white/90"
+              style={{
+                background: `linear-gradient(135deg, ${cell.color}, ${cell.color}88)`,
+                boxShadow: `0 0 20px ${cell.color}40, 0 4px 0 ${cell.color}60`,
+              }}
             >
-              Play Now — Free
-            </Link>
-            <Link
-              href="#features"
-              className="rounded-full border border-outline-variant px-8 py-4 text-lg font-semibold text-foreground hover:bg-surface-container transition-colors"
-            >
-              Learn More
-            </Link>
+              {cell.label}
+            </div>
           </div>
+        ))}
+      </div>
 
-          <p className="mt-6 text-sm text-foreground/50">
-            No ads. No pay-to-win. No accounts required.
-          </p>
-        </div>
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-lg">
+        {/* Logo / Title */}
+        <h1
+          ref={titleRef}
+          className="text-5xl sm:text-7xl font-black tracking-tight mb-2"
+          style={{ fontFamily: "'Fredoka One', cursive" }}
+        >
+          <span className="text-foreground">Don&apos;t Touch</span>
+          <br />
+          <span className="glow-text text-primary">Purple</span>
+        </h1>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 animate-bounce">
+        <p
+          ref={subtitleRef}
+          className="text-base sm:text-lg text-foreground/60 mb-8 max-w-sm"
+          style={{ fontFamily: "'Nunito', sans-serif" }}
+        >
+          Tap every color. Avoid purple. Survive the boss.
+        </p>
+
+        {/* Play button */}
+        <Link
+          href={PLAY_URL}
+          ref={btnRef}
+          className="group relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center play-btn"
+          style={{
+            background: 'linear-gradient(135deg, #fda9ff, #c026d3)',
+            boxShadow: '0 0 30px rgba(253, 169, 255, 0.4), 0 8px 0 #a400b7',
+          }}
+        >
+          <div className="absolute inset-0 rounded-full shimmer overflow-hidden" />
           <svg
-            className="w-6 h-6 text-foreground/30"
-            fill="none"
-            stroke="currentColor"
+            className="w-10 h-10 sm:w-12 sm:h-12 text-white ml-1 group-hover:scale-110 transition-transform"
+            fill="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
+            <path d="M8 5v14l11-7z" />
           </svg>
-        </div>
-      </section>
+        </Link>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
-            Not Your Average <span className="text-primary">Tap Game</span>
-          </h2>
-          <p className="text-lg text-foreground/60 text-center max-w-2xl mx-auto mb-16">
-            Every 30 seconds, something tries to kill you. Boss events, special
-            cells, and progressive difficulty keep you on edge.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl border border-outline-variant/30 bg-surface-container p-6 hover:border-primary/30 transition-colors"
-              >
-                <div className="text-3xl mb-3">{f.icon}</div>
-                <h3 className="text-xl font-semibold mb-2 text-primary">
-                  {f.title}
-                </h3>
-                <p className="text-foreground/70">{f.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Special Cells */}
-      <section className="py-24 px-4 bg-surface-dim/50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
-            <span className="text-tertiary">12</span> Special Cell Types
-          </h2>
-          <p className="text-lg text-foreground/60 text-center max-w-2xl mx-auto mb-16">
-            Each one changes the game. Learn their patterns. Master their
-            weaknesses. Or die trying.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {specialCells.map((cell) => (
-              <div
-                key={cell.name}
-                className="rounded-xl border border-outline-variant/20 bg-surface-container p-4 text-center hover:scale-105 transition-transform"
-              >
-                <div
-                  className="w-8 h-8 rounded-lg mx-auto mb-2"
-                  style={{ backgroundColor: cell.color }}
-                />
-                <div className="font-semibold text-foreground">{cell.name}</div>
-                <div className="text-sm text-foreground/50">{cell.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How to Play */}
-      <section className="py-24 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12">
-            How to <span className="text-secondary">Play</span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl mb-4">
-                1
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Tap the Colors</h3>
-              <p className="text-foreground/60">
-                Cells appear on the grid. Tap every color except purple. Simple.
-              </p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center text-2xl mb-4">
-                2
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Survive the Boss</h3>
-              <p className="text-foreground/60">
-                Every 30 seconds, a boss event attacks. Adapt or die.
-              </p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-tertiary/20 flex items-center justify-center text-2xl mb-4">
-                3
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Go for the Score</h3>
-              <p className="text-foreground/60">
-                Chain combos, collect dust, unlock achievements, climb the
-                leaderboard.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 px-4 bg-surface-dim/50">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Ready to <span className="text-primary glow">Touch</span>?
-          </h2>
-          <p className="text-lg text-foreground/60 mb-8">
-            Free to play. No download. No account. Just open and tap.
-          </p>
-          <Link
-            href={PLAY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block gradient-border rounded-full px-10 py-5 text-xl font-bold text-surface-dim hover:scale-105 transition-transform glow-box"
-          >
-            Play Now
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-outline-variant/20">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-foreground/50 text-sm">
-            © 2026 Don&apos;t Touch Purple. Built with React, TypeScript, and
-            WebGL.
-          </div>
-          <div className="flex gap-6">
-            <Link
-              href="https://github.com/defaltadmin/donttouchpurple"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground/50 hover:text-primary transition-colors text-sm"
+        {/* Features */}
+        <div
+          ref={featuresRef}
+          className="mt-10 flex flex-wrap justify-center gap-3 text-xs"
+          style={{ fontFamily: "'Nunito', sans-serif" }}
+        >
+          {['Boss Events', '12 Cell Types', '37 Achievements', 'Daily Challenge'].map((f) => (
+            <span
+              key={f}
+              className="px-3 py-1.5 rounded-full border border-outline-variant/40 text-foreground/50 bg-surface-container/50 backdrop-blur-sm"
             >
-              GitHub
-            </Link>
-            <Link
-              href={PLAY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground/50 hover:text-primary transition-colors text-sm"
-            >
-              Play
-            </Link>
-          </div>
+              {f}
+            </span>
+          ))}
         </div>
-      </footer>
+
+        {/* Footer */}
+        <p className="mt-8 text-xs text-foreground/30">
+          Free. No ads. No accounts. Just tap.
+        </p>
+      </div>
     </div>
   );
 }
