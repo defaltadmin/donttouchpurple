@@ -382,6 +382,7 @@ export function useGameEngine(
     setRareSplash(null);
     setLevelUpBadge(null);
     setBotTapHighlights({ 1: {}, 2: {} });
+    setScoreFloats([]);
     engineRef.current?.start(forceSeed);
     engineRef.current?.startSessionPersistence();
   }, []);

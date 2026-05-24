@@ -46,7 +46,7 @@ class I18nManager {
   t(key: I18nKey, params?: Record<string, string | number>): string {
     const dict = this.dicts[this._current] || this._fallback;
     let str = dict[key] || this._fallback[key] || key;
-    if (params) Object.entries(params).forEach(([k, v]) => { str = str.replace(`{${k}}`, String(v)); });
+    if (params) Object.entries(params).forEach(([k, v]) => { str = str.replaceAll(`{${k}}`, String(v)); });
     return str;
   }
 

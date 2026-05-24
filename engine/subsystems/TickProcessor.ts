@@ -275,7 +275,8 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
       !c.clicked &&
       validSlots.has(c.idx) &&
       c.type !== "hold" &&
-      c.type !== "ice"
+      c.type !== "ice" &&
+      c.type !== "bomb"
     );
 
     if (candidates.length === 0) return;

@@ -314,12 +314,14 @@ export class GameEngine {
     this.spinLevel  = 0;
     this._lastTickTs = performance.now();
     this._deltaTimers = [];
+    this.clearAllTimeouts();
     this._bossActive = false;
     this._deathSlowdown = false;
     this._shieldCollected = 0;
     this._freezeCollected = 0;
     this._purpleTaps = 0;
     this._tookDamage = false;
+    this._bombDefuseCount = 0;
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
@@ -483,6 +485,7 @@ destroy(): void {
     this.clearAllTimeouts();
     this.clearAllDeltaTimers();
     if (this._sessionAutoSaveInterval) { clearInterval(this._sessionAutoSaveInterval); this._sessionAutoSaveInterval = null; }
+    if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.stop();
     this.listeners.clear();
     this._pauseListeners = [];

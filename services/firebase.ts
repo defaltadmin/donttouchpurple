@@ -202,7 +202,7 @@ export async function fbSyncDust(name: string, dust: number): Promise<void> {
   if (!auth.currentUser) return;
   // Match client-side max from useDustEconomy (9,999,999)
   const cappedDust = Math.max(0, Math.min(9_999_999, Math.floor(dust)));
-  await modules.setDoc(modules.doc(db, "dust_wallet", safeName), {
+  await modules.setDoc(modules.doc(db, "dust_wallet", auth.currentUser.uid), {
     name: safeName,
     dust: cappedDust,
     uid: auth.currentUser.uid,
@@ -251,6 +251,7 @@ function getLocalStreakFallback(): number {
   try {
     const raw = localStorage.getItem("dtp_login_streak");
     if (!raw) return 1;
-    return JSON.parse(raw).count ?? 1;
+    const c = JSON.parse(raw).count;
+    return typeof c === 'number' && isFinite(c) ? Math.max(0, Math.min(999, Math.floor(c))) : 1;
   } catch { return 1; }
 }

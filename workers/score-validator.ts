@@ -137,7 +137,7 @@ export default {
       if (typeof data.tick !== 'number' || data.tick < 0) {
         return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
-      const safeTick = Math.min(data.tick, 1200); // ~20min at 60fps cap
+      const safeTick = Math.min(data.tick, 600); // ~10min at 60fps cap, matches Firestore rule
       if (data.score > safeTick * 15 + 300) {
         return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -157,7 +157,7 @@ export default {
           date: { stringValue: data.date ?? new Date().toISOString().split('T')[0] },
           ts: { timestampValue: new Date().toISOString() },
           sessionId: { stringValue: data.sessionId },
-          tick: { integerValue: (data.tick ?? 0).toString() },
+          tick: { integerValue: safeTick.toString() },
         },
       };
 
