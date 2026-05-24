@@ -72,11 +72,11 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
   );
 }
 
-export default function Cell({ 
-  cell, 
-  onTap, 
-  onHoldStart, 
-  onHoldEnd, 
+export default React.memo(function Cell({
+  cell,
+  onTap,
+  onHoldStart,
+  onHoldEnd,
   colorblindMode = '',
   showKeyLabel = false,
   keyLabel = '',
@@ -323,4 +323,4 @@ export default function Cell({
       )}
     </div>
   );
-}
+});

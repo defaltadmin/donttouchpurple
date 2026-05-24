@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import type { GameSnapshot, GameMode } from "../../engine/types";
 import type { ShopData } from "../../utils/shop-storage";
 import { PwrBar } from "./PwrBar";
@@ -88,6 +88,8 @@ export const GameArea = React.memo(function GameArea({
   const onActivateShieldP2 = useCallback(() => onActivateShield(2), [onActivateShield]);
   const onToggleBotP2 = useCallback(() => onToggleBot(2), [onToggleBot]);
 
+  const scoreFloatsP1 = useMemo(() => scoreFloats.filter(f => f.player === 1), [scoreFloats]);
+
   return (
     <div className="game-area">
       <GridErrorBoundary onRestart={() => { onMenu(); setTimeout(onStartGame, 100); }}>
@@ -151,7 +153,7 @@ export const GameArea = React.memo(function GameArea({
           isBotActive={botAssistActive[1]}
           botTapHighlights={botTapHighlights[1]}
           dust={dust}
-          scoreFloats={scoreFloats.filter(f => f.player === 1)} />
+          scoreFloats={scoreFloatsP1} />
         {is2P && (
           <PlayerPanel ps={snapshot.p2} anim={snapshot.p2.anim}
             onTap={onTapP2}

@@ -100,6 +100,26 @@ export const PlayerPanel = memo(function PlayerPanel({
   const frozen    = ps.freezeEnd > now;
   const maskSet   = mask ? new Set(mask) : null;
 
+  // Pre-compute botTapFx map for O(1) per-cell lookup instead of O(n) findLast
+  const botTapFxMap = React.useMemo(() => {
+    if (!botTapFx?.length) return null;
+    const m = new Map<number, number>();
+    // Iterate forward so last value wins (findLast semantics)
+    for (const fx of botTapFx) m.set(fx.idx, fx.dustCost);
+    return m;
+  }, [botTapFx]);
+
+  // Stable callback refs to avoid re-renders breaking Cell memo
+  const onTapRef = useRef(onTap);
+  onTapRef.current = onTap;
+  const onHoldStartRef = useRef(onHoldStart);
+  onHoldStartRef.current = onHoldStart;
+  const onHoldEndRef = useRef(onHoldEnd);
+  onHoldEndRef.current = onHoldEnd;
+  const stableOnTap = React.useCallback((idx: number) => onTapRef.current(idx), []);
+  const stableOnHoldStart = React.useCallback((idx: number) => onHoldStartRef.current?.(idx), []);
+  const stableOnHoldEnd = React.useCallback((idx: number) => onHoldEndRef.current?.(idx), []);
+
   const gridRef = useRef<HTMLDivElement>(null);
   const botBtnRef = useRef<HTMLButtonElement>(null);
   const dustCleanupRef = useRef<(() => void) | null>(null);
@@ -163,8 +183,8 @@ export const PlayerPanel = memo(function PlayerPanel({
               gridTemplateColumns: `repeat(${cols}, var(--cell))`,
               gridTemplateRows:    `repeat(${rows}, var(--cell))`,
               animationDuration: snapshot?.spinCfg ? `${snapshot.spinCfg.duration}s` : undefined,
-              ...(frozen        ? { outline: "2px solid #60a5fa" } : {}),
-              ...(ps.health === 1 && !frozen ? { outline: "2px solid #ef4444", animation: "heartDanger 0.75s ease-in-out infinite" } : {}),
+              ...(frozen        ? { outline: "2px solid var(--color-freeze, #60a5fa)" } : {}),
+              ...(ps.health === 1 && !frozen ? { outline: "2px solid var(--color-danger, #ef4444)", animation: "heartDanger 0.75s ease-in-out infinite" } : {}),
               ...(cbFilter      ? { filter: cbFilter } : {}),
               ...(rareMode.active ? { outline: `2px solid ${rareMode.cssColor}` } : {}),
             } as React.CSSProperties}>
@@ -219,15 +239,15 @@ export const PlayerPanel = memo(function PlayerPanel({
                   >
                     <Cell
                       cell={activeCell}
-                      onTap={(idx: number) => onTap(idx)}
-                      onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
-                      onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
+                      onTap={stableOnTap}
+                      onHoldStart={stableOnHoldStart}
+                      onHoldEnd={stableOnHoldEnd}
                       colorblindMode={colorblind ? 'colorblind' : ''}
                       showKeyLabel={showKeys}
                       keyLabel={keyLabels[keyIdx] || ''}
                       isPressing={pressing.has(i)}
                       botPulse={Boolean(botTapHighlights[i])}
-                      botDustCost={botTapFx?.findLast(fx => fx.idx === i)?.dustCost}
+                      botDustCost={botTapFxMap?.get(i)}
                       bombFuse={bombFuse}
                     />
                   </SlidingCell>
@@ -235,15 +255,15 @@ export const PlayerPanel = memo(function PlayerPanel({
                   <div key={i}>
                   <Cell
                     cell={activeCell}
-                    onTap={(idx: number) => onTap(idx)}
-                    onHoldStart={onHoldStart ? (idx: number) => onHoldStart(idx) : undefined}
-                    onHoldEnd={onHoldEnd ? (idx: number) => onHoldEnd(idx) : undefined}
+                    onTap={stableOnTap}
+                    onHoldStart={stableOnHoldStart}
+                    onHoldEnd={stableOnHoldEnd}
                     colorblindMode={colorblind ? 'colorblind' : ''}
                     showKeyLabel={showKeys}
                     keyLabel={keyLabels[keyIdx] || ''}
                     isPressing={pressing.has(i)}
                     botPulse={Boolean(botTapHighlights[i])}
-                    botDustCost={botTapFx?.findLast(fx => fx.idx === i)?.dustCost}
+                    botDustCost={botTapFxMap?.get(i)}
                     bombFuse={bombFuse}
                   />
                   </div>
