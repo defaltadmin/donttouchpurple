@@ -287,6 +287,35 @@ pnpm audit        # Dependency vulnerability check
 - **SSH**: Key-only auth (Ed25519), Tailscale-only listener, no passwords
 - **Termius**: iPhone → SSH from anywhere on mobile data
 
+## Immediate Priority: Game Over Screen Rework
+
+The game over screen (`components/Screens/GameOver.tsx`) has major visual bugs that need fixing:
+
+### Bugs Found (2026-05-25)
+
+1. **Button overlap** — AGAIN and SHARE buttons overlap with trophy icon and menu icon buttons, making text illegible
+2. **Stray text elements** — "Share Score" and "Challenge" appear as unstyled dark grey text near bottom, invisible against dark purple background
+3. **Score bar shows 0%** — Progress bar shows "0%" despite displaying score of 614 above it
+4. **Dead panel layout failure** — `div.ppanel.ppanel--dead` renders without proper background/layout, causing child elements to scatter
+5. **Button text misalignment** — Button text is black/invisible, wrong color for dark theme
+6. **DOM structure** — `/html/body/div[1]/div/div[9]/div[1]/button[1]` has black text
+
+### Component Location
+
+- `components/Screens/GameOver.tsx` — main game over screen
+- `components/HUD/PlayerPanel.tsx` — may contain the dead panel
+- `styles/game.css` — styling issues
+- Related: share score, challenge link, retry logic
+
+### What Needs to Happen
+
+- Complete visual overhaul of GameOver screen
+- Fix button positioning (no overlaps)
+- Fix text visibility (contrast on dark background)
+- Fix score bar percentage calculation
+- Fix dead panel layout/background
+- Test on mobile and desktop
+
 ## Session Management
 
 - **Context limits**: "API error: terminated" = session too big. Start new chat.
