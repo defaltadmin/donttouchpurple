@@ -83,11 +83,13 @@ function MagneticButton({ children, onClick, className = "", disabled = false }:
       const centerY = top + height / 2;
       const distX = Math.abs(centerX - e.clientX);
       const distY = Math.abs(centerY - e.clientY);
-      const padding = 100;
+      const padding = 20;
 
       if (distX < width / 2 + padding && distY < height / 2 + padding) {
         setIsActive(true);
-        setPosition({ x: (e.clientX - centerX) / 2, y: (e.clientY - centerY) / 2 });
+        const rawX = (e.clientX - centerX) / 6;
+        const rawY = (e.clientY - centerY) / 6;
+        setPosition({ x: Math.max(-8, Math.min(8, rawX)), y: Math.max(-8, Math.min(8, rawY)) });
       } else {
         setIsActive(false);
         setPosition({ x: 0, y: 0 });
