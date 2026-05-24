@@ -310,10 +310,14 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
       moved.push(toIdx);
 
       if (!ref.slideAnim) ref.slideAnim = {};
-      ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now() };
+      const gen = (ref.slideAnim[toIdx]?.gen ?? -1) + 1;
+      ref.slideAnim[toIdx] = { fromIdx, startMs: Date.now(), gen };
 
       ctx.scheduleTimeout(() => {
-        if (ref.slideAnim) { ref.slideAnim = { ...ref.slideAnim }; delete ref.slideAnim[toIdx]; }
+        // Only delete if no newer animation was placed at this index
+        if (ref.slideAnim?.[toIdx]?.gen === gen) {
+          ref.slideAnim = { ...ref.slideAnim }; delete ref.slideAnim[toIdx];
+        }
         ctx.dirty = true;
       }, BALANCE.shuffle.slideCleanupMs);
 

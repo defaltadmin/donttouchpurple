@@ -73,7 +73,7 @@ export interface PlayerState {
   storedFreezeCharges: number;
   storedShieldCharges: number;
   pendingStageUpdate?: boolean;
-  slideAnim?: Record<number, { fromIdx: number; startMs: number }>; // K3: cell shuffle slide
+  slideAnim?: Record<number, { fromIdx: number; startMs: number; gen: number }>; // K3: cell shuffle slide
   nextShuffleTick: number;  // per-player shuffle scheduling
 }
 

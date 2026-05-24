@@ -14,7 +14,7 @@ interface HeartsProps {
 export function Hearts({ health, anim: _anim, shieldCount, practiceMode }: HeartsProps) {
   const sc = shieldCount ?? 0;
   const actualHealth  = Math.max(0, health);
-  const displayHealth = Math.min(actualHealth, MAX_DISPLAY);
+  const displayHealth = Math.floor(Math.min(actualHealth, MAX_DISPLAY));
   const overflow      = actualHealth > MAX_DISPLAY;
 
   // Track health gain for animation
@@ -22,14 +22,16 @@ export function Hearts({ health, anim: _anim, shieldCount, practiceMode }: Heart
   const [gainIdx, setGainIdx] = useState<number | null>(null);
   const [lossIdx, setLossIdx] = useState<number | null>(null);
   useEffect(() => {
-    if (actualHealth > prevHealth.current) {
-      setGainIdx(actualHealth - 1);
+    const floored = Math.floor(actualHealth);
+    const prevFloored = Math.floor(prevHealth.current);
+    if (floored > prevFloored) {
+      setGainIdx(floored - 1);
       const t = setTimeout(() => setGainIdx(null), 500);
       prevHealth.current = actualHealth;
       return () => clearTimeout(t);
     }
-    if (actualHealth < prevHealth.current) {
-      setLossIdx(prevHealth.current - 1);
+    if (floored < prevFloored) {
+      setLossIdx(prevFloored - 1);
       const t = setTimeout(() => setLossIdx(null), 500);
       prevHealth.current = actualHealth;
       return () => clearTimeout(t);

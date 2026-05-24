@@ -91,6 +91,29 @@ export const idb = {
     });
   },
 
+  /** Atomically remove some items and update others in a single transaction. */
+  async removeAndUpdate(
+    removeIds: number[],
+    updates: { id: number; patch: Partial<QueuedScore> }[],
+  ): Promise<void> {
+    if (removeIds.length === 0 && updates.length === 0) return;
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      const store = tx.objectStore(this.STORE);
+      for (const id of removeIds) store.delete(id);
+      for (const { id, patch } of updates) {
+        const getReq = store.get(id);
+        getReq.onsuccess = () => {
+          const existing = getReq.result;
+          if (existing) store.put({ ...existing, ...patch });
+        };
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
   async count(): Promise<number> {
     const db = await this.open();
     return new Promise((resolve, reject) => {

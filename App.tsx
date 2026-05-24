@@ -466,7 +466,9 @@ export default function App() {
     weeklyProgress['play10'] = (weeklyProgress['play10'] ?? 0) + 1;
     if (p1Score >= 100) weeklyProgress['score100'] = (weeklyProgress['score100'] ?? 0) + 1;
     const modesKey = `dtp-weekly-modes-${weekKey2}`;
-    const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
+    let modesArr: string[] = [];
+    try { modesArr = JSON.parse(localStorage.getItem(modesKey) ?? '[]'); } catch {}
+    const modesPlayed = new Set<string>(modesArr);
     modesPlayed.add(gameMode);
     safeSet(modesKey, JSON.stringify([...modesPlayed]));
     weeklyProgress['bothmode'] = modesPlayed.size;
@@ -634,7 +636,7 @@ export default function App() {
   }, []);
 
   // Memoize callbacks passed to useGameEngine to prevent engine recreation on every render
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, toast$/addDust are the real deps
+   
   const onBossEvent = useCallback((bossType: string) => {
     const next = { ...bossCountersRef.current, bossSurvived: bossCountersRef.current.bossSurvived + 1 };
     if (bossType === "inversion") next.inversionSurvived += 1;
@@ -647,7 +649,7 @@ export default function App() {
       toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
     }
   }, [toast$, addDust]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- refs and setState are stable
+   
   const onBombDefused = useCallback(() => {
     const next = { ...bossCountersRef.current, bombsDefused: bossCountersRef.current.bombsDefused + 1 };
     bossCountersRef.current = next;

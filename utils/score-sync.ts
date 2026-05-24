@@ -87,17 +87,15 @@ export const scoreSync = {
           if (item.id != null) failedIds.push(item.id);
         }
       }
-      // Delete all processed items first to prevent duplicates if page closes mid-flush
-      const toDelete = [...succeededIds, ...failedIds, ...permanentIds];
-      if (toDelete.length > 0) await idb.removeItems(toDelete);
-      // Re-enqueue only transient failures (not permanent 4xx) with updated backoff
-      for (const id of failedIds) {
+      // Atomic: delete succeeded+permanent, update failed in-place (prevents data loss on page close)
+      const toRemove = [...succeededIds, ...permanentIds];
+      const updates = failedIds.map(id => {
         const item = pending.find(p => p.id === id);
-        if (!item) continue;
-        const attempts = (item.attempts || 0) + 1;
-        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
-        await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
-      }
+        const attempts = (item?.attempts || 0) + 1;
+        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000);
+        return { id, patch: { attempts, nextRetry: Date.now() + backoffMs } };
+      });
+      await idb.removeAndUpdate(toRemove, updates);
     } finally {
       this._flushing = false;
     }
