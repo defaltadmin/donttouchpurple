@@ -1719,6 +1719,7 @@ export default function App() {
           resumeData={resumeData}
           onResumeGame={handleResumeGame}
           onToast={toast$}
+          hasBackground={!!shopData.equippedBackground && shopData.equippedBackground !== 'default'}
         />
       )}
 

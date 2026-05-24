@@ -174,6 +174,7 @@ export interface StartScreenProps {
   resumeData?: Record<string, unknown> | null;
   onResumeGame?: () => void;
   onToast?: (message: string) => void;
+  hasBackground?: boolean;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -193,6 +194,7 @@ export function StartScreen({
   pendingReplaySeed, onClearReplaySeed,
   resumeReady, resumeData, onResumeGame,
   onToast,
+  hasBackground,
 }: StartScreenProps) {
   const { t } = useTranslation();
   const isKbd = inputMode === "keyboard";
@@ -270,7 +272,7 @@ export function StartScreen({
 
   return (
     <>
-      <ParticleLayer count={25} />
+      {!hasBackground && <ParticleLayer count={25} />}
       <div className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card">
       {pendingReplaySeed && (
         <div className="replay-banner">
