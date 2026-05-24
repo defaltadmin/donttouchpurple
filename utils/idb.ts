@@ -59,7 +59,7 @@ export const idb = {
               store.add({ ...score, queuedAt: Date.now() });
             }
           };
-          cursorReq.onerror = () => { /* cursor eviction is best-effort */ };
+          cursorReq.onerror = () => { store.add({ ...score, queuedAt: Date.now() }); };
         } else {
           store.add({ ...score, queuedAt: Date.now() });
         }

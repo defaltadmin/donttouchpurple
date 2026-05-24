@@ -130,7 +130,7 @@ export class GameEngine {
   private _deathCleanupTimer: ReturnType<typeof setTimeout> | null = null; // Track death cleanup timeout
   private _cachedNow = Date.now(); // Cached Date.now() per tick — avoids 10+ syscalls per frame
   private _bossActive = false;
-  private _bombDefuseCount = 0;
+  private _bombDefuseCount = 0; // unused — kept for type compat; achievements use localStorage
   private _shieldCollected = 0;
   private _tookDamage = false;
   private _freezeCollected = 0;
@@ -454,6 +454,16 @@ export class GameEngine {
   resume(): void {
     if (this.phase !== "paused") return;
     if (!this.p1?.alive) return; // Fix #7: Validation
+
+    // Clear stale boss event that expired while paused
+    if (this.bossEvent && this.bossEvent.endsAt <= Date.now()) {
+      const doneLabel = this.bossEvent.type === 'inversion' ? '✅ Inversion over.' : '✅ Boss over.';
+      this.bossEvent = null;
+      this._bossActive = false;
+      window.dispatchEvent(new Event('dtp:boss:complete'));
+      this.emit({ type: "toast", message: doneLabel });
+    }
+
     this.paused = false;
     this.phase  = "playing";
     this.scheduleTick();
@@ -604,10 +614,11 @@ destroy(): void {
       const nextStreak = ref.streak + 1;
       ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
-      // Bomb achievements — track total defuses
-      this._bombDefuseCount = (this._bombDefuseCount ?? 0) + 1;
-      achievementSystem.check('bomb_defuse', () => this._bombDefuseCount >= 10);
-      achievementSystem.check('bomb_master', () => this._bombDefuseCount >= 50);
+      // Bomb achievements — lifetime counter across games
+      const lifetime = (parseInt(localStorage.getItem('dtp_total_bomb_defuses') ?? '0') || 0) + 1;
+      try { localStorage.setItem('dtp_total_bomb_defuses', String(lifetime)); } catch {}
+      achievementSystem.check('bomb_defuse', () => lifetime >= 10);
+      achievementSystem.check('bomb_master', () => lifetime >= 50);
       ref.cells = activeToCellsP(ref.active, pat);
       this.dirty = true;
       this.emitSnapshot();

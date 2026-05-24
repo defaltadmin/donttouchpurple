@@ -136,7 +136,9 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
     weeklyProgress['play10'] = (weeklyProgress['play10'] ?? 0) + 1;
     if (p1Score >= 100) weeklyProgress['score100'] = (weeklyProgress['score100'] ?? 0) + 1;
     const modesKey = `dtp-weekly-modes-${weekKey2}`;
-    const modesPlayed = new Set<string>(JSON.parse(localStorage.getItem(modesKey) ?? '[]'));
+    let modesArr: string[] = [];
+    try { modesArr = JSON.parse(localStorage.getItem(modesKey) ?? '[]'); } catch {}
+    const modesPlayed = new Set<string>(modesArr);
     modesPlayed.add('evolve'); // Default, overridden by caller
     safeSet(modesKey, JSON.stringify([...modesPlayed]));
     weeklyProgress['bothmode'] = modesPlayed.size;

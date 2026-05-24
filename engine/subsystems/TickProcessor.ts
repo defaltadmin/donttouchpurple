@@ -213,7 +213,8 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
         }
       }
 
-      if (ctx.p1.score >= ctx.nextBossTriggerScore) this._triggerBossEvent(ctx);
+      const effectiveScore = ctx.numPlayers === 2 ? ctx.p1.score + ctx.p2.score : ctx.p1.score;
+      if (effectiveScore >= ctx.nextBossTriggerScore) this._triggerBossEvent(ctx);
 
       if (ctx.p1.alive) {
         const bombPat = EVOLVE_PATTERNS[ctx.p1.patternIdx] ?? EVOLVE_PATTERNS[0];

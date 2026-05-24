@@ -4,21 +4,21 @@ import type { BossEventType } from "../types";
 const BOSS_ROTATION: BossEventType[] = ["inversion"];
 
 const DURATIONS: Record<BossEventType, number> = {
-  storm: 8000,
-  inversion: 4000, // Reduced from 6s — 4s is enough for brain-rewiring challenge
-  blackout: 5000,
+  storm: 8000,       // dead — BOSS_ROTATION only contains "inversion"
+  inversion: 4000,
+  blackout: 5000,    // dead — BOSS_ROTATION only contains "inversion"
 };
 
 const LABELS: Record<BossEventType, string> = {
-  storm:     "⚡ STORM! Cells shuffle faster!",
+  storm:     "⚡ STORM! Cells shuffle faster!",    // dead
   inversion: "🔄 INVERSION! Safe and danger swapped!",
-  blackout:  "🌑 BLACKOUT! Grid goes dark!",
+  blackout:  "🌑 BLACKOUT! Grid goes dark!",       // dead
 };
 
 const DONE_LABELS: Record<BossEventType, string> = {
-  storm:     "✅ Storm over.",
+  storm:     "✅ Storm over.",     // dead
   inversion: "✅ Inversion over.",
-  blackout:  "✅ Blackout over.",
+  blackout:  "✅ Blackout over.", // dead
 };
 
 export function getNextBossEventType(prevType: BossEventType | null): BossEventType {
