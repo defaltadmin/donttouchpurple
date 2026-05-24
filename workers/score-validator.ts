@@ -111,6 +111,25 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
+    // Verify Firebase ID token from client
+    const authHeader = request.headers.get('Authorization') ?? '';
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!idToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    try {
+      const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      if (!verifyRes.ok) {
+        return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      const tokenInfo = await verifyRes.json<{ aud?: string; sub?: string }>();
+      if (!tokenInfo.sub) {
+        return new Response(JSON.stringify({ error: 'Invalid token claims' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch {
+      return new Response(JSON.stringify({ error: 'Token verification failed' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     try {
       const data = await request.json<ScorePayload>();
       const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
