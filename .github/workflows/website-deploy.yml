@@ -5,6 +5,19 @@ on:
     branches: [main]
     paths:
       - 'website/**'
+      - 'src/**'
+      - 'engine/**'
+      - 'components/**'
+      - 'hooks/**'
+      - 'utils/**'
+      - 'config/**'
+      - 'services/**'
+      - 'workers/**'
+      - 'styles/**'
+      - 'assets/**'
+      - 'locales/**'
+      - 'vite.config.ts'
+      - 'package.json'
       - '.github/workflows/website-deploy.yml'
   workflow_dispatch:
 
@@ -29,11 +42,20 @@ jobs:
         with:
           version: 9
 
-      - name: Install dependencies
+      - name: Install root dependencies
+        run: pnpm install
+
+      - name: Build game
+        run: pnpm build
+
+      - name: Copy game to website
+        run: mkdir -p website/public/play && cp -r dist/* website/public/play/
+
+      - name: Install website dependencies
         working-directory: website
         run: pnpm install
 
-      - name: Build
+      - name: Build website
         working-directory: website
         run: pnpm build
 

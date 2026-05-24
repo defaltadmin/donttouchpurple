@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 
-const PLAY_URL = 'https://defaltadmin.github.io/donttouchpurple';
+const PLAY_URL = '/play';
 
 const GRID_SIZE = 4;
 const COLORS = {
