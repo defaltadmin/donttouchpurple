@@ -181,7 +181,7 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
       const newActive = spawnActive(ctx.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, rareShape, ctx.tickCount, ctx.devGodMode);
       if (ctx.devForcedPwr && newActive.length > 0) {
         newActive[0] = { ...newActive[0], type: (ctx.devForcedPwr === "heart" ? "medpack" : ctx.devForcedPwr) } as ActiveCell;
-        if (pi === (ctx.numPlayers === 1 ? 0 : 1)) ctx.devForcedPwr = null;
+        if (pi === 0) ctx.devForcedPwr = null;
       }
       ref.active = newActive;
       ref.cells = activeToCellsP(newActive, nextPat);

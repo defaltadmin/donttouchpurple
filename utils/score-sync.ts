@@ -12,6 +12,7 @@ async function getAuthToken(): Promise<string | undefined> {
 }
 
 export const scoreSync = {
+  _flushing: false,
   async queue(score: number, mode: 'classic' | 'evolve' = 'evolve', tick = 0) {
     let initials = 'ANON';
     try {
@@ -21,8 +22,8 @@ export const scoreSync = {
     const pending = { score, initials, mode, tick, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}` };
 
     if (navigator.onLine) {
-      const success = await this._submit(pending);
-      if (success) return;
+      const result = await this._submit(pending);
+      if (result === 'success' || result === 'permanent') return;
     }
 
     try {
@@ -33,7 +34,7 @@ export const scoreSync = {
     }
   },
 
-  async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number; sessionId?: string }): Promise<boolean> {
+  async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number; sessionId?: string }): Promise<'success' | 'permanent' | 'temporary'> {
     try {
       const token = await getAuthToken();
       const res = await fetch('https://game.mscarabia.com/api/submit-score', {
@@ -47,46 +48,58 @@ export const scoreSync = {
           sessionId: item.sessionId || crypto.randomUUID?.() || `sess-${Date.now()}`,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return true;
+      if (!res.ok) {
+        // 4xx = permanent error (bad payload, auth failure) — don't retry
+        if (res.status >= 400 && res.status < 500) return 'permanent';
+        throw new Error(`HTTP ${res.status}`);
+      }
+      return 'success';
     } catch {
-      return false;
+      return 'temporary';
     }
   },
 
   async flush() {
-    if (!navigator.onLine) return;
+    if (this._flushing || !navigator.onLine) return;
+    this._flushing = true;
+    try {
+      const pending = await idb.peekAll();
+      if (pending.length === 0) return;
 
-    const pending = await idb.peekAll();
-    if (pending.length === 0) return;
+      logger.info(`Flushing ${pending.length} offline scores`);
 
-    logger.info(`🔄 Flushing ${pending.length} offline scores`);
+      const succeededIds: number[] = [];
+      const failedIds: number[] = [];
+      const permanentIds: number[] = [];
+      const now = Date.now();
+      for (const item of pending) {
+        // Exponential backoff: skip items not yet due for retry
+        const nextRetry = item.nextRetry ?? 0;
+        if (nextRetry > now) continue;
 
-    const succeededIds: number[] = [];
-    const failedIds: number[] = [];
-    const now = Date.now();
-    for (const item of pending) {
-      // Exponential backoff: skip items not yet due for retry
-      const nextRetry = item.nextRetry ?? 0;
-      if (nextRetry > now) continue;
-
-      const success = await this._submit(item);
-      if (success) {
-        if (item.id != null) succeededIds.push(item.id);
-      } else {
-        if (item.id != null) failedIds.push(item.id);
+        const result = await this._submit(item);
+        if (result === 'success') {
+          if (item.id != null) succeededIds.push(item.id);
+        } else if (result === 'permanent') {
+          // 4xx error — drop from queue permanently
+          if (item.id != null) permanentIds.push(item.id);
+        } else {
+          if (item.id != null) failedIds.push(item.id);
+        }
       }
-    }
-    // Delete all processed items first to prevent duplicates if page closes mid-flush
-    const toDelete = [...succeededIds, ...failedIds];
-    if (toDelete.length > 0) await idb.removeItems(toDelete);
-    // Re-enqueue failed items with updated backoff
-    for (const id of failedIds) {
-      const item = pending.find(p => p.id === id);
-      if (!item) continue;
-      const attempts = (item.attempts || 0) + 1;
-      const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
-      await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
+      // Delete all processed items first to prevent duplicates if page closes mid-flush
+      const toDelete = [...succeededIds, ...failedIds, ...permanentIds];
+      if (toDelete.length > 0) await idb.removeItems(toDelete);
+      // Re-enqueue only transient failures (not permanent 4xx) with updated backoff
+      for (const id of failedIds) {
+        const item = pending.find(p => p.id === id);
+        if (!item) continue;
+        const attempts = (item.attempts || 0) + 1;
+        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 30 * 60 * 1000); // cap at 30 min
+        await idb.enqueue({ ...item, id: undefined, attempts, nextRetry: Date.now() + backoffMs });
+      }
+    } finally {
+      this._flushing = false;
     }
   },
 

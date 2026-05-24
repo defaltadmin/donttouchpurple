@@ -1,5 +1,6 @@
 import { logger } from './logger';
 import { safeSet } from './storage';
+import { getSentry } from '../services/sentry';
 
 interface TrackedError { id: string; msg: string; stack: string; ts: number; context?: Record<string, unknown>; }
 const QUEUE_KEY = 'dtp:errors';
@@ -32,8 +33,25 @@ export const errorTracker = {
     try { queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return; }
     if (!queue.length || !navigator.onLine) return;
     try {
-      logger.debug('Error batch flushed', queue.length);
+      const Sentry = await getSentry();
+      // Transmit each queued error to Sentry before clearing
+      for (const entry of queue) {
+        const errObj = new Error(entry.msg);
+        errObj.stack = entry.stack;
+        Sentry.withScope((scope) => {
+          scope.setContext('errorTracker', {
+            id: entry.id,
+            ts: entry.ts,
+            ...entry.context,
+          });
+          Sentry.captureException(errObj);
+        });
+      }
       safeSet(QUEUE_KEY, '[]');
-    } catch { logger.warn('Error flush failed'); }
+      logger.debug('Error batch flushed', queue.length);
+    } catch {
+      // Keep queue intact so errors are retried on next _flush
+      logger.warn('Error flush failed — queue preserved for retry');
+    }
   }
 };

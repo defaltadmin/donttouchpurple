@@ -1,5 +1,7 @@
 import { logger } from './logger';
 import { safeSet } from './storage';
+import { safeSentry } from '../services/sentry';
+import { logDesignEvent } from '../services/gameanalytics';
 
 type EventName = 'game_start' | 'game_over' | 'retry' | 'pause' | 'settings_change' | 'achievement_unlocked';
 interface GameEvent { name: EventName; ts: number; payload?: Record<string, unknown>; }
@@ -26,8 +28,24 @@ export const analytics = {
     const queue = this._getQueue();
     if (!queue.length || !navigator.onLine) return;
     try {
-      logger.debug('Analytics flushed', queue.length, 'events');
+      // Transmit each event before clearing the queue
+      for (const evt of queue) {
+        // Forward to GameAnalytics as a design event (prod only, per IS_PROD guard)
+        logDesignEvent(`analytics/${evt.name}`, 1);
+        // Add as Sentry breadcrumb for error correlation (no-op if Sentry not yet loaded)
+        safeSentry.addBreadcrumb({
+          message: `analytics: ${evt.name}`,
+          category: 'analytics',
+          level: 'info',
+          data: evt.payload as Record<string, unknown>,
+        });
+        // In dev mode, log the full payload for debugging
+        if (import.meta.env.DEV) {
+          logger.debug('[Analytics]', evt.name, JSON.stringify({ name: evt.name, ...evt.payload }));
+        }
+      }
       safeSet(QUEUE_KEY, '[]');
+      logger.debug('Analytics flushed', queue.length, 'events');
     } catch { logger.warn('Analytics flush failed'); }
   }
 };

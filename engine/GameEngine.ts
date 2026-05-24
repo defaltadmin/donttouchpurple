@@ -301,7 +301,11 @@ export class GameEngine {
   start(forceSeed?: number): void {
     if (this._isDisposed) return; // Fix #2: Uninitialized/Disposed guard
     this.stop();
+    // Issue 15: Temporarily detach boss complete handler to prevent
+    // the boss_defeat achievement from firing on cleanup deactivation.
+    if (this._bossCompleteHandler) window.removeEventListener('dtp:boss:complete', this._bossCompleteHandler);
     bossEngine.deactivate();
+    if (this._bossCompleteHandler) window.addEventListener('dtp:boss:complete', this._bossCompleteHandler);
     rhythmFeedback.reset();
     sessionStorage.removeItem(this.SESSION_KEY);
     this.tickCount  = 0;
@@ -411,7 +415,7 @@ export class GameEngine {
   private scheduleTimeout(cb: () => void, ms: number): ReturnType<typeof setTimeout> {
     const id = setTimeout(() => {
       this._timeouts = this._timeouts.filter(t => t !== id);
-      cb();
+      if (this.phase !== 'paused') cb();
     }, ms);
     this._timeouts.push(id);
     return id;
@@ -480,6 +484,7 @@ destroy(): void {
     if (this._bossCompleteHandler) window.removeEventListener('dtp:boss:complete', this._bossCompleteHandler);
     if (this._bossShieldBreakHandler) window.removeEventListener('dtp:boss:shield-break', this._bossShieldBreakHandler);
     if (this._difficultyEmergencyHandler) window.removeEventListener('dtp:difficulty:emergency', this._difficultyEmergencyHandler);
+    bossEngine.dispose();
     this.holdTimers.clear();
     this.tapBuffer = { 1: null, 2: null };
     this.clearAllTimeouts();
@@ -916,7 +921,7 @@ destroy(): void {
         bossEvent: null, activeBomb: null, isInverted: false, isBlackout: false,
       } as GameSnapshot;
     }
-    const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? STAGES[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+    const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     const cloneActive = (active: ActiveCell[]): ActiveCell[] => active.map(c => ({ ...c }));
 
     // Cache mask array — only re-copy when the source reference changes
@@ -1018,6 +1023,9 @@ destroy(): void {
 
   restoreSessionSnapshot(data: Record<string, unknown>): boolean {
     try {
+      // Clear stale timers from any prior session before restoring
+      this.clearAllTimeouts();
+      this.clearAllDeltaTimers();
       if (!data || !data.gameSeed) return false;
       // Reject snapshots from incompatible versions to avoid silent state corruption
       const snapshotVersion = typeof data.version === 'number' ? data.version : 1;
@@ -1102,7 +1110,13 @@ destroy(): void {
         this.p1.storedFreezeCharges = Math.max(0, Math.min(10, (p1.storedFreezeCharges as number) ?? 0));
         this.p1.storedShieldCharges = Math.max(0, Math.min(10, (p1.storedShieldCharges as number) ?? 0));
         this.p1.alive = (p1.alive as boolean) ?? true;
-        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c }) as unknown as ActiveCell);
+        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => {
+          const cell = { ...c } as Record<string, unknown>;
+          if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
+          if (!cell.type) cell.type = 'score';
+          if (typeof cell.clicked !== 'boolean') cell.clicked = false;
+          return cell as unknown as ActiveCell;
+        });
         const pat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
         this.p1.cells = activeToCellsP(this.p1.active, pat);
       }
@@ -1121,7 +1135,13 @@ destroy(): void {
         this.p2.storedFreezeCharges = Math.max(0, Math.min(10, (p2.storedFreezeCharges as number) ?? 0));
         this.p2.storedShieldCharges = Math.max(0, Math.min(10, (p2.storedShieldCharges as number) ?? 0));
         this.p2.alive = (p2.alive as boolean) ?? true;
-        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => ({ ...c }) as unknown as ActiveCell);
+        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => {
+          const cell = { ...c } as Record<string, unknown>;
+          if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
+          if (!cell.type) cell.type = 'score';
+          if (typeof cell.clicked !== 'boolean') cell.clicked = false;
+          return cell as unknown as ActiveCell;
+        });
         const pat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
         this.p2.cells = activeToCellsP(this.p2.active, pat2);
       }

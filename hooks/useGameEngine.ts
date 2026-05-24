@@ -321,6 +321,8 @@ export function useGameEngine(
       if (shake2TimerRef.current)     clearTimeout(shake2TimerRef.current);
       if (gameOverTimerRef.current)   clearTimeout(gameOverTimerRef.current);
       if (deathFlashTimerRef.current) clearTimeout(deathFlashTimerRef.current);
+      // Issue 16: Remove death-flash class on unmount in case component unmounts during animation
+      document.body.classList.remove('death-flash');
       // Fix #9: Cap botTapTimersRef cleanup to prevent unbounded growth
       botTapTimersRef.current.forEach(clearTimeout);
       botTapTimersRef.current = [];

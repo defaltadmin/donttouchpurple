@@ -9,7 +9,6 @@ export interface DDAMetrics {
 }
 
 export class DynamicDifficulty {
-  private baselineSpawnMs: number;
   private currentSpawnMs: number;
   private readonly minSpawnMs = 400;
   private readonly maxSpawnMs = 2000;
@@ -28,7 +27,6 @@ export class DynamicDifficulty {
   private readonly EMERGENCY_COOLDOWN_MS = 5000;
 
   constructor(initialSpawnMs: number) {
-    this.baselineSpawnMs = initialSpawnMs;
     this.currentSpawnMs = initialSpawnMs;
   }
 
@@ -109,7 +107,6 @@ export class DynamicDifficulty {
   }
 
   reset(ms: number) {
-    this.baselineSpawnMs    = ms;
     this.currentSpawnMs     = ms;
     this.tickCount          = 0;
     this.lastAdjustedTickCount = 0;

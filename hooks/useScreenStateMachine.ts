@@ -28,6 +28,22 @@ export interface ScreenState {
   updateProgress: (partial: Partial<PlayerProgress>) => void;
 }
 
+const VALID_TRANSITIONS: Record<Screen, Screen[]> = {
+  loading:     ['onboarding', 'menu'],
+  onboarding:  ['menu'],
+  menu:        ['playing', 'shop', 'leaderboard', 'settings', 'changelog', 'howto', 'keybind', 'gamemaster'],
+  playing:     ['paused', 'gameover', 'menu'],
+  paused:      ['playing', 'menu'],
+  gameover:    ['playing', 'menu', 'leaderboard'],
+  shop:        ['menu'],
+  leaderboard: ['menu'],
+  settings:    ['menu'],
+  changelog:   ['menu'],
+  howto:       ['menu'],
+  keybind:     ['menu'],
+  gamemaster:  ['menu'],
+};
+
 export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>): ScreenState {
   const [current, setCurrent] = useState<Screen>('loading');
   const [previous, setPrevious] = useState<Screen | null>(null);
@@ -68,17 +84,17 @@ export function useScreenStateMachine(initialProgress?: Partial<PlayerProgress>)
 
   const canTransition = useCallback((to: Screen) => {
     if (to === current) return false;
-    // Add logic here if certain transitions are prohibited
-    return true; 
+    return VALID_TRANSITIONS[current]?.includes(to) ?? false;
   }, [current]);
 
   const transition = useCallback((to: Screen) => {
-    if (!canTransition(to)) return;
-    
-    logger.debug(`🖥️ Transition: ${current} -> ${to}`);
-    setPrevious(current);
-    setCurrent(to);
-  }, [current, canTransition]);
+    // Issue 24: Use functional setCurrent to eliminate stale closure over `current` and `canTransition`
+    setCurrent(prev => {
+      if (prev === to || !VALID_TRANSITIONS[prev]?.includes(to)) return prev;
+      setPrevious(prev);
+      return to;
+    });
+  }, []);
 
   const isFeatureUnlocked = useCallback((feature: FeatureId, devMode = false) => {
     return devMode || unlocks[feature] || featureGates.isUnlocked(feature, progress);

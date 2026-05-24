@@ -44,11 +44,16 @@ export const idb = {
         if (countReq.result >= 100) {
           const cursorReq = store.openCursor();
           cursorReq.onsuccess = (e) => {
-            (e.target as IDBRequest<IDBCursorWithValue>).result?.delete();
+            const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+            if (cursor) {
+              cursor.delete();
+              store.add({ ...score, queuedAt: Date.now() });
+            }
           };
           cursorReq.onerror = () => { /* cursor eviction is best-effort */ };
+        } else {
+          store.add({ ...score, queuedAt: Date.now() });
         }
-        store.add({ ...score, queuedAt: Date.now() });
       };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);

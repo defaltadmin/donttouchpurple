@@ -30,7 +30,7 @@ export const STAGES: GridStage[] = [
   { cols: 5, rows: 5, total: 25, name: "APEX",    mask: null },
 ];
 
-// ─── Evolve pattern library (25 patterns) ────────────────────────
+// ─── Evolve pattern library (27 patterns) ────────────────────────
 export interface EvolvePattern {
   cols:     number;
   rows:     number;

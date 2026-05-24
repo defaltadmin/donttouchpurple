@@ -58,33 +58,38 @@ export class BotController {
       const costPerTap = BALANCE.bot.baseCostPerTap;
       const rng = this._rng ?? Math.random;
 
-      for (const cell of this.callbacks.getActiveCells(1)) {
-        if (cell.clicked) continue;
-        if ((cell.type as string) === 'void') continue;
-        if (cell.type === 'hold' || cell.type === 'ice') continue;
-        // During inversion: only purple is safe; normal play: skip danger color
-        if (inverted ? cell.type !== 'purple' : cell.type === danger) continue;
-        if (rng() > accuracy) continue;
+      // Issue 26: Process cells for all active players (P1 and P2)
+      for (const player of ([1, 2] as const)) {
+        if (!this._active[player]) continue;
+        for (const cell of this.callbacks.getActiveCells(player)) {
+          if (cell.clicked) continue;
+          if ((cell.type as string) === 'void') continue;
+          if (cell.type === 'hold' || cell.type === 'ice') continue;
+          // During inversion: only purple is safe; normal play: skip danger color
+          if (inverted ? cell.type !== 'purple' : cell.type === danger) continue;
+          if (rng() > accuracy) continue;
 
-        const dustNow = botCfg.getDust();
-        if (dustNow < costPerTap) break;
+          const dustNow = botCfg.getDust();
+          if (dustNow < costPerTap) break;
 
-        botCfg.spendDust(costPerTap);
-        this._dustSpentTotal += costPerTap;
-        this.callbacks.emit({ type: 'dustConsumed', amount: costPerTap });
+          botCfg.spendDust(costPerTap);
+          this._dustSpentTotal += costPerTap;
+          this.callbacks.emit({ type: 'dustConsumed', amount: costPerTap });
 
-        const idx = cell.idx;
-        const expectedType = cell.type;
-        const tapTimer = setTimeout(() => {
-          this._pendingTaps = this._pendingTaps.filter(t => t !== tapTimer);
-          if (!this._active[1] || !this.callbacks.isPlaying()) return;
-          // Verify cell at idx is still the same safe cell (could have been replaced by a new spawn)
-          const current = this.callbacks.getActiveCells(1).find(c => c.idx === idx && !c.clicked);
-          if (!current || current.type !== expectedType) return;
-          this.callbacks.handleTap(1, idx);
-          this.callbacks.emit({ type: 'botTap', player: 1, idx, dustCost: costPerTap });
-        }, delay);
-        this._pendingTaps.push(tapTimer);
+          const idx = cell.idx;
+          const expectedType = cell.type;
+          const tapPlayer = player;
+          const tapTimer = setTimeout(() => {
+            this._pendingTaps = this._pendingTaps.filter(t => t !== tapTimer);
+            if (!this._active[tapPlayer] || !this.callbacks.isPlaying()) return;
+            // Verify cell at idx is still the same safe cell (could have been replaced by a new spawn)
+            const current = this.callbacks.getActiveCells(tapPlayer).find(c => c.idx === idx && !c.clicked);
+            if (!current || current.type !== expectedType) return;
+            this.callbacks.handleTap(tapPlayer, idx);
+            this.callbacks.emit({ type: 'botTap', player: tapPlayer, idx, dustCost: costPerTap });
+          }, delay);
+          this._pendingTaps.push(tapTimer);
+        }
       }
     }, BALANCE.bot.checkIntervalMs);
   }

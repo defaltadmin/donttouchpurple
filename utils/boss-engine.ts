@@ -72,10 +72,17 @@ export const bossEngine = {
 
   deactivate() {
     if (!this.state.active) return;
-    this.state.active = false;
+    this.state = { active: false, shieldHits: 0, maxShield: 5, phase: 1 };
     this.resetCombo();
     window.dispatchEvent(new CustomEvent('dtp:boss:complete', { detail: {} }));
     logger.info('Boss defeated');
+  },
+
+  /** Issue 56: Clean up all boss engine state and timers */
+  dispose() {
+    if (this._comboTimer) { clearTimeout(this._comboTimer); this._comboTimer = null; }
+    this.state = { active: false, shieldHits: 0, maxShield: 5, phase: 1 };
+    this.combo = { count: 0, windowStart: 0, multiplier: 1 };
   },
 
   resetCombo() {

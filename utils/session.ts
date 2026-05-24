@@ -35,6 +35,9 @@ export const sessionManager = {
       const raw = sessionStorage.getItem(this.KEY);
       if (!raw) return null;
       const data = JSON.parse(raw) as GameSession;
+      // Validate JSON shape — reject malformed data
+      if (!data || typeof data !== 'object' || !data.engineSnapshot) return null;
+      if (typeof data.engineSnapshot.hearts !== 'number' || typeof data.engineSnapshot.score !== 'number') return null;
       // Expire after 12 hours or reject future timestamps (clock skew)
       if (Date.now() - data.timestamp > 4.32e7 || data.timestamp > Date.now() + 60_000) {
         this.clear();

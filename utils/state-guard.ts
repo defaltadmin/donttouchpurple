@@ -22,6 +22,7 @@ export const stateGuard = {
         // Only clear large/non-essential keys — preserve achievements, dust, settings
         const safeToClear = ['dtp:errors', 'dtp:perf'];
         safeToClear.forEach(k => localStorage.removeItem(k));
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* still full after cleanup */ }
       }
     }
   },
