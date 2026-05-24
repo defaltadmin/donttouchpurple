@@ -633,6 +633,28 @@ export default function App() {
     setTimeout(() => document.body.classList.remove('damage-pulse'), 350);
   }, []);
 
+  // Memoize callbacks passed to useGameEngine to prevent engine recreation on every render
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, toast$/addDust are the real deps
+  const onBossEvent = useCallback((bossType: string) => {
+    const next = { ...bossCountersRef.current, bossSurvived: bossCountersRef.current.bossSurvived + 1 };
+    if (bossType === "inversion") next.inversionSurvived += 1;
+    bossCountersRef.current = next;
+    setBossCounters(next);
+    safeSentry.addBreadcrumb({ category: "game", message: "boss_survived", level: "info", data: { type: bossType } });
+    if (snapshotRef.current && snapshotRef.current.p1?.score >= 100) {
+      const bonus = bossType === "inversion" ? 20 : 15;
+      addDust(bonus, `boss_${bossType}`);
+      toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
+    }
+  }, [toast$, addDust]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refs and setState are stable
+  const onBombDefused = useCallback(() => {
+    const next = { ...bossCountersRef.current, bombsDefused: bossCountersRef.current.bombsDefused + 1 };
+    bossCountersRef.current = next;
+    setBossCounters(next);
+    safeSentry.addBreadcrumb({ category: "game", message: "bomb_defused", level: "info" });
+  }, []);
+
   const {
     snapshot,
     heartAnimP1, heartAnimP2,
@@ -659,24 +681,8 @@ export default function App() {
     handleEngineGameOver,
     dustCallbacks,
     handleDamage,
-    (bossType) => {
-      const next = { ...bossCountersRef.current, bossSurvived: bossCountersRef.current.bossSurvived + 1 };
-      if (bossType === "inversion") next.inversionSurvived += 1;
-      bossCountersRef.current = next;
-      setBossCounters(next);
-      safeSentry.addBreadcrumb({ category: "game", message: "boss_survived", level: "info", data: { type: bossType } });
-      if (snapshotRef.current && snapshotRef.current.p1?.score >= 100) {
-        const bonus = bossType === "inversion" ? 20 : 15;
-        addDust(bonus, `boss_${bossType}`);
-        toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
-      }
-    },
-    () => {
-      const next = { ...bossCountersRef.current, bombsDefused: bossCountersRef.current.bombsDefused + 1 };
-      bossCountersRef.current = next;
-      setBossCounters(next);
-      safeSentry.addBreadcrumb({ category: "game", message: "bomb_defused", level: "info" });
-    },
+    onBossEvent,
+    onBombDefused,
   );
 
   const handleCopyChallenge = useCallback(async () => {
