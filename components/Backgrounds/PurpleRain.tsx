@@ -1,5 +1,5 @@
 // components/Backgrounds/PurpleRain.tsx
-import { useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 
 interface PurpleRainProps {
@@ -14,8 +14,6 @@ interface Shape {
   type: "square" | "circle" | "triangle";
   filled: boolean; rotation: number; rotSpeed: number;
 }
-
-export interface PurpleRainHandle { pause: () => void; resume: () => void; }
 
 const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
   const types: Shape["type"][] = ["square", "circle", "triangle"];
@@ -65,7 +63,7 @@ const drawShape = (ctx: CanvasRenderingContext2D, s: Shape, purple: string) => {
   ctx.restore();
 };
 
-const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotion = false }, ref) => {
+const PurpleRain = ({ reducedMotion = false }: PurpleRainProps) => {
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const animationRef   = useRef<number | null>(null);
   const shapesRef      = useRef<Shape[]>([]);
@@ -133,8 +131,6 @@ const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotio
     return unregister;
   }, [register, pause, resume]);
 
-  useImperativeHandle(ref, () => ({ pause, resume }));
-
   useEffect(() => {
     if (reducedMotion) { pause(); return; }
 
@@ -163,6 +159,6 @@ const PurpleRain = forwardRef<PurpleRainHandle, PurpleRainProps>(({ reducedMotio
   }, [reducedMotion, pause, animate]);
 
   return <canvas ref={canvasRef} className="background-canvas" />;
-});
+};
 
 export default PurpleRain;

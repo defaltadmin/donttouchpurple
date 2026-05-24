@@ -19,14 +19,6 @@ const IS_PROD =
    window.location.hostname === "dont-touch-purple.web.app" ||
    window.location.hostname === "dont-touch-purple.firebaseapp.com");
 
-export interface GlobalScoreEntry {
-  score: number;
-  initials: string;
-  date: string;
-  mode: "classic" | "evolve";
-  badge?: string;
-}
-
 export interface GlobalLeaderboardEntry {
   score: number;
   initials: string;
@@ -39,9 +31,9 @@ export function todayISODate(now = new Date()): string {
   return now.toISOString().split("T")[0];
 }
 
-export function normalizeGlobalScoreEntry(entry: GlobalScoreEntry): GlobalScoreEntry {
+export function normalizeGlobalScoreEntry(entry: GlobalLeaderboardEntry): GlobalLeaderboardEntry {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(entry.date) ? entry.date : todayISODate();
-  const safe: GlobalScoreEntry = {
+  const safe: GlobalLeaderboardEntry = {
     score: Math.max(0, Math.min(9999, Math.floor(entry.score))),
     initials: entry.initials.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8) || "Player",
     date,

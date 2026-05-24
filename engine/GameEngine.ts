@@ -482,6 +482,7 @@ destroy(): void {
     this.tapBuffer = { 1: null, 2: null };
     this.clearAllTimeouts();
     this.clearAllDeltaTimers();
+    if (this._sessionAutoSaveInterval) { clearInterval(this._sessionAutoSaveInterval); this._sessionAutoSaveInterval = null; }
     this.stop();
     this.listeners.clear();
     this._pauseListeners = [];
