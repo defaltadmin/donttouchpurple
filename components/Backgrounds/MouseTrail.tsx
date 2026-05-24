@@ -78,7 +78,7 @@ export function MouseTrail({
     resize();
     window.addEventListener("resize", resize);
 
-    const handleMove = (e: MouseEvent) => {
+    const handleMove = (e: PointerEvent) => {
       const x = e.clientX;
       const y = e.clientY;
 
@@ -140,12 +140,16 @@ export function MouseTrail({
       rafRef.current = requestAnimationFrame(animate);
     };
 
-    window.addEventListener("mousemove", handleMove);
+    // Canvas has pointer-events: none, use document for reliable tracking
+    document.addEventListener("pointermove", handleMove);
+    const handleLeave = () => { lastPosRef.current = null; };
+    document.addEventListener("pointerleave", handleLeave);
     rafRef.current = requestAnimationFrame(animate);
 
     // Cleanup: reset all particles
     return () => {
-      window.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("pointermove", handleMove);
+      document.removeEventListener("pointerleave", handleLeave);
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       for (let i = 0; i < POOL_SIZE; i++) resetParticle(pool[i]);

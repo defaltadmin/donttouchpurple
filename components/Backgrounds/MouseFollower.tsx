@@ -27,7 +27,7 @@ export function MouseFollower({
     const xTo = gsap.quickTo(el, "left", { duration: delay, ease: "power3" });
     const yTo = gsap.quickTo(el, "top", { duration: delay, ease: "power3" });
 
-    const handleMove = (e: MouseEvent) => {
+    const handleMove = (e: PointerEvent) => {
       xTo(e.clientX - size / 2);
       yTo(e.clientY - size / 2);
       gsap.to(el, { opacity, duration: 0.3, overwrite: true });
@@ -37,14 +37,17 @@ export function MouseFollower({
       gsap.to(el, { opacity: opacity * 0.3, duration: 0.3 });
     };
 
-    window.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseleave", handleLeave);
+    document.addEventListener("pointermove", handleMove);
+    document.addEventListener("pointerleave", handleLeave);
     // Start with subtle glow
     gsap.set(el, { opacity: opacity * 0.3 });
 
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseleave", handleLeave);
+      document.removeEventListener("pointermove", handleMove);
+      document.removeEventListener("pointerleave", handleLeave);
+      // Kill quickTo tweens to prevent lingering animations
+      xTo.tween.kill();
+      yTo.tween.kill();
     };
   }, [delay, opacity, size]);
 

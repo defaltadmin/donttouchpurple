@@ -61,6 +61,6 @@ export const gamepadManager = {
   },
 
   _trigger(btn: GamepadButton, state: 'press' | 'release') {
-    if (state === 'press') this.listeners.forEach(cb => cb(btn, state));
+    this.listeners.forEach(cb => cb(btn, state));
   }
 };

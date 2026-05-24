@@ -326,6 +326,7 @@ export class GameEngine {
     this._purpleTaps = 0;
     this._tookDamage = false;
     this._bombDefuseCount = 0;
+    this.inputBuffer.clear();
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);

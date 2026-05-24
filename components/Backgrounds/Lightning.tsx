@@ -1,9 +1,26 @@
 // components/Backgrounds/Lightning.tsx — WebGL electric bolt effect (adapted from React Bits)
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useBackgroundController } from '../../hooks/useBackground';
 
 export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ctxVersion, setCtxVersion] = useState(0);
+  const rafRef = useRef<number>(0);
+  const renderRef = useRef<(() => void) | null>(null);
+  const { register } = useBackgroundController(true);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!rafRef.current && renderRef.current) rafRef.current = requestAnimationFrame(renderRef.current);
+  }, []);
+
+  useEffect(() => {
+    const unregister = register({ pause, resume });
+    return unregister;
+  }, [register, pause, resume]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -136,10 +153,9 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
 
     const speed = reducedMotion ? 0.3 : 1.0;
     const startTime = performance.now();
-    let rafId: number;
 
     const render = () => {
-      rafId = requestAnimationFrame(render);
+      rafRef.current = requestAnimationFrame(render);
       if (document.hidden) return;
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(iResLoc, canvas.width, canvas.height);
@@ -147,15 +163,18 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
       gl.uniform1f(uSpeedLoc, speed);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
-    rafId = requestAnimationFrame(render);
+    renderRef.current = render;
+    rafRef.current = requestAnimationFrame(render);
 
-    const onContextLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(rafId); };
+    const onContextLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(rafRef.current); rafRef.current = 0; };
     const onContextRestored = () => setCtxVersion(v => v + 1);
     canvas.addEventListener('webglcontextlost', onContextLost);
     canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+      renderRef.current = null;
       window.removeEventListener('resize', resizeCanvas);
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);

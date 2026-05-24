@@ -52,6 +52,7 @@ export function AuroraBorealis({ reducedMotion: _reducedMotion }: { reducedMotio
     }
 
     const draw = () => {
+      if (document.hidden) { rafRef.current = requestAnimationFrame(draw); return; }
       const w = canvas.width;
       const h = canvas.height;
       const t = tick * 0.01;
@@ -113,9 +114,8 @@ export function AuroraBorealis({ reducedMotion: _reducedMotion }: { reducedMotio
       tick++;
       rafRef.current = requestAnimationFrame(draw);
     };
+    draw();
     drawRef.current = draw;
-    const drawIfVisible = () => { if (!document.hidden) draw(); else rafRef.current = requestAnimationFrame(drawIfVisible); };
-    drawIfVisible();
 
     return () => {
       cancelAnimationFrame(rafRef.current);

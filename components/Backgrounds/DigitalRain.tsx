@@ -36,6 +36,7 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
     const drops: number[] = new Array(columns).fill(0).map(() => Math.random() * -100);
 
     const draw = () => {
+      if (document.hidden) { rafRef.current = requestAnimationFrame(draw); return; }
       const w = canvas.width;
       const h = canvas.height;
 
@@ -68,9 +69,8 @@ export function DigitalRain({ reducedMotion: _reducedMotion }: { reducedMotion?:
 
       rafRef.current = requestAnimationFrame(draw);
     };
+    draw();
     drawRef.current = draw;
-    const drawIfVisible = () => { if (!document.hidden) draw(); else rafRef.current = requestAnimationFrame(drawIfVisible); };
-    drawIfVisible();
 
     return () => {
       cancelAnimationFrame(rafRef.current);

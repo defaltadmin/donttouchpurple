@@ -41,5 +41,9 @@ export const scoreCardGen = {
     ctx.fillText('game.mscarabia.com', canvas.width / 2, 1700);
 
     return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob ? URL.createObjectURL(blob) : ''), 'image/png'));
+  },
+
+  revoke(url: string): void {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url);
   }
 };

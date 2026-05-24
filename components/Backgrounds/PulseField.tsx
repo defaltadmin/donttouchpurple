@@ -41,9 +41,10 @@ export default function PulseField({ rareColor }: Props) {
 
       const bs = 8;
       ctx.fillStyle = rareColor || "rgba(192,38,211,0.6)";
-      [[cx - r, cy - r], [cx + r - bs, cy - r], [cx - r, cy + r - bs], [cx + r - bs, cy + r - bs]].forEach(([x, y]) => {
-        ctx.fillRect(x, y, bs, bs);
-      });
+      ctx.fillRect(cx - r, cy - r, bs, bs);
+      ctx.fillRect(cx + r - bs, cy - r, bs, bs);
+      ctx.fillRect(cx - r, cy + r - bs, bs, bs);
+      ctx.fillRect(cx + r - bs, cy + r - bs, bs, bs);
     }
   });
 

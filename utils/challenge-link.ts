@@ -110,8 +110,8 @@ export const challengeLink = {
     return {
       isChallenge: p.get('challenge') === '1',
       seed:   p.get('seed')   || undefined,
-      score:  Number(p.get('score'))  || undefined,
-      hearts: Number(p.get('hearts')) || undefined,
+      score:  p.get('score') != null ? Number(p.get('score')) : undefined,
+      hearts: p.get('hearts') != null ? Number(p.get('hearts')) : undefined,
       ref:    p.get('ref')    || 'global',
     };
   },

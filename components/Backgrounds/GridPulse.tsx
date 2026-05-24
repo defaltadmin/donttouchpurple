@@ -123,10 +123,15 @@ export default function GridPulse() {
     resize();
     window.addEventListener('resize', resize);
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
-    window.addEventListener('mousemove', handleMouseMove);
+    const handlePointerLeave = () => {
+      mouseRef.current = { x: -1000, y: -1000 };
+    };
+    // Canvas is behind UI (z-index: -1), use document for reliable tracking
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerleave', handlePointerLeave);
 
     cellsRef.current = Array.from({ length: GRID * GRID }, () => ({
       color: Math.random() > 0.15 ? SAFE_COLORS[Math.floor(Math.random() * SAFE_COLORS.length)] : PURPLE,
@@ -140,7 +145,8 @@ export default function GridPulse() {
 
     return () => {
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerleave', handlePointerLeave);
       ctxRef.current = null;
     };
   }, []);

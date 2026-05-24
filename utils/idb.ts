@@ -16,6 +16,10 @@ export const idb = {
   _db: null as IDBDatabase | null,
 
   async open(): Promise<IDBDatabase> {
+    if (this._db) {
+      // Liveness check: if the connection was closed externally, reopen
+      try { this._db.objectStoreNames; } catch { this._db = null; }
+    }
     if (this._db) return this._db;
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(this.DB_NAME, 1);
@@ -42,11 +46,16 @@ export const idb = {
       const countReq = store.count();
       countReq.onsuccess = () => {
         if (countReq.result >= 100) {
+          const toEvict = countReq.result - 99; // evict enough to bring below cap
+          let evicted = 0;
           const cursorReq = store.openCursor();
           cursorReq.onsuccess = (e) => {
             const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-            if (cursor) {
+            if (cursor && evicted < toEvict) {
               cursor.delete();
+              evicted++;
+              cursor.continue();
+            } else {
               store.add({ ...score, queuedAt: Date.now() });
             }
           };
