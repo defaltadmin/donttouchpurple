@@ -699,7 +699,7 @@ body.death-flash::after {
 /* ── Options ── */
 .opt-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .opt-section { display: flex; flex-direction: column; gap: 6px; }
-.opt-label { display: none; }
+.opt-label { font-size: 13px; font-weight: 700; color: var(--muted, #9f8a9d); text-transform: uppercase; letter-spacing: 0.05em; }
 .opt-row { display: flex; gap: 6px; }
 .opt-btn {
   flex: 1; padding: 9px 6px; background: var(--bg2); border: 2px solid var(--glass-border);
