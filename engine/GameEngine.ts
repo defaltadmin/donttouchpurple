@@ -40,6 +40,7 @@ import { calculateStreakBonus, calculateTapScore, checkStreakMilestone } from ".
 import { challengeLink } from "../utils/challenge-link";
 import { TickProcessor, type TickContext } from "./subsystems/TickProcessor";
 import { BotController } from "./subsystems/BotController";
+import { getBossDoneLabel } from "./subsystems/EventOrchestrator";
 
 function makePS(bonusHearts: number, hasMult: boolean, stored: { freeze: number; shield: number; mult: number; heart: number }): PlayerState {
   return {
@@ -325,7 +326,7 @@ export class GameEngine {
     this._freezeCollected = 0;
     this._purpleTaps = 0;
     this._tookDamage = false;
-    this._bombDefuseCount = 0;
+    // _bombDefuseCount removed — achievements now use localStorage lifetime counter
     this.inputBuffer.clear();
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
@@ -457,11 +458,14 @@ export class GameEngine {
 
     // Clear stale boss event that expired while paused
     if (this.bossEvent && this.bossEvent.endsAt <= Date.now()) {
-      const doneLabel = this.bossEvent.type === 'inversion' ? '✅ Inversion over.' : '✅ Boss over.';
+      const expiredType = this.bossEvent.type;
       this.bossEvent = null;
       this._bossActive = false;
       window.dispatchEvent(new Event('dtp:boss:complete'));
-      this.emit({ type: "toast", message: doneLabel });
+      this.emit({ type: "toast", message: getBossDoneLabel(expiredType) });
+      if (expiredType === 'inversion') {
+        achievementSystem.unlock('boss_inversion');
+      }
     }
 
     this.paused = false;
@@ -615,8 +619,8 @@ destroy(): void {
       ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
       // Bomb achievements — lifetime counter across games
-      const lifetime = (parseInt(localStorage.getItem('dtp_total_bomb_defuses') ?? '0') || 0) + 1;
-      try { localStorage.setItem('dtp_total_bomb_defuses', String(lifetime)); } catch {}
+      const lifetime = (parseInt(localStorage.getItem('dtp_lifetime_bomb_defuses') ?? '0') || 0) + 1;
+      try { localStorage.setItem('dtp_lifetime_bomb_defuses', String(lifetime)); } catch {}
       achievementSystem.check('bomb_defuse', () => lifetime >= 10);
       achievementSystem.check('bomb_master', () => lifetime >= 50);
       ref.cells = activeToCellsP(ref.active, pat);

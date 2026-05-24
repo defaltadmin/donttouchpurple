@@ -59,7 +59,7 @@ export const idb = {
               store.add({ ...score, queuedAt: Date.now() });
             }
           };
-          cursorReq.onerror = () => { store.add({ ...score, queuedAt: Date.now() }); };
+          cursorReq.onerror = () => { try { store.add({ ...score, queuedAt: Date.now() }); } catch { /* store corrupted */ } };
         } else {
           store.add({ ...score, queuedAt: Date.now() });
         }
