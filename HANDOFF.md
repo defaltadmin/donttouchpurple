@@ -6,8 +6,9 @@
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
 - **Stack**: React 19, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
-- **Version**: 7.5.3 (as of 2026-05-24)
+- **Version**: 7.5.3 (as of 2026-05-25)
 - **Live**: https://defaltadmin.github.io/donttouchpurple
+- **Website**: https://game.mscarabia.com (Cloudflare Pages)
 - **GitHub**: https://github.com/defaltadmin/donttouchpurple
 - **Branch**: main (all work merged)
 
@@ -21,6 +22,8 @@
 | Lint | 0 errors, 0 warnings (note: .agent/skills/ has pre-existing errors from autoskills, not DTP code) |
 | Audit | 0 vulnerabilities (ws CVE-2026-45736 fixed via pnpm.overrides) |
 | Production Audit | 70/70 issues resolved (5 Critical, 13 High, 25 Medium, 17 Low — all fixed) |
+| Round 3 Audit | 7 issues fixed (Sonnet + DeepSeek + Minimax verification) |
+| Website | Live at game.mscarabia.com (Cloudflare Pages, auto-deploy) |
 
 ## Architecture Quick Reference
 
