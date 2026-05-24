@@ -66,6 +66,26 @@ App.tsx (state machine)
 | [hooks-state](docs/agents/hooks-state.md) | useGameEngine bridge, custom hooks, contexts, state machines | sonnet |
 | [infrastructure-deploy](docs/agents/infrastructure-deploy.md) | Vite config, Firebase Hosting, Cloudflare Workers, CI/CD | sonnet |
 
+## Agent Design Principles (from 12-factor-agents)
+
+These principles guide how DTP's 8 domain agents and multi-AI workflows are structured:
+
+1. **Own your prompts** — don't delegate to framework abstractions; each agent has explicit instructions
+2. **Own your context window** — use codegraph_explore for structural context, not blind grep+read loops
+3. **Tools are just structured outputs** — MCP servers (codegraph, agentmemory) expose structured queries
+4. **Unify execution state and business state** — GameEngine holds both in a single state machine
+5. **Make your agent a stateless reducer** — cell arrays replaced each tick, no in-place mutation
+6. **Small, focused agents** — 8 domain agents, not one monolithic one
+7. **Compact errors into context** — AI review triage (valid/overstated/over-engineering) before fixing
+8. **Contact humans with tool calls** — AskUserQuestion for blockers, not silent assumptions
+
+## MCP Servers
+
+| Server | Package | Purpose |
+|--------|---------|---------|
+| codegraph | colbymchenry/codegraph | Structural code intelligence (callers, callees, impact) |
+| agentmemory | @agentmemory/agentmemory | Persistent memory across sessions (53 tools, hybrid search) |
+
 ## Full docs
 
 - **[HANDOFF.md](HANDOFF.md)** — **READ THIS FIRST** in any new session. Master handoff with full project state, what's done, and what's next.
