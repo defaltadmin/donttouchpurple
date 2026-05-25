@@ -77,6 +77,7 @@ export function GameOver({
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
   const finalScoreRef = useRef(p1Score);
+  useEffect(() => { finalScoreRef.current = p1Score; }, [p1Score]); // BUG-NEW-001: keep ref in sync
   const [displayScore, setDisplayScore] = useState(0);
   const isNewBest = !is2P && p1Score > 0 && p1Score >= best;
   const actionsRef = useRef<HTMLDivElement>(null);

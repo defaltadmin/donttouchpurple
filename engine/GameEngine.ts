@@ -1095,9 +1095,10 @@ destroy(): void {
         const bombRemaining = Math.max(0, this.activeBomb.expiresAt - Date.now());
         const bombPlayer = this.activeBomb.player;
         const bombIdx = this.activeBomb.idx;
-        const bombRef = bombPlayer === 1 ? this.p1 : this.p2;
+        // BUG-007 fix: dynamic lookup inside callback — this.p1/p2 may be replaced by start()
         this.addDeltaTimer(`bomb_${bombPlayer}_${bombIdx}`, bombRemaining, () => {
           if (!this.activeBomb || this.activeBomb.idx !== bombIdx || this.activeBomb.player !== bombPlayer) return;
+          const bombRef = bombPlayer === 1 ? this.p1 : this.p2;
           const stillActive = bombRef.active.find(c => c.idx === bombIdx && c.type === "bomb" && !c.clicked);
           if (!stillActive) { if (this.activeBomb?.idx === bombIdx) this.activeBomb = null; return; }
           this.activeBomb = null;

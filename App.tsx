@@ -492,7 +492,7 @@ export default function App() {
     });
     const rawEarned = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
     const earned = isNaN(rawEarned) || !isFinite(rawEarned) ? 0 : rawEarned;
-    addDust(earned, 'GameOver');
+    if (earned > 0) addDust(earned, 'GameOver'); // QOL-003: skip dust log on 0-score games
     getFirebase().then(fb => {
       fb.fbLogEvent("game_over", {
         mode: gameMode,

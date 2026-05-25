@@ -124,6 +124,8 @@ export function useGameEngine(
   const [botTapFx, setBotTapFx] = useState<BotTapFx[]>([]);
   const [scoreFloats, setScoreFloats] = useState<{ id: number; player: 1 | 2; idx: number; amount: number }[]>([]);
   const scoreFloatIdRef = useRef(0);
+  const pendingScoreFloatsRef = useRef<{ id: number; player: 1 | 2; idx: number; amount: number }[]>([]);
+  const scoreFloatRafRef = useRef<number | null>(null);
 
   const toastTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const levelUpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,8 +183,17 @@ export function useGameEngine(
         }
         case "sound": playSound(event.name, event.pitchMult); break;
         case "scoreFloat": {
+          // PERF-003: buffer floats and flush once per RAF frame to avoid per-tap re-renders
           const id = ++scoreFloatIdRef.current;
-          setScoreFloats(prev => [...prev.slice(-9), { id, player: event.player, idx: event.idx, amount: event.amount }]);
+          pendingScoreFloatsRef.current.push({ id, player: event.player, idx: event.idx, amount: event.amount });
+          if (!scoreFloatRafRef.current) {
+            scoreFloatRafRef.current = requestAnimationFrame(() => {
+              scoreFloatRafRef.current = null;
+              const batch = pendingScoreFloatsRef.current.splice(0);
+              if (batch.length && mountedRef.current)
+                setScoreFloats(prev => [...prev.slice(-(10 - batch.length)), ...batch]);
+            });
+          }
           const floatTimer = setTimeout(() => {
             if (mountedRef.current) setScoreFloats(prev => prev.filter(f => f.id !== id));
             botTapTimersRef.current = botTapTimersRef.current.filter(t => t !== floatTimer);
@@ -310,6 +321,7 @@ export function useGameEngine(
       // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally read the latest ref value in cleanup
       const rafId = rafIdRef.current;
       if (rafId) cancelAnimationFrame(rafId);
+      if (scoreFloatRafRef.current) cancelAnimationFrame(scoreFloatRafRef.current);
       if (toastTimerRef.current)      clearTimeout(toastTimerRef.current);
       if (pwrToastP1TimerRef.current) clearTimeout(pwrToastP1TimerRef.current);
       if (pwrToastP2TimerRef.current) clearTimeout(pwrToastP2TimerRef.current);
