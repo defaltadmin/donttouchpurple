@@ -75,21 +75,20 @@ export default defineConfig({
             return 'vendor';
           }
 
-          // Game engine and core logic
-          if (id.includes('engine/') || id.includes('subsystems/')) return 'game-engine';
-          if (id.includes('utils/')) return 'game-utils';
+          // Monitoring services (independent, no circular deps — keep separate for lazy load)
+          if (id.includes('services/') &&
+              (id.includes('errorLogger') || id.includes('metrics') || id.includes('web-vitals'))) return 'services-monitoring';
 
-          // UI components by feature
+          // Game engine + core logic + UI + services (circular deps between all these
+          // groups make separate chunks impossible — Rollup merges them with warnings)
+          if (id.includes('engine/') || id.includes('subsystems/') ||
+              id.includes('utils/') || id.includes('components/') ||
+              id.includes('hooks/') || id.includes('services/')) return 'game-core';
+
+          // UI components by feature (non-circular subsets)
           if (id.includes('Backgrounds/')) return 'bg-effects';
           if (id.includes('Shop/') || id.includes('Leaderboard/')) return 'heavy-panels';
           if (id.includes('Settings/')) return 'settings-panel';
-          if (id.includes('components/') || id.includes('hooks/')) return 'ui-layer';
-
-          // Services - split heavy ones (but not Firebase/Sentry since lazy)
-          if (id.includes('services/')) {
-            if (id.includes('errorLogger.ts') || id.includes('metrics.ts') || id.includes('web-vitals.ts')) return 'services-monitoring';
-            return 'services-core';
-          }
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',

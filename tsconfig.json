@@ -21,6 +21,8 @@
     "main.tsx",
     "App.tsx",
     "vite.config.ts",
+    "components/**/*.ts",
+    "components/**/*.tsx",
     "config/**/*.ts",
     "engine/**/*.ts",
     "hooks/**/*.ts",

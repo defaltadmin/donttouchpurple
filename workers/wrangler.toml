@@ -1,8 +1,8 @@
 name = "score-validator"
 main = "score-validator.ts"
-account_id = "2cdd2df05dc64209ea42fd148f8f9117"
+# account_id set via CLOUDFLARE_ACCOUNT_ID env var or `wrangler login`
 compatibility_date = "2026-05-09"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "f92eb2ce221446f79d1658e27d90bf9e"
+id = "f92eb2ce221446f79d1658e27d90bf9e"  # KV namespace ID (not a secret)
