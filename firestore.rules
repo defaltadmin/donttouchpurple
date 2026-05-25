@@ -14,7 +14,7 @@ service cloud.firestore {
 
     function validBadge() {
       return !('badge' in request.resource.data) ||
-             (request.resource.data.badge is string && request.resource.data.badge.size() <= 24);
+             (request.resource.data.badge is string && request.resource.data.badge.size() <= 24 && request.resource.data.badge.matches('^[a-zA-Z0-9_-]*$'));
     }
 
     function validDate() {
@@ -41,7 +41,7 @@ service cloud.firestore {
           (request.resource.data.tick is int &&
            request.resource.data.tick >= 0 &&
            request.resource.data.tick <= 600 &&
-           request.resource.data.score <= request.resource.data.tick * 15 + 300)) &&
+           request.resource.data.score <= request.resource.data.tick * 12 + 300)) &&
         request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick', 'sessionId']);
       allow update, delete: if false;
     }

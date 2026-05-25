@@ -214,21 +214,29 @@ async function getAppInstance(): Promise<FirebaseAppInstance> {
   return ensureFirebaseApp() as Promise<FirebaseAppInstance>;
 }
 
+function randomId(): string {
+  try {
+    return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+}
+
 export function getDeviceId(): string {
   try {
     // Only persist device ID if telemetry consent is granted
     if (localStorage.getItem('dtp:telemetry-consent') !== 'true') {
-      return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+      return crypto.randomUUID?.() ?? randomId();
     }
     const key = "dtp-device-id";
     let id = localStorage.getItem(key);
     if (!id) {
-      id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+      id = crypto.randomUUID?.() ?? randomId();
       localStorage.setItem(key, id);
     }
     return id;
   } catch {
-    return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+    return crypto.randomUUID?.() ?? randomId();
   }
 }
 

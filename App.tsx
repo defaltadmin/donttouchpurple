@@ -540,7 +540,7 @@ export default function App() {
     try {
       const submitVal = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
 
-      if (submitVal > 0 && !scoreSubmittedRef.current) {
+      if (submitVal > 0 && !scoreSubmittedRef.current && !practiceMode && !godMode) {
         scoreSubmittedRef.current = true;
 
         try {
@@ -593,7 +593,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, gameMode, machine, addDust, setScreen, updateChallengeProgress]);
+  }, [numPlayers, playerName, toast$, gameMode, machine, addDust, setScreen, updateChallengeProgress, practiceMode, godMode]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {

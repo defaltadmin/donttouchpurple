@@ -37,6 +37,7 @@ FILES NEEDED*/
 .idea/
 .openclaude/
 .qodo/
+.agent/
 .agents/
 .continue/
 .gemini/

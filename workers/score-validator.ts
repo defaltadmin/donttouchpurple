@@ -126,6 +126,10 @@ export default {
       if (!tokenInfo.sub) {
         return new Response(JSON.stringify({ error: 'Invalid token claims' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
+      // Validate audience claim to prevent cross-project token abuse
+      if (tokenInfo.aud && tokenInfo.aud !== env.FIREBASE_PROJECT_ID) {
+        return new Response(JSON.stringify({ error: 'Invalid audience' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
     } catch {
       return new Response(JSON.stringify({ error: 'Token verification failed' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
