@@ -17,16 +17,13 @@ You are performing a security-focused review of Don't Touch Purple, a reflex-bas
 6. **CSP** — unsafe-inline styles, missing connect-src, frame-ancestors
 7. **Challenge links** — HMAC secret in client bundle, forgeability
 
-## Files to Read
-- engine/GameEngine.ts (lines 1040-1174: restoreSessionSnapshot)
-- services/firebase.ts (getDeviceId, normalizeGlobalScoreEntry, App Check)
-- workers/score-validator.ts (full file — Firebase JWT, rate limiting, CORS)
-- firestore.rules (full file — all validation functions)
-- utils/challenge-link.ts (HMAC signing)
-- utils/score-sync.ts (IDB queue, score submission)
-- utils/privacy.ts (GDPR, data keys)
-- App.tsx (lines 474-596: handleEngineGameOver, practiceMode/godMode gating)
-- firebase.json (CSP headers)
+## Files Provided (paste these .md files into your chat)
+1. **deepseek-engine.md** (2,299 lines) — GameEngine, TickProcessor, CellLifecycle, BotController, ScoreTracker, EventOrchestrator, DifficultyScaler, types
+2. **deepseek-security.md** (990 lines) — firebase.ts, firestore.rules, score-validator.ts, challenge-link.ts, score-sync.ts, privacy.ts, session.ts, firebase.json
+3. **deepseek-ui.md** (9,735 lines) — App.tsx, StartScreen, GameOver, PauseOverlay, GameArea, PlayerPanel, BossOverlay, Cell, LottiePlayer, useGameEngine, useScreenStateMachine, game.css, enhancements.css
+4. **deepseek-config.md** (995 lines) — gameBalance.ts, difficulty.ts, keybindings.ts, vite.config.ts, tsconfig.json, package.json, main.tsx, index.html, state-guard.ts, idb.ts, analytics.ts, haptics.ts, achievements.ts
+
+**Recommended upload order:** deepseek-security.md first (your focus area), then deepseek-engine.md, then deepseek-config.md. Skip deepseek-ui.md unless you want to review UI/performance too.
 
 ## Output Format
 For each finding:

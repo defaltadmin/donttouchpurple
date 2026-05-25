@@ -14,13 +14,17 @@ You are reviewing Don't Touch Purple, a reflex-based grid-tapping game built wit
 4. **Performance** — main-thread work (2.7s), chunk sizes, lazy-load opportunities
 5. **UI/UX** — StartScreen design, game over flow, mobile responsiveness
 
-## Files to Read
-- App.tsx, engine/GameEngine.ts, engine/subsystems/TickProcessor.ts
-- components/Screens/StartScreen.tsx, components/Screens/GameOver.tsx
-- components/HUD/PlayerPanel.tsx, components/Cell/index.tsx
-- services/firebase.ts, workers/score-validator.ts, firestore.rules
-- styles/game.css, styles/enhancements.css
-- vite.config.ts, package.json, tsconfig.json
+## Files Provided
+**Upload `dtp-sonnet-review.zip`** (2.8MB, 363 files) — contains the full game source:
+- All TypeScript/TSX source files (engine, components, hooks, services, utils, config)
+- All CSS files (game.css, enhancements.css, fx-enhancements.css, performance.css)
+- Build config (vite.config.ts, tsconfig.json, package.json)
+- Firebase config (firebase.json, firestore.rules)
+- Tests (__tests__/, test/)
+- Documentation (DESIGN.md, AGENTS.md, llms.txt, HANDOFF.md)
+- Analysis context (DTP_DEEP_ANALYSIS_PROMPT.md, DTP_DEEP_ANALYSIS_REPORT.md, lighthouse26-5.txt)
+
+**Start by reading:** HANDOFF.md → DTP_DEEP_ANALYSIS_REPORT.md → then dive into specific files.
 
 ## Output Format
 For each finding:
