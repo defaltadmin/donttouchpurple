@@ -1,0 +1,66 @@
+# Lighthouse Report — game.mscarabia.com
+Date: 2026-05-26 | Device: Mobile | URL: localhost:4173 (local build preview)
+
+## Scores
+
+| Category | Score |
+|----------|-------|
+| Performance | 80 |
+| Accessibility | 87 |
+| Best Practices | 96 |
+| SEO | 92 |
+| Agentic Browsing | 66 |
+
+## Core Web Vitals
+
+| Metric | Value | Score |
+|--------|-------|-------|
+| First Contentful Paint | 3.5 s | 35 |
+| Largest Contentful Paint | 3.8 s | 54 |
+| Total Blocking Time | 70 ms | 99 |
+| Cumulative Layout Shift | 0.061 | 97 |
+| Speed Index | 3.5 s | 89 |
+| Time to Interactive | 4.0 s | 87 |
+
+## Server Response
+
+- Initial server response: 10ms (score: 100)
+
+## Failed Audits (score = 0)
+
+### Accessibility
+- **Viewport user-scalable=no**: Disables zooming for low vision users
+  - Fix: Remove user-scalable="no" and maximum-scale from viewport meta
+
+### SEO
+- **robots.txt invalid**: Returning HTML instead of robots.txt
+  - Fix: Add robots.txt to website/public/ or configure Next.js route
+
+### Performance
+- **Minimize main-thread work**: 2.7s (score: 0)
+  - Main thread is busy with JS execution during load
+
+### Console Errors
+- **Invalid Lottie JSON**: Lottie animation data doesn't conform to format
+  - Likely a corrupted/empty .lottie file in dotlottie-web
+
+## Best Practices
+
+| Audit | Score |
+|-------|-------|
+| HTTPS | 100 |
+| HTTP/2 | 100 |
+| No vulnerable libraries | 100 |
+| No permission issues | 100 |
+
+## Performance Opportunities
+
+No major opportunities found — the main bottleneck is main-thread work (2.7s)
+which is dominated by JS parsing/execution during initial load.
+
+## Recommendations (Priority Order)
+
+1. **Fix viewport meta** (1 min) — Remove user-scalable="no"
+2. **Add robots.txt** (2 min) — Create proper robots.txt in website/public/
+3. **Fix Lottie JSON** (5 min) — Check dotlottie files for corruption
+4. **Reduce main-thread work** (30 min) — Defer non-critical JS, lazy-load lottie
