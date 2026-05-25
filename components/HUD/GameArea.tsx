@@ -119,8 +119,6 @@ export const GameArea = React.memo(function GameArea({
               dustEarned={Math.max(0, isNaN(dust - dustAtStart) ? 0 : dust - dustAtStart)}
               objectiveProgress={gameOverProgress}
             />
-            <button className="dtp-icon-btn" onClick={() => onShare(snapshot.p1.score, snapshot.p1.health, snapshot.tick)} title="Share Score" style={{marginTop:8}}>Share Score</button>
-            <button className="dtp-icon-btn" onClick={onCopyChallenge} title="Copy challenge link" aria-label="Share score & challenge friends" style={{marginTop:8}}>Challenge</button>
           </div>
         )}
 

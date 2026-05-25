@@ -1373,8 +1373,8 @@ body.damage-pulse::after {
 .go-overlay {
   background: linear-gradient(
     180deg,
-    rgba(35,12,80,0.97) 0%,
-    rgba(13,8,32,0.99) 100%
+    rgba(35,12,80,1) 0%,
+    rgba(13,8,32,1) 100%
   );
   backdrop-filter: blur(20px) saturate(140%);
   border-top: 1px solid rgba(192,38,211,0.2);

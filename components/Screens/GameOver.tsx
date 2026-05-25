@@ -145,7 +145,7 @@ export function GameOver({
           <div className="go-msg">&ldquo;{shareMsg}&rdquo;</div>
           <div className="go-objective-progress">
             <div className="go-objective-header">
-              <span>{t('hud.score')}</span>
+              <span>Daily</span>
               <span>{Math.round(objectiveProgress * 100)}%</span>
             </div>
             <div className="go-progress-track">
