@@ -2,7 +2,8 @@
   "name": "DTP Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": { "version": "latest" }
   },
   "postCreateCommand": "npm i -g pnpm@9 firebase-tools && pnpm install && cd website && pnpm install && cd ..",
   "forwardPorts": [5173],
