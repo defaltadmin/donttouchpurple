@@ -25,5 +25,14 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.94.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici": ">=6.24.0",
+      "esbuild": ">=0.25.0",
+      "postcss": ">=8.5.10",
+      "ws": ">=8.20.1",
+      "cookie": ">=0.7.0"
+    }
   }
 }
