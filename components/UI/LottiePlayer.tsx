@@ -50,22 +50,31 @@ export const LottiePlayer = React.memo(function LottiePlayer({
     const DotLottie = await ensureLoaded();
     if (!canvasRef.current) return; // unmounted during load
 
-    const instance = new DotLottie({
-      canvas: canvasRef.current,
-      src,
-      autoplay,
-      loop,
-    });
+    try {
+      const instance = new DotLottie({
+        canvas: canvasRef.current,
+        src,
+        autoplay,
+        loop,
+      });
 
-    instance.addEventListener("complete", () => {
-      onComplete?.();
-    });
+      instance.addEventListener("complete", () => {
+        onComplete?.();
+      });
 
-    instance.addEventListener("load", () => {
-      setLoaded(true);
-    });
+      instance.addEventListener("load", () => {
+        setLoaded(true);
+      });
 
-    dotLottieRef.current = instance;
+      instance.addEventListener("loadError", () => {
+        // Lottie file invalid (e.g., S3 AccessDenied XML response) — fail silently
+        setLoaded(false);
+      });
+
+      dotLottieRef.current = instance;
+    } catch {
+      // DotLottie constructor threw (invalid JSON) — fail silently
+    }
   }, [src, autoplay, loop, onComplete, reducedMotion, prefersReducedData]);
 
   useEffect(() => {

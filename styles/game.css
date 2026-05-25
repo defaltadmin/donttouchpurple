@@ -608,16 +608,22 @@ body.death-flash::after {
 .menu-card {
   width: 90vw;
   max-width: 420px;
-  background: linear-gradient(145deg, rgba(45,16,96,0.75), rgba(13,8,32,0.85));
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 28px; padding: 20px 18px 28px;
-  backdrop-filter: blur(20px) saturate(160%);
+  background: linear-gradient(165deg, rgba(45,16,96,0.82), rgba(13,8,32,0.92));
+  border: 1px solid rgba(200,160,255,0.12); border-radius: 28px; padding: 20px 18px 28px;
+  backdrop-filter: blur(24px) saturate(180%);
   display: flex; flex-direction: column; gap: 14px;
   justify-content: center;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.5), 0 0 40px rgba(192,38,211,0.08);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.6), 0 0 60px rgba(192,38,211,0.1), 0 0 120px rgba(124,58,237,0.05);
 }
-.menu-header { display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.menu-header { display: flex; flex-direction: column; gap: 4px; text-align: center; padding-bottom: 4px; }
 /* menu-title defined below with shimmer animation */
-.menu-sub { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; text-align: center; }
+.menu-sub { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; text-align: center; margin-top: 2px; opacity: 0.8; }
+
+/* Defensive: ensure menu-card is fully hidden when game is active */
+.root--playing .menu-card,
+.root--gameover .menu-card {
+  display: none !important;
+}
 .menu-links { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Buttons ── */
@@ -625,11 +631,17 @@ body.death-flash::after {
   width: 100%;
   background: linear-gradient(135deg, #a21caf, #c026d3, #7c3aed);
   color: var(--text); border: none; border-radius: 16px; padding: 18px 16px;
-  font-family: var(--font-game); font-size: 18px; letter-spacing: 1px;
+  font-family: var(--font-game); font-size: 18px; letter-spacing: 1.5px;
   cursor: pointer; transition: all 0.18s;
-  box-shadow: 0 6px 0 #6b21a8, 0 8px 24px rgba(192,38,211,0.4);
+  box-shadow: 0 6px 0 #6b21a8, 0 8px 24px rgba(192,38,211,0.4), 0 0 40px rgba(192,38,211,0.15);
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  position: relative; overflow: hidden;
   /* Animation: btnShimmer in enhancements.css */
+}
+.btn-play::before {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 40%, transparent 60%, rgba(255,255,255,0.08));
+  pointer-events: none; z-index: 1;
 }
 /* Hover/active: overridden by enhancements.css liquid glass effect */
 

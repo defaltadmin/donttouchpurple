@@ -274,6 +274,10 @@ export function StartScreen({
     <>
       {!hasBackground && <ParticleLayer count={25} />}
       <div className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card">
+      <div className="menu-header">
+        <h1 className="menu-title">Don't Touch Purple</h1>
+        <p className="menu-sub">Tap fast. Survive longer.</p>
+      </div>
       {pendingReplaySeed && (
         <div className="replay-banner">
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>

@@ -1401,7 +1401,7 @@ export default function App() {
   const shieldActive = (snapshot?.p1.shieldCount ?? 0) > 0;
 
   return (
-    <div ref={containerRef} className={`root${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
+    <div ref={containerRef} className={`root root--${screen}${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
       {/* CSS orbs: only show when no animated background is equipped */}

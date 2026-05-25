@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://game.mscarabia.com/sitemap.xml
