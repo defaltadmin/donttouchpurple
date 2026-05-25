@@ -90,7 +90,7 @@ describe("GameEngine", () => {
     engine.start();
     vi.advanceTimersByTime(2_100);
 
-    const existingCell = eng(engine).p1.active.find((cell: any) => !cell.clicked);
+    const existingCell = eng(engine).p1.active.find((cell: ActiveCell) => !cell.clicked);
     if (existingCell) {
       existingCell.type = "purple";
     }

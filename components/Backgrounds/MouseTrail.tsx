@@ -95,7 +95,6 @@ export function MouseTrail({
       for (let i = 0; i < particleCount; i++) {
         const p = getParticle(pool);
         if (!p) continue;
-        activeCount++;
         p.x = x;
         p.y = y;
         const angle = Math.random() * Math.PI * 2;
@@ -108,13 +107,10 @@ export function MouseTrail({
       }
     };
 
-    let activeCount = 0;
-
     const animate = () => {
       if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return; }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      activeCount = 0;
 
       for (let i = 0; i < POOL_SIZE; i++) {
         const p = pool[i];
@@ -130,7 +126,6 @@ export function MouseTrail({
           continue;
         }
 
-        activeCount++;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${p.hue}, 70%, 60%, ${p.alpha})`;

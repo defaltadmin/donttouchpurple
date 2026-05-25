@@ -16,7 +16,6 @@ import { Preloader } from "./utils/preloader";
 import { gamepadManager } from "./utils/gamepad";
 import { configManager } from "./utils/game-config";
 import { errorTracker } from "./utils/error-tracker";
-import { scoreCardGen } from "./utils/score-card";
 import { privacyManager } from "./utils/privacy";
 import { webVitalsMonitor } from "./services/web-vitals";
 import { stateGuard } from "./utils/state-guard";
@@ -96,7 +95,6 @@ import { PauseOverlay } from "./components/Screens/PauseOverlay";
 import { EnergyPopup } from "./components/Screens/EnergyPopup";
 import { QuickSettings } from "./components/Settings/QuickSettings";
 import { BossOverlay } from "./components/HUD/BossOverlay";
-import { ShareModal } from "./components/Screens/ShareModal";
 import { GameHeader } from "./components/HUD/GameHeader";
 import { GameArea } from "./components/HUD/GameArea";
 
@@ -135,8 +133,6 @@ export default function App() {
   const [loadDone, setLoadDone] = useState(false);
   const {
     showNameEntry, setShowNameEntry,
-    showShare, setShowShare,
-    shareUrl, setShareUrl,
     showRotatePrompt, setShowRotatePrompt,
     showDevPanel, setShowDevPanel,
     showSettings, setShowSettings,
@@ -317,7 +313,6 @@ export default function App() {
   const [devHeatmap, setDevHeatmap]   = useState<Record<number, number>>({});
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
-  const [shareToast, setShareToast] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showOffset, setShowOffset] = useState(() => settingsManager.get().offsetPointer ?? false);
   const cursorPos = useOffsetCursor(showOffset, containerRef);
@@ -516,9 +511,9 @@ export default function App() {
     const newDeaths = deathsRef.current + (p1Score === 0 ? 1 : 0);
     const newGames = gamesPlayedRef.current + 1;
 
-    setWins(prev => { winsRef.current = newWins; return newWins; });
-    setDeaths(prev => { deathsRef.current = newDeaths; return newDeaths; });
-    setGamesPlayed(prev => { gamesPlayedRef.current = newGames; return newGames; });
+    setWins(newWins); winsRef.current = newWins;
+    setDeaths(newDeaths); deathsRef.current = newDeaths;
+    setGamesPlayed(newGames); gamesPlayedRef.current = newGames;
     safeSet('dtp:wins', newWins.toString());
     safeSet('dtp:deaths', newDeaths.toString());
     safeSet('dtp-games-played', String(newGames));
@@ -598,7 +593,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
-  }, [numPlayers, playerName, toast$, gameMode, machine, shopData, addDust, setScreen, updateChallengeProgress]);
+  }, [numPlayers, playerName, toast$, gameMode, machine, addDust, setScreen, updateChallengeProgress]);
 
   useEffect(() => {
     if (shouldShowRewardsAfterGame && screen === "gameover") {
@@ -686,19 +681,6 @@ export default function App() {
     onBossEvent,
     onBombDefused,
   );
-
-  const handleCopyChallenge = useCallback(async () => {
-    if (!snapshot) return;
-    const ok = await challengeLink.copyToClipboard(
-      snapshot.p1.score,
-      String(snapshot.gameSeed),
-      snapshot.p1.health,
-    );
-    if (ok) {
-      setShareToast(true);
-      setTimeout(() => setShareToast(false), 2000);
-    }
-  }, [snapshot]);
 
   // Resume detection on menu screen
   useEffect(() => {
@@ -1202,17 +1184,6 @@ export default function App() {
     return () => window.removeEventListener('dtp:daily-complete', onDaily);
   }, []);
 
-  const handleShareScore = useCallback(async (score: number, hearts: number, time: number) => {
-    try {
-      const url = await scoreCardGen.generate({ score, hearts, time, seed: '' });
-      setShareUrl(prev => {
-        if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
-        return url;
-      });
-      setShowShare(true);
-    } catch (e) { logger.error('Share generation failed', e); }
-  }, [setShareUrl, setShowShare]);
-
   useEffect(() => {
     const consent = localStorage.getItem('dtp:telemetry-consent');
     if (consent === null) privacyManager.setConsent(false);
@@ -1491,7 +1462,6 @@ export default function App() {
       })()}
 
       {(engineToast || toast) && <div className="toast" role="status" aria-live="polite" aria-atomic="true">{engineToast || toast}</div>}
-      {shareToast && <div className="dtp-toast-success">Link copied! Challenge friends</div>}
 
       {/* Combo Counter - removed from center, no longer distracts */}
 
@@ -1534,12 +1504,6 @@ export default function App() {
         />
       )}
 
-      {showShare && shareUrl && (
-        <ShareModal shareUrl={shareUrl} onClose={() => {
-          if (shareUrl?.startsWith('blob:')) URL.revokeObjectURL(shareUrl);
-          setShowShare(false);
-        }} />
-      )}
 
       {showSettings && (
         <Suspense fallback={<div className="loading-placeholder">Loading settings...</div>}>
@@ -1875,8 +1839,6 @@ export default function App() {
             onPause={pauseGame}
             onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
             onMenu={goMenu}
-            onShare={handleShareScore}
-            onCopyChallenge={handleCopyChallenge}
             onActivateFreeze={activateStoredFreeze}
             onActivateShield={activateStoredShield}
             onToggleBot={handleBotToggle}

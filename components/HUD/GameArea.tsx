@@ -55,8 +55,6 @@ interface GameAreaProps {
   onPause: () => void;
   onLeaderboard: () => void;
   onMenu: () => void;
-  onShare: (score: number, health: number, tick: number) => void;
-  onCopyChallenge: () => void;
   onActivateFreeze: (player: 1 | 2) => void;
   onActivateShield: (player: 1 | 2) => void;
   onToggleBot: (player: 1 | 2) => void;
@@ -72,7 +70,7 @@ export const GameArea = React.memo(function GameArea({
   levelUpBadge, practiceMode, botAssistActive, botTapHighlights,
   scoreFloats, isFS, devHeatmap: _devHeatmap,
   onRestart: _onRestart, onStartGame, onTap, onHoldStart, onHoldEnd, onPause,
-  onLeaderboard, onMenu, onShare, onCopyChallenge,
+  onLeaderboard, onMenu,
   onActivateFreeze, onActivateShield, onToggleBot,
 }: GameAreaProps) {
   const onTapP1 = useCallback((i: number) => onTap(1, i), [onTap]);

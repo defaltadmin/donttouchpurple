@@ -1,7 +1,6 @@
 /* Centralized screen transitions + feature-gated UI state */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { featureGates, PlayerProgress, FeatureId, ALL_FEATURE_IDS } from '../utils/featureGates';
-import { logger } from '../utils/logger';
 
 export type Screen =
   | 'loading'

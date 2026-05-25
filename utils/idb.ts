@@ -18,7 +18,7 @@ export const idb = {
   async open(): Promise<IDBDatabase> {
     if (this._db) {
       // Liveness check: if the connection was closed externally, reopen
-      try { this._db.objectStoreNames; } catch { this._db = null; }
+      try { void this._db.objectStoreNames; } catch { this._db = null; }
     }
     if (this._db) return this._db;
     return new Promise((resolve, reject) => {
