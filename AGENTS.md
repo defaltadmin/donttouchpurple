@@ -1,6 +1,6 @@
 # Agent Instructions — Don't Touch Purple
 
-Reflex-based grid-tapping game. React 19, TypeScript 5, Vite 7, Firebase, OGL/WebGL backgrounds.
+Reflex-based grid-tapping game. React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL backgrounds.
 
 ## Quick Reference
 

@@ -2,10 +2,10 @@
 
 > A reflex-based browser game where you must never touch purple — tap fast, survive longer.
 
-**Don't Touch Purple** is a free, open-source browser game built with React 19, TypeScript 5, and Vite 7. Players tap colored cells on a grid to score points while avoiding purple. The game features two modes (Classic and Evolve), 37 achievements, a dust economy, 12 GPU-accelerated animated backgrounds (OGL/WebGL), boss events (Storm, Inversion, Blackout), rare color modes, Bot Assist AI, and a global leaderboard via Firebase. It supports 5 languages, PWA install, gamepad input, and ships as a static site to Firebase Hosting.
+**Don't Touch Purple** is a free, open-source browser game built with React 18, TypeScript 5, and Vite 7. Players tap colored cells on a grid to score points while avoiding purple. The game features two modes (Classic and Evolve), 37 achievements, a dust economy, 12 GPU-accelerated animated backgrounds (OGL/WebGL), boss events (Storm, Inversion, Blackout), rare color modes, Bot Assist AI, and a global leaderboard via Firebase. It supports 5 languages, PWA install, gamepad input, and ships as a static site to Firebase Hosting.
 
 - **Play now:** https://defaltadmin.github.io/donttouchpurple
-- **Tech stack:** React 19, TypeScript 5, Vite 7, Firebase (Firestore, Analytics, Auth, App Check), GSAP, Framer Motion, dotlottie-web, OGL
+- **Tech stack:** React 18, TypeScript 5, Vite 7, Firebase (Firestore, Analytics, Auth, App Check), GSAP, Framer Motion, dotlottie-web, OGL
 - **Testing:** Vitest (162+ unit tests), Playwright (E2E)
 - **Version:** 7.5.3
 - **License:** MIT

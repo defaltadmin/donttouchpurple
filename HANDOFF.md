@@ -5,7 +5,7 @@
 ## Project Identity
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
-- **Stack**: React 19, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
+- **Stack**: React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
 - **Version**: 7.5.3 (as of 2026-05-25)
 - **Live**: https://defaltadmin.github.io/donttouchpurple
 - **Website**: https://game.mscarabia.com (Cloudflare Pages)
