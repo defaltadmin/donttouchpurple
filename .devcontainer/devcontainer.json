@@ -1,0 +1,24 @@
+{
+  "name": "DTP Dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postCreateCommand": "npm i -g pnpm@9 firebase-tools && pnpm install && cd website && pnpm install && cd ..",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": { "label": "DTP Dev Server", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  }
+}
