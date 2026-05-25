@@ -440,6 +440,7 @@ export class GameEngine {
   clearAllDeltaTimers() { this._deltaTimers = []; }
 
   pause(): void {
+    if (this._isDisposed) return;
     if (this.phase !== "playing" || !this.p1 || !this.p2) return;
     this.paused = true;
     this.phase  = "paused";
@@ -453,6 +454,7 @@ export class GameEngine {
   }
 
   resume(): void {
+    if (this._isDisposed) return;
     if (this.phase !== "paused") return;
     if (!this.p1?.alive) return; // Fix #7: Validation
 
@@ -513,6 +515,7 @@ destroy(): void {
   }
 
   safeReset(keepSettings = false) {
+    if (this._isDisposed) return;
     if (!keepSettings) {
       this._settingsUnsub?.();
       this._settingsUnsub = null;

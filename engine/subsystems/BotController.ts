@@ -103,6 +103,7 @@ export class BotController {
 
   stop(): void {
     this._active[1] = false;
+    this._active[2] = false;
     this._stop();
     this._pendingTaps.forEach(clearTimeout);
     this._pendingTaps = [];
