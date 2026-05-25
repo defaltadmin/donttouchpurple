@@ -656,7 +656,7 @@ destroy(): void {
         this.emit({ type: "pwrToast", message: "Γ¥ä Freeze activated!", player });
       }
     } else {
-      const tappedIsDanger = isInvertedTap ? cell.type !== 'purple' : cell.type === danger;
+      const tappedIsDanger = isInvertedTap ? cell.type !== danger : cell.type === danger;
       if (tappedIsDanger) {
         cell.clicked = true;
         if (!this.devGodMode) {
@@ -990,6 +990,11 @@ destroy(): void {
   // Adding new optional fields with ?? defaults is NOT a breaking change and must NOT bump this.
   // Current breaking changes from v1→v2: added `p1.active`, `p2.active`, `bossEvent`, `activeBomb`.
   private static readonly SESSION_SNAPSHOT_VERSION = 2;
+  private static readonly VALID_CELL_TYPES = new Set<string>([
+    "inactive", "void", "purple", "white", "blue", "red", "orange", "yellow",
+    "green", "cyan", "lime", "teal", "pink", "rose", "magenta",
+    "medpack", "shield", "freeze", "multiplier", "ice", "hold", "bomb",
+  ]);
 
   getSessionSnapshot(): Record<string, unknown> {
     return {
@@ -1129,7 +1134,7 @@ destroy(): void {
         this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => {
           const cell = { ...c } as Record<string, unknown>;
           if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
-          if (!cell.type) cell.type = 'score';
+          if (!GameEngine.VALID_CELL_TYPES.has(cell.type as string)) cell.type = 'inactive';
           if (typeof cell.clicked !== 'boolean') cell.clicked = false;
           return cell as unknown as ActiveCell;
         });
@@ -1154,7 +1159,7 @@ destroy(): void {
         this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => {
           const cell = { ...c } as Record<string, unknown>;
           if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
-          if (!cell.type) cell.type = 'score';
+          if (!GameEngine.VALID_CELL_TYPES.has(cell.type as string)) cell.type = 'inactive';
           if (typeof cell.clicked !== 'boolean') cell.clicked = false;
           return cell as unknown as ActiveCell;
         });

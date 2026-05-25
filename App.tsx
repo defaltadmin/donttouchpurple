@@ -1833,7 +1833,7 @@ export default function App() {
             devHeatmap={devHeatmap}
             onRestart={() => { goMenu(); setTimeout(startGame, 100); }}
             onStartGame={startGame}
-            onTap={(p, i) => { handleTap(p, i); setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
+            onTap={(p, i) => { handleTap(p, i); if (devMode) setDevHeatmap(h => ({ ...h, [i]: (h[i] ?? 0) + 1 })); }}
             onHoldStart={handleHoldStart}
             onHoldEnd={handleHoldEnd}
             onPause={pauseGame}
