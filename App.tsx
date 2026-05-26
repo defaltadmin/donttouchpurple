@@ -32,13 +32,15 @@ import { safeSentry } from "./services/sentry";
 import { computeMs, speedLabel, speedPct } from "./engine/DifficultyScaler";
 import { GAME, LS_KEYS } from "./config/difficulty";
 import { DEFAULT_P1_KEYS, DEFAULT_P2_KEYS, loadKeys } from "./config/keybindings";
-import { SHOP_THEMES, SHOP_TRAILS } from "./config/powerupWeights";
+import { SHOP_TRAILS } from "./config/powerupWeights";
 import { setAudioMuted, setAudioVolume, setHapticsEnabled, useGameEngine, loadStoredPwr, saveStoredPwr } from "./hooks/useGameEngine";
 import { useGameSettings } from "./hooks/useGameSettings";
 import { useDustEconomy } from "./hooks/useDustEconomy";
 import { useUIFlags } from "./hooks/useUIFlags";
 import { useInputHandler } from "./hooks/useInputHandler";
-import type { GameConfig as EngineGameConfig, GameSnapshot, Winner, PlayerState, HoldCell } from "./engine/types";
+import { useThemeSettings } from "./hooks/useThemeSettings";
+import { useDevToolsState } from "./hooks/useDevToolsState";
+import type { GameConfig as EngineGameConfig, Winner, PlayerState, HoldCell } from "./engine/types";
 
 // Components - HUD
 import { EnergyBar } from "./components/HUD/EnergyBar";
@@ -108,7 +110,7 @@ import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 type GameMode        = "classic" | "evolve";
 type InputMode       = "touch" | "keyboard";
 type NumPlayers      = 1 | 2;
-type ColorblindMode  = "none" | "deuteranopia" | "protanopia" | "tritanopia" | "monochrome";
+// ColorblindMode type — now from useThemeSettings
 
 // ─── Lazy-loaded Firebase ────────────────────────────────────────
 let _firebase: typeof import('./services/firebase') | null = null;
@@ -201,6 +203,7 @@ export default function App() {
   });
   const screen = machine.current;
   const setScreen = useCallback((s: Screen) => machine.transition(s), [machine]);
+  const { devMode, setDevMode, godMode, setGodMode, devFreezeTime, setDevFreezeTime, devRotationSpeed, setDevRotationSpeed, devAutoPlay, setDevAutoPlay, devHeatmap, setDevHeatmap } = useDevToolsState();
 
   useEffect(() => {
     // 1. Init i18n
@@ -226,6 +229,7 @@ export default function App() {
   const { energyData, refillEnergy, spendEnergy } = useEnergyStore();
 
   const [shopData, setShopDataState] = useState(() => loadShopData());
+  const { theme, setTheme, colorblindMode, setColorblindMode, isFS, toggleFS, settingsOpen, setSettingsOpen, showOffset, setShowOffset, showFps, setShowFps, fps, equippedTheme } = useThemeSettings(shopData);
 
   useEffect(() => {
     initGA(typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "5.9.0");
@@ -265,7 +269,6 @@ export default function App() {
   const [practiceMode, setPracticeMode] = useState(false);
   const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion } = useGameSettings();
   const isTouchDevice = !(window.matchMedia?.("(pointer: fine)")?.matches);
-  const [isFS, setIsFS]              = useState(false);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
@@ -294,8 +297,6 @@ export default function App() {
   useEffect(() => { bossCountersRef.current = bossCounters; }, [bossCounters]);
   const [, setInitials]              = useState("");
   const [, setIE]                    = useState(false);
-  const [theme, setTheme]            = useState<"dark"|"light">("dark");
-  const [colorblindMode, setColorblindMode] = useState<ColorblindMode>("none");
   const [loginStreakCount, setLoginStreakCount]        = useState(1);
   const [loginStreakReward, setLoginStreakReward]      = useState(50);
   const [dailyChallenges, setDailyChallenges]         = useState<DailyChallenge[]>([]);
@@ -303,22 +304,13 @@ export default function App() {
   const [, setPrevBest]              = useState(0);
 
   const [paused, setPaused]         = useState(false);
-  const [devMode, setDevMode]       = useState(false);
+  // devMode, godMode, devFreezeTime, devRotationSpeed, devAutoPlay, devHeatmap from useDevToolsState (line 205)
   // Give 99999 dust when dev mode is enabled (dev builds only)
   useEffect(() => { if (import.meta.env.DEV && devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
-  const [godMode, setGodMode]       = useState(false);
-  const [devFreezeTime, setDevFreezeTime] = useState(false);
-   const [devRotationSpeed, setDevRotationSpeed] = useState(1);
-  const [devAutoPlay, setDevAutoPlay] = useState(false);
-  const [devHeatmap, setDevHeatmap]   = useState<Record<number, number>>({});
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showOffset, setShowOffset] = useState(() => settingsManager.get().offsetPointer ?? false);
+  // settingsOpen, showOffset, showFps, fps come from useThemeSettings (line 231)
   const cursorPos = useOffsetCursor(showOffset, containerRef);
-  useEffect(() => { settingsManager.set({ offsetPointer: showOffset }); }, [showOffset]);
-  const [showFps, setShowFps] = useState(() => localStorage.getItem('showFps') === 'true');
-  const [fps, setFps] = useState(0);
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(dust);
   const pbFlashedRef = useRef(false);
@@ -415,7 +407,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [screen, devMode, toast$]);
+  }, [screen, devMode, toast$, setDevMode]);
 
   // Engine Setup
   const [speedMult, setSpeedMult] = useState(1);
@@ -544,7 +536,7 @@ export default function App() {
         scoreSubmittedRef.current = true;
 
         try {
-          await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0);
+          await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0, practiceMode, godMode);
           toast$("🏆 Score submitted to global leaderboard!");
         } catch {
           logger.warn("Score sync failed");
@@ -593,6 +585,7 @@ export default function App() {
       localStorage.removeItem('dtp-show-rewards-after-first-game');
       setShouldShowRewardsAfterGame(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [numPlayers, playerName, toast$, gameMode, machine, addDust, setScreen, updateChallengeProgress, practiceMode, godMode]);
 
   useEffect(() => {
@@ -643,6 +636,7 @@ export default function App() {
       addDust(bonus, `boss_${bossType}`);
       toast$(`🏆 Survived ${bossType.charAt(0).toUpperCase() + bossType.slice(1)}! +${bonus} 💜`);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [toast$, addDust]);
    
   const onBombDefused = useCallback(() => {
@@ -653,7 +647,7 @@ export default function App() {
   }, []);
 
   const {
-    snapshot,
+    snapshot, snapshotRef: snapshotRef,
     heartAnimP1, heartAnimP2,
     shakeGrid1, shakeGrid2,
     toast: engineToast, 
@@ -689,15 +683,17 @@ export default function App() {
     resumeCheckedRef.current = true;
     const raw = sessionStorage.getItem('dtp:session');
     if (!raw) { setResumeReady(false); return; }
-    const parsed = stateGuard.parse<Record<string, unknown> | null>(raw, null, (d: unknown): d is Record<string, unknown> =>
+    // SEC-012: Verify session integrity before accepting resume
+    stateGuard.verifySession<Record<string, unknown> | null>(raw, null, (d: unknown): d is Record<string, unknown> =>
       !!d && typeof d === 'object' && typeof (d as Record<string, unknown>).gameSeed === 'number' && typeof (d as Record<string, unknown>).score === 'number'
-    );
-    if (parsed) {
-      setResumeReady(true);
-      setResumeData(parsed);
-    } else {
-      setResumeReady(false);
-    }
+    ).then(parsed => {
+      if (parsed) {
+        setResumeReady(true);
+        setResumeData(parsed);
+      } else {
+        setResumeReady(false);
+      }
+    });
   }, [screen]);
 
   const handleBotToggle = useCallback((player: 1 | 2) => {
@@ -736,12 +732,6 @@ export default function App() {
   }), []);
   const equippedBackground = backgroundMap[shopData.equippedBackground] || backgroundMap['default'];
 
-  const [, setSettings] = useState(settingsManager.get());
-  useEffect(() => {
-    const unsub = settingsManager.subscribe(s => { setSettings(s); });
-    return () => { unsub(); };
-  }, []);
-
   // First-interaction audio init
   const handleFirstInteraction = useCallback(() => {
     audioEngine.init();
@@ -758,8 +748,6 @@ export default function App() {
     };
   }, [handleFirstInteraction]);
 
-  const snapshotRef = useRef<GameSnapshot | null>(snapshot);
-  useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
   useEffect(() => {
     if (!snapshot) return;
     peakStreakRef.current = Math.max(peakStreakRef.current, snapshot.p1.streak);
@@ -792,6 +780,7 @@ export default function App() {
       patternIdx: s.p1.patternIdx,
       rareMode: s.rareMode.active ? s.rareMode.color : "purple",
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [screen, gameMode]);
 
   const handleResumeGame = useCallback(() => {
@@ -862,6 +851,7 @@ export default function App() {
     return () => {
       window.removeEventListener('visibilitychange', handleVisibility);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [pauseEngine, resumeEngine]);
 
   // Focus trap for pause overlay
@@ -926,33 +916,53 @@ export default function App() {
   const BOT_HUMAN_MIN_MS = 180; // ~max human reaction speed
   const BOT_REACTION_JITTER = 60; // ±30ms randomness
 
-  useEffect(() => {
-    if (!devAutoPlay || !snapshot || snapshot.phase !== "playing") return;
-    const dangerColor = snapshot.rareMode.active ? snapshot.rareMode.color : "purple";
-    // Clamp bot speed to at most human-limit; add jitter so it doesn't feel mechanical
-    const tickMs = computeMs(snapshot.tick, 1);
-    const botMs = Math.max(BOT_HUMAN_MIN_MS, tickMs * 0.85)
-      + (Math.random() - 0.5) * BOT_REACTION_JITTER;
+  // STB-003: Use ref for snapshot in devAutoPlay — single persistent self-scheduling loop
+  const handleTapRefBot = useRef(handleTap);
+  handleTapRefBot.current = handleTap;
+  const handleHoldStartRefBot = useRef(handleHoldStart);
+  handleHoldStartRefBot.current = handleHoldStart;
+  const handleHoldEndRefBot = useRef(handleHoldEnd);
+  handleHoldEndRefBot.current = handleHoldEnd;
 
-    const holdTimers: ReturnType<typeof setTimeout>[] = [];
-    const id = setTimeout(() => {
-      const tapPlayer = (active: typeof snapshot.p1.active, player: 1 | 2) => {
+  useEffect(() => {
+    if (!devAutoPlay) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let holdTimers: ReturnType<typeof setTimeout>[] = [];
+
+    const tick = () => {
+      const snap = snapshotRef.current;
+      if (!snap || snap.phase !== "playing") {
+        timer = setTimeout(tick, 100); // poll until playing
+        return;
+      }
+      const dangerColor = snap.rareMode.active ? snap.rareMode.color : "purple";
+      const tickMs = computeMs(snap.tick, 1);
+      const botMs = Math.max(BOT_HUMAN_MIN_MS, tickMs * 0.85)
+        + (Math.random() - 0.5) * BOT_REACTION_JITTER;
+
+      holdTimers.forEach(clearTimeout);
+      holdTimers = [];
+
+      const tapPlayer = (active: typeof snap.p1.active, player: 1 | 2) => {
         active
-          .filter(cell => !cell.clicked && (snapshot.isInverted ? cell.type === 'purple' : cell.type !== dangerColor))
-          .forEach(cell => handleTap(player, cell.idx));
-        // Handle hold cells: simulate a full hold
+          .filter(cell => !cell.clicked && (snap.isInverted ? cell.type === 'purple' : cell.type !== dangerColor))
+          .forEach(cell => handleTapRefBot.current(player, cell.idx));
         active
           .filter((cell): cell is HoldCell => !cell.clicked && cell.type === "hold")
           .forEach(cell => {
-            handleHoldStart(player, cell.idx);
-            holdTimers.push(setTimeout(() => handleHoldEnd(player, cell.idx), (cell.holdRequired ?? 800) + 50));
+            handleHoldStartRefBot.current(player, cell.idx);
+            holdTimers.push(setTimeout(() => handleHoldEndRefBot.current(player, cell.idx), (cell.holdRequired ?? 800) + 50));
           });
       };
-      tapPlayer(snapshot.p1.active, 1);
-      if (numPlayers === 2 && snapshot.p2) tapPlayer(snapshot.p2.active, 2);
-    }, botMs);
-    return () => { clearTimeout(id); holdTimers.forEach(clearTimeout); };
-  }, [devAutoPlay, snapshot, handleTap, handleHoldStart, handleHoldEnd, numPlayers]);
+      tapPlayer(snap.p1.active, 1);
+      if (numPlayers === 2 && snap.p2) tapPlayer(snap.p2.active, 2);
+      timer = setTimeout(tick, botMs);
+    };
+
+    timer = setTimeout(tick, 50);
+    return () => { if (timer) clearTimeout(timer); holdTimers.forEach(clearTimeout); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
+  }, [devAutoPlay, numPlayers, computeMs]);
 
   const { pressP1, pressP2 } = useInputHandler({
     mode: gameMode,
@@ -993,41 +1003,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  // FPS Monitor
-  useEffect(() => {
-    if (!showFps) return;
-    let frameId = 0;
-    let frameCount = 0;
-    let lastTime = performance.now();
-    const loop = () => {
-      const now = performance.now();
-      const delta = now - lastTime;
-      if (delta >= 500) {
-        setFps(Math.round(1000 / (delta / (frameCount || 1))));
-        lastTime = now;
-        frameCount = 0;
-      }
-      frameCount++;
-      frameId = requestAnimationFrame(loop);
-    };
-    frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, [showFps]);
-
-  // F key → toggle FPS overlay
-  useEffect(() => {
-    const handleFpsKey = (e: KeyboardEvent) => {
-      if (e.key === 'f' || e.key === 'F') {
-        setShowFps(prev => {
-          const next = !prev;
-          localStorage.setItem('showFps', String(next));
-          return next;
-        });
-      }
-    };
-    window.addEventListener('keydown', handleFpsKey);
-    return () => window.removeEventListener('keydown', handleFpsKey);
-  }, []);
+  // FPS Monitor + F key handled by useThemeSettings
 
   // Personal best delta flash
   useEffect(() => {
@@ -1039,34 +1015,7 @@ export default function App() {
     }
   }, [snapshot, gameMode, best1, best2]);
 
-  useEffect(() => {
-    if (theme === "light") document.documentElement.classList.add("light-theme");
-    else document.documentElement.classList.remove("light-theme");
-  }, [theme]);
-
-  // Apply shop theme CSS variables to document root
-  useEffect(() => {
-    const t = SHOP_THEMES.find(t => t.id === shopData.equippedTheme);
-    if (!t || t.id === "default") {
-      document.documentElement.style.removeProperty("--theme-purple");
-      document.documentElement.style.removeProperty("--theme-accent");
-      document.documentElement.style.removeProperty("--theme-bg");
-      document.documentElement.style.removeProperty("--theme-text");
-      document.documentElement.style.removeProperty("--bg");
-      document.documentElement.style.removeProperty("--purple");
-      document.documentElement.style.removeProperty("--accent");
-      document.documentElement.style.removeProperty("--text");
-      return;
-    }
-    document.documentElement.style.setProperty("--theme-purple", t.colors.purple);
-    document.documentElement.style.setProperty("--theme-accent", t.colors.accent);
-    document.documentElement.style.setProperty("--theme-bg", t.colors.bg);
-    document.documentElement.style.setProperty("--theme-text", t.colors.text);
-    document.documentElement.style.setProperty("--bg", t.colors.bg);
-    document.documentElement.style.setProperty("--purple", t.colors.purple);
-    document.documentElement.style.setProperty("--accent", t.colors.accent);
-    document.documentElement.style.setProperty("--text", t.colors.text);
-  }, [shopData.equippedTheme]);
+  // Theme + shop CSS vars + FPS handled by useThemeSettings (line 231)
 
   useEffect(() => {
     const pl = preloaderRef.current;
@@ -1275,6 +1224,7 @@ export default function App() {
     setShareMsg("");
     // Clear snapshot so rare badge and other game-specific UI don't persist on menu
     snapshotRef.current = null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
@@ -1331,13 +1281,7 @@ export default function App() {
     setWeeklyTasks(buildWeeklyTasks());
   };
 
-  const toggleFS = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().then(() => setIsFS(true)).catch(() => setIsFS(f => !f));
-    } else {
-      document.exitFullscreen?.().then(() => setIsFS(false));
-    }
-  }, []);
+  // toggleFS from useThemeSettings
 
   const isPlaying = screen === "playing" || screen === "gameover";
   const is2P = numPlayers === 2;
@@ -1349,7 +1293,7 @@ export default function App() {
   });
   const rewardsBadgeCount = countUnclaimedRewards(loginClaimedToday, dailyChallenges, weeklyTasks);
 
-  const equippedTheme = SHOP_THEMES.find(t => t.id === shopData.equippedTheme) || SHOP_THEMES[0];
+  // equippedTheme from useThemeSettings (line 231)
   const themeVars = {
     "--theme-purple":  equippedTheme.colors.purple,
     "--theme-accent":  equippedTheme.colors.accent,

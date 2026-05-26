@@ -5,6 +5,7 @@ interface Env {
   FIREBASE_PROJECT_ID: string;
   GCP_SERVICE_ACCOUNT_EMAIL: string;
   GCP_SERVICE_ACCOUNT_KEY_B64: string;
+  CHALLENGE_HMAC_SECRET?: string;
 }
 
 interface ScorePayload {
@@ -15,6 +16,14 @@ interface ScorePayload {
   date?: string;
   tick: number;
   sessionId: string;
+  practiceMode?: boolean;
+  godMode?: boolean;
+}
+
+interface ChallengePayload {
+  score: number;
+  seed: string;
+  hearts: number;
 }
 
 let _cachedToken: string | null = null;
@@ -72,6 +81,18 @@ async function getFirebaseToken(env: Env): Promise<string> {
   }
 }
 
+async function signChallenge(score: number, seed: string, hearts: number, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const msg = new TextEncoder().encode(`${score}:${seed}:${hearts}`);
+  const raw = await crypto.subtle.sign('HMAC', key, msg);
+  return btoa(String.fromCharCode(...new Uint8Array(raw)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    .slice(0, 16);
+}
+
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight — reflect validated origin (don't hardcode)
@@ -110,6 +131,37 @@ export default {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
+
+    const url = new URL(request.url);
+
+    // SEC-010: Server-side HMAC signing for challenge links
+    if (url.pathname === '/api/sign-challenge') {
+      // SEC-013: Rate limit sign-challenge to prevent HMAC CPU abuse
+      const signIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const signRateKey = `sign-rate:${signIp}`;
+      const signNow = Date.now();
+      let signAttempts: number[] = (await env.RATE_LIMIT_KV.get(signRateKey, { type: 'json' })) ?? [];
+      signAttempts = signAttempts.filter(ts => signNow - ts < 60_000);
+      if (signAttempts.length >= 30) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      signAttempts.push(signNow);
+      await env.RATE_LIMIT_KV.put(signRateKey, JSON.stringify(signAttempts), { expirationTtl: 90 });
+
+      if (!env.CHALLENGE_HMAC_SECRET) {
+        return new Response(JSON.stringify({ error: 'Challenge signing not configured' }), { status: 501, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      try {
+        const body = await request.json<ChallengePayload>();
+        if (typeof body.score !== 'number' || typeof body.seed !== 'string' || typeof body.hearts !== 'number') {
+          return new Response(JSON.stringify({ error: 'Invalid challenge params' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        const sig = await signChallenge(body.score, body.seed, body.hearts, env.CHALLENGE_HMAC_SECRET);
+        return new Response(JSON.stringify({ sig }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    }
 
     // Verify Firebase ID token from client
     const authHeader = request.headers.get('Authorization') ?? '';
@@ -170,6 +222,10 @@ export default {
       }
       if (data.sessionId.length > 64) {
         return new Response(JSON.stringify({ error: 'Session too long' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      // SEC-011: Reject practice/god mode scores server-side
+      if ((data as Record<string, unknown>).practiceMode === true || (data as Record<string, unknown>).godMode === true) {
+        return new Response(JSON.stringify({ error: 'Practice scores not allowed' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (data.badge && (typeof data.badge !== 'string' || data.badge.length > 24 || !/^[a-zA-Z0-9_-]+$/.test(data.badge))) {
         return new Response(JSON.stringify({ error: 'Invalid badge' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
