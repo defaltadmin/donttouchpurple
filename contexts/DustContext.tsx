@@ -1,11 +1,11 @@
 // contexts/DustContext.tsx
 // Isolates dust/energy/shop economy state.
 // Updates here never trigger game grid re-renders.
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useState, useCallback, useRef } from "react";
 import { LS_KEYS, GAME } from "../config/difficulty";
 
-export interface EnergyData { current: number; max: number; lastRefill: number; }
-export interface ShopData { [key: string]: unknown; }
+interface EnergyData { current: number; max: number; lastRefill: number; }
+interface ShopData { [key: string]: unknown; }
 
 interface DustContextValue {
   dust: number;
@@ -90,8 +90,3 @@ export function DustProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useDustContext(): DustContextValue {
-  const ctx = useContext(DustContext);
-  if (!ctx) throw new Error("useDustContext must be used within DustProvider");
-  return ctx;
-}

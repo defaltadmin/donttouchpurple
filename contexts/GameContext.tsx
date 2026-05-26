@@ -1,13 +1,12 @@
 // contexts/GameContext.tsx
 // Isolates high-frequency snapshot updates from the rest of the UI.
 // Only components that consume this context re-render on every tick.
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useState, useCallback, useRef } from "react";
 import type { GameSnapshot, Winner } from "../engine/types";
 
-// Inline types — not exported from App.tsx (they're local there)
-export type GameMode   = "classic" | "evolve";
-export type NumPlayers = 1 | 2;
-export type InputMode  = "touch" | "keyboard";
+type GameMode   = "classic" | "evolve";
+type NumPlayers = 1 | 2;
+type InputMode  = "touch" | "keyboard";
 
 interface GameContextValue {
   snapshot: GameSnapshot | null;
@@ -75,8 +74,3 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useGameContext(): GameContextValue {
-  const ctx = useContext(GameContext);
-  if (!ctx) throw new Error("useGameContext must be used within <GameProvider>");
-  return ctx;
-}

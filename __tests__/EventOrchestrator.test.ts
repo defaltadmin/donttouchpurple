@@ -26,26 +26,35 @@ describe('EventOrchestrator', () => {
   });
 
   describe('getBossDuration', () => {
-    it('returns correct duration for each type', () => {
-      expect(getBossDuration('storm')).toBe(8000);
+    it('returns correct duration for inversion', () => {
       expect(getBossDuration('inversion')).toBe(4000);
-      expect(getBossDuration('blackout')).toBe(5000);
+    });
+
+    it('returns fallback for removed types', () => {
+      expect(getBossDuration('storm')).toBe(4000);
+      expect(getBossDuration('blackout')).toBe(4000);
     });
   });
 
   describe('getBossLabel', () => {
-    it('returns non-empty label for each type', () => {
-      expect(getBossLabel('storm')).toBeTruthy();
+    it('returns non-empty label for inversion', () => {
       expect(getBossLabel('inversion')).toBeTruthy();
-      expect(getBossLabel('blackout')).toBeTruthy();
+    });
+
+    it('returns empty string for removed types', () => {
+      expect(getBossLabel('storm')).toBe('');
+      expect(getBossLabel('blackout')).toBe('');
     });
   });
 
   describe('getBossDoneLabel', () => {
-    it('returns non-empty done label for each type', () => {
-      expect(getBossDoneLabel('storm')).toBeTruthy();
+    it('returns non-empty done label for inversion', () => {
       expect(getBossDoneLabel('inversion')).toBeTruthy();
-      expect(getBossDoneLabel('blackout')).toBeTruthy();
+    });
+
+    it('returns empty string for removed types', () => {
+      expect(getBossDoneLabel('storm')).toBe('');
+      expect(getBossDoneLabel('blackout')).toBe('');
     });
   });
 

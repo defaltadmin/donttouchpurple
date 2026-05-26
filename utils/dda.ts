@@ -1,7 +1,7 @@
 // utils/dda.ts
 import { logger } from './logger';
 
-export interface DDAMetrics {
+interface DDAMetrics {
   accuracy: number;
   avgReactionMs: number;
   streak: number;

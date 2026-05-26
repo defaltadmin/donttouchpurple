@@ -12,15 +12,11 @@ export function useUIFlags() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(() => !safeGet(LS_KEYS.PRIVACY_OK));
   const [showNameEntry, setShowNameEntry] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
   const [showRotatePrompt, setShowRotatePrompt] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showEnergyPopup, setShowEnergyPopup] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showLoginStreak, setShowLoginStreak] = useState(false);
-  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
+  const [, setShowLoginStreak] = useState(false);
   const [showRewardsHub, setShowRewardsHub] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(() => import.meta.env.DEV && safeGet('dtp:dev') === 'true');
   const [showDevUnlock, setShowDevUnlock] = useState(false);
@@ -38,15 +34,11 @@ export function useUIFlags() {
     showWhatsNew, setShowWhatsNew,
     showPrivacy, setShowPrivacy,
     showNameEntry, setShowNameEntry,
-    showLangMenu, setShowLangMenu,
-    showShare, setShowShare,
-    shareUrl, setShareUrl,
     showRotatePrompt, setShowRotatePrompt,
     showExitConfirm, setShowExitConfirm,
     showEnergyPopup, setShowEnergyPopup,
     showOnboarding, setShowOnboarding,
-    showLoginStreak, setShowLoginStreak,
-    showDailyChallenges, setShowDailyChallenges,
+    setShowLoginStreak,
     showRewardsHub, setShowRewardsHub,
     showDevPanel, setShowDevPanel,
     showDevUnlock, setShowDevUnlock,

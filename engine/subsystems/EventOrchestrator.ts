@@ -3,22 +3,16 @@ import type { BossEventType } from "../types";
 // Only inversion provides genuine skill expression — storm is chaos, blackout contradicts core mechanic
 const BOSS_ROTATION: BossEventType[] = ["inversion"];
 
-const DURATIONS: Record<BossEventType, number> = {
-  storm: 8000,       // dead — BOSS_ROTATION only contains "inversion"
+const DURATIONS: Partial<Record<BossEventType, number>> = {
   inversion: 4000,
-  blackout: 5000,    // dead — BOSS_ROTATION only contains "inversion"
 };
 
-const LABELS: Record<BossEventType, string> = {
-  storm:     "⚡ STORM! Cells shuffle faster!",    // dead
+const LABELS: Partial<Record<BossEventType, string>> = {
   inversion: "🔄 INVERSION! Safe and danger swapped!",
-  blackout:  "🌑 BLACKOUT! Grid goes dark!",       // dead
 };
 
-const DONE_LABELS: Record<BossEventType, string> = {
-  storm:     "✅ Storm over.",     // dead
+const DONE_LABELS: Partial<Record<BossEventType, string>> = {
   inversion: "✅ Inversion over.",
-  blackout:  "✅ Blackout over.", // dead
 };
 
 export function getNextBossEventType(prevType: BossEventType | null): BossEventType {
@@ -27,15 +21,15 @@ export function getNextBossEventType(prevType: BossEventType | null): BossEventT
 }
 
 export function getBossDuration(type: BossEventType): number {
-  return DURATIONS[type];
+  return DURATIONS[type] ?? 4000;
 }
 
 export function getBossLabel(type: BossEventType): string {
-  return LABELS[type];
+  return LABELS[type] ?? "";
 }
 
 export function getBossDoneLabel(type: BossEventType): string {
-  return DONE_LABELS[type];
+  return DONE_LABELS[type] ?? "";
 }
 
 export function getNextBossTriggerScore(current: number): number {

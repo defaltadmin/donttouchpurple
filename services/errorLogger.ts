@@ -2,7 +2,7 @@
 import { logger } from '../utils/logger';
 import { getSentry } from './sentry';
 
-export interface ErrorContext {
+interface ErrorContext {
   userId?: string;
   gameMode?: string;
   score?: number;
@@ -11,7 +11,7 @@ export interface ErrorContext {
   [key: string]: string | number | boolean | undefined;
 }
 
-export class ErrorLogger {
+class ErrorLogger {
   private static instance: ErrorLogger;
 
   static getInstance(): ErrorLogger {

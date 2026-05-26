@@ -1,12 +1,4 @@
 .game-grid { touch-action: none; -webkit-user-select: none; user-select: none; }
-.cell-bomb-pulse { animation: bombPulse 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); }
-@keyframes bombPulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,50,50,0.6); }
-  50% { transform: scale(1.15); box-shadow: 0 0 12px 4px rgba(255,50,50,0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,50,50,0); }
-}
-.hold-cell-glow { box-shadow: 0 0 8px var(--theme-accent, #9d4edd), inset 0 0 6px rgba(255,255,255,0.2); }
-.bg-layer { will-change: transform, opacity; transform: translateZ(0); }
 .dtp-boss-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); width: 280px; text-align: center; pointer-events: none; z-index: 1000; }
 .dtp-boss-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); margin-bottom: 4px; }
 .dtp-boss-track { height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }

@@ -80,20 +80,3 @@ export function logResourceEvent(flowType: "Source" | "Sink", currency: string, 
   } catch { /* GA not available in dev */ }
 }
 
-/**
- * Error events track crashes or exceptions.
- */
-export function logErrorEvent(severity: "Error" | "Warning" | "Info" | "Critical", message: string) {
-  if (!IS_PROD) return;
-  try {
-    const gaSeverity = severity === "Error" 
-      ? GameAnalytics.EGAErrorSeverity.Error 
-      : severity === "Warning" 
-        ? GameAnalytics.EGAErrorSeverity.Warning 
-        : severity === "Info" 
-          ? GameAnalytics.EGAErrorSeverity.Info 
-          : GameAnalytics.EGAErrorSeverity.Critical;
-
-    GameAnalytics.addErrorEvent(gaSeverity, message);
-  } catch { /* GA not available in dev */ }
-}

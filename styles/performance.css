@@ -1,5 +1,5 @@
 /* GPU Containment & Layout Isolation */
-.panel-skeleton, .dtp-btn, .cell, .hud-panel, .modal-card {
+.dtp-btn, .cell {
   contain: layout style paint;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -15,7 +15,7 @@
     scroll-behavior: auto !important;
   }
   /* Preserve functional transitions (screen changes, modals, state changes) */
-  .screen-slide, .modal-card, .panel-skeleton, .go-wrap {
+  .screen-slide {
     transition-duration: 0.2s !important;
   }
   /* But kill decorative transitions (glows, pulses, shakes) */
@@ -33,7 +33,7 @@
     scroll-behavior: auto !important;
   }
   /* Preserve functional transitions (screen changes, modals, state changes) */
-  .screen-slide, .modal-card, .panel-skeleton, .go-wrap {
+  .screen-slide {
     transition-duration: 0.2s !important;
   }
   /* But kill decorative transitions (glows, pulses, shakes) */
@@ -50,7 +50,7 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .cell, .bg-layer, .modal-card {
+  .cell {
     box-shadow: none !important;
     filter: none !important;
     backdrop-filter: none !important;
