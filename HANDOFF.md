@@ -16,7 +16,7 @@
 | Check | Status |
 |-------|--------|
 | Typecheck | 0 errors |
-| Tests | 211/211 pass (20 files) |
+| Tests | 214/214 pass (20 files) |
 | Build | Clean (0 circular warnings) |
 | Lint | 0 errors, 0 warnings |
 | Vulnerabilities | 0 (root + website) |
@@ -86,18 +86,50 @@ firebase deploy --only hosting  # Deploy to game.mscarabia.com
 
 ## Recent Session (2026-05-27)
 
-### Big Pickle Review v2 Round 2 — 5/6 Findings Fixed + 44 New Tests
+### Multi-AI Review Round — Big Pickle v2 R2 + DeepSeek + Sonnet + Manual Triage
 
-#### Fixes (5 of 6)
-- **SEC-013** (Med): `/api/sign-challenge` rate-limited (30 req/min per IP via KV, same pattern as score submission). Prevents HMAC CPU abuse.
-- **STB-014** (Low): Dead `enableDevMode` callback removed from `useDevToolsState`. App.tsx owns the keyboard listener; hook no longer takes `screen` param.
-- **CQ-003** (Info): Duplicate `settingsManager` subscription removed from App.tsx — `useThemeSettings` already subscribes.
-- **ARC-005** (Med): **44 new tests** across 4 files covering security-critical modules:
-  - `state-guard.test.ts` — sign/verify round-trip, tamper rejection, nonce lifecycle, validator integration, sanitize type rejection
-  - `challenge-link.test.ts` — generate URL params, parseAndVerify with mock fetch, tampered sig rejection, unsafe parse fallback
-  - `useThemeSettings.test.ts` — theme toggle + CSS class, colorblind mode, F key FPS toggle, localStorage persistence
-  - `useDevToolsState.test.ts` — all defaults, toggle/set for each dev state
-- **ARC-004** (Info): Deferred — `handleEngineGameOver` has 40+ cross-coupled dependencies; extraction is a Phase 3 refactor.
+**9 commits on main** (`e532f88`→`f0b15ff`). 44 new tests. All security/quality/review findings resolved.
+
+#### Big Pickle v2 R2 (commit `e532f88`)
+- **SEC-013** (Med): `/api/sign-challenge` rate-limited (30 req/min per IP via KV)
+- **STB-014** (Low): Dead `enableDevMode` removed from `useDevToolsState`
+- **CQ-003** (Info): Duplicate `settingsManager` subscription removed from App.tsx
+- **ARC-005** (Med): 44 new tests for state-guard, challenge-link, useThemeSettings, useDevToolsState
+
+#### DeepSeek Review (commit `a793ef4`) — 6 fixed, 1 accepted, 1 known
+- **SEC-014** (High): dust_wallet read restricted to owner UID (removed anon bypass)
+- **SEC-015** (Med): iss claim validated in Worker token verification
+- **SEC-016** (Low): seed length capped at 256 chars in /api/sign-challenge
+- **CQ-004** (Low): Dead settingsManager subscription removed from useThemeSettings
+- **CQ-005** (Low): Firestore tick formula aligned with Worker (removed +300 buffer)
+
+#### Sonnet Review (commits `6a4e2d5` + `d4c4bdd`) — 5 fixed, 2 already fixed, 1 deferred→done
+- **SEC-013-R1** (Med): KV TTL 90→61, closing 30-second burst window
+- **SEC-013-R2** (Med): Missing cf-connecting-ip → 403 (both rate limit blocks)
+- **STB-014-R1** (Low): Test asserting enableDevMode not exported
+- **TST-01** (Low): IS_PROD unsigned URL rejection test + vi.unstubAllEnvs() hardening
+- **TST-02** (Info): safeStore double-quota-fail silent drop test
+- **SEC-CL-01**: `/api/verify-challenge` endpoint with constant-time HMAC compare (commit `f0b15ff`)
+
+#### Manual Triage (commit `87ec7f6`) — 3 high/medium bugs
+- **FIX-01** (High): gamesPlayed double-incremented (startGame + handleEngineGameOver) — achievement thresholds fired at half
+- **FIX-02** (High): PauseOverlay restart bypassed scoreSubmittedRef reset — scores silently dropped
+- **FIX-03** (Med): visibilitychange auto-resumed manual pauses — added visibilityPausedRef
+- **FIX-04** (Med): scheduleTimeout dropped callbacks during pause — changed guard to `!== 'gameover'`
+
+#### Remaining Items (commits `593b47e` + `d8ec430` + `f0b15ff`)
+- Full HMAC-SHA256 signature in state-guard.ts AND Worker (was truncated to 16 chars)
+- Documentation: dustCallbacks stability, achievement ordering, best1/best2 ref usage, p2 powerups
+- `/api/verify-challenge` endpoint replaces client-side re-signing in challenge-link.ts
+
+#### Review Quality Report
+| Reviewer | Findings | Valid | Wrong | Hit Rate |
+|---|---|---|---|---|
+| DeepSeek | 8 | 8 | 0 | 100% |
+| Sonnet | 8 | 7 | 0 | 100% (1 deferred→fixed) |
+| Manual triage | 12 | 6 | 6 | 50% |
+
+#### Final state: 214/214 tests, 0 type/lint errors, clean build
 
 #### New test totals: 20 files, 211 tests (was 16 files, 167 tests)
 
@@ -191,20 +223,23 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 ## What's Pending / Next Steps
 
 ### Immediate Priority
-1. **Deploy verification** — verify game.mscarabia.com has all latest changes
+1. **Deploy verification** — verify game.mscarabia.com has all latest changes (9 commits since last deploy)
 2. **Lighthouse re-run** — verify scores improved after viewport/robots fixes
+3. **Push to remote** — 10 commits ahead of origin/main
 
 ### High Priority
-3. **Gameplay trailer** (15-30s) — needs screen recording
-4. **Screenshots** (5-6 key moments) — needs screen capture
-5. **App Check enforcement** — code complete, needs Firebase Console toggle
+4. **Achievement notification UX** — currently flashes too fast to read. Need persistent toast or badge list.
+5. **Gameplay trailer** (15-30s) — needs screen recording
+6. **Screenshots** (5-6 key moments) — needs screen capture
+7. **App Check enforcement** — code complete, needs Firebase Console toggle
 
 ### Medium Priority
-6. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
-7. **Product Hunt** — listing content ready in .github/LAUNCH.md
-8. **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets
+8. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
+9. **Product Hunt** — listing content ready in .github/LAUNCH.md
+10. **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets
+11. **Resume game removal** — user reported it doesn't work well; suggest removing the feature
 
-### From Deep Analysis Report (DTP_DEEP_ANALYSIS_REPORT.md)
+### From Deep Analysis Report
 - STAB-001: Track gameover timeout ref, clear on unmount
 - SEC-006: dust_wallet monotonic check in Firestore rule
 - ~~SEC-003: Move challenge HMAC to Worker~~ ✓ (SEC-010)
@@ -213,18 +248,25 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 - QOL-001: Bomb countdown ring on cells
 - QOL-002: Boss event timer in HUD
 
-### From Big Pickle v2 Follow-Up (prompt-bigpickle-v2.md)
-- ~~SEC-013 sign-challenge rate limiting~~ ✓ (this session)
-- ~~STB-014 dead enableDevMode~~ ✓ (this session)
-- ~~CQ-003 duplicate settingsManager sub~~ ✓ (this session)
-- ~~ARC-005 test coverage for security modules~~ ✓ (44 tests, this session)
-- **Deploy verification** — verify game.mscarabia.com has all latest changes
-- **Lighthouse re-run** — verify scores improved after viewport/robots fixes
-- **Gameplay trailer** (15-30s) — needs screen recording
-- **Screenshots** (5-6 key moments) — needs screen capture
-- **App Check enforcement** — code complete, needs Firebase Console toggle
-- **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
-- **Product Hunt** — listing content ready in .github/LAUNCH.md
+### From Multi-AI Review Session (2026-05-27) — ALL DONE
+- ~~SEC-013 sign-challenge rate limiting~~ ✓
+- ~~STB-014 dead enableDevMode~~ ✓
+- ~~CQ-003 duplicate settingsManager sub~~ ✓
+- ~~ARC-005 test coverage for security modules~~ ✓ (44 tests)
+- ~~SEC-014 dust_wallet anon bypass~~ ✓
+- ~~SEC-015 iss validation~~ ✓
+- ~~SEC-016 seed length cap~~ ✓
+- ~~CQ-004 dead settingsManager sub in useThemeSettings~~ ✓
+- ~~CQ-005 Firestore tick formula alignment~~ ✓
+- ~~SEC-013-R1/R2 rate limit hardening~~ ✓
+- ~~SEC-CL-01 verify-by-re-signing~~ ✓ (/api/verify-challenge endpoint)
+- ~~FIX-01 gamesPlayed double-count~~ ✓
+- ~~FIX-02 scoreSubmittedRef restart~~ ✓
+- ~~FIX-03 visibility auto-resume~~ ✓
+- ~~FIX-04 scheduleTimeout pause drop~~ ✓
+- ~~HMAC truncation~~ ✓ (full 256-bit signature in state-guard + Worker)
+- ~~Achievement ordering documentation~~ ✓
+- ~~dustCallbacks stability documentation~~ ✓
 - **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets
 - **ARC-004** handleEngineGameOver hook extraction — Phase 3 (40+ cross-coupled deps)
 
