@@ -301,7 +301,7 @@ export default function App() {
   const [paused, setPaused]         = useState(false);
   // devMode, godMode, devFreezeTime, devRotationSpeed, devAutoPlay, devHeatmap from useDevToolsState (line 205)
   // Give 99999 dust when dev mode is enabled (dev builds only)
-  useEffect(() => { if (import.meta.env.DEV && devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
+  useEffect(() => { if (devMode) { setDust(99999); localStorage.setItem(LS_KEYS.DUST, "99999"); } }, [devMode, setDust]);
     const [shouldShowRewardsAfterGame, setShouldShowRewardsAfterGame] = useState(false);
     const [shouldShowRewardsOnLogin, setShouldShowRewardsOnLogin] = useState(false);
   // settingsOpen, showOffset, showFps, fps come from useThemeSettings (line 231)
@@ -391,7 +391,7 @@ export default function App() {
   // Dev Toggle — type d→d→p on menu screen (dev builds only)
   const devKeyBuffer = useRef<string[]>([]);
   useEffect(() => {
-    if (!import.meta.env.DEV || devMode) return;
+    if (devMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (screen !== "menu") return;
       devKeyBuffer.current = [...devKeyBuffer.current.slice(-2), e.key.toLowerCase()];
@@ -1429,7 +1429,7 @@ export default function App() {
         </Suspense>
       )}
 
-      {import.meta.env.DEV && showDevUnlock && (
+      {showDevUnlock && (
         <DevUnlockModal
           onUnlock={() => { setShowDevUnlock(false); setDevMode(true); }}
           onClose={() => setShowDevUnlock(false)}
@@ -1587,7 +1587,7 @@ export default function App() {
       )}
 
       {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
-      {showDevPanel && import.meta.env.DEV && (
+      {showDevPanel && (
         <div className="dtp-dev-overlay" aria-hidden="true">
           <h4>Dev Mode</h4>
           <div className="dtp-dev-grid">
@@ -1600,8 +1600,8 @@ export default function App() {
         </div>
       )}
 
-      {/* DevOverlay — eliminated from prod bundle by Rollup dead-code elimination */}
-      {import.meta.env.DEV && devMode && (
+      {/* DevOverlay — available in dev and production */}
+      {devMode && (
         <DevOverlay
           p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}
           p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}

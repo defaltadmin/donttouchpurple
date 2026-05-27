@@ -5,7 +5,7 @@ export function NameChangeForm({ current, onSubmit, onDevTrigger }: { current: s
   const sanitize = (n: string) => n.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    if (import.meta.env.DEV && raw.includes("//dev//") && onDevTrigger) { onDevTrigger(); setVal(""); return; }
+    if (raw.includes("//dev//") && onDevTrigger) { onDevTrigger(); setVal(""); return; }
     setVal(raw);
   };
   return (
