@@ -137,7 +137,10 @@ export default {
     // SEC-010: Server-side HMAC signing for challenge links
     if (url.pathname === '/api/sign-challenge') {
       // SEC-013: Rate limit sign-challenge to prevent HMAC CPU abuse
-      const signIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const signIp = request.headers.get('cf-connecting-ip');
+      if (!signIp) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
       const signRateKey = `sign-rate:${signIp}`;
       const signNow = Date.now();
       let signAttempts: number[] = (await env.RATE_LIMIT_KV.get(signRateKey, { type: 'json' })) ?? [];
@@ -146,7 +149,7 @@ export default {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       signAttempts.push(signNow);
-      await env.RATE_LIMIT_KV.put(signRateKey, JSON.stringify(signAttempts), { expirationTtl: 90 });
+      await env.RATE_LIMIT_KV.put(signRateKey, JSON.stringify(signAttempts), { expirationTtl: 61 });
 
       if (!env.CHALLENGE_HMAC_SECRET) {
         return new Response(JSON.stringify({ error: 'Challenge signing not configured' }), { status: 501, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
@@ -198,7 +201,10 @@ export default {
 
     try {
       const data = await request.json<ScorePayload>();
-      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const ip = request.headers.get('cf-connecting-ip');
+      if (!ip) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
 
       const rateKey = `rate:${ip}`;
       const now = Date.now();
@@ -208,7 +214,7 @@ export default {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       attempts.push(now);
-      await env.RATE_LIMIT_KV.put(rateKey, JSON.stringify(attempts), { expirationTtl: 90 });
+      await env.RATE_LIMIT_KV.put(rateKey, JSON.stringify(attempts), { expirationTtl: 61 });
 
       if (typeof data.score !== 'number' || data.score < 0 || data.score > 9999) {
         return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });

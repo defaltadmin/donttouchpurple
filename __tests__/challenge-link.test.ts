@@ -113,6 +113,16 @@ describe("challengeLink", () => {
       expect(result.isChallenge).toBe(true);
       expect(result.valid).toBe(false);
     });
+
+    it("rejects unsigned challenge URLs in production", async () => {
+      vi.resetModules();
+      vi.stubEnv("PROD", true);
+      const { challengeLink: prodLink } = await import("../utils/challenge-link");
+      mockLocation("?challenge=1&seed=s1&score=500&hearts=3");
+      const result = await prodLink.parseAndVerify();
+      expect(result.isChallenge).toBe(true);
+      expect(result.valid).toBe(false);
+    });
   });
 
   describe("parseUnsafe", () => {

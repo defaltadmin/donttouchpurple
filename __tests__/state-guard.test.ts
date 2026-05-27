@@ -143,5 +143,13 @@ describe("stateGuard", () => {
       stateGuard.safeStore("test-key", { data: 1 });
       expect(localStorage.getItem("dtp:errors")).toBeNull();
     });
+
+    it("silently drops data when quota still exceeded after cleanup", () => {
+      const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
+      // Both calls throw — cleanup didn't free enough space
+      setItemSpy.mockImplementation(() => { throw new DOMException("quota", "QuotaExceededError"); });
+      // Should not throw
+      expect(() => stateGuard.safeStore("test-key", { data: 1 })).not.toThrow();
+    });
   });
 });

@@ -50,4 +50,9 @@ describe("useDevToolsState", () => {
     act(() => { result.current.setDevHeatmap({ 0: 5, 1: 3 }); });
     expect(result.current.devHeatmap).toEqual({ 0: 5, 1: 3 });
   });
+
+  it("does not expose enableDevMode (dead code removed)", () => {
+    const { result } = renderHook(() => useDevToolsState());
+    expect((result.current as Record<string, unknown>).enableDevMode).toBeUndefined();
+  });
 });
