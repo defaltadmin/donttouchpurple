@@ -314,6 +314,7 @@ export default function App() {
   const peakStreakRef = useRef(0);
   const dustAtStartRef = useRef(dust);
   const pbFlashedRef = useRef(false);
+  const visibilityPausedRef = useRef(false);
   const [gameOverProgress, setGameOverProgress] = useState(0);
   const [liveMessage, setLiveMessage] = useState('');
   const [hasSeenHowTo, setHasSeenHowTo] = useState(() => localStorage.getItem('dtp:howto-seen') === 'true');
@@ -501,19 +502,16 @@ export default function App() {
     // Update progress tracking (use refs for synchronous reads)
     const newWins = winsRef.current + (engineWinner === "p1" ? 1 : 0);
     const newDeaths = deathsRef.current + (p1Score === 0 ? 1 : 0);
-    const newGames = gamesPlayedRef.current + 1;
+    // FIX-01: gamesPlayed already incremented in startGame — don't double-count here
 
     setWins(newWins); winsRef.current = newWins;
     setDeaths(newDeaths); deathsRef.current = newDeaths;
-    setGamesPlayed(newGames); gamesPlayedRef.current = newGames;
     safeSet('dtp:wins', newWins.toString());
     safeSet('dtp:deaths', newDeaths.toString());
-    safeSet('dtp-games-played', String(newGames));
-    if (newGames === 1) safeSet('dtp-show-rewards-after-first-game', '1');
 
     machine.updateProgress({
       bestScore: Math.max(best1Ref.current, best2Ref.current, gameHighScore),
-      gamesPlayed: newGames,
+      gamesPlayed: gamesPlayedRef.current,
       wins: newWins,
       deaths: newDeaths
     });
@@ -836,12 +834,15 @@ export default function App() {
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
         if (snapshotRef.current?.phase === "playing") {
+          visibilityPausedRef.current = true;
           pauseEngine();
           // Engine's autoSaveSession() writes the full snapshot with gameSeed
           // — no need to write a partial one here that the resume validator would reject
         }
       } else if (document.visibilityState === 'visible') {
-        if (snapshotRef.current?.phase === "paused") {
+        // FIX-03: Only auto-resume if visibility change caused the pause, not manual pause
+        if (snapshotRef.current?.phase === "paused" && visibilityPausedRef.current) {
+          visibilityPausedRef.current = false;
           resumeEngine();
           setPaused(false);
         }
@@ -1522,7 +1523,7 @@ export default function App() {
           muted={muted}
           isFS={isFS}
           onResume={resumeGame}
-          onRestart={() => { resumeEngine(); setPaused(false); setTimeout(() => { startEngine(); }, 50); }}
+          onRestart={() => { resumeEngine(); setPaused(false); scoreSubmittedRef.current = false; setTimeout(() => { startEngine(); }, 50); }}
           onExit={() => setShowExitConfirm(true)}
           onToggleMute={() => toggleMuted(!muted)}
           onToggleFS={toggleFS}

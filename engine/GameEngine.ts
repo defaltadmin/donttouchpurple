@@ -417,7 +417,10 @@ export class GameEngine {
   private scheduleTimeout(cb: () => void, ms: number): ReturnType<typeof setTimeout> {
     const id = setTimeout(() => {
       this._timeouts = this._timeouts.filter(t => t !== id);
-      if (this.phase !== 'paused') cb();
+      // FIX-04: Fire during pause too — animation cleanups are harmless,
+      // and the tick loop is already stopped so no game state mutation occurs.
+      // Dropped callbacks during tab-switch pauses caused stale animation state.
+      if (this.phase !== 'gameover') cb();
     }, ms);
     this._timeouts.push(id);
     return id;
@@ -1184,9 +1187,12 @@ destroy(): void {
 
   private autoSaveSession(): void {
     if (this.phase !== "playing" || this.paused) return;
-    try {
-      sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(this.getSessionSnapshot()));
-    } catch (e) { logError('autoSaveSession failed', e); }
+    const snap = this.getSessionSnapshot();
+    const raw = JSON.stringify(snap);
+    // SEC-012: Sign session data before writing (fire-and-forget, sub-ms crypto)
+    stateGuard.signSession(raw).then(signed => {
+      sessionStorage.setItem(this.SESSION_KEY, signed);
+    }).catch(e => { logError('autoSaveSession failed', e); });
   }
 
 private triggerGameOver(winner: Winner): void {
