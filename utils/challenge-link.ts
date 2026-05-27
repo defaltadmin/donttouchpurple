@@ -1,44 +1,9 @@
 // utils/challenge-link.ts
 import { logger } from './logger';
 
-// SECURITY: The HMAC secret MUST be moved server-side (Cloudflare Worker) before production.
-// Client-side secrets are extractable from the JS bundle.
-// For now, we use a dev-only placeholder that disables challenge signing in production
-// unless a real secret is configured.
-const HMAC_SECRET: string =
-  (import.meta as { env?: Record<string, string> }).env?.VITE_CHALLENGE_SECRET || '';
-
-const SIGNING_ENABLED = !!HMAC_SECRET;
+const SIGN_API = 'https://game.mscarabia.com/api/sign-challenge';
+const VERIFY_API = 'https://game.mscarabia.com/api/verify-challenge';
 const IS_PROD = typeof window !== "undefined" && import.meta.env.PROD;
-
-async function _importKey(): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(HMAC_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify'],
-  );
-}
-
-async function signPayload(score: number, seed: string, hearts: number): Promise<string> {
-  const key = await _importKey();
-  const msg = new TextEncoder().encode(`${score}:${seed}:${hearts}`);
-  const raw = await crypto.subtle.sign('HMAC', key, msg);
-  // URL-safe base64, first 16 chars (96-bit truncated HMAC)
-  return btoa(String.fromCharCode(...new Uint8Array(raw)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    .slice(0, 16);
-}
-
-async function verifyPayload(score: number, seed: string, hearts: number, sig: string): Promise<boolean> {
-  try {
-    const expected = await signPayload(score, seed, hearts);
-    return expected === sig;
-  } catch {
-    return false;
-  }
-}
 
 export const challengeLink = {
   async generate(score: number, seed: string, hearts: number): Promise<string> {
@@ -47,10 +12,20 @@ export const challengeLink = {
       challenge: '1', seed, score: String(score), hearts: String(hearts),
       ref: navigator.language || 'global',
     });
-    if (SIGNING_ENABLED) {
-      params.set('sig', await signPayload(score, seed, hearts));
-    } else {
-      logger.warn('Challenge signing disabled — no HMAC secret configured');
+    try {
+      const res = await fetch(SIGN_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score, seed, hearts }),
+      });
+      if (res.ok) {
+        const { sig } = await res.json() as { sig: string };
+        if (sig) params.set('sig', sig);
+      } else {
+        logger.warn('Challenge signing server returned', res.status);
+      }
+    } catch {
+      logger.warn('Challenge signing request failed');
     }
     return `${base}?${params.toString()}`;
   },
@@ -75,33 +50,31 @@ export const challengeLink = {
     const ref    = p.get('ref')   || 'global';
 
     if (!sig) {
-      if (!SIGNING_ENABLED) {
-        // Production without signing = reject all challenges
-        if (IS_PROD) {
-          logger.warn('Challenge signing not configured in production — rejecting');
-          return { isChallenge: true, valid: false };
-        }
-        // Dev mode: accept unsigned challenges
-        return { isChallenge: true, valid: true, seed, score, hearts, ref };
-      }
-      logger.warn('Challenge URL missing signature — treating as invalid');
-      return { isChallenge: true, valid: false };
-    }
-
-    if (!SIGNING_ENABLED) {
-      // Production without signing = reject all challenges
+      // No signature — reject in production, accept in dev
       if (IS_PROD) {
-        logger.warn('Challenge has signature but no HMAC secret configured in production — rejecting');
+        logger.warn('Challenge URL missing signature in production — rejecting');
         return { isChallenge: true, valid: false };
       }
-      logger.warn('Challenge URL has signature but no HMAC secret configured — accepting');
       return { isChallenge: true, valid: true, seed, score, hearts, ref };
     }
 
-    const valid = await verifyPayload(score, seed, hearts, sig);
-    if (!valid) logger.warn('Challenge URL signature mismatch');
-
-    return { isChallenge: true, valid, seed, score, hearts, ref };
+    // SEC-CL-01: Verify signature server-side (constant-time compare, no re-signing)
+    try {
+      const res = await fetch(VERIFY_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score, seed, hearts, sig }),
+      });
+      if (res.ok) {
+        const { valid } = await res.json() as { valid: boolean };
+        if (!valid) logger.warn('Challenge URL signature mismatch');
+        return { isChallenge: true, valid, seed, score, hearts, ref };
+      }
+      logger.warn('Challenge verification server returned', res.status);
+    } catch {
+      logger.warn('Challenge verification request failed');
+    }
+    return { isChallenge: true, valid: false };
   },
 
   /** Legacy sync parse — use only for non-competitive display (no integrity check). */

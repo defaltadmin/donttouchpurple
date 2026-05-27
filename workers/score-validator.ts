@@ -81,6 +81,11 @@ async function getFirebaseToken(env: Env): Promise<string> {
   }
 }
 
+function toBase64url(buf: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 async function signChallenge(score: number, seed: string, hearts: number, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw', new TextEncoder().encode(secret),
@@ -88,9 +93,22 @@ async function signChallenge(score: number, seed: string, hearts: number, secret
   );
   const msg = new TextEncoder().encode(`${score}:${seed}:${hearts}`);
   const raw = await crypto.subtle.sign('HMAC', key, msg);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    .slice(0, 16);
+  return toBase64url(raw);
+}
+
+async function verifyChallenge(score: number, seed: string, hearts: number, sig: string, secret: string): Promise<boolean> {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const msg = new TextEncoder().encode(`${score}:${seed}:${hearts}`);
+  const expected = await crypto.subtle.sign('HMAC', key, msg);
+  const expectedStr = toBase64url(expected);
+  // Constant-time compare via timing-safe byte-by-byte
+  if (expectedStr.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expectedStr.length; i++) diff |= expectedStr.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
 }
 
 export default {
@@ -165,6 +183,41 @@ export default {
         }
         const sig = await signChallenge(body.score, body.seed, body.hearts, env.CHALLENGE_HMAC_SECRET);
         return new Response(JSON.stringify({ sig }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    }
+
+    // SEC-CL-01: Server-side HMAC verification for challenge links
+    if (url.pathname === '/api/verify-challenge') {
+      const verifyIp = request.headers.get('cf-connecting-ip');
+      if (!verifyIp) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      // More permissive rate limit — verification is lighter than signing
+      const verifyRateKey = `verify-rate:${verifyIp}`;
+      const verifyNow = Date.now();
+      let verifyAttempts: number[] = (await env.RATE_LIMIT_KV.get(verifyRateKey, { type: 'json' })) ?? [];
+      verifyAttempts = verifyAttempts.filter(ts => verifyNow - ts < 60_000);
+      if (verifyAttempts.length >= 60) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      verifyAttempts.push(verifyNow);
+      await env.RATE_LIMIT_KV.put(verifyRateKey, JSON.stringify(verifyAttempts), { expirationTtl: 61 });
+
+      if (!env.CHALLENGE_HMAC_SECRET) {
+        return new Response(JSON.stringify({ error: 'Challenge verification not configured' }), { status: 501, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      try {
+        const body = await request.json<ChallengePayload & { sig: string }>();
+        if (typeof body.score !== 'number' || typeof body.seed !== 'string' || typeof body.hearts !== 'number' || typeof body.sig !== 'string') {
+          return new Response(JSON.stringify({ error: 'Invalid params' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        if (body.seed.length > 256) {
+          return new Response(JSON.stringify({ error: 'Seed too long' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        const valid = await verifyChallenge(body.score, body.seed, body.hearts, body.sig, env.CHALLENGE_HMAC_SECRET);
+        return new Response(JSON.stringify({ valid }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       } catch {
         return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }

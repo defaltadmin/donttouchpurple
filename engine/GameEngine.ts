@@ -1220,6 +1220,10 @@ private triggerGameOver(winner: Winner): void {
     // Perfect round — no damage taken
     achievementSystem.check('perfect_round', () => !this._tookDamage && this.tickCount > 100);
 
+    // ORDERING DEPENDENCY: achievement checks MUST happen before counter resets.
+    // games_50/games_200/perfect_round read counters that are zeroed below.
+    // If you move resets above this line, those achievements will always see 0.
+
     // Reset per-game counters
     this._shieldCollected = 0;
     this._freezeCollected = 0;
@@ -1236,6 +1240,7 @@ private triggerGameOver(winner: Winner): void {
       this.holdTimers.clear();
       this.clearAllDeltaTimers();
       this.stop();
+      // Only p1's charges are persisted — p2 charges are ephemeral (default 0, never saved).
       const cur = this.config.storage?.loadStoredPowerups() ?? { freeze: 0, shield: 0, mult: 0, heart: 0 };
       this.config.storage?.saveStoredPowerups({
         freeze: Math.max(0, this.p1.storedFreezeCharges ?? 0),

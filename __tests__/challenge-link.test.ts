@@ -75,10 +75,10 @@ describe("challengeLink", () => {
       expect(result).toEqual({ isChallenge: false, valid: false });
     });
 
-    it("returns valid=true for matching sig", async () => {
+    it("returns valid=true for verified sig", async () => {
       mockLocation("?challenge=1&seed=s1&score=500&hearts=3&sig=abc123");
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-        new Response(JSON.stringify({ sig: "abc123" }), { status: 200 })
+        new Response(JSON.stringify({ valid: true }), { status: 200 })
       );
       const result = await challengeLink.parseAndVerify();
       expect(result.isChallenge).toBe(true);
@@ -88,10 +88,10 @@ describe("challengeLink", () => {
       expect(result.hearts).toBe(3);
     });
 
-    it("returns valid=false for mismatched sig", async () => {
+    it("returns valid=false for rejected sig", async () => {
       mockLocation("?challenge=1&seed=s1&score=500&hearts=3&sig=wrong");
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-        new Response(JSON.stringify({ sig: "abc123" }), { status: 200 })
+        new Response(JSON.stringify({ valid: false }), { status: 200 })
       );
       const result = await challengeLink.parseAndVerify();
       expect(result.isChallenge).toBe(true);

@@ -1009,7 +1009,8 @@ export default function App() {
 
   // FPS Monitor + F key handled by useThemeSettings
 
-  // Personal best delta flash
+  // Personal best delta flash — best1/best2 are state (not refs), so this effect
+  // re-runs on score updates. pbFlashedRef prevents repeated toasts within a single game.
   useEffect(() => {
     if (!snapshot || snapshot.phase !== "playing") return;
     const currentBest = gameMode === "classic" ? best1 : best2;
