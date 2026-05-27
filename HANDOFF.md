@@ -88,7 +88,7 @@ firebase deploy --only hosting  # Deploy to game.mscarabia.com
 
 ### Multi-AI Review Round — Big Pickle v2 R2 + DeepSeek + Sonnet + Manual Triage
 
-**9 commits on main** (`e532f88`→`f0b15ff`). 44 new tests. All security/quality/review findings resolved.
+**17 commits on main** (`e532f88`→`7c4d556`). 44 new tests. All security/quality/review findings resolved. CI green (Node 22 + 24).
 
 #### Big Pickle v2 R2 (commit `e532f88`)
 - **SEC-013** (Med): `/api/sign-challenge` rate-limited (30 req/min per IP via KV)
@@ -129,9 +129,16 @@ firebase deploy --only hosting  # Deploy to game.mscarabia.com
 | Sonnet | 8 | 7 | 0 | 100% (1 deferred→fixed) |
 | Manual triage | 12 | 6 | 6 | 50% |
 
-#### Final state: 214/214 tests, 0 type/lint errors, clean build
+#### CI Fixes (commits `ace1e12`→`7c4d556`)
+- Committed uncommitted Big Pickle v2 changes (score-sync, useGameEngine snapshotRef, GameOver toBlob, CellLifecycle, devLog, idb, game.css) — CI was failing on old signatures
+- Committed missing `styles/light-theme.css` — test was failing on dynamic import() in CI
+- Committed missing `components/BorderGlow.tsx` and review packet outputs
+- Deleted old review files from git (deepseek-*.md, AUDIT, DTP_DEEP_ANALYSIS, lighthouse26-5.txt)
 
-#### New test totals: 20 files, 211 tests (was 16 files, 167 tests)
+#### Achievement Toast Fix (commit `7c4d556`)
+- Toast visibility extended from 3.5s to 6s (queue drain 3500ms→6000ms, CSS fadeOut 3s→5.5s)
+
+#### Final state: 214/214 tests, 0 type/lint errors, CI green (Node 22 + 24)
 
 ### Big Pickle Review v2 — All 14 Findings Fixed + Review Prompt Ready
 Review source: `.review-packet/DTP-v7.5.3-FULL-REVIEW.md` (Big Pickle, 13 findings)
@@ -228,7 +235,7 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 3. **Push to remote** — 10 commits ahead of origin/main
 
 ### High Priority
-4. **Achievement notification UX** — currently flashes too fast to read. Need persistent toast or badge list.
+4. ~~**Achievement notification UX**~~ ✓ — toast extended to 6s (was 3.5s)
 5. **Gameplay trailer** (15-30s) — needs screen recording
 6. **Screenshots** (5-6 key moments) — needs screen capture
 7. **App Check enforcement** — code complete, needs Firebase Console toggle
@@ -237,7 +244,7 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 8. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
 9. **Product Hunt** — listing content ready in .github/LAUNCH.md
 10. **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets
-11. **Resume game removal** — user reported it doesn't work well; suggest removing the feature
+11. **Resume game removal** — user reported it doesn't work well. Remove: session.ts module, GameEngine autoSaveSession/restoreSessionSnapshot/startSessionPersistence/stopSessionPersistence, App.tsx resume detection/handleResumeGame/resumeReady/resumeData state, StartScreen.tsx resume button + R shortcut
 
 ### From Deep Analysis Report
 - STAB-001: Track gameover timeout ref, clear on unmount
