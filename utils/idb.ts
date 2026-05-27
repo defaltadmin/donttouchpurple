@@ -59,7 +59,10 @@ export const idb = {
               store.add({ ...score, queuedAt: Date.now() });
             }
           };
-          cursorReq.onerror = () => { try { store.add({ ...score, queuedAt: Date.now() }); } catch { /* store corrupted */ } };
+          cursorReq.onerror = () => {
+            // Cursor failed — attempt count-based fallback in same transaction
+            try { store.add({ ...score, queuedAt: Date.now() }); } catch { /* transaction aborted */ }
+          };
         } else {
           store.add({ ...score, queuedAt: Date.now() });
         }

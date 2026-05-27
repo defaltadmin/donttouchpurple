@@ -43,6 +43,7 @@ export type BotTapFx = { id: string; idx: number; dustCost: number; at: number; 
 // ─── Hook return type ─────────────────────────────────────────────
 export interface UseGameEngineReturn {
   snapshot:    GameSnapshot | null;
+  snapshotRef: React.MutableRefObject<GameSnapshot | null>;
   heartAnimP1: boolean;
   heartAnimP2: boolean;
   shakeGrid1:  boolean;
@@ -106,6 +107,7 @@ export function useGameEngine(
   useEffect(() => { onGameOverRef.current = onGameOver; }, [onGameOver]);
 
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
+  const snapshotRef = useRef<GameSnapshot | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
   const [heartAnimP1, setHA1]         = useState(false);
@@ -172,6 +174,8 @@ export function useGameEngine(
 
       switch (event.type) {
         case "tick": {
+          // PERF-004: Always update ref for non-render consumers (bot, handlers)
+          snapshotRef.current = event.snapshot;
           if (mountedRef.current) setSnapshot(event.snapshot);
           {
             const snap = event.snapshot;
@@ -402,7 +406,7 @@ export function useGameEngine(
   }, []);
 
   return {
-    snapshot, heartAnimP1, heartAnimP2, shakeGrid1, shakeGrid2, toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
+    snapshot, snapshotRef, heartAnimP1, heartAnimP2, shakeGrid1, shakeGrid2, toast, pwrToastP1, pwrToastP2, levelUpBadge, rareSplash, winner, lastGameScore,
     start: wrappedStart, pause, resume, handleTap, handleHoldStart, handleHoldEnd,
     activateStoredFreeze, activateStoredShield, devForceStage, devForcePattern, devForceRare,
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,

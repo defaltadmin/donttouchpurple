@@ -211,10 +211,15 @@ export function GameOver({
                   ctx.fillText(`${ml} Mode · Seed ${gameSeed}`, W/2, 235);
                   ctx.fillStyle = "rgba(192,38,211,0.9)"; ctx.font = "bold 14px system-ui, sans-serif";
                   ctx.fillText("Can you beat this? → game.mscarabia.com", W/2, 285);
-                  const a = document.createElement("a");
-                  a.href = canvas.toDataURL("image/png");
-                  a.download = `dtp-score-${p1Score}.png`;
-                  a.click();
+                  // UX-001: Use toBlob for async non-blocking PNG encoding
+                  canvas.toBlob((blob) => {
+                    if (!blob) return;
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `dtp-score-${p1Score}.png`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  }, "image/png");
                 } catch { /* canvas not available */ }
               }}>🖼️ Save Card</button>
               <button className="btn-ghost" onClick={() => {

@@ -3,6 +3,9 @@ import { STAGES, EVOLVE_PATTERNS } from "../../config/gridPatterns";
 import { POWERUP_TABLE } from "../../config/powerupWeights";
 import type { ActiveCell, CellType, CellShape } from "../types";
 
+// PERF-006: Cache valid slots per pattern to avoid per-tick array allocation
+const _slotsCache = new WeakMap<{ cols: number; rows: number; mask: number[] | null }, number[]>();
+
 const SAFE: CellType[] = [
   "white","blue","red","orange","yellow",
   "green","cyan","lime","teal","pink","rose","magenta",
@@ -62,9 +65,11 @@ export function spawnActive(
   godMode = false
 ): ActiveCell[] {
   const pat = patternOverride ?? STAGES[Math.min(stage, STAGES.length - 1)];
-  const { mask } = pat;
-  const total = pat.cols * pat.rows;
-  const validSlots = mask ? [...mask] : Array.from({ length: total }, (_, i) => i);
+  let validSlots = _slotsCache.get(pat);
+  if (!validSlots) {
+    validSlots = pat.mask ? [...pat.mask] : Array.from({ length: pat.cols * pat.rows }, (_, i) => i);
+    _slotsCache.set(pat, validSlots);
+  }
   const validCount = validSlots.length;
 
   const minCount = Math.min(2 + Math.floor(stage * 0.4), validCount - 1);
