@@ -1115,7 +1115,7 @@ export default function App() {
       if (queue.length > 0) {
         setAchievementQueue(prev => [...prev, queue[0]]);
         safeSet('dtp:achievement-toasts', JSON.stringify(queue.slice(1)));
-        toastTimeoutRef.current = setTimeout(processQueue, 3500);
+        toastTimeoutRef.current = setTimeout(processQueue, 6000);
       }
     };
     processQueue();
