@@ -147,6 +147,10 @@ export class TickProcessor {
 
       ref.active.forEach(c => {
         if (!validSlots.has(c.idx) || c.clicked) return;
+        // All 7 special types — immune to expiry damage. This list covers all spawnable
+        // types from CellLifecycle.spawnActive(). GameEngine._processTap has a separate,
+        // intentionally narrower list for tap handling (4 collectible types); ice/hold/bomb
+        // have their own dedicated tap blocks. Both must stay in sync with CellLifecycle.
         const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
         const isMiss = ctx._isInverted ? c.type === "purple" : c.type !== dangerColor && !isPwr;
         if (isMiss) {

@@ -413,6 +413,9 @@ export default function App() {
   // Engine Setup
   const [speedMult, setSpeedMult] = useState(1);
 
+  // IMPORTANT: dustCallbacks identity must stay stable — it's passed to GameEngine constructor.
+  // If spendDust or getBotAccuracy change identity (e.g. useDustEconomy refactor), the engine
+  // will be recreated mid-game. Keep deps minimal and verify stability after any dust/bot changes.
   const dustCallbacks = React.useMemo(() => ({
     getDust: () => dustRef.current,
     spendDust,
@@ -1229,6 +1232,7 @@ export default function App() {
   }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
+  // loginClaimedToday declared above (before all handlers) to avoid TDZ if ever reordered
   const handleLoginStreakClaim = () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     safeSet('dtp-login-claimed', todayStr);
