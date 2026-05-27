@@ -156,6 +156,10 @@ export default {
         if (typeof body.score !== 'number' || typeof body.seed !== 'string' || typeof body.hearts !== 'number') {
           return new Response(JSON.stringify({ error: 'Invalid challenge params' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
+        // SEC-016: Limit seed length to prevent memory exhaustion
+        if (body.seed.length > 256) {
+          return new Response(JSON.stringify({ error: 'Seed too long' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
         const sig = await signChallenge(body.score, body.seed, body.hearts, env.CHALLENGE_HMAC_SECRET);
         return new Response(JSON.stringify({ sig }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       } catch {
@@ -174,9 +178,14 @@ export default {
       if (!verifyRes.ok) {
         return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
-      const tokenInfo = await verifyRes.json<{ aud?: string; sub?: string }>();
+      const tokenInfo = await verifyRes.json<{ aud?: string; sub?: string; iss?: string }>();
       if (!tokenInfo.sub) {
         return new Response(JSON.stringify({ error: 'Invalid token claims' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      // SEC-015: Validate issuer to prevent cross-project token abuse
+      const expectedIss = `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`;
+      if (!tokenInfo.iss || tokenInfo.iss !== expectedIss) {
+        return new Response(JSON.stringify({ error: 'Invalid issuer' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       // Validate audience claim to prevent cross-project token abuse.
       // Missing aud is also rejected — a valid Google token always includes it.

@@ -14,13 +14,6 @@ export function useThemeSettings(shopData: ShopData) {
   const [showFps, setShowFps] = useState(() => localStorage.getItem("showFps") === "true");
   const [fps, setFps] = useState(0);
 
-  // Settings manager subscription
-  const [, setSettings] = useState(settingsManager.get());
-  useEffect(() => {
-    const unsub = settingsManager.subscribe(s => { setSettings(s); });
-    return () => { unsub(); };
-  }, []);
-
   // Offset pointer persistence
   useEffect(() => { settingsManager.set({ offsetPointer: showOffset }); }, [showOffset]);
 

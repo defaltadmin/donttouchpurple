@@ -26,9 +26,18 @@ service cloud.firestore {
       return request.resource.data.keys().hasAll(['score', 'initials', 'date', 'mode']);
     }
 
+    // SEC-009: App Check guard — verify attestation on writes
+    // Requires enabling enforcement in Firebase Console → Security → App Check → Enforce
+    // request.app is non-null only when App Check token is valid and enforcement is on
+    function hasValidAppCheck() {
+      return request.app != null;
+    }
+
     // Leaderboard — requires authentication, write-once
     match /lb_global/{docId} {
       allow read: if true;
+      // SEC-009: Uncomment hasValidAppCheck() after enabling enforcement in Firebase Console
+      // To enable: Firebase Console → App Check → APIs → Firestore → Enforce
       allow create: if
         request.auth != null &&
         hasRequiredFields() &&
@@ -41,7 +50,7 @@ service cloud.firestore {
           (request.resource.data.tick is int &&
            request.resource.data.tick >= 0 &&
            request.resource.data.tick <= 600 &&
-           request.resource.data.score <= request.resource.data.tick * 12 + 300)) &&
+           request.resource.data.score <= request.resource.data.tick * 12)) &&
         request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick', 'sessionId']);
       allow update, delete: if false;
     }
@@ -49,7 +58,8 @@ service cloud.firestore {
     // Dust wallet — requires authentication, UID-bound writes
     // docId = player name, uid field must match authenticated user
     match /dust_wallet/{docId} {
-      allow read: if true;
+      // SEC-014: Only the document owner can read their dust wallet
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
       allow create: if
         request.auth != null &&
         request.resource.data.keys().hasOnly(['name', 'dust', 'ts', 'uid']) &&
