@@ -19,6 +19,8 @@ describe("challengeLink", () => {
   afterEach(() => {
     // Restore location
     Object.defineProperty(window, "location", { value: originalLocation, writable: true });
+    // Unstub env vars to prevent IS_PROD from bleeding into adjacent tests
+    vi.unstubAllEnvs();
   });
 
   function mockLocation(search: string) {
