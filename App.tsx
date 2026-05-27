@@ -18,7 +18,6 @@ import { configManager } from "./utils/game-config";
 import { errorTracker } from "./utils/error-tracker";
 import { privacyManager } from "./utils/privacy";
 import { webVitalsMonitor } from "./services/web-vitals";
-import { stateGuard } from "./utils/state-guard";
 import { challengeLink } from "./utils/challenge-link";
 import { orientationMonitor } from "./utils/orientation";
 import { TouchGesture } from "./utils/gestures";
@@ -167,14 +166,10 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setCombo] = useState({ count: 0, multiplier: 1 });
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const comboPopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preloaderRef = useRef(new Preloader());
   const [bossUi, setBossUi] = useState<{ active: boolean; shieldHits: number; maxShield: number; phase: number }>({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
   const [comboPop, setComboPop] = useState(false);
-
-  // Resume session state
-  const [resumeReady, setResumeReady] = useState(false);
-  const [resumeData, setResumeData] = useState<Record<string, unknown> | null>(null);
-  const resumeCheckedRef = useRef(false);
 
   const hydrator = useRef(new AssetHydrator());
   const [uiReady, setUiReady] = useState(false);
@@ -566,7 +561,7 @@ export default function App() {
             setDailyObjectives(prev => prev.map((o, idx) => idx === i ? completed : o));
             const safeReward = isNaN(completed.reward) ? 0 : completed.reward;
             addDust(safeReward, 'DailyObjective');
-            setTimeout(() => {
+            toastTimeoutRef.current = setTimeout(() => {
               setToast(`🎯 Daily Complete! +${completed.reward} 💜`);
               if (toastRef.current) clearTimeout(toastRef.current);
               toastRef.current = setTimeout(() => setToast(null), 3500);
@@ -667,7 +662,6 @@ export default function App() {
     isBotActive,
     setBotAssist, botAssistActive, botTapHighlights, scoreFloats,
     getAutoLowQuality,
-    restoreSessionSnapshot,
   } = useGameEngine(
     engineConfig,
     handleEngineGameOver,
@@ -676,26 +670,6 @@ export default function App() {
     onBossEvent,
     onBombDefused,
   );
-
-  // Resume detection on menu screen
-  useEffect(() => {
-    if (screen !== 'menu') return;
-    if (resumeCheckedRef.current) return;
-    resumeCheckedRef.current = true;
-    const raw = sessionStorage.getItem('dtp:session');
-    if (!raw) { setResumeReady(false); return; }
-    // SEC-012: Verify session integrity before accepting resume
-    stateGuard.verifySession<Record<string, unknown> | null>(raw, null, (d: unknown): d is Record<string, unknown> =>
-      !!d && typeof d === 'object' && typeof (d as Record<string, unknown>).gameSeed === 'number' && typeof (d as Record<string, unknown>).score === 'number'
-    ).then(parsed => {
-      if (parsed) {
-        setResumeReady(true);
-        setResumeData(parsed);
-      } else {
-        setResumeReady(false);
-      }
-    });
-  }, [screen]);
 
   const handleBotToggle = useCallback((player: 1 | 2) => {
     const currentDust = dustRef.current;
@@ -784,29 +758,6 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [screen, gameMode]);
 
-  const handleResumeGame = useCallback(() => {
-    if (!resumeData) return;
-    try {
-      const success = restoreSessionSnapshot(resumeData);
-      if (success) {
-        setScreen("playing");
-        setPaused(false);
-        setResumeReady(false);
-        setResumeData(null);
-        toast$("📦 Game restored! Score: " + (resumeData.score as number));
-      } else {
-        toast$("Failed to restore game");
-        setResumeReady(false);
-        setResumeData(null);
-      }
-    } catch (e) {
-      console.error('Resume failed:', e);
-      toast$("Cannot resume - start a new game");
-      setResumeReady(false);
-      setResumeData(null);
-    }
-  }, [resumeData, restoreSessionSnapshot, toast$, setScreen]);
-
   const resumeGame = useCallback(() => {
     safeSentry.addBreadcrumb({ category: "game", message: "resume", level: "info" });
     resumeEngine();
@@ -839,8 +790,6 @@ export default function App() {
         if (snapshotRef.current?.phase === "playing") {
           visibilityPausedRef.current = true;
           pauseEngine();
-          // Engine's autoSaveSession() writes the full snapshot with gameSeed
-          // — no need to write a partial one here that the resume validator would reject
         }
       } else if (document.visibilityState === 'visible') {
         // FIX-03: Only auto-resume if visibility change caused the pause, not manual pause
@@ -1084,7 +1033,7 @@ export default function App() {
     const onBossUpdate = (e: Event) => setBossUi((e as CustomEvent).detail);
     const onBossActivate = (e: Event) => setBossUi((e as CustomEvent).detail);
     const onBossBreak = () => setComboPop(true);
-    const onComboKill = () => { setComboPop(true); setTimeout(() => setComboPop(false), 1500); };
+    const onComboKill = () => { setComboPop(true); if (comboPopTimerRef.current) clearTimeout(comboPopTimerRef.current); comboPopTimerRef.current = setTimeout(() => setComboPop(false), 1500); };
     const onBossComplete = () => setBossUi({ active: false, shieldHits: 0, maxShield: 5, phase: 1 });
 
     window.addEventListener('dtp:boss:update', onBossUpdate);
@@ -1098,6 +1047,7 @@ export default function App() {
       window.removeEventListener('dtp:boss:shield-break', onBossBreak);
       window.removeEventListener('dtp:combo:kill', onComboKill);
       window.removeEventListener('dtp:boss:complete', onBossComplete);
+      if (comboPopTimerRef.current) { clearTimeout(comboPopTimerRef.current); comboPopTimerRef.current = null; }
     };
   }, []);
 
@@ -1162,9 +1112,6 @@ export default function App() {
   }, [paused, resumeGame, pauseGame]);
 
   const startGame = useCallback((skipTutorialCheck = false) => {
-    resumeCheckedRef.current = false;
-    setResumeReady(false);
-    setResumeData(null);
     if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
@@ -1218,9 +1165,6 @@ export default function App() {
   }, [startGame, setShowTutorial, setEvolveTutorialSeen, EVOLVE_TUTORIAL_SEEN_KEY]);
 
   const goMenu = useCallback(() => {
-    resumeCheckedRef.current = false;
-    setResumeReady(false);
-    setResumeData(null);
     pauseEngine();
     setPaused(false);
     setScreen("menu");
@@ -1637,9 +1581,6 @@ export default function App() {
            }} onEnergyIconClick={() => setShowEnergyPopup(true)} dust={dust} />}
           pendingReplaySeed={pendingReplaySeed}
           onClearReplaySeed={clearReplaySeed}
-          resumeReady={resumeReady}
-          resumeData={resumeData}
-          onResumeGame={handleResumeGame}
           onToast={toast$}
           hasBackground={!!shopData.equippedBackground && shopData.equippedBackground !== 'default'}
         />

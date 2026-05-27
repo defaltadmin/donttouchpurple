@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GameEngine } from "../engine/GameEngine";
-import { sessionManager } from "../utils/session";
 import { logger } from "../utils/logger";
 import type { GameConfig, GameEvent, GameSnapshot, Winner, StoredPowerups } from "../engine/types";
 import { LS_KEYS, GAME } from "../config/difficulty";
@@ -82,8 +81,6 @@ export interface UseGameEngineReturn {
   scoreFloats: { id: number; player: 1 | 2; idx: number; amount: number }[];
   lastGameScore: number | null;
   getAutoLowQuality: () => boolean;
-  restoreSession: () => boolean;
-  restoreSessionSnapshot: (data: Record<string, unknown>) => boolean;
   generateChallengeUrl: () => Promise<string>;
 }
 
@@ -318,8 +315,6 @@ export function useGameEngine(
 
     return () => {
       mountedRef.current = false;
-      engine.stopSessionPersistence();
-      sessionManager.clear();
       unsub();
       engine.destroy();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally read the latest ref value in cleanup
@@ -378,22 +373,6 @@ export function useGameEngine(
     return (await engineRef.current?.generateChallengeUrl()) ?? '';
   }, []);
 
-  const restoreSessionSnapshot = useCallback((data: Record<string, unknown>): boolean => {
-    if (!engineRef.current) return false;
-    return engineRef.current.restoreSessionSnapshot(data);
-  }, []);
-
-  const restoreSession = useCallback((): boolean => {
-    const raw = sessionStorage.getItem('dtp:session-ui');
-    if (!raw || !engineRef.current) return false;
-    try {
-      const { engineSnapshot } = JSON.parse(raw);
-      engineRef.current.restoreFromSession(engineSnapshot);
-      engineRef.current.startSessionPersistence();
-      return true;
-    } catch { return false; }
-  }, []);
-
   const wrappedStart = useCallback((forceSeed?: number) => {
     setWinner(null);
     setLastGameScore(null);
@@ -402,7 +381,6 @@ export function useGameEngine(
     setBotTapHighlights({ 1: {}, 2: {} });
     setScoreFloats([]);
     engineRef.current?.start(forceSeed);
-    engineRef.current?.startSessionPersistence();
   }, []);
 
   return {
@@ -412,6 +390,6 @@ export function useGameEngine(
     devSetGodMode, devSetFreezeTime, devSetRotationSpeed, devSpawnPowerup,
     devSpawnSpecialCell, devTriggerBotTap, devToggleBotAssist,
     startBot, stopBot, isBotActive, setBotAssist, botAssistActive, botTapHighlights, botTapFx, scoreFloats,
-    getAutoLowQuality, restoreSession, restoreSessionSnapshot, generateChallengeUrl,
+    getAutoLowQuality, generateChallengeUrl,
   };
 }

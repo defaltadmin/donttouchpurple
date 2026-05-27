@@ -1515,6 +1515,19 @@ body.damage-pulse::after {
 .boss-banner--inversion { background: linear-gradient(90deg, #0ea5e9, #8b5cf6, #0ea5e9); background-size: 200%; animation: bossBannerScroll 1.5s linear infinite; }
 .boss-banner--blackout  { background: #000; animation: none; color: #888; letter-spacing: 0.1em; }
 
+.boss-timer {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.35);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fbbf24;
+  letter-spacing: 0.02em;
+}
+
 /* Blackout overlay — dims grid, cells briefly flash on tap via pointer-events none */
 .blackout-overlay {
   position: absolute;

@@ -43,7 +43,6 @@ export interface TickContext {
   emit(event: GameEvent): void;
   _flushTapBuffer(player: 1 | 2): void;
   checkStageProgress(player: 1 | 2): void;
-  autoSaveSession(): void;
   triggerGameOver(winner: Winner): void;
   scheduleTimeout(cb: () => void, ms: number): ReturnType<typeof setTimeout>;
   addDeltaTimer(id: string, durationMs: number, callback: () => void): void;
@@ -236,7 +235,6 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
     }
 
     ctx.tickCount += 1;
-    if (ctx.tickCount % 10 === 0) ctx.autoSaveSession();
     if (ctx.phase === "playing" && ctx.tickCount >= GAME.HUMAN_LIMIT_TICK) { ctx.phase = "humanlimit"; ctx.emit({ type: "phaseChange", phase: "humanlimit" }); }
     if (ctx.tickCount > GAME.SURVIVAL_BONUS_START_TICK && ctx.tickCount % BALANCE.survival.interval === 0) {
       const bonus = ctx.tickCount > BALANCE.survival.lateThreshold ? BALANCE.survival.lateAmount : ctx.tickCount > BALANCE.survival.midThreshold ? BALANCE.survival.midAmount : BALANCE.survival.earlyAmount;

@@ -3384,24 +3384,6 @@ input[type="range"] { accent-color: var(--theme-primary, #fda9ff); width: 120px;
 }
 @keyframes fadeSlide { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
-/* ─── Resume Button ─── */
-.dtp-btn-resume {
-  width: 100%;
-  background: rgba(30, 30, 40, 0.85);
-  backdrop-filter: blur(12px);
-  color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12);
-  padding: 14px 16px; border-radius: 14px;
-  font-weight: 600; margin: 0 0 12px;
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
-  cursor: pointer;
-  font-size: 15px;
-}
-.dtp-btn-resume:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); background: rgba(40, 40, 55, 0.9); }
-.dtp-btn-resume:active { transform: translateY(0); }
-.dtp-resume-meta { font-size: 0.75rem; opacity: 0.65; color: #94a3b8; }
-@media (prefers-reduced-motion: reduce) { .dtp-btn-resume { animation: none !important; } }
-
 /* ─── Thumb-zone root variable ─── */
 :root {
   --thumb-safe-bottom: env(safe-area-inset-bottom, 16px);

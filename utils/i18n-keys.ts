@@ -1,6 +1,6 @@
 export type I18nKey =
   | 'game.title'
-  | 'menu.play' | 'menu.resume' | 'menu.shop' | 'menu.leaderboard' | 'menu.settings'
+  | 'menu.play' | 'menu.shop' | 'menu.leaderboard' | 'menu.settings'
   | 'menu.rewards' | 'menu.game_master' | 'menu.how_to_play' | 'menu.keys'
   | 'hud.score' | 'hud.best' | 'hud.speed' | 'hud.hearts' | 'hud.time'
   | 'hud.combo' | 'hud.survival' | 'hud.need_dust' | 'hud.p2_score'

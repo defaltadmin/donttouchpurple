@@ -79,8 +79,9 @@ service cloud.firestore {
         request.resource.data.dust is int &&
         request.resource.data.dust >= 0 &&
         request.resource.data.dust < 10000000 &&
-        // SEC-006: dust can only increase by at most one game's max earnings per write (monotonic guard)
-        request.resource.data.dust <= resource.data.dust + 10000;
+        // SEC-006: monotonic guard — dust bounded by max earnings (up) and max spend (down) per write
+        request.resource.data.dust <= resource.data.dust + 10000 &&
+        request.resource.data.dust >= resource.data.dust - 5000;
       allow delete: if false;
     }
 

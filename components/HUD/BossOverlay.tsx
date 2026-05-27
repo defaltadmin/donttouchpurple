@@ -4,6 +4,19 @@ import type { GameSnapshot } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
 import { LottiePlayer } from "../UI/LottiePlayer";
 
+function BossCountdown({ endsAt }: { endsAt: number }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+  useEffect(() => {
+    const id = setInterval(() => {
+      const sec = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      setRemaining(sec);
+      if (sec <= 0) clearInterval(id);
+    }, 250);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  return <span className="boss-timer" aria-label={`${remaining} seconds remaining`}>{remaining}s</span>;
+}
+
 const BOSS_LOTTIE_MAP: Record<string, string> = {
   storm: "/assets/lottie/boss-storm.json",
   inversion: "/assets/lottie/boss-inversion.json",
@@ -55,6 +68,7 @@ export const BossOverlay = React.memo(function BossOverlay({
               {snapshot.bossEvent.type === "storm"     && `⚡ ${t('boss.storm')} ⚡`}
               {snapshot.bossEvent.type === "inversion" && `🔄 ${t('boss.inversion')} 🔄`}
               {snapshot.bossEvent.type === "blackout"  && `🌑 ${t('boss.blackout')} 🌑`}
+              <BossCountdown endsAt={snapshot.bossEvent.endsAt} />
             </div>
           )}
         </>

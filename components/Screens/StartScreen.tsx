@@ -170,9 +170,6 @@ export interface StartScreenProps {
   dailyObjectives?: import("../../config/dailyObjective").DailyObjective[];
   pendingReplaySeed?: string | null;
   onClearReplaySeed?: () => void;
-  resumeReady?: boolean;
-  resumeData?: Record<string, unknown> | null;
-  onResumeGame?: () => void;
   onToast?: (message: string) => void;
   hasBackground?: boolean;
 }
@@ -192,7 +189,6 @@ export function StartScreen({
   dustWidget: _dustWidget, energyBar,
   dailyObjectives: _dailyObjectives,
   pendingReplaySeed, onClearReplaySeed,
-  resumeReady, resumeData, onResumeGame,
   onToast,
   hasBackground,
 }: StartScreenProps) {
@@ -231,13 +227,6 @@ export function StartScreen({
           e.preventDefault();
           onKeybind();
           break;
-        case 'r':
-        case 'R':
-          if (resumeReady && onResumeGame) {
-            e.preventDefault();
-            onResumeGame();
-          }
-          break;
         case '1':
           e.preventDefault();
           setGameMode('classic');
@@ -268,7 +257,7 @@ export function StartScreen({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, resumeReady, onResumeGame, setGameMode, setInputMode, setNumPlayers]);
+  }, [inputMode, numPlayers, gameMode, isFeatureUnlocked, devMode, onPlay, onHowTo, onLeaderboard, onShop, onKeybind, setGameMode, setInputMode, setNumPlayers]);
 
   return (
     <>
@@ -283,12 +272,6 @@ export function StartScreen({
           <span>▶ Replay Seed: <strong>{pendingReplaySeed}</strong></span>
           <button className="btn-ghost btn-sm" onClick={onClearReplaySeed}>Clear</button>
         </div>
-      )}
-      {resumeReady && resumeData && onResumeGame && (
-        <button onClick={onResumeGame} className="dtp-btn-resume" aria-label="Resume saved game">
-          {"🔄 " + t('menu.resume')}
-          <span className="dtp-resume-meta">Score: {resumeData.score as number} | ❤️ {resumeData.hearts as number}</span>
-        </button>
       )}
       {/* Top row: player pill + energy pips */}
       <div className="menu-top-row">
@@ -365,7 +348,6 @@ export function StartScreen({
       <div className="sr-only" aria-live="polite">
         Use keyboard shortcuts: Enter/Space to play, H for help, L for leaderboard, S for shop, K for keys.
         Use 1/2 to switch game modes, arrow keys to change players and input mode.
-        {resumeReady ? ' Press R to resume saved game.' : ''}
       </div>
     </div>
     </>

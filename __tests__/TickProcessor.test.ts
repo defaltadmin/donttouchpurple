@@ -57,7 +57,6 @@ function makeCtx(events: GameEvent[], overrides?: Partial<TickContext>): TickCon
     emit: (e: GameEvent) => { events.push(e); },
     _flushTapBuffer: vi.fn(),
     checkStageProgress: vi.fn(),
-    autoSaveSession: vi.fn(),
     triggerGameOver: vi.fn(),
     scheduleTimeout: vi.fn(() => ({} as ReturnType<typeof setTimeout>)),
     addDeltaTimer: vi.fn(),
@@ -119,20 +118,6 @@ describe('TickProcessor', () => {
       processor.processTick(ctx);
       const soundEvents = events.filter(e => e.type === 'sound' && e.name === 'tick');
       expect(soundEvents.length).toBe(1);
-    });
-
-    it('calls autoSaveSession every 10 ticks', () => {
-      const events: GameEvent[] = [];
-      const ctx = makeCtx(events, { tickCount: 9 });
-      processor.processTick(ctx);
-      expect(ctx.autoSaveSession).toHaveBeenCalled();
-    });
-
-    it('does not call autoSaveSession on non-10th tick', () => {
-      const events: GameEvent[] = [];
-      const ctx = makeCtx(events, { tickCount: 5 });
-      processor.processTick(ctx);
-      expect(ctx.autoSaveSession).not.toHaveBeenCalled();
     });
 
     it('processes delta timers and decrements remaining', () => {

@@ -12,8 +12,6 @@ import { computeMs, makeGameSeed, getSpinConfig, mulberry32, speedLabel } from "
 import { logError } from "../utils/devLog";
 import { InputBuffer } from "../utils/input-smoothing";
 import { haptics } from "../utils/haptics";
-import { sessionManager } from "../utils/session";
-import { stateGuard } from "../utils/state-guard";
 import { scoreSync } from "../utils/score-sync";
 import { audioEngine } from "../utils/audio";
 import { analytics } from "../utils/analytics";
@@ -31,7 +29,7 @@ import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellShape, GameConfig, GameEvent,
   GameSnapshot, PlayerState, RareColorMode, Winner,
-  BossEvent, BossEventType, HoldCell, CellType,
+  BossEvent, HoldCell,
 } from "./types";
 import {
   activeToCellsP, spawnActive,
@@ -87,7 +85,7 @@ export class GameEngine {
   private _pauseListeners: Array<() => void> = [];
   private _resumeListeners: Array<() => void> = [];
   private inputBuffer = new InputBuffer();
-  private _sessionAutoSaveInterval: ReturnType<typeof setInterval> | null = null;
+
   private fpsHistory: number[] = [];
   private fpsIdx = 0;
   private autoLowQuality = false;
@@ -105,7 +103,6 @@ export class GameEngine {
   // Boss/Bomb state
   private bossEvent: BossEvent | null = null;
   private nextBossTriggerScore = 500;
-  private readonly SESSION_KEY = 'dtp:session';
   private activeBomb: { idx: number; expiresAt: number; player: 1 | 2 } | null = null;
   private _settingsUnsub: (() => void) | null = null;
   private _gamepadUnsub: (() => void) | null = null;
@@ -253,7 +250,6 @@ export class GameEngine {
       emit: (e) => self.emit(e),
       _flushTapBuffer: (p) => self._flushTapBuffer(p),
       checkStageProgress: (p) => self.checkStageProgress(p),
-      autoSaveSession: () => self.autoSaveSession(),
       triggerGameOver: (w) => self.triggerGameOver(w),
       scheduleTimeout: (cb, ms) => self.scheduleTimeout(cb, ms),
       addDeltaTimer: (id, dur, cb) => self.addDeltaTimer(id, dur, cb),
@@ -308,7 +304,6 @@ export class GameEngine {
     bossEngine.deactivate();
     if (this._bossCompleteHandler) window.addEventListener('dtp:boss:complete', this._bossCompleteHandler);
     rhythmFeedback.reset();
-    sessionStorage.removeItem(this.SESSION_KEY);
     this.tickCount  = 0;
     this.evolveTick = 0;
     this.iMult      = this.config.speedMult;
@@ -449,7 +444,6 @@ export class GameEngine {
     this.phase  = "paused";
     if (this.tickTimer) { clearTimeout(this.tickTimer); this.tickTimer = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    if (this._sessionAutoSaveInterval) { clearInterval(this._sessionAutoSaveInterval); this._sessionAutoSaveInterval = null; }
     this.dirty = true;
     this._pauseListeners.forEach(fn => fn());
     this.emit({ type: "phaseChange", phase: "paused" });
@@ -509,7 +503,6 @@ destroy(): void {
     this.tapBuffer = { 1: null, 2: null };
     this.clearAllTimeouts();
     this.clearAllDeltaTimers();
-    if (this._sessionAutoSaveInterval) { clearInterval(this._sessionAutoSaveInterval); this._sessionAutoSaveInterval = null; }
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.stop();
     this.listeners.clear();
@@ -893,34 +886,6 @@ destroy(): void {
 
   getAutoLowQuality(): boolean { return this.autoLowQuality; }
 
-  startSessionPersistence(): void {
-    if (this._sessionAutoSaveInterval) return;
-    this._sessionAutoSaveInterval = setInterval(() => {
-      if (this.phase === "playing" && !this.paused && this.p1.alive) {
-        sessionManager.save({
-          hearts: this.p1.health,
-          score: this.p1.score,
-          timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
-          isPaused: this.paused
-        }, { theme: 'default', difficulty: this.config.mode });
-      }
-    }, 5000);
-  }
-
-  stopSessionPersistence(): void {
-    if (this._sessionAutoSaveInterval) {
-      clearInterval(this._sessionAutoSaveInterval);
-      this._sessionAutoSaveInterval = null;
-    }
-  }
-
-  restoreFromSession(data: { hearts?: number; score?: number; timeLeft?: number }): void {
-    if (!this.p1) return;
-    if (data.hearts != null) this.p1.health = Math.max(0, Math.min(GAME.MAX_HEARTS, data.hearts));
-    if (data.score != null) this.p1.score = Math.max(0, Math.min(9999, Math.floor(data.score)));
-    if (data.timeLeft != null) this.tickCount = Math.max(0, GAME.HUMAN_LIMIT_TICK - data.timeLeft);
-  }
-
   submitScoreToLeaderboard(score: number): void {
     if (this._isDisposed) return;
     scoreSync.queue(score, this.config.mode, this.tickCount);
@@ -992,208 +957,7 @@ destroy(): void {
 
   getSpinConfig(level: number): { duration: number; direction: 1 | -1 } { return getSpinConfig(level, this.gameSeed); }
 
-  // SESSION_SNAPSHOT_VERSION — bump ONLY for breaking schema changes (field rename/removal/type change).
-  // Adding new optional fields with ?? defaults is NOT a breaking change and must NOT bump this.
-  // Current breaking changes from v1→v2: added `p1.active`, `p2.active`, `bossEvent`, `activeBomb`.
-  private static readonly SESSION_SNAPSHOT_VERSION = 2;
-  private static readonly VALID_CELL_TYPES = new Set<string>([
-    "inactive", "void", "purple", "white", "blue", "red", "orange", "yellow",
-    "green", "cyan", "lime", "teal", "pink", "rose", "magenta",
-    "medpack", "shield", "freeze", "multiplier", "ice", "hold", "bomb",
-  ]);
-
-  getSessionSnapshot(): Record<string, unknown> {
-    return {
-      version: GameEngine.SESSION_SNAPSHOT_VERSION,
-      ts: Date.now(),
-      gameSeed: this.gameSeed,
-      tickCount: this.tickCount,
-      evolveTick: this.evolveTick,
-      cellShape: this.cellShape,
-      spinLevel: this.spinLevel,
-      rareMode: { ...this.rareMode },
-      isInverted: this._isInverted,
-      nextShuffleTick: this.p1.nextShuffleTick,
-      p2NextShuffleTick: this.p2.nextShuffleTick,
-      bossEvent: this.bossEvent ? { type: this.bossEvent.type, endsAt: this.bossEvent.endsAt } : null,
-      nextBossTriggerScore: this.nextBossTriggerScore,
-      _bossActive: this._bossActive,
-      _hitPauseUntil: this._hitPauseUntil,
-      bossEngineActive: bossEngine.state.active,
-      bossEngineShieldHits: bossEngine.state.shieldHits,
-      activeBomb: this.activeBomb ? { idx: this.activeBomb.idx, expiresAt: this.activeBomb.expiresAt, player: this.activeBomb.player } : null,
-      ddaSpawnRate: this.dda.spawnRate,
-      hearts: this.p1.health,
-      score: this.p1.score,
-      timeLeft: GAME.HUMAN_LIMIT_TICK - this.tickCount,
-      isPaused: this.paused,
-      p1: {
-        score: this.p1.score, health: this.p1.health, streak: this.p1.streak,
-        gridStage: this.p1.gridStage, stageProgress: this.p1.stageProgress, patternIdx: this.p1.patternIdx,
-        shield: this.p1.shield, shieldCount: this.p1.shieldCount,
-        freezeEnd: this.p1.freezeEnd, multiplierEnd: this.p1.multiplierEnd,
-        storedFreezeCharges: this.p1.storedFreezeCharges, storedShieldCharges: this.p1.storedShieldCharges,
-        alive: this.p1.alive,
-        active: this.p1.active.map(c => ({ ...c })),
-      },
-      p2: this.config.numPlayers === 2 ? {
-        score: this.p2.score, health: this.p2.health, streak: this.p2.streak,
-        gridStage: this.p2.gridStage, stageProgress: this.p2.stageProgress, patternIdx: this.p2.patternIdx,
-        shield: this.p2.shield, shieldCount: this.p2.shieldCount,
-        freezeEnd: this.p2.freezeEnd, multiplierEnd: this.p2.multiplierEnd,
-        storedFreezeCharges: this.p2.storedFreezeCharges, storedShieldCharges: this.p2.storedShieldCharges,
-        alive: this.p2.alive,
-        active: this.p2.active.map(c => ({ ...c })),
-      } : null,
-    };
-  }
-
-  restoreSessionSnapshot(data: Record<string, unknown>): boolean {
-    try {
-      // Clear stale timers from any prior session before restoring
-      this.clearAllTimeouts();
-      this.clearAllDeltaTimers();
-      if (!data || !data.gameSeed) return false;
-      // Reject snapshots from incompatible versions to avoid silent state corruption
-      const snapshotVersion = typeof data.version === 'number' ? data.version : 1;
-      if (snapshotVersion < GameEngine.SESSION_SNAPSHOT_VERSION) {
-        logError(`[GameEngine] Session snapshot version ${snapshotVersion} < current ${GameEngine.SESSION_SNAPSHOT_VERSION}, discarding`);
-        return false;
-      }
-      // Create p1/p2 from snapshot if engine wasn't started (e.g. resume on reload)
-      if (!this.p1 || !this.p2) {
-        const n = 25; // 5×5 max grid
-        const mkPlayer = (): PlayerState => ({
-          cells: Array(n).fill('inactive') as CellType[], active: [], score: 0, streak: 0, alive: true,
-          health: GAME.MAX_HEARTS, shield: false, shieldCount: 0, freezeEnd: 0, multiplierEnd: 0,
-          gridStage: 0, stageProgress: 0, patternIdx: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 40,
-          anim: {} as Record<number, string>,
-        });
-        if (!this.p1) this.p1 = mkPlayer();
-        if (!this.p2) this.p2 = mkPlayer();
-      }
-      this.gameSeed = data.gameSeed as number;
-      // #16 fix: fast-forward RNG to match tickCount so post-restore spawns
-      // use the correct position in the seed sequence.
-      this.rng = mulberry32(this.gameSeed);
-      const rawTick = typeof data.tickCount === 'number' ? data.tickCount : 0;
-      const rngStepsToSkip = Math.min(rawTick, GAME.HUMAN_LIMIT_TICK + 100); // Cap to prevent infinite loop from tampered data
-      for (let i = 0; i < rngStepsToSkip; i++) this.rng();
-      this.tickCount = rngStepsToSkip;
-      this.evolveTick = (data.evolveTick as number) ?? 0;
-      this.cellShape = (data.cellShape as CellShape) ?? "square";
-      this.spinLevel = (data.spinLevel as number) ?? 0;
-      if (data._hitPauseUntil != null) this._hitPauseUntil = Math.max(0, data._hitPauseUntil as number);
-      if (data.rareMode) this.rareMode = stateGuard.sanitize(data.rareMode as Record<string, unknown>, this.rareMode as unknown as Record<string, unknown>) as unknown as RareColorMode;
-      this._isInverted = (data.isInverted as boolean) ?? false;
-      this.p1.nextShuffleTick = (data.nextShuffleTick as number) ?? 40;
-      this.p2.nextShuffleTick = (data.p2NextShuffleTick as number) ?? 40;
-      this.bossEvent = data.bossEvent ? { type: (data.bossEvent as Record<string, unknown>).type as BossEventType, endsAt: (data.bossEvent as Record<string, unknown>).endsAt as number } : null;
-      this.nextBossTriggerScore = (data.nextBossTriggerScore as number) ?? 500;
-      this._bossActive = (data._bossActive as boolean) ?? false;
-      if (data.bossEngineActive) bossEngine.activate((data.bossEngineShieldHits as number) ?? 5);
-      this.activeBomb = data.activeBomb ? { idx: (data.activeBomb as Record<string, unknown>).idx as number, expiresAt: (data.activeBomb as Record<string, unknown>).expiresAt as number, player: (data.activeBomb as Record<string, unknown>).player as 1 | 2 } : null;
-      // Re-register bomb delta timer if bomb is still active
-      if (this.activeBomb) {
-        const bombRemaining = Math.max(0, this.activeBomb.expiresAt - Date.now());
-        const bombPlayer = this.activeBomb.player;
-        const bombIdx = this.activeBomb.idx;
-        // BUG-007 fix: dynamic lookup inside callback — this.p1/p2 may be replaced by start()
-        this.addDeltaTimer(`bomb_${bombPlayer}_${bombIdx}`, bombRemaining, () => {
-          if (!this.activeBomb || this.activeBomb.idx !== bombIdx || this.activeBomb.player !== bombPlayer) return;
-          const bombRef = bombPlayer === 1 ? this.p1 : this.p2;
-          const stillActive = bombRef.active.find(c => c.idx === bombIdx && c.type === "bomb" && !c.clicked);
-          if (!stillActive) { if (this.activeBomb?.idx === bombIdx) this.activeBomb = null; return; }
-          this.activeBomb = null;
-          stillActive.clicked = true;
-          if (!this.devGodMode) {
-            if (bombRef.shieldCount > 0) { bombRef.shieldCount -= 1; bombRef.shield = bombRef.shieldCount > 0; }
-            else {
-              const dmg = this.config.mode === "evolve" ? 0.5 : 1;
-              bombRef.health = Math.max(0, bombRef.health - dmg); bombRef.shield = false;
-              this._tookDamage = true;
-              this.emit({ type: "damage", player: bombPlayer });
-              this.emit({ type: "shake", player: bombPlayer });
-              if (bombRef.health < 1) { bombRef.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (bombPlayer === 1 ? "p2" : "p1")); }
-            }
-          }
-          this.emit({ type: "bombExplode", player: bombPlayer });
-          this.emit({ type: "toast", message: "💥 Bomb exploded!" });
-        });
-      }
-      this.dda.reset((data.ddaSpawnRate as number) ?? 1200);
-      const p1 = data.p1 as Record<string, unknown> | undefined;
-      if (p1) {
-        // Bounds checking — clamp values to prevent tampered session data
-        this.p1.score = Math.max(0, Math.min(9999, (p1.score as number) ?? 0));
-        this.p1.health = Math.max(0, Math.min(GAME.MAX_HEARTS + 2, (p1.health as number) ?? GAME.MAX_HEARTS));
-        this.p1.streak = Math.max(0, Math.min(999, (p1.streak as number) ?? 0));
-        this.p1.gridStage = Math.max(0, Math.min(10, (p1.gridStage as number) ?? 0));
-        this.p1.stageProgress = Math.max(0, Math.min(999, (p1.stageProgress as number) ?? 0));
-        this.p1.patternIdx = Math.max(0, Math.min(EVOLVE_PATTERNS.length - 1, (p1.patternIdx as number) ?? 0));
-        this.p1.shield = (p1.shield as boolean) ?? false;
-        this.p1.shieldCount = Math.max(0, Math.min(5, (p1.shieldCount as number) ?? 0));
-        this.p1.freezeEnd = Math.max(0, (p1.freezeEnd as number) ?? 0);
-        this.p1.multiplierEnd = Math.max(0, (p1.multiplierEnd as number) ?? 0);
-        this.p1.storedFreezeCharges = Math.max(0, Math.min(10, (p1.storedFreezeCharges as number) ?? 0));
-        this.p1.storedShieldCharges = Math.max(0, Math.min(10, (p1.storedShieldCharges as number) ?? 0));
-        this.p1.alive = (p1.alive as boolean) ?? true;
-        this.p1.active = ((p1.active as Array<Record<string, unknown>>) ?? []).map(c => {
-          const cell = { ...c } as Record<string, unknown>;
-          if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
-          if (!GameEngine.VALID_CELL_TYPES.has(cell.type as string)) cell.type = 'inactive';
-          if (typeof cell.clicked !== 'boolean') cell.clicked = false;
-          return cell as unknown as ActiveCell;
-        });
-        const pat = EVOLVE_PATTERNS[this.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
-        this.p1.cells = activeToCellsP(this.p1.active, pat);
-      }
-      const p2 = data.p2 as Record<string, unknown> | null | undefined;
-      if (p2 && this.config.numPlayers === 2) {
-        this.p2.score = Math.max(0, Math.min(9999, (p2.score as number) ?? 0));
-        this.p2.health = Math.max(0, Math.min(GAME.MAX_HEARTS + 2, (p2.health as number) ?? GAME.MAX_HEARTS));
-        this.p2.streak = Math.max(0, Math.min(999, (p2.streak as number) ?? 0));
-        this.p2.gridStage = Math.max(0, Math.min(10, (p2.gridStage as number) ?? 0));
-        this.p2.stageProgress = Math.max(0, Math.min(999, (p2.stageProgress as number) ?? 0));
-        this.p2.patternIdx = Math.max(0, Math.min(EVOLVE_PATTERNS.length - 1, (p2.patternIdx as number) ?? 0));
-        this.p2.shield = (p2.shield as boolean) ?? false;
-        this.p2.shieldCount = Math.max(0, Math.min(5, (p2.shieldCount as number) ?? 0));
-        this.p2.freezeEnd = Math.max(0, (p2.freezeEnd as number) ?? 0);
-        this.p2.multiplierEnd = Math.max(0, (p2.multiplierEnd as number) ?? 0);
-        this.p2.storedFreezeCharges = Math.max(0, Math.min(10, (p2.storedFreezeCharges as number) ?? 0));
-        this.p2.storedShieldCharges = Math.max(0, Math.min(10, (p2.storedShieldCharges as number) ?? 0));
-        this.p2.alive = (p2.alive as boolean) ?? true;
-        this.p2.active = ((p2.active as Array<Record<string, unknown>>) ?? []).map(c => {
-          const cell = { ...c } as Record<string, unknown>;
-          if (typeof cell.idx !== 'number' || (cell.idx as number) < 0) cell.idx = 0;
-          if (!GameEngine.VALID_CELL_TYPES.has(cell.type as string)) cell.type = 'inactive';
-          if (typeof cell.clicked !== 'boolean') cell.clicked = false;
-          return cell as unknown as ActiveCell;
-        });
-        const pat2 = EVOLVE_PATTERNS[this.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-        this.p2.cells = activeToCellsP(this.p2.active, pat2);
-      }
-      this.emit({ type: "phaseChange", phase: "playing" });
-      this.dirty = true;
-      this.emitSnapshot();
-      this.scheduleTick();
-      this.startSnapshotRaf();
-      return true;
-    } catch (e) {
-      logError("Session restore failed", e);
-      return false;
-    }
-  }
-
-  private autoSaveSession(): void {
-    if (this.phase !== "playing" || this.paused) return;
-    const snap = this.getSessionSnapshot();
-    const raw = JSON.stringify(snap);
-    // SEC-012: Sign session data before writing (fire-and-forget, sub-ms crypto)
-    stateGuard.signSession(raw).then(signed => {
-      sessionStorage.setItem(this.SESSION_KEY, signed);
-    }).catch(e => { logError('autoSaveSession failed', e); });
-  }
+  // Session methods removed — resume feature deleted
 
 private triggerGameOver(winner: Winner): void {
     // Prevent double game over
