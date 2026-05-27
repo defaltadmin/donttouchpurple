@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 
 const PLAY_URL = '/play';
+const GITHUB_URL = 'https://github.com/defaltadmin/donttouchpurple';
 
 const GRID_SIZE = 4;
 const COLORS = {
@@ -19,15 +20,13 @@ interface Cell {
   id: number;
   color: string;
   type: 'safe' | 'purple' | 'special';
-  scale: number;
-  opacity: number;
   label?: string;
 }
 
 function randomCell(id: number): Cell {
   const r = Math.random();
   if (r < 0.25) {
-    return { id, color: COLORS.purple, type: 'purple', scale: 1, opacity: 1 };
+    return { id, color: COLORS.purple, type: 'purple' };
   } else if (r < 0.35) {
     const specials = [
       { color: COLORS.bomb, label: '!' },
@@ -36,18 +35,49 @@ function randomCell(id: number): Cell {
       { color: COLORS.multiplier, label: 'x' },
     ];
     const s = specials[Math.floor(Math.random() * specials.length)];
-    return { id, color: s.color, type: 'special', scale: 1, opacity: 1, label: s.label };
+    return { id, color: s.color, type: 'special', label: s.label };
   }
   return {
     id,
     color: COLORS.safe[Math.floor(Math.random() * COLORS.safe.length)],
     type: 'safe',
-    scale: 1,
-    opacity: 1,
   };
 }
 
 const INITIAL_CARDS = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => randomCell(i));
+
+const BOSS_EVENTS = [
+  {
+    icon: '\u26A1',
+    name: 'Storm',
+    desc: 'Cells shuffle at lightning speed. Your muscle memory betrays you.',
+    gradient: 'linear-gradient(135deg, #7c3aed, #dc2626)',
+    glow: 'rgba(124,58,237,0.3)',
+  },
+  {
+    icon: '\uD83D\uDD04',
+    name: 'Inversion',
+    desc: 'Safe and danger colors swap. Everything you learned is now wrong.',
+    gradient: 'linear-gradient(135deg, #0ea5e9, #8b5cf6)',
+    glow: 'rgba(14,165,233,0.3)',
+  },
+  {
+    icon: '\uD83C\uDF11',
+    name: 'Blackout',
+    desc: 'The grid goes completely dark. You tap from memory alone.',
+    gradient: 'linear-gradient(135deg, #1e1b4b, #000)',
+    glow: 'rgba(30,27,75,0.3)',
+  },
+];
+
+const FEATURES = [
+  { icon: '\uD83C\uDFAE', title: 'Two Game Modes', desc: 'Classic for quick reflex training. Evolve for progressive difficulty with expanding grids.' },
+  { icon: '\uD83C\uDFC6', title: '37 Achievements', desc: 'Unlock badges and earn dust currency as you master increasingly brutal challenges.' },
+  { icon: '\u2728', title: '12 Animated Backgrounds', desc: 'GPU-accelerated WebGL effects — nebula, aurora, digital rain, and more.' },
+  { icon: '\uD83E\uDD16', title: 'AI Bot Assist', desc: 'Activate a companion bot that costs dust to help you survive. Or play solo.' },
+  { icon: '\uD83D\uDCC5', title: 'Daily Challenges', desc: 'New objectives every day. Compete on the global leaderboard.' },
+  { icon: '\uD83D\uDCF1', title: 'Installable PWA', desc: 'Works on any device. Install as an app. Gamepad support included.' },
+];
 
 export default function Home() {
   const [grid, setGrid] = useState<Cell[]>(INITIAL_CARDS);
@@ -62,11 +92,11 @@ export default function Home() {
   const gridRef = useRef<HTMLDivElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
   const bossRef = useRef<HTMLDivElement>(null);
+  const sectionsRef = useRef<HTMLDivElement>(null);
 
   // Entrance animations
   useEffect(() => {
     const tl = gsap.timeline();
-    // Stagger cells in
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
       tl.fromTo(`.cell-${i}`,
         { scale: 0, opacity: 0, rotation: -10 },
@@ -74,30 +104,32 @@ export default function Home() {
         i * 0.04
       );
     }
+    tl.from(titleRef.current, { y: -40, opacity: 0, duration: 0.8, ease: 'power3.out' }, 0);
+    tl.from(btnRef.current, { scale: 0, opacity: 0, duration: 0.5, ease: 'back.out(3)' }, 0.6);
+    tl.from(scoreRef.current, { x: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, 0.4);
+  }, []);
 
-    // Title entrance
-    tl.from(titleRef.current, {
-      y: -40,
-      opacity: 0,
-      duration: 0.8,
-      ease: 'power3.out',
-    }, 0);
-
-    // Button entrance
-    tl.from(btnRef.current, {
-      scale: 0,
-      opacity: 0,
-      duration: 0.5,
-      ease: 'back.out(3)',
-    }, 0.6);
-
-    // Score entrance
-    tl.from(scoreRef.current, {
-      x: 30,
-      opacity: 0,
-      duration: 0.5,
-      ease: 'power2.out',
-    }, 0.4);
+  // Scroll-triggered animations for sections below the fold
+  useEffect(() => {
+    const sectionEls = document.querySelectorAll('.scroll-section');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            gsap.from(entry.target, {
+              y: 40,
+              opacity: 0,
+              duration: 0.6,
+              ease: 'power2.out',
+            });
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    sectionEls.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   // Game simulation loop
@@ -105,18 +137,12 @@ export default function Home() {
     let tick = 0;
     const interval = setInterval(() => {
       tick++;
-
-      // Replace 2-4 random cells each tick
       const replaceCount = 2 + Math.floor(Math.random() * 3);
-      setGrid(prev => {
+      setGrid((prev) => {
         const next = [...prev];
         for (let i = 0; i < replaceCount; i++) {
           const idx = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
-          const newCell = randomCell(idx);
-          newCell.scale = 0;
-          next[idx] = newCell;
-
-          // Animate pop-in
+          next[idx] = randomCell(idx);
           gsap.to(`.cell-${idx}`, {
             scale: 1,
             duration: 0.3,
@@ -126,69 +152,44 @@ export default function Home() {
         }
         return next;
       });
-
-      // Simulate score
-      setScore(prev => prev + Math.floor(Math.random() * 8) + 1);
-      setStreak(prev => Math.min(prev + 1, 15));
-
-      // Boss event every ~30 ticks
+      setScore((prev) => prev + Math.floor(Math.random() * 8) + 1);
+      setStreak((prev) => Math.min(prev + 1, 15));
       if (tick % 30 === 0) {
         setBossActive(true);
-        setBossType(Math.random() > 0.5 ? 'INVERSION' : 'BOMB SURGE');
+        setBossType(Math.random() > 0.5 ? 'INVERSION' : 'STORM');
         setFlash('#fda9ff');
         setTimeout(() => setFlash(null), 200);
-
-        // Boss banner animation
         if (bossRef.current) {
           gsap.fromTo(bossRef.current,
             { y: -60, opacity: 0, scale: 0.8 },
             { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }
           );
         }
-
         setTimeout(() => {
           setBossActive(false);
           if (bossRef.current) {
-            gsap.to(bossRef.current, {
-              y: -60, opacity: 0, duration: 0.3, ease: 'power2.in',
-            });
+            gsap.to(bossRef.current, { y: -60, opacity: 0, duration: 0.3, ease: 'power2.in' });
           }
         }, 3000);
       }
-
-      // Reset streak occasionally
       if (tick % 12 === 0) setStreak(0);
     }, 800);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Click handler for cells
   const handleCellClick = useCallback((idx: number) => {
     const cell = grid[idx];
     if (!cell) return;
-
     if (cell.type === 'purple') {
-      // Wrong! Flash red
       setFlash('#ff4444');
       setTimeout(() => setFlash(null), 150);
       setStreak(0);
-      gsap.to(`.cell-${idx}`, {
-        scale: 0.8,
-        duration: 0.1,
-        yoyo: true,
-        repeat: 1,
-        ease: 'power2.inOut',
-      });
+      gsap.to(`.cell-${idx}`, { scale: 0.8, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.inOut' });
     } else {
-      // Correct! Pop and replace
       gsap.to(`.cell-${idx}`, {
-        scale: 0,
-        rotation: 10,
-        duration: 0.2,
-        ease: 'power2.in',
+        scale: 0, rotation: 10, duration: 0.2, ease: 'power2.in',
         onComplete: () => {
-          setGrid(prev => {
+          setGrid((prev) => {
             const next = [...prev];
             next[idx] = randomCell(idx);
             return next;
@@ -199,10 +200,8 @@ export default function Home() {
           );
         },
       });
-      setScore(prev => prev + (cell.type === 'special' ? 5 : 1));
-      setStreak(prev => prev + 1);
-
-      // Float score text
+      setScore((prev) => prev + (cell.type === 'special' ? 5 : 1));
+      setStreak((prev) => prev + 1);
       const el = document.querySelector(`.cell-${idx}`);
       if (el) {
         const rect = el.getBoundingClientRect();
@@ -212,20 +211,13 @@ export default function Home() {
         float.style.left = `${rect.left + rect.width / 2}px`;
         float.style.top = `${rect.top}px`;
         document.body.appendChild(float);
-        gsap.to(float, {
-          y: -40,
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power2.out',
-          onComplete: () => float.remove(),
-        });
+        gsap.to(float, { y: -40, opacity: 0, duration: 0.6, ease: 'power2.out', onComplete: () => float.remove() });
       }
     }
   }, [grid]);
 
   return (
     <>
-      {/* Score float CSS */}
       <style jsx global>{`
         .score-float {
           position: fixed;
@@ -239,190 +231,166 @@ export default function Home() {
         }
       `}</style>
 
-      <div
-        ref={containerRef}
-        className="h-screen w-screen relative flex flex-col items-center justify-center overflow-hidden"
-        style={{
-          background: flash
-            ? `radial-gradient(circle, ${flash}20 0%, #151028 70%)`
-            : 'radial-gradient(ellipse at 30% 20%, rgba(253,169,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(192,38,211,0.06) 0%, transparent 50%), #151028',
-          transition: flash ? 'background 0.1s' : 'background 0.5s',
-        }}
-      >
-        {/* Grid lines */}
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(253,169,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(253,169,255,0.03) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }}
-        />
+      <div ref={containerRef} className="landing-page">
 
-        {/* Boss overlay */}
-        <div
-          ref={bossRef}
-          className="absolute top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
-          style={{ opacity: 0 }}
-        >
-          <div
-            className="px-6 py-3 rounded-xl text-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,68,68,0.9), rgba(192,38,211,0.9))',
-              boxShadow: '0 0 40px rgba(255,68,68,0.4), 0 0 80px rgba(192,38,211,0.2)',
-              border: '2px solid rgba(255,255,255,0.2)',
-            }}
-          >
-            <div
-              className="text-xl font-black text-white tracking-wider"
-              style={{ fontFamily: "'Fredoka One', cursive" }}
-            >
-              {bossType}
-            </div>
-          </div>
-        </div>
+        {/* ── Hero ── */}
+        <section className="hero">
+          <div className="hero-bg" style={{
+            background: flash
+              ? `radial-gradient(circle, ${flash}20 0%, #151028 70%)`
+              : 'radial-gradient(ellipse at 30% 20%, rgba(253,169,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(192,38,211,0.06) 0%, transparent 50%), #151028',
+            transition: flash ? 'background 0.1s' : 'background 0.5s',
+          }}>
+            {/* Grid lines overlay */}
+            <div className="hero-grid-lines" />
 
-        {/* Score display */}
-        <div
-          ref={scoreRef}
-          className="absolute top-6 right-6 z-20"
-        >
-          <div className="text-right">
-            <div
-              className="text-3xl font-black tabular-nums"
-              style={{
-                fontFamily: "'Fredoka One', cursive",
-                color: '#f9bd22',
-                textShadow: '0 0 15px rgba(249,189,34,0.5)',
-              }}
-            >
-              {score.toLocaleString()}
-            </div>
-            {streak > 2 && (
-              <div
-                className="text-sm font-bold"
-                style={{
-                  fontFamily: "'Nunito', sans-serif",
-                  color: '#fda9ff',
-                  opacity: 0.8,
-                }}
-              >
-                {streak}x streak
+            {/* Boss overlay */}
+            <div ref={bossRef} className="boss-overlay">
+              <div className="boss-banner-hero">
+                <span className="boss-banner-text">{bossType}</span>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1
-          ref={titleRef}
-          className="absolute top-6 left-6 z-20"
-        >
-          <div
-            className="text-2xl sm:text-3xl font-black tracking-tight"
-            style={{ fontFamily: "'Fredoka One', cursive" }}
-          >
-            <span style={{ color: '#e7deff' }}>Don&apos;t Touch</span>{' '}
-            <span
-              style={{
-                color: '#fda9ff',
-                textShadow: '0 0 20px rgba(253,169,255,0.5), 0 0 40px rgba(253,169,255,0.2)',
-              }}
-            >
-              Purple
-            </span>
-          </div>
-          <p
-            className="text-xs mt-1"
-            style={{ fontFamily: "'Nunito', sans-serif", color: '#9f8a9d' }}
-          >
-            tap the colors — avoid purple
-          </p>
-        </h1>
-
-        {/* Game grid */}
-        <div
-          ref={gridRef}
-          className="relative z-10 grid gap-2 sm:gap-3"
-          style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-            width: 'min(85vw, 320px)',
-            height: 'min(85vw, 320px)',
-          }}
-        >
-          {grid.map((cell, i) => (
-            <div
-              key={i}
-              className={`cell-${i} rounded-xl cursor-pointer relative`}
-              style={{
-                background: `linear-gradient(135deg, ${cell.color}, ${cell.color}cc)`,
-                boxShadow: cell.type === 'purple'
-                  ? `0 0 15px ${cell.color}60, inset 0 0 20px rgba(0,0,0,0.3)`
-                  : `0 0 12px ${cell.color}30, 0 4px 0 ${cell.color}50`,
-                transform: `scale(${cell.scale})`,
-                opacity: cell.opacity,
-                border: cell.type === 'purple'
-                  ? '2px solid rgba(255,255,255,0.15)'
-                  : '2px solid rgba(255,255,255,0.08)',
-                transition: 'box-shadow 0.2s',
-              }}
-              onClick={() => handleCellClick(i)}
-            >
-              {cell.label && (
-                <span
-                  className="absolute inset-0 flex items-center justify-center text-lg font-black text-white/80"
-                  style={{ fontFamily: "'Fredoka One', cursive" }}
-                >
-                  {cell.label}
-                </span>
-              )}
-              {cell.type === 'purple' && (
-                <span
-                  className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white/40"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
-                >
-                  X
-                </span>
-              )}
             </div>
-          ))}
-        </div>
 
-        {/* Play button */}
-        <div className="relative z-20 mt-8">
-          <a
-            ref={btnRef}
-            href={PLAY_URL}
-            className="group relative flex items-center gap-3 px-8 py-4 rounded-full text-white font-bold text-lg"
-            style={{
-              fontFamily: "'Fredoka One', cursive",
-              background: 'linear-gradient(135deg, #fda9ff, #c026d3)',
-              boxShadow: '0 0 30px rgba(253,169,255,0.4), 0 6px 0 #a400b7, 0 8px 30px rgba(0,0,0,0.3)',
-            }}
-          >
-            <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+            {/* Score */}
+            <div ref={scoreRef} className="score-display">
+              <div className="score-value">{score.toLocaleString()}</div>
+              {streak > 2 && <div className="score-streak">{streak}x streak</div>}
+            </div>
+
+            {/* Title */}
+            <h1 ref={titleRef} className="hero-title">
+              <span className="title-dont">Don&apos;t Touch</span>{' '}
+              <span className="title-purple">Purple</span>
+            </h1>
+
+            {/* Grid */}
+            <div
+              ref={gridRef}
+              className="game-grid"
+              style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+            >
+              {grid.map((cell, i) => (
+                <div
+                  key={i}
+                  className={`game-cell cell-${i}`}
+                  style={{
+                    background: `linear-gradient(135deg, ${cell.color}, ${cell.color}cc)`,
+                    boxShadow: cell.type === 'purple'
+                      ? `0 0 15px ${cell.color}60, inset 0 0 20px rgba(0,0,0,0.3)`
+                      : `0 0 12px ${cell.color}30, 0 4px 0 ${cell.color}50`,
+                    border: cell.type === 'purple'
+                      ? '2px solid rgba(255,255,255,0.15)'
+                      : '2px solid rgba(255,255,255,0.08)',
+                  }}
+                  onClick={() => handleCellClick(i)}
+                >
+                  {cell.label && <span className="cell-label">{cell.label}</span>}
+                  {cell.type === 'purple' && <span className="cell-x">X</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Play button */}
+            <a ref={btnRef} href={PLAY_URL} className="play-btn">
+              <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              PLAY
+              <div className="play-shimmer" />
+            </a>
+
+            <p className="hero-subtitle">Free. No ads. No accounts. Just tap.</p>
+
+            {/* Scroll indicator */}
+            <div className="scroll-indicator">
+              <span className="scroll-chevron">&#8964;</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Boss Events ── */}
+        <section className="scroll-section section-boss">
+          <h2 className="section-heading">Boss Events</h2>
+          <p className="section-subtext">Just when you think you&apos;ve got it figured out, the rules change.</p>
+          <div className="boss-cards">
+            {BOSS_EVENTS.map((boss) => (
+              <div key={boss.name} className="boss-card" style={{ '--boss-glow': boss.glow } as React.CSSProperties}>
+                <div className="boss-card-icon">{boss.icon}</div>
+                <div className="boss-card-name" style={{ background: boss.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {boss.name}
+                </div>
+                <p className="boss-card-desc">{boss.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section className="scroll-section section-features">
+          <h2 className="section-heading">Everything You Get</h2>
+          <p className="section-subtext">More depth than you&apos;d expect from a &quot;don&apos;t touch the color&quot; game.</p>
+          <div className="feature-grid">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="feature-card">
+                <div className="feature-icon">{f.icon}</div>
+                <div className="feature-title">{f.title}</div>
+                <p className="feature-desc">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Open Source / Tech ── */}
+        <section className="scroll-section section-tech">
+          <h2 className="section-heading">Open Source</h2>
+          <p className="section-subtext">
+            Built with React 19, TypeScript, Vite, and WebGL. Fully transparent.
+          </p>
+          <div className="tech-badges">
+            <span className="tech-badge">React 19</span>
+            <span className="tech-badge">TypeScript</span>
+            <span className="tech-badge">Vite</span>
+            <span className="tech-badge">WebGL</span>
+            <span className="tech-badge">Firebase</span>
+          </div>
+          <div className="tech-stats">
+            <div className="tech-stat">
+              <span className="stat-number">212</span>
+              <span className="stat-label">Tests</span>
+            </div>
+            <div className="tech-stat">
+              <span className="stat-number">MIT</span>
+              <span className="stat-label">License</span>
+            </div>
+            <div className="tech-stat">
+              <span className="stat-number">5</span>
+              <span className="stat-label">Languages</span>
+            </div>
+          </div>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="github-link">
+            <svg className="github-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            View on GitHub
+          </a>
+        </section>
+
+        {/* ── Final CTA ── */}
+        <section className="scroll-section section-cta">
+          <h2 className="cta-heading">Ready?</h2>
+          <p className="cta-subtext">No signup. No ads. Just tap.</p>
+          <a href={PLAY_URL} className="play-btn play-btn-large">
+            <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
-            PLAY
-            <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-                  animation: 'shimmer 2.5s ease-in-out infinite',
-                }}
-              />
-            </div>
+            PLAY NOW
+            <div className="play-shimmer" />
           </a>
-        </div>
+        </section>
 
-        {/* Bottom text */}
-        <p
-          className="relative z-20 mt-4 text-xs"
-          style={{ fontFamily: "'Nunito', sans-serif", color: '#524151' }}
-        >
-          Free. No ads. No accounts. Just tap.
-        </p>
+        <footer className="landing-footer">
+          <span>&copy; {new Date().getFullYear()} Don&apos;t Touch Purple &middot; Open Source (MIT)</span>
+        </footer>
       </div>
     </>
   );
