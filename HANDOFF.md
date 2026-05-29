@@ -1,6 +1,8 @@
 # Don't Touch Purple — Master Handoff
 
-> **This is the single entry point for any new AI session.** Read this file first before doing anything else. It contains the full project state, what's been done, and what's next.
+> **PROJECT**: Don't Touch Purple (game) — NOT the MSC Arabia website.
+> **If you're working on mscarabia.com, read `MSCArabia.com/HANDOFF.md` instead.**
+> This file is ONLY for the DTP game at game.mscarabia.com.
 
 ## Project Identity
 

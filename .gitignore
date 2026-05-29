@@ -24,6 +24,10 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Subdomain projects (each has its own git repo)
+MSCArabia.com/
+crm.mscarabia.com/
+
 # Temp/Junk folders
 junk/
 from sonnet*/
