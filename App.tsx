@@ -49,6 +49,9 @@ import { Hearts } from "./components/HUD/Hearts";
 
 // Components - Screens
 import { StartScreen } from "./components/Screens/StartScreen";
+import { LeftPanel } from "./components/Landing/LeftPanel";
+import { RightPanel } from "./components/Landing/RightPanel";
+import { LearnMoreOverlay } from "./components/Landing/LearnMoreOverlay";
 import { HowToPlay } from "./components/Screens/HowToPlay";
 import { getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
@@ -140,6 +143,7 @@ import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 // --- App Component ---
 export default function App() {
   const [appReady, setAppReady] = useState(true);
+  const [showLearnMore, setShowLearnMore] = useState(false);
   const {
     showNameEntry, setShowNameEntry,
     showRotatePrompt, setShowRotatePrompt,
@@ -1531,7 +1535,10 @@ export default function App() {
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
 
       {screen === "menu" && (
+        <div className="menu-layout">
+        <LeftPanel />
         <StartScreen
+          onLearnMore={() => setShowLearnMore(true)}
           playerName={playerName}
           isFeatureUnlocked={(f) => machine.isFeatureUnlocked(f, devMode)}
           dailyObjectives={dailyObjectives}
@@ -1571,7 +1578,11 @@ export default function App() {
           onClearReplaySeed={clearReplaySeed}
           onToast={toast$}
         />
+        <RightPanel />
+        </div>
       )}
+
+      {showLearnMore && <LearnMoreOverlay onClose={() => setShowLearnMore(false)} />}
 
       {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
       {showDevPanel && (
