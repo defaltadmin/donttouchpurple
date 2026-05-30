@@ -1,7 +1,6 @@
 // Web Vitals monitoring and reporting
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
-import { errorLogger } from './errorLogger';
-import { metricsService } from './metrics';
+import { errorLogger, metricsService } from './monitoring';
 
 export interface WebVitalsMetrics {
   cls: number | null;
@@ -118,7 +117,7 @@ class WebVitalsMonitor {
 }
 
 // Extend metrics service to handle Web Vitals
-declare module './metrics' {
+declare module './monitoring' {
   interface MetricsService {
     recordPerformanceMetric(metric: string, value: number, rating: string): void;
   }

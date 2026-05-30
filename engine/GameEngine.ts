@@ -22,6 +22,7 @@ import { DynamicDifficulty } from "../utils/dda";
 import { seedManager } from "../utils/seed-manager";
 import { bossEngine } from "../utils/boss-engine";
 import { achievementSystem } from "../utils/achievements";
+import { ACHIEVEMENT_DEFS } from "../config/achievementDefs";
 import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
 import { scoreCardGen } from "../utils/score-card";
@@ -29,7 +30,7 @@ import { rhythmFeedback } from "../utils/feedback-rhythm";
 import type {
   ActiveCell, CellShape, GameConfig, GameEvent,
   GameSnapshot, PlayerState, RareColorMode, Winner,
-  BossEvent, HoldCell,
+  BossEvent, HoldCell, IceCell,
 } from "./types";
 import {
   activeToCellsP, spawnActive,
@@ -143,52 +144,9 @@ export class GameEngine {
     this.iMult = config.speedMult;
     this.devGodMode = config.godMode ?? false;
     achievementSystem.load();
-    // Core achievements
-    achievementSystem.register({ id: 'first_blood', name: 'First Strike', desc: 'Clear your first cell', icon: '⚔️', unlocked: false });
-    achievementSystem.register({ id: 'survivor', name: 'Iron Will', desc: 'Reach last heart and survive 30s', icon: '💪', unlocked: false });
-    achievementSystem.register({ id: 'daily_master', name: 'Daily Grind', desc: "Complete today's challenge", icon: '📅', unlocked: false });
-    // Score milestones
-    achievementSystem.register({ id: 'score_100', name: 'Getting Started', desc: 'Score 100 points', icon: '🌟', unlocked: false });
-    achievementSystem.register({ id: 'score_500', name: 'Rising Star', desc: 'Score 500 points', icon: '⭐', unlocked: false });
-    achievementSystem.register({ id: 'score_1000', name: 'Thousand Club', desc: 'Score 1,000 points', icon: '💫', unlocked: false });
-    achievementSystem.register({ id: 'score_2500', name: 'Quarter King', desc: 'Score 2,500 points', icon: '👑', unlocked: false });
-    achievementSystem.register({ id: 'score_5000', name: 'Half Hero', desc: 'Score 5,000 points', icon: '🏆', unlocked: false });
-    achievementSystem.register({ id: 'score_9999', name: 'Max Master', desc: 'Score 9,999 points (max)', icon: '💎', unlocked: false });
-    // Streak milestones
-    achievementSystem.register({ id: 'streak_10', name: 'On Fire', desc: 'Reach a 10-streak', icon: '🔥', unlocked: false });
-    achievementSystem.register({ id: 'streak_25', name: 'Unstoppable', desc: 'Reach a 25-streak', icon: '💥', unlocked: false });
-    achievementSystem.register({ id: 'streak_50', name: 'Legend', desc: 'Reach a 50-streak', icon: '⚡', unlocked: false });
-    // Mode completions
-    achievementSystem.register({ id: 'classic_win', name: 'Classic Champion', desc: 'Win a Classic game', icon: '🎯', unlocked: false });
-    achievementSystem.register({ id: 'evolve_win', name: 'Evolution Complete', desc: 'Win an Evolve game', icon: '🧬', unlocked: false });
-    // Boss achievements
-    achievementSystem.register({ id: 'boss_defeat', name: 'Boss Slayer', desc: 'Defeat a boss event', icon: '🐉', unlocked: false });
-    achievementSystem.register({ id: 'boss_inversion', name: 'Mind Bender', desc: 'Survive an Inversion event', icon: '🔄', unlocked: false });
-    // Bomb achievements
-    achievementSystem.register({ id: 'bomb_defuse', name: 'Defuser', desc: 'Defuse 10 bombs', icon: '💣', unlocked: false });
-    achievementSystem.register({ id: 'bomb_master', name: 'Bomb Expert', desc: 'Defuse 50 bombs', icon: '🧨', unlocked: false });
-    // Daily streak
-    achievementSystem.register({ id: 'streak_3', name: 'Consistent', desc: '3-day daily streak', icon: '📅', unlocked: false });
-    achievementSystem.register({ id: 'streak_7', name: 'Weekly Warrior', desc: '7-day daily streak', icon: '🗓️', unlocked: false });
-    achievementSystem.register({ id: 'streak_14', name: 'Fortnight Fighter', desc: '14-day daily streak', icon: '🏅', unlocked: false });
-    achievementSystem.register({ id: 'streak_30', name: 'Monthly Master', desc: '30-day daily streak', icon: '👑', unlocked: false });
-    // Dust achievements
-    achievementSystem.register({ id: 'dust_1000', name: 'Dust Collector', desc: 'Earn 1,000 dust total', icon: '💜', unlocked: false });
-    achievementSystem.register({ id: 'dust_10000', name: 'Dust Baron', desc: 'Earn 10,000 dust total', icon: '💰', unlocked: false });
-    // Speed achievements
-    achievementSystem.register({ id: 'speed_2x', name: 'Quick Draw', desc: 'Reach 2.0x speed', icon: '⚡', unlocked: false });
-    achievementSystem.register({ id: 'speed_3x', name: 'Lightning Fast', desc: 'Reach 3.0x speed', icon: '🌩️', unlocked: false });
-    // Powerup achievements
-    achievementSystem.register({ id: 'shield_5', name: 'Shield Bearer', desc: 'Collect 5 shields in one game', icon: '🛡️', unlocked: false });
-    achievementSystem.register({ id: 'freeze_5', name: 'Frost Master', desc: 'Collect 5 freezes in one game', icon: '❄️', unlocked: false });
-    // Perfect round
-    achievementSystem.register({ id: 'perfect_round', name: 'Untouchable', desc: 'Complete a round with no damage', icon: '✨', unlocked: false });
-    // Play count
-    achievementSystem.register({ id: 'games_50', name: 'Dedicated', desc: 'Play 50 games', icon: '🎮', unlocked: false });
-    achievementSystem.register({ id: 'games_200', name: 'Veteran', desc: 'Play 200 games', icon: '🏅', unlocked: false });
-    // Secret achievements
-    achievementSystem.register({ id: 'secret_purple_tap', name: '???', desc: '???', icon: '🔮', unlocked: false });
-    achievementSystem.register({ id: 'secret_speed_run', name: '???', desc: '???', icon: '🔮', unlocked: false });
+    for (const def of ACHIEVEMENT_DEFS) {
+      achievementSystem.register({ ...def, unlocked: false });
+    }
     audioEngine.init();
     import('../utils/settings').then(m => {
       this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
@@ -582,139 +540,164 @@ destroy(): void {
     if (!cell || cell.clicked) return;
     const pat = this.config.mode === "evolve" ? (EVOLVE_PATTERNS[ref.patternIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
     if (!(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)).includes(idx)) return;
+
+    if (cell.type === "ice") { this._processTapIce(player, ref, cell as IceCell, idx, pat); return; }
+    if (cell.type === "hold") return;
+    if (cell.type === "bomb") { this._processTapBomb(player, ref, cell, idx, pat); return; }
+    if (["medpack","shield","freeze","multiplier"].includes(cell.type)) { this._processTapPowerup(player, ref, cell, idx, pat); return; }
+
     const isInvertedTap = this.bossEvent?.type === "inversion" && Date.now() < (this.bossEvent?.endsAt ?? 0);
     const danger = this.rareMode.active ? this.rareMode.color : "purple";
-
-    if (cell.type === "ice") {
-      const rem = (cell.iceCount ?? 1) - 1;
-      this.triggerCellAnim(player, idx, rem <= 0 ? "pop" : "shake");
-      this.emit({ type: "sound", name: rem <= 0 ? "ok" : "tick" });
-      if (rem <= 0) {
-        haptics.success();
-        cell.clicked = true;
-        const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
-        const nextStreak = ref.streak + 1;
-        ref.score += mult + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
-        this.checkStageProgress(player);
-        if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
-      } else cell.iceCount = rem;
-      ref.cells = activeToCellsP(ref.active, pat);
-      this.dirty = true;
-      this.emitSnapshot();
-      return;
+    const tappedIsDanger = isInvertedTap ? cell.type !== danger : cell.type === danger;
+    if (tappedIsDanger) {
+      this._processTapDanger(player, ref, cell, idx, pat);
+    } else {
+      this._processTapSafe(player, ref, cell, idx, pat);
     }
-    if (cell.type === "hold") return;
-    // Bomb cell ΓÇö defuse it
-    if (cell.type === "bomb") {
+  }
+
+  private _processTapIce(player: 1 | 2, ref: PlayerState, cell: IceCell, idx: number, pat: { cols: number; rows: number; mask: number[] | null }): void {
+    const rem = (cell.iceCount ?? 1) - 1;
+    this.triggerCellAnim(player, idx, rem <= 0 ? "pop" : "shake");
+    this.emit({ type: "sound", name: rem <= 0 ? "ok" : "tick" });
+    if (rem <= 0) {
+      haptics.success();
       cell.clicked = true;
-      if (this.activeBomb?.idx === idx && this.activeBomb?.player === player) this.activeBomb = null;
-      this.triggerCellAnim(player, idx, "pop");
-      this.emit({ type: "sound", name: "powerup" });
-      this.emit({ type: "bombDefused", player });
-      this.emit({ type: "toast", message: "💣 Defused! +3" });
-      this.hitPause(30);
       const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
       const nextStreak = ref.streak + 1;
-      ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
+      ref.score += mult + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
       this.checkStageProgress(player);
-      // Bomb achievements — lifetime counter across games
-      const lifetime = (parseInt(localStorage.getItem('dtp_lifetime_bomb_defuses') ?? '0') || 0) + 1;
-      try { localStorage.setItem('dtp_lifetime_bomb_defuses', String(lifetime)); } catch {}
-      achievementSystem.check('bomb_defuse', () => lifetime >= 10);
-      achievementSystem.check('bomb_master', () => lifetime >= 50);
-      ref.cells = activeToCellsP(ref.active, pat);
-      this.dirty = true;
-      this.emitSnapshot();
-      return;
-    }
-    const dmg = this.config.mode === "evolve" ? 0.5 : 1;
-    if (["medpack","shield","freeze","multiplier"].includes(cell.type)) {
-      cell.clicked = true; this.emit({ type: "sound", name: "powerup" }); this.triggerCellAnim(player, idx, "pop");
-      if (cell.type === "medpack") haptics.medpack();
-      else if (cell.type === "shield") haptics.shield();
-      else if (cell.type === "freeze") haptics.freeze();
-      else if (cell.type === "multiplier") haptics.multiplier();
-      if (cell.type === "medpack") {
-        if (ref.health >= GAME.MAX_HEARTS) {
-          // Overheal → gain shield instead
-          ref.shieldCount += 1; ref.shield = true;
-          this.emit({ type: "pwrToast", message: `🛡 Overheal! +1 Shield`, player });
-        } else {
-          ref.health += 1;
-          this.emit({ type: "toast", message: "♥ +1 Heart!" });
-        }
-      }
-      if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; this._shieldCollected++; }
-      if (cell.type === "freeze") { ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000; this._freezeCollected++; }
-      if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
-      if (cell.type === "shield") {
-        this.emit({ type: "pwrToast", message: `≡ƒ¢í Shield ├ù${ref.shieldCount}!`, player });
-      } else if (cell.type === "multiplier") {
-        this.emit({ type: "pwrToast", message: "ΓÜí multiplier ├ù2!", player });
-      } else if (cell.type === "freeze") {
-        this.emit({ type: "pwrToast", message: "Γ¥ä Freeze activated!", player });
-      }
-    } else {
-      const tappedIsDanger = isInvertedTap ? cell.type !== danger : cell.type === danger;
-      if (tappedIsDanger) {
-        cell.clicked = true;
-        if (!this.devGodMode) {
-          if (ref.shieldCount > 0) { this.dda.recordAttempt(false, 0, false); ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0; this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop"); }
-          else {
-            this.dda.recordAttempt(false, 0, true);
-            if (ref.streak >= 5) this.emit({ type: "toast", message: `🔥 ${ref.streak} streak lost!` });
-            ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0; this._tookDamage = true;
-            this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
-            this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-            this.hitPause(ref.health < 1 ? 200 : 40); // Death: 200ms, damage: 40ms
-            if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
-          }
-        } else { this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop"); }
-        // Count purple taps for secret achievement (danger branch: normal play where purple is dangerous)
-        this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
-        achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
+      if (ref.active.every(c => c.clicked || (c.type as string) === "void")) { ref.cells = activeToCellsP(ref.active, pat); this.dirty = true; this.emitSnapshot(); return; }
+    } else cell.iceCount = rem;
+    ref.cells = activeToCellsP(ref.active, pat);
+    this.dirty = true;
+    this.emitSnapshot();
+  }
+
+  private _processTapBomb(player: 1 | 2, ref: PlayerState, cell: ActiveCell, idx: number, pat: { cols: number; rows: number; mask: number[] | null }): void {
+    cell.clicked = true;
+    if (this.activeBomb?.idx === idx && this.activeBomb?.player === player) this.activeBomb = null;
+    this.triggerCellAnim(player, idx, "pop");
+    this.emit({ type: "sound", name: "powerup" });
+    this.emit({ type: "bombDefused", player });
+    this.emit({ type: "toast", message: "💣 Defused! +3" });
+    this.hitPause(30);
+    const { mult } = calculateTapScore(Date.now() < ref.multiplierEnd, false, 1);
+    const nextStreak = ref.streak + 1;
+    ref.score += (mult * 3) + calculateStreakBonus(nextStreak); ref.streak = nextStreak; ref.stageProgress += 1;
+    this.checkStageProgress(player);
+    const lifetime = (parseInt(localStorage.getItem('dtp_lifetime_bomb_defuses') ?? '0') || 0) + 1;
+    try { localStorage.setItem('dtp_lifetime_bomb_defuses', String(lifetime)); } catch {}
+    achievementSystem.check('bomb_defuse', () => lifetime >= 10);
+    achievementSystem.check('bomb_master', () => lifetime >= 50);
+    ref.cells = activeToCellsP(ref.active, pat);
+    this.dirty = true;
+    this.emitSnapshot();
+  }
+
+  private _processTapPowerup(player: 1 | 2, ref: PlayerState, cell: ActiveCell, idx: number, pat: { cols: number; rows: number; mask: number[] | null }): void {
+    cell.clicked = true;
+    this.emit({ type: "sound", name: "powerup" });
+    this.triggerCellAnim(player, idx, "pop");
+    if (cell.type === "medpack") haptics.medpack();
+    else if (cell.type === "shield") haptics.shield();
+    else if (cell.type === "freeze") haptics.freeze();
+    else if (cell.type === "multiplier") haptics.multiplier();
+    if (cell.type === "medpack") {
+      if (ref.health >= GAME.MAX_HEARTS) {
+        ref.shieldCount += 1; ref.shield = true;
+        this.emit({ type: "pwrToast", message: `🛡 Overheal! +1 Shield`, player });
       } else {
-      cell.clicked = true; this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 }); this.triggerCellAnim(player, idx, "pop");
-      if (this._bossActive) bossEngine.onSafeTap();
-      rhythmFeedback.recordTap();
-      const { mult, bossMult } = calculateTapScore(Date.now() < ref.multiplierEnd, this._bossActive, bossEngine.combo.multiplier);
-      const nextStreak = ref.streak + 1;
-      const tapScore = (mult * bossMult) + calculateStreakBonus(nextStreak);
-      ref.score += tapScore; ref.streak = nextStreak; ref.stageProgress += 1;
-      this.emit({ type: "scoreFloat", player, idx, amount: tapScore });
-      if (checkStreakMilestone(ref.streak)) { this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` }); this.hitPause(25); haptics.combo(ref.streak); }
-      if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "Γ¥ñ∩╕Å Last heart!" });
-      this.checkStageProgress(player);
-      const now = performance.now();
-      const reaction = this._lastTapTime ? now - this._lastTapTime : 0;
-      this._lastTapTime = now;
-      if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
-      achievementSystem.check('first_blood', () => true);
-      achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
-      // Score milestones
-      achievementSystem.check('score_100', () => ref.score >= 100);
-      achievementSystem.check('score_500', () => ref.score >= 500);
-      achievementSystem.check('score_1000', () => ref.score >= 1000);
-      achievementSystem.check('score_2500', () => ref.score >= 2500);
-      achievementSystem.check('score_5000', () => ref.score >= 5000);
-      achievementSystem.check('score_9999', () => ref.score >= 9999);
-      // Streak milestones
-      achievementSystem.check('streak_10', () => ref.streak >= 10);
-      achievementSystem.check('streak_25', () => ref.streak >= 25);
-      achievementSystem.check('streak_50', () => ref.streak >= 50);
-      // Speed achievements
-      const currentSpeed = parseFloat(speedLabel(this.tickCount, ref.freezeEnd > Date.now()));
-      achievementSystem.check('speed_2x', () => currentSpeed >= 2.0);
-      achievementSystem.check('speed_3x', () => currentSpeed >= 3.0);
-      achievementSystem.check('shield_5', () => (this._shieldCollected ?? 0) >= 5);
-      achievementSystem.check('freeze_5', () => (this._freezeCollected ?? 0) >= 5);
-      // Secret: score 500+ at 3x speed
-      achievementSystem.check('secret_speed_run', () => ref.score >= 500 && currentSpeed >= 3.0);
+        ref.health += 1;
+        this.emit({ type: "toast", message: "♥ +1 Heart!" });
+      }
     }
+    if (cell.type === "shield") { ref.shieldCount += 1; ref.shield = true; this._shieldCollected++; }
+    if (cell.type === "freeze") { ref.freezeEnd = Math.max(ref.freezeEnd, Date.now()) + 15000; this._freezeCollected++; }
+    if (cell.type === "multiplier") ref.multiplierEnd = Date.now() + 24000;
+    if (cell.type === "shield") {
+      this.emit({ type: "pwrToast", message: `🛡 Shield ×${ref.shieldCount}!`, player });
+    } else if (cell.type === "multiplier") {
+      this.emit({ type: "pwrToast", message: "×2 multiplier!", player });
+    } else if (cell.type === "freeze") {
+      this.emit({ type: "pwrToast", message: "❄ Freeze activated!", player });
     }
     ref.cells = activeToCellsP(ref.active, pat);
     this.dirty = true;
     this.emitSnapshot();
+  }
+
+  private _processTapDanger(player: 1 | 2, ref: PlayerState, cell: ActiveCell, idx: number, pat: { cols: number; rows: number; mask: number[] | null }): void {
+    const dmg = this.config.mode === "evolve" ? 0.5 : 1;
+    cell.clicked = true;
+    if (!this.devGodMode) {
+      if (ref.shieldCount > 0) {
+        this.dda.recordAttempt(false, 0, false);
+        ref.shieldCount -= 1; ref.shield = ref.shieldCount > 0;
+        this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 });
+        this.triggerCellAnim(player, idx, "pop");
+      } else {
+        this.dda.recordAttempt(false, 0, true);
+        if (ref.streak >= 5) this.emit({ type: "toast", message: `🔥 ${ref.streak} streak lost!` });
+        ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0; this._tookDamage = true;
+        this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
+        this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
+        this.hitPause(ref.health < 1 ? 200 : 40);
+        if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
+      }
+    } else {
+      this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 });
+      this.triggerCellAnim(player, idx, "pop");
+    }
+    this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
+    achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
+    ref.cells = activeToCellsP(ref.active, pat);
+    this.dirty = true;
+    this.emitSnapshot();
+  }
+
+  private _processTapSafe(player: 1 | 2, ref: PlayerState, cell: ActiveCell, idx: number, pat: { cols: number; rows: number; mask: number[] | null }): void {
+    cell.clicked = true;
+    this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 });
+    this.triggerCellAnim(player, idx, "pop");
+    if (this._bossActive) bossEngine.onSafeTap();
+    rhythmFeedback.recordTap();
+    const { mult, bossMult } = calculateTapScore(Date.now() < ref.multiplierEnd, this._bossActive, bossEngine.combo.multiplier);
+    const nextStreak = ref.streak + 1;
+    const tapScore = (mult * bossMult) + calculateStreakBonus(nextStreak);
+    ref.score += tapScore; ref.streak = nextStreak; ref.stageProgress += 1;
+    this.emit({ type: "scoreFloat", player, idx, amount: tapScore });
+    if (checkStreakMilestone(ref.streak)) { this.emit({ type: "toast", message: `🔥 ${ref.streak} Streak!` }); this.hitPause(25); haptics.combo(ref.streak); }
+    if (ref.health === 1 && !this.devGodMode) this.emit({ type: "toast", message: "❤️ Last heart!" });
+    this.checkStageProgress(player);
+    const now = performance.now();
+    const reaction = this._lastTapTime ? now - this._lastTapTime : 0;
+    this._lastTapTime = now;
+    if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
+    this._checkTapAchievements(ref);
+    ref.cells = activeToCellsP(ref.active, pat);
+    this.dirty = true;
+    this.emitSnapshot();
+  }
+
+  private _checkTapAchievements(ref: PlayerState): void {
+    achievementSystem.check('first_blood', () => true);
+    achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
+    achievementSystem.check('score_100', () => ref.score >= 100);
+    achievementSystem.check('score_500', () => ref.score >= 500);
+    achievementSystem.check('score_1000', () => ref.score >= 1000);
+    achievementSystem.check('score_2500', () => ref.score >= 2500);
+    achievementSystem.check('score_5000', () => ref.score >= 5000);
+    achievementSystem.check('score_9999', () => ref.score >= 9999);
+    achievementSystem.check('streak_10', () => ref.streak >= 10);
+    achievementSystem.check('streak_25', () => ref.streak >= 25);
+    achievementSystem.check('streak_50', () => ref.streak >= 50);
+    const currentSpeed = parseFloat(speedLabel(this.tickCount, ref.freezeEnd > Date.now()));
+    achievementSystem.check('speed_2x', () => currentSpeed >= 2.0);
+    achievementSystem.check('speed_3x', () => currentSpeed >= 3.0);
+    achievementSystem.check('shield_5', () => (this._shieldCollected ?? 0) >= 5);
+    achievementSystem.check('freeze_5', () => (this._freezeCollected ?? 0) >= 5);
+    achievementSystem.check('secret_speed_run', () => ref.score >= 500 && currentSpeed >= 3.0);
   }
 
   private checkStageProgress(player: 1 | 2): void {

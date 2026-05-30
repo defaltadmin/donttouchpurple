@@ -123,11 +123,21 @@ firebase deploy --only hosting  # Deploy to game.mscarabia.com
 #### Tests
 - 18 new StartScreen tests (menu-card, pills, glow, energy states) — 230 total, 21 files
 
-#### What's Left (Karpathy Big Refactors — for next chat)
-1. **App.tsx split** (~400 lines): 50+ useState, 20+ useEffect → extract hooks: useGameCallbacks, useRewards, useAchievementQueue, useAnalytics
-2. **Achievement registration** (~45 lines): 33 register() calls in GameEngine constructor → config array
-3. **_processTap() decomposition** (~80 lines): 150-line method → _processTapSafe, _processTapDanger, _checkTapAchievements
-4. **Monitoring stack consolidation** (~150 lines): merge errorLogger + error-tracker + metrics into one service
+#### Karpathy Big Refactors (completed 2026-05-30)
+
+1. **Achievement registration** — 33 `register()` calls replaced with `config/achievementDefs.ts` array + 3-line loop
+2. **_processTap() decomposition** — 150-line method split into 6 focused methods: `_processTapIce`, `_processTapBomb`, `_processTapPowerup`, `_processTapDanger`, `_processTapSafe`, `_checkTapAchievements`
+3. **Monitoring stack consolidation** — `services/monitoring.ts` merges `errorLogger` + `error-tracker` + `metrics` + `devLog` into single module; old files become thin re-exports
+4. **App.tsx split** — Skipped: too high-risk due to deep state coupling (handleEngineGameOver touches 15+ state variables and refs)
+
+#### What's Left (for next session)
+- ~~App.tsx split~~ — deferred, see above
+- Deploy verification (push to remote)
+- Lighthouse re-run
+- Gameplay trailer + screenshots
+- App Check enforcement (Firebase Console toggle)
+- Game portals (itch.io, CrazyGames, Poki)
+- Multiplayer prototype (Durable Objects)
 
 #### Known False Positives (don't fix these)
 - CSS classes `dtp-btn.previewing`, `dtp-combo-popup`, `dtp-boss-hp` — audit said unused but they ARE used in TSX

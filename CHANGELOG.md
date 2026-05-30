@@ -1,5 +1,16 @@
 # Don't Touch Purple — Changelog
 
+## [7.7.0] — 2026-05-30
+
+### Changed — Karpathy Big Refactors
+- **Achievement registration**: 33 `register()` calls in GameEngine constructor replaced with `config/achievementDefs.ts` array + 3-line loop. All 33 achievements preserved, zero behavior change.
+- **_processTap() decomposition**: 150-line monolith split into 6 focused methods: `_processTapIce`, `_processTapBomb`, `_processTapPowerup`, `_processTapDanger`, `_processTapSafe`, `_checkTapAchievements`. Each handles one cell type with clean exit.
+- **Monitoring stack consolidation**: New `services/monitoring.ts` merges `errorLogger` (services/), `error-tracker` (utils/), `metrics` (services/), and `devLog` (utils/) into single module. Old files become thin re-exports for backward compatibility. Vite chunk splitting updated.
+
+### Added
+- `config/achievementDefs.ts` — single source of truth for all 33 achievement definitions
+- `services/monitoring.ts` — unified monitoring entry point (errorTracker + errorLogger + metricsService + logError)
+
 ## [7.6.1] — 2026-05-30
 
 ### Added — 3D Visuals, SEO, A11y, Skills
