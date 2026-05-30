@@ -44,13 +44,15 @@ function PillRow<T extends string | number>({
   }, [reposition, selIdx]);
 
   return (
-    <div className="pill-row" ref={rowRef}>
+    <div className="pill-row" ref={rowRef} role="radiogroup">
       <div className="pill-thumb" ref={thumbRef} />
       {options.map((o, i) => {
         const locked = isDisabled(o.value);
         return (
           <button key={String(o.value)}
             className={`pill-opt${i === selIdx ? " pill-opt--on" : ""}${locked ? " pill-opt--locked" : ""}`}
+            role="radio"
+            aria-checked={i === selIdx}
             onClick={() => locked && onDisabledClick ? onDisabledClick(o.value) : onChange(o.value)}
             title={locked ? "Tap for hint" : undefined}>
             {o.label}{locked && " 🔒"}

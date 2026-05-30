@@ -1,11 +1,11 @@
 // Web Vitals monitoring and reporting
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { errorLogger } from './errorLogger';
 import { metricsService } from './metrics';
 
 export interface WebVitalsMetrics {
   cls: number | null;
-  fid: number | null;
+  inp: number | null;
   fcp: number | null;
   lcp: number | null;
   ttfb: number | null;
@@ -15,7 +15,7 @@ class WebVitalsMonitor {
   private static instance: WebVitalsMonitor;
   private metrics: WebVitalsMetrics = {
     cls: null,
-    fid: null,
+    inp: null,
     fcp: null,
     lcp: null,
     ttfb: null
@@ -38,10 +38,10 @@ class WebVitalsMonitor {
         this.checkThresholds('cls', metric.value);
       });
 
-      onFID((metric) => {
-        this.metrics.fid = metric.value;
-        this.reportMetric('FID', metric);
-        this.checkThresholds('fid', metric.value);
+      onINP((metric) => {
+        this.metrics.inp = metric.value;
+        this.reportMetric('INP', metric);
+        this.checkThresholds('inp', metric.value);
       });
 
       onFCP((metric) => {
@@ -71,7 +71,7 @@ class WebVitalsMonitor {
   private checkThresholds(metric: keyof WebVitalsMetrics, value: number): void {
     const thresholds = {
       cls:  { good: 0.1,  poor: 0.25 },
-      fid:  { good: 100,  poor: 300 },
+      inp:  { good: 200,  poor: 500 },
       fcp:  { good: 1800, poor: 3000 },
       lcp:  { good: 2500, poor: 4000 },
       ttfb: { good: 800,  poor: 1800 }

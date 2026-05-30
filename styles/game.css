@@ -3150,8 +3150,8 @@ body { background-color: var(--bg); }
 .dtp-btn-secondary { background: transparent; border: 1px solid var(--theme-border, #524151); color: var(--theme-text, #e7deff); }
 .dtp-btn:active { transform: translateY(0); }
 
-.keyboard-nav-active *:focus-visible {
-  outline: var(--focus-ring);
+*:focus-visible {
+  outline: 2px solid var(--theme-primary, #fda9ff);
   outline-offset: 2px;
 }
 

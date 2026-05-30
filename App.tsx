@@ -7,6 +7,7 @@ import { Icon } from "./components/UI/Icon";
 import { LottiePlayer } from "./components/UI/LottiePlayer";
 import type { IconName } from "./components/UI/Icon";
 import { settingsManager } from "./utils/settings";
+import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
 import { audioEngine } from "./utils/audio";
 import { i18n, type Locale } from "./utils/i18n";
 import { AssetHydrator } from "./utils/asset-hydrator";
@@ -1407,6 +1408,7 @@ export default function App() {
 
 
       {showSettings && (
+        <ChunkErrorBoundary name="Settings">
         <Suspense fallback={<div className="loading-placeholder">Loading settings...</div>}>
         <SettingsDrawer
           colorblindMode={colorblindMode} setColorblindMode={setColorblindMode}
@@ -1434,6 +1436,7 @@ export default function App() {
           setCurrentLocale={setCurrentLocale}
         />
         </Suspense>
+        </ChunkErrorBoundary>
       )}
 
       {showDevUnlock && (
@@ -1516,6 +1519,7 @@ export default function App() {
       )}
 
       {screen === "leaderboard" && (
+        <ChunkErrorBoundary name="Leaderboard">
         <Suspense fallback={<div className="loading-placeholder">Loading leaderboard...</div>}>
         <LeaderboardPanel
           mode={lbMode}
@@ -1528,9 +1532,11 @@ export default function App() {
           onScoresFetched={checkTop10Achievement}
         />
         </Suspense>
+        </ChunkErrorBoundary>
       )}
       {screen === "howto" && <HowToPlay onClose={() => setScreen("menu")} />}
       {screen === "shop" && (
+        <ChunkErrorBoundary name="Shop">
         <Suspense fallback={<div className="loading-placeholder">Loading shop...</div>}>
         <ShopPanel
           dust={dust}
@@ -1545,6 +1551,7 @@ export default function App() {
           persistDust={persistDust}
         />
         </Suspense>
+        </ChunkErrorBoundary>
       )}
 
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
