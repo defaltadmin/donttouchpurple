@@ -1,5 +1,25 @@
 # Don't Touch Purple — Changelog
 
+## [7.6.0] — 2026-05-30
+
+### Added — Glassmorphic Landing Pages
+- **Game landing page** (`website/src/app/page.tsx`): Apple-style glassmorphic hero with crescent ring + glass orb, pure black background, mouse parallax on orb, glass-card treatment on boss/feature cards with cursor-following glow, scroll indicator
+- **Corporate landing page** (`website/src/app/corporate/`): MSC Arabia brand page with glassmorphic hero, nav, values section, stats, products showcase, CTA. Static export at `/corporate`
+- **Reusable components**: `GlassOrb.tsx` (backdrop-filter blur + float animation), `CrescentRing.tsx` (elliptical neon crescent + backlight), `HeroStage.tsx` (composed hero with GSAP entrance)
+- **CSS utilities**: `.glass-orb`, `.crescent-ring`, `.crescent-backlight`, `.hero-stage`, `.glass-card` classes with `--neon-glow`, `--neon-bright`, `--neon-edge` tokens
+- **Responsive breakpoints**: crescent+orb scales at 640px and 1024px
+- **Master external reference database** in memory — consolidates all design tools, repos, websites across sessions
+- **MCP servers**: Playwright, Chrome DevTools, Firecrawl (local config, activate on restart)
+
+### Changed
+- Website body background: `#151028` → `#000000` (pure black for glassmorphic contrast)
+- Boss event and feature cards: static backgrounds → `.glass-card` with backdrop-filter blur and cursor-following glow
+- Game grid floats above the crescent ring in the hero section
+
+### Fixed
+- Boss event cards: missing hover interaction (now cursor-tracking radial gradient)
+- Scroll indicator: added glassmorphic scroll chevron at hero bottom
+
 ## [7.5.3] — 2026-05-21
 
 ### Stitch Design System Integration

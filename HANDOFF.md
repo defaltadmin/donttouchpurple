@@ -86,7 +86,40 @@ pnpm lint         # ESLint fix
 firebase deploy --only hosting  # Deploy to game.mscarabia.com
 ```
 
-## Recent Session (2026-05-27)
+## Recent Session (2026-05-30)
+
+### Glassmorphic Landing Pages + MCP Servers + Master Reference DB
+
+**Commit** `1c859f8` on main. 907 lines added across 7 files. Build passes.
+
+#### Glassmorphic Landing Pages
+- **game.mscarabia.com** (`website/src/app/page.tsx`): Redesigned with pure black background, crescent ring + glass orb hero, mouse parallax on orb, glass-card treatment on boss/feature cards with cursor-following glow
+- **mscarabia.com** (`website/src/app/corporate/`): New corporate landing page with glassmorphic hero, nav, values, stats, products, CTA. Routes to `/corporate` as static export.
+
+#### New Components (website/src/components/)
+- `GlassOrb.tsx` — backdrop-filter blur(25px) saturate(200%), radial gradient highlight, GSAP float animation, accepts children
+- `CrescentRing.tsx` — extreme elliptical border-radius, stacked inset box-shadows for deep magenta glow, neon purple backlight layer
+- `HeroStage.tsx` — composes crescent+orb+badge+title+subtitle with GSAP entrance timeline
+
+#### CSS Additions (website/src/app/globals.css)
+- `--neon-glow`, `--neon-bright`, `--neon-edge` CSS custom properties
+- `.glass-orb`, `.crescent-ring`, `.crescent-backlight`, `.hero-stage` classes
+- `.glass-card` with cursor-following radial gradient hover glow
+- Corporate nav/section/stat/CTA/footer styles
+- Responsive breakpoints for crescent+orb at 640px and 1024px
+- Body background changed to pure black (#000000)
+
+#### MCP Servers Installed (local config)
+- `playwright` — @anthropic-ai/playwright-mcp (browser automation, E2E debugging)
+- `chrome-devtools` — @anthropic-ai/chrome-devtools-mcp (live perf profiling)
+- `firecrawl` — firecrawl-mcp (web crawling, SEO audits)
+
+#### Master Reference Database
+- Created `memory/reference-master-external-resources.md` consolidating ALL external references from every session
+- Updated `memory/project-glassmorphic-landing-2026-05-30.md` to COMPLETE status
+- Tracked: Iconsax, Flectofy, Flair.ai, Shader Gradient, Humane by Design, Design Spells, Draftly, 21st.dev, React Bits, Google Stitch, Runway, Pika, Kling, Luma, Midjourney
+
+## Previous Session (2026-05-27)
 
 ### Multi-AI Review Round — Big Pickle v2 R2 + DeepSeek + Sonnet + Manual Triage
 
