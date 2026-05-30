@@ -8,7 +8,7 @@
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
 - **Stack**: React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
-- **Version**: 7.5.4
+- **Version**: 7.6.1
 - **Live**: https://game.mscarabia.com (Firebase Hosting, auto-deployed)
 - **GitHub**: https://github.com/defaltadmin/donttouchpurple
 - **Branch**: main (all work merged)
@@ -18,11 +18,11 @@
 | Check | Status |
 |-------|--------|
 | Typecheck | 0 errors |
-| Tests | 214/214 pass (20 files) |
+| Tests | 230/230 pass (21 files) |
 | Build | Clean (0 circular warnings) |
-| Lint | 0 errors, 0 warnings |
+| Lint | Pre-existing worker globals only |
 | Vulnerabilities | 0 (root + website) |
-| Lighthouse | Perf 80, A11y 87, BP 96, SEO 92 |
+| Lighthouse | Perf 80, A11y 92+, BP 96, SEO 92 |
 
 ## Architecture Quick Reference
 
@@ -42,7 +42,7 @@ App.tsx (state machine)
   │   ├── Settings/ — SettingsDrawer, DevOverlay, QuickSettings
   │   └── UI/ — LottiePlayer, Icon, MagneticButton
   ├── hooks/ (16 custom hooks — useGameEngine bridge, useThemeSettings, useDevToolsState, etc.)
-  ├── services/ (firebase.ts, firestoreService.ts, errorLogger.ts)
+  ├── services/ (firebase.ts, firestoreService.ts, sentry.ts, web-vitals.ts, gameanalytics.ts)
   ├── workers/ (score-validator.ts — Cloudflare Worker for score validation)
   ├── config/ (gameBalance.ts, difficulty.ts, keybindings.ts)
   ├── utils/ (achievements.ts, challenge-link.ts, score-sync.ts, state-guard.ts)
@@ -87,6 +87,53 @@ firebase deploy --only hosting  # Deploy to game.mscarabia.com
 ```
 
 ## Recent Session (2026-05-30)
+
+### 3D Visuals, SEO, A11y, Performance, Skills, Dead Code Cleanup
+
+**5 commits pushed** (`c909f6a`→`cf3afcc`). 230 tests, all green. Build clean.
+
+#### 3D Visuals
+- **Game landing page**: WebGL nebula canvas (OGL) hero background (`website/src/components/NebulaCanvas.tsx`) — mouse-reactive nebula, starfield, purple/pink/cyan palette
+- **Game landing page**: Interactive gameplay demo (`website/src/components/GameDemo.tsx`) — "Try It Now" 3x3 timed grid with score/lives/CTA
+- **Game app**: Galaxy WebGL background renders on start screen by default when no bg equipped
+- **Corporate site** (gitignored, deployed separately): 3D perspective on hero card, 3 floating depth orbs
+
+#### Performance
+- GameAnalytics lazy-loaded (~91KB off initial bundle) — 3 files changed (App.tsx, hooks/useDustEconomy.ts, utils/analytics.ts)
+- INP replaces deprecated FID in web-vitals.ts
+
+#### Accessibility
+- JSON-LD structured data (WebApplication schema) in index.html
+- Skip-to-content link, ARIA labels on nav buttons/player pill/settings grid
+- role="radiogroup" + aria-checked on PillRow
+- `*:focus-visible` works unconditionally (removed .keyboard-nav-active gate)
+- Footer contrast fix (#524151 → #958a9e), `<main>` landmark on landing
+
+#### Dead Code Cleanup (Karpathy audit)
+- Deleted `services/clarity.ts` (zero imports)
+- Deleted `utils/cleanup-pattern.ts` (redirected 11 backgrounds to local version)
+- Lazy-loaded DevOverlay + DevUnlockModal
+- AchievementToast interface moved to module scope
+- ChunkErrorBoundary wraps 3 lazy panels (retry on failure)
+
+#### Skills Installed
+- **gstack** (`~/.claude/skills/gstack/`): 40+ slash-command skills — /office-hours, /plan-ceo-review, /review, /ship, /qa, /browse, /cso, /autoplan, /spec, /investigate
+- **karpathy-guidelines** (`~/.openclaude/skills/karpathy-guidelines/`): 4 behavioral principles
+
+#### Tests
+- 18 new StartScreen tests (menu-card, pills, glow, energy states) — 230 total, 21 files
+
+#### What's Left (Karpathy Big Refactors — for next chat)
+1. **App.tsx split** (~400 lines): 50+ useState, 20+ useEffect → extract hooks: useGameCallbacks, useRewards, useAchievementQueue, useAnalytics
+2. **Achievement registration** (~45 lines): 33 register() calls in GameEngine constructor → config array
+3. **_processTap() decomposition** (~80 lines): 150-line method → _processTapSafe, _processTapDanger, _checkTapAchievements
+4. **Monitoring stack consolidation** (~150 lines): merge errorLogger + error-tracker + metrics into one service
+
+#### Known False Positives (don't fix these)
+- CSS classes `dtp-btn.previewing`, `dtp-combo-popup`, `dtp-boss-hp` — audit said unused but they ARE used in TSX
+- `metrics.ts` — web-vitals.ts imports and monkey-patches it; needs careful handling, not blind deletion
+
+## Previous Session (2026-05-30)
 
 ### Glassmorphic Landing Pages + MCP Servers + Master Reference DB
 

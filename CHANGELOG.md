@@ -1,5 +1,37 @@
 # Don't Touch Purple — Changelog
 
+## [7.6.1] — 2026-05-30
+
+### Added — 3D Visuals, SEO, A11y, Skills
+- **WebGL nebula hero** (`website/src/components/NebulaCanvas.tsx`): OGL particle canvas as hero background on game landing page. Mouse-reactive nebula, starfield, purple/pink/cyan palette
+- **Interactive gameplay demo** (`website/src/components/GameDemo.tsx`): "Try It Now" section on landing page — 3x3 timed grid with score, lives, and "Play for real" CTA
+- **Galaxy WebGL on start screen**: Galaxy background renders by default when no background is equipped (was CSS orbs only)
+- **JSON-LD structured data** (`index.html`): WebApplication schema for rich search results
+- **Skip-to-content link**: Keyboard/screen reader accessible
+- **ARIA labels**: Nav buttons, player pill, settings grid, radiogroup roles on PillRow
+- **ChunkErrorBoundary**: Wraps Settings, Leaderboard, and Shop lazy-loaded panels (retry on chunk failure)
+- **Sitemap.xml**: Created at `public/sitemap.xml` (was referenced by robots.txt but missing)
+- **gstack**: Installed at `~/.claude/skills/gstack/` — 40+ skills (review, ship, QA, security, design, etc.)
+- **karpathy-guidelines**: Installed at `~/.openclaude/skills/karpathy-guidelines/` — 4 behavioral principles
+
+### Changed
+- **GameAnalytics lazy-loaded**: `services/gameanalytics.ts` now dynamically imported (~91KB off initial bundle)
+- **INP replaces FID**: `services/web-vitals.ts` now tracks `onINP` (Interaction to Next Paint) instead of deprecated `onFID`
+- **Keyboard focus indicators**: Removed `.keyboard-nav-active` gate — `*:focus-visible` now works unconditionally
+- **DevOverlay lazy-loaded**: Now wrapped in `React.lazy()` + `Suspense` (was eagerly imported)
+- **AchievementToast interface**: Moved to module scope (was re-created every render in component body)
+- **Cleanup-pattern consolidated**: 11 backgrounds now import from local `components/Backgrounds/cleanup-pattern.ts` with `{start, stop}` API
+
+### Removed
+- `services/clarity.ts` — dead code (zero imports)
+- `utils/cleanup-pattern.ts` — dead code, replaced by local version
+- `og-image.png` preload — was wasting bandwidth on non-LCP resource
+
+### Fixed
+- **Footer contrast**: `#524151` → `#958a9e` (WCAG AA on dark background)
+- **Hydration mismatch**: Landing page INITIAL_CARDS now deterministic (was using Math.random() in SSR)
+- **`<main>` landmark**: Added to game landing page
+
 ## [7.6.0] — 2026-05-30
 
 ### Added — Glassmorphic Landing Pages
