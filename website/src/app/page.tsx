@@ -46,7 +46,12 @@ function randomCell(id: number): Cell {
   };
 }
 
-const INITIAL_CARDS = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => randomCell(i));
+// Deterministic initial cards to avoid SSR/client hydration mismatch
+const INITIAL_CARDS: Cell[] = [
+  ...COLORS.safe.map((c, i) => ({ id: i, color: c, type: 'safe' as const })),
+  { id: 8, color: COLORS.purple, type: 'purple' as const },
+  ...COLORS.safe.slice(0, 7).map((c, i) => ({ id: i + 9, color: c, type: 'safe' as const })),
+];
 
 const BOSS_EVENTS = [
   {
@@ -267,6 +272,7 @@ export default function Home() {
       `}</style>
 
       <div ref={containerRef} className="landing-page">
+      <main>
 
         {/* ── Hero with Glassmorphic Crescent + Orb ── */}
         <section className="hero">
@@ -440,6 +446,7 @@ export default function Home() {
             <div className="play-shimmer" />
           </a>
         </section>
+        </main>
 
         <footer className="landing-footer">
           <span>&copy; {new Date().getFullYear()} Don&apos;t Touch Purple &middot; Open Source (MIT)</span>

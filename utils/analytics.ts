@@ -1,7 +1,9 @@
 import { logger } from './logger';
 import { safeSet } from './storage';
 import { safeSentry } from '../services/sentry';
-import { logDesignEvent } from '../services/gameanalytics';
+// Lazy import to avoid pulling gameanalytics (~91KB) into the initial bundle
+let _logDesignEvent: ((eventId: string, value?: number) => void) | null = null;
+import('../services/gameanalytics').then(m => { _logDesignEvent = m.logDesignEvent; }).catch(() => {});
 
 type EventName = 'game_start' | 'game_over' | 'retry' | 'pause' | 'settings_change' | 'achievement_unlocked';
 interface GameEvent { name: EventName; ts: number; payload?: Record<string, unknown>; }
@@ -31,7 +33,7 @@ export const analytics = {
       // Transmit each event before clearing the queue
       for (const evt of queue) {
         // Forward to GameAnalytics as a design event (prod only, per IS_PROD guard)
-        logDesignEvent(`analytics/${evt.name}`, 1);
+        _logDesignEvent?.(`analytics/${evt.name}`, 1);
         // Add as Sentry breadcrumb for error correlation (no-op if Sentry not yet loaded)
         safeSentry.addBreadcrumb({
           message: `analytics: ${evt.name}`,

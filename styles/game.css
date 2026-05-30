@@ -495,6 +495,7 @@ body.death-flash::after {
 
 /* ── Menu card ── */
 .menu-card {
+  position: relative;
   width: 90vw;
   max-width: 420px;
   background: linear-gradient(165deg, rgba(45,16,96,0.82), rgba(13,8,32,0.92));
@@ -503,7 +504,13 @@ body.death-flash::after {
   display: flex; flex-direction: column; gap: 14px;
   justify-content: center;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.6), 0 0 60px rgba(192,38,211,0.1), 0 0 120px rgba(124,58,237,0.05);
+  overflow: hidden;
 }
+.menu-card-glow {
+  position: absolute; inset: 0; border-radius: inherit;
+  opacity: 0; transition: opacity 0.3s ease; pointer-events: none; z-index: 0;
+}
+.menu-card > *:not(.menu-card-glow) { position: relative; z-index: 1; }
 .menu-header { display: flex; flex-direction: column; gap: 4px; text-align: center; padding-bottom: 4px; }
 /* menu-title defined below with shimmer animation */
 .menu-sub { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; text-align: center; margin-top: 2px; opacity: 0.8; }

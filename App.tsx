@@ -88,7 +88,14 @@ import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjective
 
 // Services (lazy loaded - see getFirebase() below)
 import { fbFetchTop20Global } from "./services/firebase";
-import { initGA, logProgressionEvent } from "./services/gameanalytics";
+// Lazy-loaded GameAnalytics (~91KB off initial bundle)
+const gaPromise = import("./services/gameanalytics");
+async function initGALazy(version: string) {
+  try { (await gaPromise).initGA(version); } catch { /* GA unavailable */ }
+}
+async function logProgressionLazy(...args: Parameters<typeof import("./services/gameanalytics").logProgressionEvent>) {
+  try { (await gaPromise).logProgressionEvent(...args); } catch { /* GA unavailable */ }
+}
 import { safeGetJSON, safeSet } from "./utils/storage";
 import { scoreSync } from "./utils/score-sync";
 import { useScreenStateMachine, type Screen } from "./hooks/useScreenStateMachine";
@@ -227,7 +234,7 @@ export default function App() {
   const { theme, setTheme, colorblindMode, setColorblindMode, isFS, toggleFS, settingsOpen, setSettingsOpen, showOffset, setShowOffset, showFps, setShowFps, fps, equippedTheme } = useThemeSettings(shopData);
 
   useEffect(() => {
-    initGA(typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "5.9.0");
+    initGALazy(typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "5.9.0");
   }, []);
 
   useEffect(() => {
@@ -494,7 +501,7 @@ export default function App() {
         seed: gameSeed ?? 0,
       });
     }).catch(e => logger.warn('Firebase operation failed', e));
-    logProgressionEvent("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
+    logProgressionLazy("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
 
     // Update progress tracking (use refs for synchronous reads)
@@ -1148,7 +1155,7 @@ export default function App() {
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
     })).catch(e => logger.warn('Firebase operation failed', e));
-    logProgressionEvent("Start", gameMode, 0, 0);
+    logProgressionLazy("Start", gameMode, 0, 0);
     startEngine(forceSeed);
     if (forceSeed !== undefined) {
       clearReplaySeed();

@@ -194,6 +194,24 @@ export function StartScreen({
 }: StartScreenProps) {
   const { t } = useTranslation();
   const isKbd = inputMode === "keyboard";
+  const cardRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+
+  // Cursor-tracking glow on menu card
+  const handleCardPointer = useCallback((e: React.PointerEvent) => {
+    const glow = glowRef.current;
+    const card = cardRef.current;
+    if (!glow || !card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    glow.style.background = `radial-gradient(circle 300px at ${x}px ${y}px, rgba(192,38,211,0.12), transparent 70%)`;
+    glow.style.opacity = "1";
+  }, []);
+
+  const handleCardLeave = useCallback(() => {
+    if (glowRef.current) glowRef.current.style.opacity = "0";
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -262,7 +280,9 @@ export function StartScreen({
   return (
     <>
       {!hasBackground && <ParticleLayer count={25} />}
-      <div className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card">
+      <div ref={cardRef} className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card"
+        onPointerMove={handleCardPointer} onPointerLeave={handleCardLeave}>
+      <div ref={glowRef} className="menu-card-glow" />
       <div className="menu-header">
         <h1 className="menu-title">Don't Touch Purple</h1>
         <p className="menu-sub">Tap fast. Survive longer.</p>

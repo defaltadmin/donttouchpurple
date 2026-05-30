@@ -1,7 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { LS_KEYS } from "../config/difficulty";
 import { fbSyncDust } from "../services/firebase";
-import { logResourceEvent } from "../services/gameanalytics";
+
+// Lazy import to avoid pulling gameanalytics (~91KB) into initial bundle
+type LogResourceFn = (flowType: "Source" | "Sink", resourceType: string, itemType: string, itemId: string, amount: number) => void;
+let _logResourceEvent: LogResourceFn | null = null;
+import("../services/gameanalytics").then(m => { _logResourceEvent = m.logResourceEvent; }).catch(() => {});
 
 export function useDustEconomy(playerName: string) {
   const [dust, setDust] = useState(() => {
@@ -45,7 +49,7 @@ export function useDustEconomy(playerName: string) {
     try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => fbSyncDust(playerName, newDust).catch(() => {}), 5000);
-    logResourceEvent("Source", "Dust", source, "earned", amount);
+    _logResourceEvent?.("Source", "Dust", source, "earned", amount);
     return newDust;
   }, [playerName]);
 
@@ -61,7 +65,7 @@ export function useDustEconomy(playerName: string) {
     try { localStorage.setItem(LS_KEYS.DUST, newDust.toString()); } catch {}
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => fbSyncDust(playerName, newDust).catch(() => {}), 5000);
-    logResourceEvent("Sink", "Dust", "Shop", "generic_spend", amount);
+    _logResourceEvent?.("Sink", "Dust", "Shop", "generic_spend", amount);
   }, [getLifetimeDustSpent, playerName]);
 
   return { dust, dustRef, setDust, addDust, spendDust, persistDust, getLifetimeDustSpent, getBotAccuracy };

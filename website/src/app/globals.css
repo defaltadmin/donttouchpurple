@@ -184,7 +184,19 @@ html, body {
   border-radius: 16px;
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, border-color 0.3s;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(191,57,255,0.15), transparent 40%, transparent 60%, rgba(255,86,255,0.1));
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .glass-card::after {
@@ -192,21 +204,20 @@ html, body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(191,57,255,0.12) 0%, transparent 60%);
+  background: radial-gradient(circle 350px at var(--mx, 50%) var(--my, 50%), rgba(191,57,255,0.15) 0%, transparent 60%);
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
   z-index: 0;
 }
 
-.glass-card:hover::after {
-  opacity: 1;
-}
+.glass-card:hover::before { opacity: 1; }
+.glass-card:hover::after { opacity: 1; }
 
 .glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 0 30px rgba(191, 57, 255, 0.12);
-  border-color: rgba(226, 163, 255, 0.2);
+  transform: translateY(-6px);
+  box-shadow: 0 0 40px rgba(191, 57, 255, 0.15), 0 20px 60px rgba(0, 0, 0, 0.4);
+  border-color: rgba(226, 163, 255, 0.25);
 }
 
 /* ═══════════════════════════════════════════
@@ -376,7 +387,12 @@ html, body {
   font-size: 1.1rem;
   font-family: 'Fredoka One', cursive;
   background: linear-gradient(135deg, #fda9ff, #c026d3);
-  box-shadow: 0 0 30px rgba(253,169,255,0.4), 0 6px 0 #a400b7, 0 8px 30px rgba(0,0,0,0.3);
+  box-shadow:
+    0 0 60px rgba(253,169,255,0.35),
+    0 0 120px rgba(192,38,211,0.2),
+    0 6px 0 #a400b7,
+    0 8px 30px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 8px rgba(124,58,237,0.5);
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s;
@@ -423,7 +439,7 @@ html, body {
   position: relative;
   z-index: 20;
   font-size: 0.8rem;
-  color: #524151;
+  color: #958a9e;
   text-align: center;
 }
 
@@ -677,7 +693,7 @@ html, body {
   text-align: center;
   padding: 24px;
   font-size: 0.75rem;
-  color: #524151;
+  color: #958a9e;
   border-top: 1px solid rgba(253,169,255,0.04);
 }
 
