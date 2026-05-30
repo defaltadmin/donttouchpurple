@@ -142,7 +142,6 @@ import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 
 // --- App Component ---
 export default function App() {
-  const [appReady, setAppReady] = useState(true);
   const [showLearnMore, setShowLearnMore] = useState(false);
   const {
     showNameEntry, setShowNameEntry,
@@ -986,12 +985,12 @@ export default function App() {
     preloaderRef.current.loadAll().catch(() => {});
   }, []);
 
-  // Transition to menu once the app is fully ready
+  // Transition from loading to menu immediately
   useEffect(() => {
-    if (appReady && screen === 'loading') {
+    if (screen === 'loading') {
       setScreen('menu');
     }
-  }, [appReady, screen, setScreen]);
+  }, [screen, setScreen]);
 
   useEffect(() => {
     configManager.load();
@@ -1428,7 +1427,7 @@ export default function App() {
         <BuildDeploySection onClose={() => setShowBuildDeploy(false)} />
       )}
 
-      {showNameEntry && appReady && (
+      {showNameEntry && (
         <div className="modal-overlay" onClick={() => setShowNameEntry(false)}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
