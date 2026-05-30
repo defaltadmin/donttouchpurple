@@ -1582,7 +1582,7 @@ export default function App() {
         </div>
       )}
 
-      {showLearnMore && <LearnMoreOverlay onClose={() => setShowLearnMore(false)} />}
+      {screen === "menu" && showLearnMore && <LearnMoreOverlay onClose={() => setShowLearnMore(false)} />}
 
       {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
       {showDevPanel && (

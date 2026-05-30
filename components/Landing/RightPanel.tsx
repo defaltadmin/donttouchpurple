@@ -1,8 +1,6 @@
 import { TechStats } from "./TechStats";
 import { LandingCTA } from "./LandingCTA";
 
-const GITHUB_URL = 'https://github.com/defaltadmin/donttouchpurple';
-
 export function RightPanel() {
   return (
     <div className="side-panel side-panel--right" data-testid="right-panel">

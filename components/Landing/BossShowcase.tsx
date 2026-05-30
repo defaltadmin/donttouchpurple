@@ -32,7 +32,7 @@ export function BossShowcase() {
           <div
             key={boss.name}
             className="glass-card boss-card"
-            style={{ '--boss-glow': boss.glow } as Record<string, string>}
+            style={{ '--boss-glow': boss.glow } as React.CSSProperties}
           >
             <div className="boss-card-icon">{boss.icon}</div>
             <div
