@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { GlassOrb } from '@/components/GlassOrb';
 import { CrescentRing } from '@/components/CrescentRing';
 import { NebulaCanvas } from '@/components/NebulaCanvas';
-import { GameDemo } from '@/components/GameDemo';
 
 const PLAY_URL = '/play';
 const GITHUB_URL = 'https://github.com/defaltadmin/donttouchpurple';
@@ -89,18 +88,11 @@ const FEATURES = [
 ];
 
 export default function Home() {
-  const [grid, setGrid] = useState<Cell[]>(INITIAL_CARDS);
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bossActive, setBossActive] = useState(false);
-  const [bossType, setBossType] = useState('');
-  const [flash, setFlash] = useState<string | null>(null);
+  const gridRef = useRef<Cell[]>(INITIAL_CARDS);
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const btnRef = useRef<HTMLAnchorElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const scoreRef = useRef<HTMLDivElement>(null);
-  const bossRef = useRef<HTMLDivElement>(null);
+  const gridElRef = useRef<HTMLDivElement>(null);
 
   // Mouse parallax for glass orb
   const orbContainerRef = useRef<HTMLDivElement>(null);
@@ -134,7 +126,6 @@ export default function Home() {
     }
     tl.from(titleRef.current, { y: -40, opacity: 0, duration: 0.8, ease: 'power3.out' }, 0);
     tl.from(btnRef.current, { scale: 0, opacity: 0, duration: 0.5, ease: 'back.out(3)' }, 0.6);
-    tl.from(scoreRef.current, { x: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, 0.4);
   }, []);
 
   // Scroll-triggered animations
@@ -174,147 +165,116 @@ export default function Home() {
     };
   }, []);
 
-  // Game simulation loop
+  // Bot gameplay loop — taps cells automatically, loops forever
   useEffect(() => {
-    let tick = 0;
     const interval = setInterval(() => {
-      tick++;
-      const replaceCount = 2 + Math.floor(Math.random() * 3);
-      setGrid((prev) => {
-        const next = [...prev];
-        for (let i = 0; i < replaceCount; i++) {
-          const idx = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
-          next[idx] = randomCell(idx);
-          gsap.to(`.cell-${idx}`, {
-            scale: 1,
-            duration: 0.3,
-            ease: 'back.out(2.5)',
-            delay: Math.random() * 0.1,
-          });
-        }
-        return next;
-      });
-      setScore((prev) => prev + Math.floor(Math.random() * 8) + 1);
-      setStreak((prev) => Math.min(prev + 1, 15));
-      if (tick % 30 === 0) {
-        setBossActive(true);
-        setBossType(Math.random() > 0.5 ? 'INVERSION' : 'STORM');
-        setFlash('#fda9ff');
-        setTimeout(() => setFlash(null), 200);
-        if (bossRef.current) {
-          gsap.fromTo(bossRef.current,
-            { y: -60, opacity: 0, scale: 0.8 },
-            { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }
-          );
-        }
-        setTimeout(() => {
-          setBossActive(false);
-          if (bossRef.current) {
-            gsap.to(bossRef.current, { y: -60, opacity: 0, duration: 0.3, ease: 'power2.in' });
+      const current = gridRef.current;
+      // Pick a random cell to tap
+      const idx = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
+      const cell = current[idx];
+      if (!cell) return;
+
+      if (cell.type === 'purple') {
+        // Bot accidentally taps purple — shake and replace
+        gsap.to(`.cell-${idx}`, {
+          scale: 0.8, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.inOut',
+          onComplete: () => {
+            const newCell = randomCell(idx);
+            gridRef.current = gridRef.current.map((c, i) => i === idx ? newCell : c) as Cell[];
+            const el = document.querySelector(`.cell-${idx}`) as HTMLElement;
+            if (el) {
+              el.style.background = `linear-gradient(135deg, ${newCell.color}, ${newCell.color}cc)`;
+              el.style.boxShadow = newCell.type === 'purple'
+                ? `0 0 15px ${newCell.color}60, inset 0 0 20px rgba(0,0,0,0.3)`
+                : `0 0 12px ${newCell.color}30, 0 4px 0 ${newCell.color}50`;
+              el.style.border = newCell.type === 'purple'
+                ? '2px solid rgba(255,255,255,0.15)'
+                : '2px solid rgba(255,255,255,0.08)';
+              const labelEl = el.querySelector('.cell-label, .cell-x') as HTMLElement;
+              if (labelEl) labelEl.textContent = newCell.label || (newCell.type === 'purple' ? 'X' : '');
+            }
           }
-        }, 3000);
+        });
+      } else {
+        // Bot taps a safe/special cell — shrink out, replace, pop in
+        gsap.to(`.cell-${idx}`, {
+          scale: 0, rotation: 10, duration: 0.2, ease: 'power2.in',
+          onComplete: () => {
+            const newCell = randomCell(idx);
+            gridRef.current = gridRef.current.map((c, i) => i === idx ? newCell : c) as Cell[];
+            const el = document.querySelector(`.cell-${idx}`) as HTMLElement;
+            if (el) {
+              el.style.background = `linear-gradient(135deg, ${newCell.color}, ${newCell.color}cc)`;
+              el.style.boxShadow = newCell.type === 'purple'
+                ? `0 0 15px ${newCell.color}60, inset 0 0 20px rgba(0,0,0,0.3)`
+                : `0 0 12px ${newCell.color}30, 0 4px 0 ${newCell.color}50`;
+              el.style.border = newCell.type === 'purple'
+                ? '2px solid rgba(255,255,255,0.15)'
+                : '2px solid rgba(255,255,255,0.08)';
+              const labelEl = el.querySelector('.cell-label, .cell-x') as HTMLElement;
+              if (labelEl) labelEl.textContent = newCell.label || (newCell.type === 'purple' ? 'X' : '');
+            }
+            gsap.fromTo(`.cell-${idx}`,
+              { scale: 0, rotation: -10 },
+              { scale: 1, rotation: 0, duration: 0.3, ease: 'back.out(3)' }
+            );
+          }
+        });
       }
-      if (tick % 12 === 0) setStreak(0);
-    }, 800);
+
+      // Also auto-replace 1-3 random cells to keep the grid changing
+      const replaceCount = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < replaceCount; i++) {
+        const rIdx = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
+        if (rIdx === idx) continue;
+        const newCell = randomCell(rIdx);
+        gridRef.current = gridRef.current.map((c, j) => j === rIdx ? newCell : c) as Cell[];
+        gsap.to(`.cell-${rIdx}`, {
+          scale: 1, duration: 0.3, ease: 'back.out(2.5)', delay: Math.random() * 0.1,
+          onComplete: () => {
+            const el = document.querySelector(`.cell-${rIdx}`) as HTMLElement;
+            if (el) {
+              el.style.background = `linear-gradient(135deg, ${newCell.color}, ${newCell.color}cc)`;
+              el.style.boxShadow = newCell.type === 'purple'
+                ? `0 0 15px ${newCell.color}60, inset 0 0 20px rgba(0,0,0,0.3)`
+                : `0 0 12px ${newCell.color}30, 0 4px 0 ${newCell.color}50`;
+              el.style.border = newCell.type === 'purple'
+                ? '2px solid rgba(255,255,255,0.15)'
+                : '2px solid rgba(255,255,255,0.08)';
+              const labelEl = el.querySelector('.cell-label, .cell-x') as HTMLElement;
+              if (labelEl) labelEl.textContent = newCell.label || (newCell.type === 'purple' ? 'X' : '');
+            }
+          }
+        });
+      }
+    }, 600);
     return () => clearInterval(interval);
   }, []);
 
-  const handleCellClick = useCallback((idx: number) => {
-    const cell = grid[idx];
-    if (!cell) return;
-    if (cell.type === 'purple') {
-      setFlash('#ff4444');
-      setTimeout(() => setFlash(null), 150);
-      setStreak(0);
-      gsap.to(`.cell-${idx}`, { scale: 0.8, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.inOut' });
-    } else {
-      gsap.to(`.cell-${idx}`, {
-        scale: 0, rotation: 10, duration: 0.2, ease: 'power2.in',
-        onComplete: () => {
-          setGrid((prev) => {
-            const next = [...prev];
-            next[idx] = randomCell(idx);
-            return next;
-          });
-          gsap.fromTo(`.cell-${idx}`,
-            { scale: 0, rotation: -10 },
-            { scale: 1, rotation: 0, duration: 0.3, ease: 'back.out(3)' }
-          );
-        },
-      });
-      setScore((prev) => prev + (cell.type === 'special' ? 5 : 1));
-      setStreak((prev) => prev + 1);
-      const el = document.querySelector(`.cell-${idx}`);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const float = document.createElement('div');
-        float.textContent = `+${cell.type === 'special' ? 5 : 1}`;
-        float.className = 'score-float';
-        float.style.left = `${rect.left + rect.width / 2}px`;
-        float.style.top = `${rect.top}px`;
-        document.body.appendChild(float);
-        gsap.to(float, { y: -40, opacity: 0, duration: 0.6, ease: 'power2.out', onComplete: () => float.remove() });
-      }
-    }
-  }, [grid]);
-
   return (
     <>
-      <style jsx global>{`
-        .score-float {
-          position: fixed;
-          pointer-events: none;
-          font-family: 'Fredoka One', cursive;
-          font-size: 18px;
-          color: #f9bd22;
-          text-shadow: 0 0 10px rgba(249, 189, 34, 0.6);
-          z-index: 1000;
-          transform: translateX(-50%);
-        }
-      `}</style>
-
       <div ref={containerRef} className="landing-page">
       <main>
 
         {/* ── Hero with Glassmorphic Crescent + Orb ── */}
         <section className="hero">
-          <div className="hero-bg" style={{
-            background: flash
-              ? `radial-gradient(circle, ${flash}20 0%, #000 70%)`
-              : '#000',
-            transition: flash ? 'background 0.1s' : 'background 0.5s',
-          }}>
+          <div className="hero-bg" style={{ background: '#000' }}>
             {/* WebGL nebula background */}
             <NebulaCanvas />
 
             {/* Subtle grid lines */}
             <div className="hero-grid-lines" />
 
-            {/* Boss overlay */}
-            <div ref={bossRef} className="boss-overlay">
-              <div className="boss-banner-hero">
-                <span className="boss-banner-text">{bossType}</span>
-              </div>
-            </div>
-
-            {/* Score */}
-            <div ref={scoreRef} className="score-display">
-              <div className="score-value">{score.toLocaleString()}</div>
-              {streak > 2 && <div className="score-streak">{streak}x streak</div>}
-            </div>
-
             {/* Glassmorphic hero composition */}
-            <div className="hero-badge">v6.0 \u2014 Now with Boss Events</div>
-
             <h1 ref={titleRef} className="hero-stage-title">
               Don&apos;t Touch <span style={{ color: '#fda9ff', textShadow: '0 0 30px rgba(253,169,255,0.5)' }}>Purple</span>
             </h1>
 
             <p className="hero-stage-subtitle">Tap fast. Survive longer. Free forever.</p>
 
-            {/* Game grid floating above the crescent */}
+            {/* Game grid — bot plays automatically */}
             <div
-              ref={gridRef}
+              ref={gridElRef}
               className="game-grid"
               style={{
                 gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
@@ -322,7 +282,7 @@ export default function Home() {
                 position: 'relative',
               }}
             >
-              {grid.map((cell, i) => (
+              {INITIAL_CARDS.map((cell, i) => (
                 <div
                   key={i}
                   className={`game-cell cell-${i}`}
@@ -335,7 +295,6 @@ export default function Home() {
                       ? '2px solid rgba(255,255,255,0.15)'
                       : '2px solid rgba(255,255,255,0.08)',
                   }}
-                  onClick={() => handleCellClick(i)}
                 >
                   {cell.label && <span className="cell-label">{cell.label}</span>}
                   {cell.type === 'purple' && <span className="cell-x">X</span>}
@@ -403,9 +362,6 @@ export default function Home() {
             ))}
           </div>
         </section>
-
-        {/* ── Try It Now ── */}
-        <GameDemo />
 
         {/* ── Open Source / Tech ── */}
         <section className="scroll-section section-tech">
