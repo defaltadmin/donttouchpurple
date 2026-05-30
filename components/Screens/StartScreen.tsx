@@ -280,7 +280,7 @@ export function StartScreen({
   return (
     <>
       {!hasBackground && <ParticleLayer count={25} />}
-      <div ref={cardRef} className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card"
+      <div ref={cardRef} className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card" id="menu-card"
         onPointerMove={handleCardPointer} onPointerLeave={handleCardLeave}>
       <div ref={glowRef} className="menu-card-glow" />
       <div className="menu-header">
@@ -295,7 +295,7 @@ export function StartScreen({
       )}
       {/* Top row: player pill + energy pips */}
       <div className="menu-top-row">
-        <button className="player-pill" onClick={onSwitchPlayer}>
+        <button className="player-pill" onClick={onSwitchPlayer} aria-label="Switch player">
           <span className="player-pill-icon">{devMode ? "🔧" : "👤"}</span>
           <span className="player-pill-name">{playerName || t('menu.guest')}{devMode ? " [DEV]" : ""}</span>
           <span className="player-pill-edit">✎</span>
@@ -303,9 +303,9 @@ export function StartScreen({
         <div className="energy-inline">{energyBar}</div>
       </div>
 
-      <div className="opt-grid">
+      <div className="opt-grid" role="group" aria-label={t('menu.settings')}>
         <div className="opt-section">
-          <div className="opt-label">{t('menu.game')}</div>
+          <div className="opt-label" id="game-mode-label">{t('menu.game')}</div>
           <PillRow<GameMode>
             options={[
               { value: "classic", label: t('menu.classic') },
@@ -356,12 +356,12 @@ export function StartScreen({
         </div>
       )}
 
-      <div className="menu-links">
-        <button className="btn-icon-sm" onClick={onHowTo} title={t('menu.how_to_play')}><Icon name="info" size={20} /></button>
-        <button className="btn-icon-sm" onClick={onShop} title={t('menu.shop')}><Icon name="bolt" size={20} /></button>
-        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title={t('menu.leaderboard')}><Icon name="trophy" size={20} /></button>
-        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')}><Icon name="star" size={20} /></button>
-        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title={t('menu.keys')}>⌨</button>}
+      <div className="menu-links" role="navigation" aria-label="Game navigation">
+        <button className="btn-icon-sm" onClick={onHowTo} title={t('menu.how_to_play')} aria-label={t('menu.how_to_play')}><Icon name="info" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onShop} title={t('menu.shop')} aria-label={t('menu.shop')}><Icon name="bolt" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onLeaderboard} disabled={!isFeatureUnlocked('leaderboard') && !devMode} title={t('menu.leaderboard')} aria-label={t('menu.leaderboard')}><Icon name="trophy" size={20} /></button>
+        <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')} aria-label={t('menu.rewards')}><Icon name="star" size={20} /></button>
+        {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title={t('menu.keys')} aria-label={t('menu.keys')}>⌨</button>}
       </div>
 
       {/* Screen reader instructions */}

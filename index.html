@@ -48,6 +48,26 @@
      
     <title>Don't Touch the Purple</title>
 
+    <!-- Structured Data (SEO) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Don't Touch Purple",
+      "url": "https://game.mscarabia.com/",
+      "description": "A fast-paced browser reflex game. Tap safe colors, dodge purple, unlock upgrades. Free to play.",
+      "applicationCategory": "Game",
+      "genre": "Reflex Game",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript, WebGL",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "screenshot": "https://game.mscarabia.com/og-image.png",
+      "author": { "@type": "Organization", "name": "MSC Arabia", "url": "https://mscarabia.com" }
+    }
+    </script>
+
     <!-- Meta Tags for Mobile -->
     <meta name="theme-color" content="#c026d3" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -63,6 +83,7 @@
          Not included here as meta tag CSP blocks Vite dev server scripts. -->
   </head>
   <body>
+    <a href="#menu-card" class="skip-link" style="position:absolute;top:-100%;left:0;background:#c026d3;color:#fff;padding:.75rem 1.5rem;z-index:10001;font-weight:600;border-radius:0 0 8px 0;transition:top .2s" onfocus="this.style.top='0'" onblur="this.style.top='-100%'">Skip to game menu</a>
     <div id="root"></div>
     <script type="module" src="/main.tsx"></script>
   </body>
