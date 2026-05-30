@@ -1107,6 +1107,7 @@ export default function App() {
   }, [paused, resumeGame, pauseGame]);
 
   const startGame = useCallback((skipTutorialCheck = false) => {
+    setShowLearnMore(false);
     if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
@@ -1172,7 +1173,6 @@ export default function App() {
   }, [pauseEngine, playerName, setScreen]);
 
   // --- Daily Rewards handlers (Phase C) ---
-  // loginClaimedToday declared above (before all handlers) to avoid TDZ if ever reordered
   const handleLoginStreakClaim = () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     safeSet('dtp-login-claimed', todayStr);
