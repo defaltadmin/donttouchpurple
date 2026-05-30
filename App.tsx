@@ -49,7 +49,6 @@ import { Hearts } from "./components/HUD/Hearts";
 
 // Components - Screens
 import { StartScreen } from "./components/Screens/StartScreen";
-import { LandingSections } from "./components/Landing/LandingSections";
 import { HowToPlay } from "./components/Screens/HowToPlay";
 import { getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
@@ -1532,7 +1531,6 @@ export default function App() {
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
 
       {screen === "menu" && (
-        <div className="menu-landing-scroll" data-testid="menu-landing-scroll">
         <StartScreen
           playerName={playerName}
           isFeatureUnlocked={(f) => machine.isFeatureUnlocked(f, devMode)}
@@ -1573,8 +1571,6 @@ export default function App() {
           onClearReplaySeed={clearReplaySeed}
           onToast={toast$}
         />
-        <LandingSections />
-        </div>
       )}
 
       {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
@@ -1757,6 +1753,16 @@ export default function App() {
       )}
 
       {showRotatePrompt && <RotatePrompt />}
+
+      {screen === "menu" && (
+        <footer className="credit">
+          {loginStreakCount >= 2 && (
+            <span className="daily-streak-badge">🗓 Day {loginStreakCount} streak</span>
+          )}
+          <span>By Mohammed Ahmed Siddiqui · <a href="https://mscarabia.com" target="_blank" rel="noopener noreferrer" className="credit-link">mscarabia.com</a></span>
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="credit-link" style={{marginLeft:6}}>Privacy</a>
+        </footer>
+      )}
 
       {showRewardsHub && (
         <RewardsHub

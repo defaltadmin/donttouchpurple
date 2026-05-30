@@ -2,30 +2,6 @@
    LANDING SECTIONS — below StartScreen on menu screen
    ═══════════════════════════════════════════════════════════ */
 
-/* Override .root overflow for menu screen to allow scrolling */
-.root--menu {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  max-width: 100% !important;
-  align-items: stretch;
-}
-
-.menu-landing-scroll {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  min-height: 100vh;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-.landing-sections {
-  width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
 
 .landing-section {
   padding: 60px 0;
