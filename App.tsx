@@ -1305,6 +1305,11 @@ export default function App() {
   const shieldActive = (snapshot?.p1.shieldCount ?? 0) > 0;
 
   return (
+    <>
+      {/* WebGL galaxy background — full viewport behind everything */}
+      {screen === "menu" && (!shopData.equippedBackground || shopData.equippedBackground === 'default') && (
+        <Suspense fallback={null}><Galaxy /></Suspense>
+      )}
     <div ref={containerRef} className={`root root--${screen}${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
@@ -1560,11 +1565,6 @@ export default function App() {
 
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
 
-      {/* WebGL galaxy background for start screen when no bg equipped */}
-      {screen === "menu" && (!shopData.equippedBackground || shopData.equippedBackground === 'default') && (
-        <Suspense fallback={null}><Galaxy /></Suspense>
-      )}
-
       {screen === "menu" && (
         <StartScreen
           playerName={playerName}
@@ -1605,7 +1605,6 @@ export default function App() {
           pendingReplaySeed={pendingReplaySeed}
           onClearReplaySeed={clearReplaySeed}
           onToast={toast$}
-          hasBackground={!!shopData.equippedBackground && shopData.equippedBackground !== 'default'}
         />
       )}
 
@@ -1837,6 +1836,7 @@ export default function App() {
         />
       )}
     </div>
+    </>
   );
 }
 

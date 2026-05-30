@@ -4,7 +4,6 @@ import type { GameMode, NumPlayers } from "../../engine/types";
 import { GAME } from "../../config/difficulty";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Icon } from "../UI/Icon";
-import { ParticleLayer } from "../Layout/ParticleLayer";
 
 // ─── Types local to menu ──────────────────────────────────────────
 type InputMode = "touch" | "keyboard";
@@ -173,7 +172,6 @@ export interface StartScreenProps {
   pendingReplaySeed?: string | null;
   onClearReplaySeed?: () => void;
   onToast?: (message: string) => void;
-  hasBackground?: boolean;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -192,7 +190,6 @@ export function StartScreen({
   dailyObjectives: _dailyObjectives,
   pendingReplaySeed, onClearReplaySeed,
   onToast,
-  hasBackground,
 }: StartScreenProps) {
   const { t } = useTranslation();
   const isKbd = inputMode === "keyboard";
@@ -281,7 +278,6 @@ export function StartScreen({
 
   return (
     <>
-      {!hasBackground && <ParticleLayer count={25} />}
       <div ref={cardRef} className="menu-card screen-slide" role="main" aria-label="Game menu" data-testid="menu-card" id="menu-card"
         onPointerMove={handleCardPointer} onPointerLeave={handleCardLeave}>
       <div ref={glowRef} className="menu-card-glow" />

@@ -237,7 +237,7 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
   return (
     <div
       ref={ctnRef}
-      style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
+      style={{ width: '100vw', height: '100vh', position: 'fixed', inset: 0, zIndex: -1 }}
     />
   );
 }
