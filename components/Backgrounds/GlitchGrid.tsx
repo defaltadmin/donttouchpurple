@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 const SYMBOLS = "■□◆◇▲△▼▽●○★☆✦✧";
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 const COLORS = ['#c026d3','#a21caf','#7c3aed','#9333ea','#3b82f6','#db2777'];
 const CELL = 14; const GAP = 3;

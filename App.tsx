@@ -111,8 +111,11 @@ import { GameArea } from "./components/HUD/GameArea";
 const SettingsDrawer = lazy(() => import("./components/Settings/SettingsDrawer").then(m => ({ default: m.SettingsDrawer })));
 const ShopPanel = lazy(() => import("./components/Shop/ShopPanel").then(m => ({ default: m.ShopPanel })));
 const LeaderboardPanel = lazy(() => import("./components/Leaderboard/LeaderboardPanel").then(m => ({ default: m.LeaderboardPanel })));
-// DevOverlay: lazy-loaded, excluded from prod via import.meta.env.DEV dead-code elimination
-import { DevOverlay, DevUnlockModal } from "./components/Settings/DevOverlay";
+// DevOverlay: lazy-loaded to keep out of initial bundle
+const DevOverlay = lazy(() => import("./components/Settings/DevOverlay").then(m => ({ default: m.DevOverlay })));
+const DevUnlockModal = lazy(() => import("./components/Settings/DevOverlay").then(m => ({ default: m.DevUnlockModal })));
+
+interface AchievementToast { id: string; icon: string; name: string; desc: string; }
 import { BuildDeploySection } from "./components/Settings/BuildDeploySection";
 type GameMode        = "classic" | "evolve";
 type InputMode       = "touch" | "keyboard";
@@ -161,7 +164,6 @@ export default function App() {
   } = useUIFlags();
   const [currentLocale, setCurrentLocale] = useState<Locale>(i18n.current);
   const [gamepadActive, setGamepadActive] = useState(false);
-  interface AchievementToast { id: string; icon: string; name: string; desc: string; }
   const [achievementQueue, setAchievementQueue] = useState<AchievementToast[]>([]);
 
   // Map emoji icons from engine to SVG Icon names
@@ -1440,10 +1442,12 @@ export default function App() {
       )}
 
       {showDevUnlock && (
+        <Suspense fallback={null}>
         <DevUnlockModal
           onUnlock={() => { setShowDevUnlock(false); setDevMode(true); }}
           onClose={() => setShowDevUnlock(false)}
         />
+        </Suspense>
       )}
 
       {showBuildDeploy && (
@@ -1616,6 +1620,7 @@ export default function App() {
 
       {/* DevOverlay — available in dev and production */}
       {devMode && (
+        <Suspense fallback={null}>
         <DevOverlay
           p1={snapshot?.p1 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}
           p2={snapshot?.p2 ?? { score: 0, health: 0, gridStage: 0, patternIdx: 0, streak: 0, shield: false, shieldCount: 0, alive: true, active: [], cells: [], anim: {}, freezeEnd: 0, multiplierEnd: 0, stageProgress: 0, storedFreezeCharges: 0, storedShieldCharges: 0, nextShuffleTick: 0 } as PlayerState}
@@ -1649,6 +1654,7 @@ export default function App() {
           gridCols={snapshot?.grid?.cols ?? 3}
           gridRows={snapshot?.grid?.rows ?? 3}
         />
+        </Suspense>
       )}
 
       {isPlaying && snapshot && (

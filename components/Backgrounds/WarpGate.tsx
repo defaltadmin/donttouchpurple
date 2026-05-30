@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 const ACCENT = ["#3b82f6","#06b6d4","#f97316","#22c55e","#eab308","#ec4899"];
 

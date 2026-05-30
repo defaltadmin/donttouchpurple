@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 const GRID = 5;
 const SAFE_COLORS = ['#3b82f6','#22c55e','#f97316','#eab308','#06b6d4','#ec4899'];

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 const COLORS = ['#c026d3','#7c3aed','#db2777','#9333ea','#a21caf','#e879f9'];
 type Shape = 'square'|'triangle'|'diamond'|'circle';

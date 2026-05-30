@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
-import { useSafeRaf } from '../../utils/cleanup-pattern';
+import { useSafeRaf } from './cleanup-pattern';
 
 interface Drifter {
   x: number; y: number;

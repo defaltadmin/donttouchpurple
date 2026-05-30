@@ -1,18 +1,32 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
-export function useSafeRaf(loop: (time: number) => void) {
+export function useSafeRaf(callback: (time: number) => void) {
   const rafRef = useRef<number>();
-  const loopRef = useRef(loop);
-  loopRef.current = loop;
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
+  const start = useCallback(() => {
+    if (!rafRef.current) {
+      const loop = (time: number) => {
+        callbackRef.current(time);
+        rafRef.current = requestAnimationFrame(loop);
+      };
+      rafRef.current = requestAnimationFrame(loop);
+    }
+  }, []);
+
+  const stop = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = undefined;
+    }
+  }, []);
 
   useEffect(() => {
-    const tick = (time: number) => {
-      loopRef.current(time);
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
+
+  return { start, stop };
 }
