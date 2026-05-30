@@ -21,8 +21,8 @@
 | Tests | 230/230 pass (21 files) |
 | Build | Clean (0 circular warnings) |
 | Lint | Pre-existing worker globals only |
-| Vulnerabilities | 0 (root + website) |
-| Lighthouse | A11y 95, BP 96, SEO 100, Agentic 100 (mobile) |
+| Vulnerabilities | 0 (root) |
+| Lighthouse | Needs re-run (layout changed) |
 
 ## Architecture Quick Reference
 
@@ -95,9 +95,55 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-05-30)
+## Recent Session (2026-05-31)
 
-### 3D Visuals, SEO, A11y, Performance, Skills, Dead Code Cleanup
+### Landing/Game Merge + Background Separation + Leaderboard Investigation
+
+**6 commits** (`cf3afcc`→`9e8af46`). 230 tests, all green. Build clean.
+
+#### Architecture Change: Single-Page Game
+- **Removed LoadingScreen** — game starts directly on StartScreen, playerName defaults to "Player"
+- **Removed website/ dependency** — game is now the single deployable (Next.js landing archived)
+- **Side-panel layout on desktop** (1100px+): LeftPanel (bosses + features) + menu card + RightPanel (tech + CTA)
+- **"Learn More" overlay on mobile**: fullscreen scrollable overlay with all landing content
+- **Game now serves at root** — no more /play path needed
+
+#### New Components (`components/Landing/`)
+- `LeftPanel.tsx` — BossShowcase + FeatureGrid wrapper
+- `RightPanel.tsx` — TechStats + LandingCTA + footer
+- `LearnMoreOverlay.tsx` — fullscreen overlay for mobile
+- `BossShowcase.tsx` — 3 boss event cards (Storm, Inversion, Blackout)
+- `FeatureGrid.tsx` — 6 feature cards
+- `TechStats.tsx` — open source + stats + GitHub link
+- `LandingCTA.tsx` — "Ready? No signup. No ads. Just tap."
+
+#### CSS: `styles/landing.css`
+- Side-panel layout (3-column at 1100px+, single column below)
+- Side panels sticky-positioned, scaled down for narrow columns
+- Learn More overlay with slide-up animation
+- Glass cards, boss cards, feature cards, tech badges, stats
+
+#### Background Layer Separation (commit `668d641`)
+- Galaxy WebGL moved from inside .root to full viewport (position:fixed, z-index:-1)
+- ParticleLayer removed from StartScreen (falling dots eliminated)
+- Footer credit opacity 0.45 → 0.7
+
+#### Leaderboard Investigation
+- **Root cause**: `game.mscarabia.com` served stale build through Cloudflare (old bundle hash, no Firebase env vars baked in)
+- API key HTTP referrer restrictions: only `game.mscarabia.com` allowed (blocks `dont-touch-purple.web.app`)
+- Anonymous auth works from `game.mscarabia.com`, Firestore REST reads work
+- **Fix**: Update Cloudflare to serve from Firebase Hosting, or deploy fresh dist to current host
+- Firebase config now baked into single Vite build — leaderboard will work once fresh bundle is served
+
+#### Hero Overhaul (commit `a1e98a9`)
+- GameDemo.tsx deleted, all demo CSS removed (~160 lines)
+- Hero badge, score/streak display, boss overlay removed
+- Bot taps cells every 600ms with tap animation, occasionally taps purple (shake)
+- Crescent ring overflow fix (sharp top corners clipped)
+
+### Previous Session (2026-05-30)
+
+#### 3D Visuals, SEO, A11y, Performance, Skills, Dead Code Cleanup
 
 **5 commits pushed** (`c909f6a`→`cf3afcc`). 230 tests, all green. Build clean.
 
@@ -331,9 +377,10 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 ## What's Pending / Next Steps
 
 ### Immediate Priority
-1. **Deploy verification** — verify game.mscarabia.com has all latest changes (9 commits since last deploy)
-2. **Lighthouse re-run** — verify scores improved after viewport/robots fixes
-3. **Push to remote** — 10 commits ahead of origin/main
+1. **Push to remote** — git auth expired, run `git push` manually
+2. **Cloudflare update** — point game.mscarabia.com to Firebase Hosting (fixes leaderboard)
+3. **Lighthouse re-run** — verify scores after layout changes
+4. **Side-panel visual QA** — verify desktop 3-column layout and mobile Learn More overlay look correct
 
 ### High Priority
 4. ~~**Achievement notification UX**~~ ✓ — toast extended to 6s (was 3.5s)
