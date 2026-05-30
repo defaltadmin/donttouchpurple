@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
+import { GlassOrb } from '@/components/GlassOrb';
+import { CrescentRing } from '@/components/CrescentRing';
 
 const PLAY_URL = '/play';
 const GITHUB_URL = 'https://github.com/defaltadmin/donttouchpurple';
@@ -73,7 +75,7 @@ const BOSS_EVENTS = [
 const FEATURES = [
   { icon: '\uD83C\uDFAE', title: 'Two Game Modes', desc: 'Classic for quick reflex training. Evolve for progressive difficulty with expanding grids.' },
   { icon: '\uD83C\uDFC6', title: '37 Achievements', desc: 'Unlock badges and earn dust currency as you master increasingly brutal challenges.' },
-  { icon: '\u2728', title: '12 Animated Backgrounds', desc: 'GPU-accelerated WebGL effects — nebula, aurora, digital rain, and more.' },
+  { icon: '\u2728', title: '12 Animated Backgrounds', desc: 'GPU-accelerated WebGL effects \u2014 nebula, aurora, digital rain, and more.' },
   { icon: '\uD83E\uDD16', title: 'AI Bot Assist', desc: 'Activate a companion bot that costs dust to help you survive. Or play solo.' },
   { icon: '\uD83D\uDCC5', title: 'Daily Challenges', desc: 'New objectives every day. Compete on the global leaderboard.' },
   { icon: '\uD83D\uDCF1', title: 'Installable PWA', desc: 'Works on any device. Install as an app. Gamepad support included.' },
@@ -92,7 +94,26 @@ export default function Home() {
   const gridRef = useRef<HTMLDivElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
   const bossRef = useRef<HTMLDivElement>(null);
-  const sectionsRef = useRef<HTMLDivElement>(null);
+
+  // Mouse parallax for glass orb
+  const orbContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = orbContainerRef.current;
+    if (!container) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const handleMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 20;
+      const orb = container.querySelector('.glass-orb') as HTMLElement;
+      if (orb) {
+        orb.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    };
+    window.addEventListener('mousemove', handleMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
 
   // Entrance animations
   useEffect(() => {
@@ -109,19 +130,14 @@ export default function Home() {
     tl.from(scoreRef.current, { x: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, 0.4);
   }, []);
 
-  // Scroll-triggered animations for sections below the fold
+  // Scroll-triggered animations
   useEffect(() => {
     const sectionEls = document.querySelectorAll('.scroll-section');
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            gsap.from(entry.target, {
-              y: 40,
-              opacity: 0,
-              duration: 0.6,
-              ease: 'power2.out',
-            });
+            gsap.from(entry.target, { y: 40, opacity: 0, duration: 0.6, ease: 'power2.out' });
             observer.unobserve(entry.target);
           }
         });
@@ -130,6 +146,25 @@ export default function Home() {
     );
     sectionEls.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
+  }, []);
+
+  // Cursor glow for glass cards
+  useEffect(() => {
+    const cards = document.querySelectorAll('.glass-card');
+    const handleMove = (e: MouseEvent) => {
+      const card = (e.currentTarget as HTMLElement);
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    };
+    cards.forEach((card) => {
+      card.addEventListener('mousemove', handleMove as EventListener, { passive: true });
+    });
+    return () => {
+      cards.forEach((card) => {
+        card.removeEventListener('mousemove', handleMove as EventListener);
+      });
+    };
   }, []);
 
   // Game simulation loop
@@ -233,15 +268,15 @@ export default function Home() {
 
       <div ref={containerRef} className="landing-page">
 
-        {/* ── Hero ── */}
+        {/* ── Hero with Glassmorphic Crescent + Orb ── */}
         <section className="hero">
           <div className="hero-bg" style={{
             background: flash
-              ? `radial-gradient(circle, ${flash}20 0%, #151028 70%)`
-              : 'radial-gradient(ellipse at 30% 20%, rgba(253,169,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(192,38,211,0.06) 0%, transparent 50%), #151028',
+              ? `radial-gradient(circle, ${flash}20 0%, #000 70%)`
+              : '#000',
             transition: flash ? 'background 0.1s' : 'background 0.5s',
           }}>
-            {/* Grid lines overlay */}
+            {/* Subtle grid lines */}
             <div className="hero-grid-lines" />
 
             {/* Boss overlay */}
@@ -257,17 +292,24 @@ export default function Home() {
               {streak > 2 && <div className="score-streak">{streak}x streak</div>}
             </div>
 
-            {/* Title */}
-            <h1 ref={titleRef} className="hero-title">
-              <span className="title-dont">Don&apos;t Touch</span>{' '}
-              <span className="title-purple">Purple</span>
+            {/* Glassmorphic hero composition */}
+            <div className="hero-badge">v6.0 \u2014 Now with Boss Events</div>
+
+            <h1 ref={titleRef} className="hero-stage-title">
+              Don&apos;t Touch <span style={{ color: '#fda9ff', textShadow: '0 0 30px rgba(253,169,255,0.5)' }}>Purple</span>
             </h1>
 
-            {/* Grid */}
+            <p className="hero-stage-subtitle">Tap fast. Survive longer. Free forever.</p>
+
+            {/* Game grid floating above the crescent */}
             <div
               ref={gridRef}
               className="game-grid"
-              style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+              style={{
+                gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+                zIndex: 10,
+                position: 'relative',
+              }}
             >
               {grid.map((cell, i) => (
                 <div
@@ -291,7 +333,7 @@ export default function Home() {
             </div>
 
             {/* Play button */}
-            <a ref={btnRef} href={PLAY_URL} className="play-btn">
+            <a ref={btnRef} href={PLAY_URL} className="play-btn" style={{ zIndex: 10, position: 'relative' }}>
               <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
@@ -299,7 +341,18 @@ export default function Home() {
               <div className="play-shimmer" />
             </a>
 
-            <p className="hero-subtitle">Free. No ads. No accounts. Just tap.</p>
+            {/* Crescent + Orb at the bottom */}
+            <div ref={orbContainerRef} className="hero-crescent-area">
+              <CrescentRing />
+              <GlassOrb size={180}>
+                <span style={{
+                  fontFamily: "'Fredoka One', cursive",
+                  fontSize: '1.3rem',
+                  color: 'rgba(255,255,255,0.9)',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                }}>DTP</span>
+              </GlassOrb>
+            </div>
 
             {/* Scroll indicator */}
             <div className="scroll-indicator">
@@ -314,7 +367,7 @@ export default function Home() {
           <p className="section-subtext">Just when you think you&apos;ve got it figured out, the rules change.</p>
           <div className="boss-cards">
             {BOSS_EVENTS.map((boss) => (
-              <div key={boss.name} className="boss-card" style={{ '--boss-glow': boss.glow } as React.CSSProperties}>
+              <div key={boss.name} className="glass-card boss-card" style={{ '--boss-glow': boss.glow } as React.CSSProperties}>
                 <div className="boss-card-icon">{boss.icon}</div>
                 <div className="boss-card-name" style={{ background: boss.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {boss.name}
@@ -331,7 +384,7 @@ export default function Home() {
           <p className="section-subtext">More depth than you&apos;d expect from a &quot;don&apos;t touch the color&quot; game.</p>
           <div className="feature-grid">
             {FEATURES.map((f) => (
-              <div key={f.title} className="feature-card">
+              <div key={f.title} className="glass-card feature-card">
                 <div className="feature-icon">{f.icon}</div>
                 <div className="feature-title">{f.title}</div>
                 <p className="feature-desc">{f.desc}</p>
