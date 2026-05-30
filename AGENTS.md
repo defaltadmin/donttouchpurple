@@ -86,6 +86,16 @@ These principles guide how DTP's 8 domain agents and multi-AI workflows are stru
 | codegraph | colbymchenry/codegraph | Structural code intelligence (callers, callees, impact) |
 | agentmemory | @agentmemory/agentmemory | Persistent memory across sessions (53 tools, hybrid search) |
 
+## Post-Session Audit (REQUIRED after major sessions)
+
+After any session with 5+ file changes, run `/multi-ai-audit` or the manual checklist:
+
+1. `pnpm typecheck && pnpm test && pnpm build && pnpm lint --max-warnings=0`
+2. If green → commit. If not → fix first.
+3. For full multi-AI audit: run `opencode` + `gemini` per module (engine/, components/, services/, config/, utils/, hooks/), save to `.review-packet/`, triage, fix.
+4. **NEVER run full-codebase audit in one call** — 208 files causes heap OOM. Always batch per-module.
+5. Max 3-4 parallel agents per batch to avoid context bloat.
+
 ## Full docs
 
 - **[HANDOFF.md](HANDOFF.md)** — **READ THIS FIRST** in any new session. Master handoff with full project state, what's done, and what's next.

@@ -55,27 +55,27 @@ function loadInitialPlayerName(): string {
 }
 
 export function DustProvider({ children }: { children: React.ReactNode }) {
-  const [dust, setDust] = useState(loadInitialDust);
+  const initialDust = loadInitialDust();
+  const [dust, setDust] = useState(initialDust);
   const [energyData, setEnergyData] = useState<EnergyData>(loadInitialEnergy);
   const [shopData, setShopData] = useState<ShopData>(loadInitialShop);
   const [playerName, setPlayerName] = useState(loadInitialPlayerName);
 
-  const dustRef = useRef(loadInitialDust());
+  const dustRef = useRef(initialDust);
 
   const addDust = useCallback((amount: number, _source?: string): number => {
-    let next = 0;
-    setDust(prev => { next = prev + amount; return next; });
-    dustRef.current = next || dustRef.current + amount;
+    setDust(prev => { dustRef.current = prev + amount; return dustRef.current; });
     return dustRef.current;
   }, []);
 
   const spendDust = useCallback((amount: number): boolean => {
-    let success = false;
+    if (dustRef.current < amount) return false;
     setDust(prev => {
-      if (prev >= amount) { success = true; dustRef.current = prev - amount; return dustRef.current; }
-      return prev;
+      if (prev < amount) return prev; // guard inside callback for batched updates
+      dustRef.current = prev - amount;
+      return dustRef.current;
     });
-    return success || dustRef.current >= amount; // fallback for synchronous read
+    return true;
   }, []);
 
   return (

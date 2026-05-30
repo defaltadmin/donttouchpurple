@@ -52,6 +52,7 @@ export function useEnergyStore() {
   const spendEnergy = useCallback(() => {
     if (energyDataRef.current.count <= 0) return false;
     setEnergyData(prev => {
+      if (prev.count <= 0) return prev; // guard inside callback for batched updates
       const newEd = { ...prev, count: prev.count - 1 };
       safeSet(LS_KEYS.ENERGY, JSON.stringify(newEd));
       return newEd;

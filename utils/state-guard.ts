@@ -54,10 +54,18 @@ async function signData(data: string): Promise<string> {
   return toBase64url(sig);
 }
 
+function fromBase64url(s: string): ArrayBuffer {
+  const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (4 - s.length % 4) % 4);
+  const bin = atob(padded);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+
 async function verifyData(data: string, sig: string): Promise<boolean> {
   const key = await getSessionKey();
-  const expected = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-  return toBase64url(expected) === sig;
+  const sigBuf = fromBase64url(sig);
+  return crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(data));
 }
 
 export const stateGuard = {

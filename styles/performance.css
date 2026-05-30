@@ -57,9 +57,9 @@
   }
 }
 
-/* Dev warning for layout-thrashing CSS */
-@media screen and (min-width: 0) {
-  [class*="animate-"][class*="width"], [class*="animate-"][class*="height"], [class*="animate-"][class*="margin"] {
-    outline: 2px solid red !important;
-  }
+/* Dev warning for layout-thrashing CSS — production guard via data attribute */
+body[data-dev="true"] [class*="animate-"][class*="width"],
+body[data-dev="true"] [class*="animate-"][class*="height"],
+body[data-dev="true"] [class*="animate-"][class*="margin"] {
+  outline: 2px solid red !important;
 }

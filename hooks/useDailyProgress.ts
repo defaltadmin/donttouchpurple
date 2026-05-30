@@ -75,7 +75,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
 
   // Login streak + daily challenge init
   useEffect(() => {
-    const todayStr = new Date().toDateString();
+    const todayStr = new Date().toISOString().slice(0, 10);
     const claimed = localStorage.getItem('dtp-login-claimed');
     const alreadyClaimed = claimed === todayStr;
     const streak = getObjectiveStreak();
@@ -97,7 +97,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
         try {
           localStorage.setItem("dtp_login_streak", JSON.stringify({
             count: safeStreak,
-            lastDate: new Date().toDateString()
+            lastDate: new Date().toISOString().slice(0, 10)
           }));
         } catch {}
       }).catch(e => logger.warn('Firebase streak fetch failed', e));
@@ -147,7 +147,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
   }, [peakStreakRef]);
 
   const handleLoginStreakClaim = useCallback(() => {
-    const todayStr = new Date().toDateString();
+    const todayStr = new Date().toISOString().slice(0, 10);
     safeSet('dtp-login-claimed', todayStr);
     addDust(loginStreakReward, 'LoginStreak');
     setShouldShowRewardsOnLogin(false);

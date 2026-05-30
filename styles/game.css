@@ -159,13 +159,6 @@ body {
   85%  { background: rgba(0,0,0,0.1); }
   100% { background: rgba(0,0,0,0); opacity: 0; }
 }
-@keyframes rareSplashText {
-  0%   { transform: scale(0.1) rotate(-10deg); opacity: 0; }
-  12%  { transform: scale(1.15) rotate(2deg);  opacity: 1; }
-  25%  { transform: scale(1) rotate(0deg); }
-  70%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1.6) rotate(5deg); opacity: 0; }
-}
 
 
 /* ── Death screen flash — white burst + red vignette ── */
@@ -199,17 +192,8 @@ body.death-flash::after {
   font-weight: 600;
   font-size: 1rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  animation: toastSlideDown 0.4s ease-out, toastFade 2.2s forwards;
+  /* animation handled by enhancements.css */
   pointer-events: none;
-}
-@keyframes toastSlideDown {
-  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
-}
-@keyframes toastFade {
-  0% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { opacity: 0; }
 }
 
 .pwr-bar {

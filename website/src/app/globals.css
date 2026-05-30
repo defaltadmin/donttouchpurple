@@ -949,7 +949,7 @@ html, body {
 .demo-hint {
   font-size: 0.75rem;
   color: var(--neon-bright);
-  opacity: 0.5;
+  opacity: 0.85;
 }
 
 .demo-result {

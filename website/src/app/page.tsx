@@ -422,7 +422,7 @@ export default function Home() {
           </div>
           <div className="tech-stats">
             <div className="tech-stat">
-              <span className="stat-number">212</span>
+              <span className="stat-number">232</span>
               <span className="stat-label">Tests</span>
             </div>
             <div className="tech-stat">

@@ -160,7 +160,7 @@ export class TickProcessor {
               ctx.dda.recordAttempt(false, 0, true);
               ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
               ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
-              if (ref.health < 1) {
+              if (ref.health <= 0) {
                 ref.alive = false;
                 const other = ctx.numPlayers === 2 ? (pi === 0 ? ctx.p2.alive : ctx.p1.alive) : false;
                 ctx.triggerGameOver(ctx.numPlayers === 1 ? null : other ? (pi === 0 ? "p2" : "p1") : "tie");
@@ -358,7 +358,7 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
     const idx = free[Math.floor(ctx.rng() * free.length)];
     const expiresAt = Date.now() + BALANCE.bomb.fuseTimeMs;
     const bomb: BombCell = { idx, clicked: false, type: "bomb", expiresAt };
-    ref.active.push(bomb);
+    ref.active = [...ref.active, bomb];
     ref.cells = activeToCellsP(ref.active, pat);
     ctx.activeBomb = { idx, expiresAt, player };
     ctx.dirty = true;
@@ -379,7 +379,7 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
           const dmg = ctx.config.mode === "evolve" ? 0.5 : 1;
           ref.health = Math.max(0, ref.health - dmg); ref.shield = false;
           ctx.emit({ type: "damage", player }); ctx.emit({ type: "shake", player });
-          if (ref.health < 1) {
+          if (ref.health <= 0) {
             ref.alive = false;
             ctx.triggerGameOver(ctx.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1"));
           }

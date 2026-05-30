@@ -37,6 +37,8 @@ export const LottiePlayer = React.memo(function LottiePlayer({
 }: LottiePlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dotLottieRef = useRef<InstanceType<typeof import("@lottiefiles/dotlottie-web").DotLottie> | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const [loaded, setLoaded] = useState(false);
 
   // Respect reduced motion — show nothing
@@ -59,7 +61,7 @@ export const LottiePlayer = React.memo(function LottiePlayer({
       });
 
       instance.addEventListener("complete", () => {
-        onComplete?.();
+        onCompleteRef.current?.();
       });
 
       instance.addEventListener("load", () => {
@@ -75,7 +77,7 @@ export const LottiePlayer = React.memo(function LottiePlayer({
     } catch {
       // DotLottie constructor threw (invalid JSON) — fail silently
     }
-  }, [src, autoplay, loop, onComplete, reducedMotion, prefersReducedData]);
+  }, [src, autoplay, loop, reducedMotion, prefersReducedData]);
 
   useEffect(() => {
     initDotLottie();

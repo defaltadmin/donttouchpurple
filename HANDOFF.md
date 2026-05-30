@@ -22,7 +22,7 @@
 | Build | Clean (0 circular warnings) |
 | Lint | Pre-existing worker globals only |
 | Vulnerabilities | 0 (root + website) |
-| Lighthouse | Perf 80, A11y 92+, BP 96, SEO 92 |
+| Lighthouse | A11y 95, BP 96, SEO 100, Agentic 100 (mobile) |
 
 ## Architecture Quick Reference
 
@@ -79,12 +79,21 @@ App.tsx (state machine)
 ```bash
 pnpm dev          # Dev server
 pnpm typecheck    # TypeScript validation
-pnpm test         # Unit tests (vitest, 164 tests)
+pnpm test         # Unit tests (vitest, 232 tests)
 pnpm test:e2e     # E2E tests (Playwright)
 pnpm build        # Production build
 pnpm lint         # ESLint fix
 firebase deploy --only hosting  # Deploy to game.mscarabia.com
 ```
+
+## Post-Session Audit (REQUIRED)
+
+After any session with 5+ file changes:
+1. `pnpm typecheck && pnpm test && pnpm build`
+2. For full audit: run `/multi-ai-audit` (opencode + gemini per module, batched)
+3. Save results to `.review-packet/`, triage findings, fix valid ones
+
+**NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
 ## Recent Session (2026-05-30)
 

@@ -88,3 +88,12 @@ This creates a GitHub Release, updates CHANGELOG.md, and auto-deploys to Firebas
 - Unit tests (`__tests__/`) - Engine logic, score calculations
 - E2E tests (`e2e/`) - Playwright browser tests for critical flows
 - Tests seed player name via localStorage for isolation
+
+## Post-Session Audit (REQUIRED after major sessions)
+
+After any session with 5+ file changes, run `/multi-ai-audit` or manually:
+1. `pnpm typecheck && pnpm test && pnpm build && pnpm lint --max-warnings=0`
+2. If all green → commit. If not → fix before committing.
+3. For a full multi-AI audit: run `opencode` + `gemini` per module (engine/, components/, services/, config/, utils/, hooks/), save results to `.review-packet/`, triage, fix.
+
+**NEVER run a full-codebase audit in one opencode/gemini call** — it causes heap OOM (208 files). Always batch per-module.

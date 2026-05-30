@@ -606,7 +606,7 @@ destroy(): void {
         ref.shieldCount += 1; ref.shield = true;
         this.emit({ type: "pwrToast", message: `🛡 Overheal! +1 Shield`, player });
       } else {
-        ref.health += 1;
+        ref.health = Math.min(GAME.MAX_HEARTS, ref.health + 1);
         this.emit({ type: "toast", message: "♥ +1 Heart!" });
       }
     }
@@ -640,8 +640,8 @@ destroy(): void {
         ref.health = Math.max(0, ref.health - dmg); ref.shield = false; ref.streak = 0; this._tookDamage = true;
         this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
         this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
-        this.hitPause(ref.health < 1 ? 200 : 40);
-        if (ref.health < 1) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
+        this.hitPause(ref.health <= 0 ? 200 : 40);
+        if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
       }
     } else {
       this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 });
@@ -833,8 +833,8 @@ destroy(): void {
         : type;
       const mutable = existing as Record<string, unknown>;
       mutable.type = cellType;
-      if (type === "ice") { mutable.iceCount = 3; mutable.holdProgress = undefined; }
-      if (type === "hold") { mutable.holdProgress = 0; mutable.iceCount = undefined; }
+      if (type === "ice") { mutable.iceCount = 3; }
+      if (type === "hold") { mutable.holdRequired = 3000; mutable.spawnedAt = Date.now(); }
       if (type === "bomb") { mutable.expiresAt = Date.now() + 3000; }
     }
     this.emitSnapshot();
