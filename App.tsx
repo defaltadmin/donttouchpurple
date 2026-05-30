@@ -1308,8 +1308,8 @@ export default function App() {
     <div ref={containerRef} className={`root root--${screen}${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
       
-      {/* CSS orbs: only show when no animated background is equipped */}
-      {!shopData.equippedBackground || shopData.equippedBackground === 'default' ? (
+      {/* CSS orbs: show when no animated background equipped AND not on menu */}
+      {(!shopData.equippedBackground || shopData.equippedBackground === 'default') && screen !== 'menu' ? (
         <>
           <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
           <div className="orb orb-1" />
@@ -1559,6 +1559,11 @@ export default function App() {
       )}
 
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
+
+      {/* WebGL galaxy background for start screen when no bg equipped */}
+      {screen === "menu" && (!shopData.equippedBackground || shopData.equippedBackground === 'default') && (
+        <Suspense fallback={null}><Galaxy /></Suspense>
+      )}
 
       {screen === "menu" && (
         <StartScreen

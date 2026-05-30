@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 import { GlassOrb } from '@/components/GlassOrb';
 import { CrescentRing } from '@/components/CrescentRing';
+import { NebulaCanvas } from '@/components/NebulaCanvas';
+import { GameDemo } from '@/components/GameDemo';
 
 const PLAY_URL = '/play';
 const GITHUB_URL = 'https://github.com/defaltadmin/donttouchpurple';
@@ -282,6 +284,9 @@ export default function Home() {
               : '#000',
             transition: flash ? 'background 0.1s' : 'background 0.5s',
           }}>
+            {/* WebGL nebula background */}
+            <NebulaCanvas />
+
             {/* Subtle grid lines */}
             <div className="hero-grid-lines" />
 
@@ -398,6 +403,9 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* ── Try It Now ── */}
+        <GameDemo />
 
         {/* ── Open Source / Tech ── */}
         <section className="scroll-section section-tech">
