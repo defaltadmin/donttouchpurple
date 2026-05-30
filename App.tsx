@@ -48,8 +48,8 @@ import { DustWidget } from "./components/HUD/DustWidget";
 import { Hearts } from "./components/HUD/Hearts";
 
 // Components - Screens
-import { LoadingScreen } from "./components/Screens/LoadingScreen";
 import { StartScreen } from "./components/Screens/StartScreen";
+import { LandingSections } from "./components/Landing/LandingSections";
 import { HowToPlay } from "./components/Screens/HowToPlay";
 import { getMessage } from "./components/Screens/GameOver";
 import { PrivacyBanner } from "./components/Screens/PrivacyBanner";
@@ -140,9 +140,7 @@ import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 
 // --- App Component ---
 export default function App() {
-  const [appReady, setAppReady] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
-  const [loadDone, setLoadDone] = useState(false);
+  const [appReady, setAppReady] = useState(true);
   const {
     showNameEntry, setShowNameEntry,
     showRotatePrompt, setShowRotatePrompt,
@@ -225,8 +223,8 @@ export default function App() {
   }, []);
 
   const [playerName, setPlayerName] = useState(() => {
-    const raw = localStorage.getItem(LS_KEYS.PLAYER_NAME) || "";
-    return raw.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8);
+    const raw = localStorage.getItem(LS_KEYS.PLAYER_NAME) || "Player";
+    return raw.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8) || "Player";
   });
   const { dust, dustRef, setDust, addDust, spendDust, persistDust, getBotAccuracy } = useDustEconomy(playerName);
   const scoreSubmittedRef = useRef(false);
@@ -982,24 +980,8 @@ export default function App() {
   // Theme + shop CSS vars + FPS handled by useThemeSettings (line 231)
 
   useEffect(() => {
-    const pl = preloaderRef.current;
-    pl.setProgress((pct) => setLoadProgress(Math.round(pct * 100)));
-    pl.loadAll().finally(() => {});
-
-    let p = 0;
-    const interval = setInterval(() => {
-      p += 8;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(interval);
-        setLoadDone(true);
-        if (!playerName) setShowNameEntry(true);
-        else setTimeout(() => setAppReady(true), 600);
-      }
-      setLoadProgress((prev) => Math.min(100, Math.max(prev, p)));
-    }, 80);
-    return () => clearInterval(interval);
-  }, [playerName, setShowNameEntry]);
+    preloaderRef.current.loadAll().catch(() => {});
+  }, []);
 
   // Transition to menu once the app is fully ready
   useEffect(() => {
@@ -1281,22 +1263,6 @@ export default function App() {
     );
   }
 
-  if (!appReady) {
-    return (
-      <LoadingScreen
-        progress={loadProgress}
-        done={loadDone}
-        showNameEntry={showNameEntry}
-        onNameSubmit={(name) => {
-          safeSet(LS_KEYS.PLAYER_NAME, name);
-          setPlayerName(name);
-          setShowNameEntry(false);
-          setAppReady(true);
-        }}
-        sanitizeName={(n) => n.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8)}
-      />
-    );
-  }
 
   // Screen effect classes based on active powerups
   const now = Date.now();
@@ -1566,6 +1532,7 @@ export default function App() {
       {screen === "gamemaster" && <GameMaster onBack={() => setScreen("menu")} />}
 
       {screen === "menu" && (
+        <div className="menu-landing-scroll" data-testid="menu-landing-scroll">
         <StartScreen
           playerName={playerName}
           isFeatureUnlocked={(f) => machine.isFeatureUnlocked(f, devMode)}
@@ -1606,6 +1573,8 @@ export default function App() {
           onClearReplaySeed={clearReplaySeed}
           onToast={toast$}
         />
+        <LandingSections />
+        </div>
       )}
 
       {/* Dev Panel — lightweight overlay, Ctrl+Shift+D to toggle */}
@@ -1788,16 +1757,6 @@ export default function App() {
       )}
 
       {showRotatePrompt && <RotatePrompt />}
-
-      {screen === "menu" && (
-        <footer className="credit">
-          {loginStreakCount >= 2 && (
-            <span className="daily-streak-badge">🗓 Day {loginStreakCount} streak</span>
-          )}
-          <span>By Mohammed Ahmed Siddiqui · <a href="https://mscarabia.com" target="_blank" rel="noopener noreferrer" className="credit-link">mscarabia.com</a></span>
-          <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="credit-link" style={{marginLeft:6}}>Privacy</a>
-        </footer>
-      )}
 
       {showRewardsHub && (
         <RewardsHub

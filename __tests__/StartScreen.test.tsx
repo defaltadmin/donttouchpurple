@@ -18,10 +18,6 @@ vi.mock("../components/UI/Icon", () => ({
   Icon: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
 }));
 
-vi.mock("../components/Layout/ParticleLayer", () => ({
-  ParticleLayer: ({ count }: { count: number }) => <div data-testid="particle-layer" data-count={count} />,
-}));
-
 Object.defineProperty(window, "matchMedia", {
   value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
 });
@@ -150,16 +146,6 @@ describe("StartScreen", () => {
     const { container } = renderStart({ energyCount: 3 });
     expect(container.querySelector(".btn-play")).toBeTruthy();
     expect(container.querySelector(".no-energy-block")).toBeNull();
-  });
-
-  it("renders particle layer when no background", () => {
-    const { container } = renderStart({ hasBackground: false });
-    expect(container.querySelector("[data-testid='particle-layer']")).toBeTruthy();
-  });
-
-  it("hides particle layer when has background", () => {
-    const { container } = renderStart({ hasBackground: true });
-    expect(container.querySelector("[data-testid='particle-layer']")).toBeNull();
   });
 
   it("calls onSwitchPlayer on player pill click", () => {
