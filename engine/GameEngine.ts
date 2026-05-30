@@ -129,7 +129,6 @@ export class GameEngine {
   private _deathCleanupTimer: ReturnType<typeof setTimeout> | null = null; // Track death cleanup timeout
   private _cachedNow = Date.now(); // Cached Date.now() per tick — avoids 10+ syscalls per frame
   private _bossActive = false;
-  private _bombDefuseCount = 0; // unused — kept for type compat; achievements use localStorage
   private _shieldCollected = 0;
   private _tookDamage = false;
   private _freezeCollected = 0;
@@ -279,7 +278,6 @@ export class GameEngine {
     this._freezeCollected = 0;
     this._purpleTaps = 0;
     this._tookDamage = false;
-    // _bombDefuseCount removed — achievements now use localStorage lifetime counter
     this.inputBuffer.clear();
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();

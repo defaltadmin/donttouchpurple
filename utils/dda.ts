@@ -51,7 +51,7 @@ export class DynamicDifficulty {
     // Non-lethal miss (shield block): neither counter changes
 
     this.tickCount++;
-    this._lastAttemptTime = Date.now();
+    this._lastAttemptTime = performance.now();
     this.metrics.accuracy =
       (this.metrics.accuracy * (this.tickCount - 1) + (hit ? 1 : 0)) / this.tickCount;
     this.metrics.avgReactionMs =
@@ -61,7 +61,7 @@ export class DynamicDifficulty {
   }
 
   compute(): number {
-    const isAfk = this._lastAttemptTime > 0 && Date.now() - this._lastAttemptTime > 5000;
+    const isAfk = this._lastAttemptTime > 0 && performance.now() - this._lastAttemptTime > 5000;
     if (this.tickCount % this.adjustmentWindow !== 0 && !isAfk) return this.currentSpawnMs;
     this._checkEmergency();
     if (this.tickCount === 0 || this.lastAdjustedTickCount === this.tickCount) return this.currentSpawnMs;
