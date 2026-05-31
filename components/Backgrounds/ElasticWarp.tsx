@@ -1,4 +1,4 @@
-// components/Backgrounds/ElasticWarp.tsx — OGL elastic warp with mouse-reactive distortion
+// components/Backgrounds/ElasticWarp.tsx — starfield with elastic mouse warp (ported from NebulaCanvas)
 import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle, Vec2 } from 'ogl';
 
@@ -19,79 +19,83 @@ uniform vec2 uMouse;
 uniform float uSpeed;
 varying vec2 vUv;
 
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+#define NUM_STARS 60.0
 
-float snoise(vec2 v) {
-  const vec4 C = vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
-  vec2 i = floor(v + dot(v, C.yy));
-  vec2 x0 = v - i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec4 x12 = x0.xyxy + C.xxzz;
-  x12.xy -= i1;
-  i = mod289(i);
-  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-  m = m*m; m = m*m;
-  vec3 x = 2.0 * fract(p * C.www) - 1.0;
-  vec3 h = abs(x) - 0.5;
-  vec3 ox = floor(x + 0.5);
-  vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-  vec3 g;
-  g.x = a0.x * x0.x + h.x * x0.y;
-  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-  return 130.0 * dot(m, g);
+vec3 hash33(vec3 p3) {
+  p3 = fract(p3 * vec3(.1031, .11369, .13787));
+  p3 += dot(p3, p3.yxz + 19.19);
+  return -1.0 + 2.0 * fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
 }
 
-float fbm(vec2 p) {
-  float v = 0.0, a = 0.5;
-  vec2 shift = vec2(100.0);
-  for (int i = 0; i < 6; i++) {
-    v += a * snoise(p);
-    p = p * 2.0 + shift;
-    a *= 0.5;
-  }
-  return v;
-}
-
-vec3 palette(float t) {
-  vec3 a = vec3(0.5, 0.5, 0.5);
-  vec3 b = vec3(0.5, 0.5, 0.5);
-  vec3 c = vec3(1.0, 0.7, 0.4);
-  vec3 d = vec3(0.00, 0.15, 0.20);
-  return a + b * cos(6.28318 * (c * t + d));
+float snoise(vec2 p) {
+  vec2 s = vec2(1.0, 1.414213562);
+  vec2 a = floor(p);
+  vec2 b = fract(p);
+  float k = 0.5 * (3.0 - s.x);
+  float l = 0.5 * (3.0 - s.y);
+  vec2 d = vec2(k * (b.x * b.x + b.y * b.y), l * ((b.x - s.x) * (b.x - s.x) + (b.y - s.y) * (b.y - s.y)));
+  return clamp(d.x + d.y, 0.0, 1.0);
 }
 
 void main() {
   vec2 uv = vUv;
+  vec2 mouseUv = uMouse;
   float t = uTime * 0.015 * uSpeed;
 
-  // Mouse warp
-  vec2 mouseDist = uv - uMouse;
-  float mDist = length(mouseDist);
-  float warp = smoothstep(0.35, 0.0, mDist) * 0.06;
-  vec2 warpDir = normalize(mouseDist + 0.001);
-  uv += warpDir * warp;
+  vec3 accum = vec3(0.0);
 
-  // Domain warping
-  vec2 q = vec2(fbm(uv * 3.0 + vec2(0.0, 0.0) + t * 0.3),
-                fbm(uv * 3.0 + vec2(5.2, 1.3) - t * 0.2));
-  vec2 r = vec2(fbm(uv * 3.0 + q * 4.0 + vec2(1.7, 9.2) + t * 0.15),
-                fbm(uv * 3.0 + q * 4.0 + vec2(8.3, 2.8) - t * 0.12));
-  float f = fbm(uv * 3.0 + r * 2.0);
+  for (float i = 0.0; i < NUM_STARS; i++) {
+    vec2 rand = vec2(
+      fract(sin(i * 234.5 + 78.9) * 543.3),
+      fract(sin(i * 123.4 + 567.8) * 901.2)
+    );
+    float speed = fract(sin(i * 456.7) * 321.4) * 0.5 + 0.1;
+    float size = fract(cos(i * 111.1) * 543.2) * 15.0 + 5.0;
 
-  // Color from cosine palette
-  vec3 color = palette(f * 0.5 + 0.3);
+    vec2 pos = fract(rand + vec2(sin(speed * 10.0) * 0.02, -t * speed * 0.3));
 
-  // Mouse glow
-  color += vec3(0.15, 0.02, 0.18) * smoothstep(0.2, 0.0, mDist);
+    vec2 delta = uv - pos;
+    delta.x *= uResolution.z;
 
-  // Darken overall
-  color *= 0.7;
+    float dist = length(delta);
+    float flowDomain = pos.y + pos.x * 0.3 + t * 0.5;
+    float flowField = sin(flowDomain * 3.14159) * 0.02;
 
-  gl_FragColor = vec4(color, 1.0);
+    vec2 warpDelta = uv - mouseUv;
+    warpDelta.x *= uResolution.z;
+    float warpDist = length(warpDelta);
+    float influence = smoothstep(0.4, 0.0, warpDist);
+    float angle = atan(warpDelta.y, warpDelta.x);
+    float freq = 8.0;
+    float wave = sin(angle * freq + uTime * 2.0) * 0.5 + 0.5;
+    float morph = mix(1.0, 0.3 + 0.7 * wave, influence);
+    float distFinal = dist * morph;
+
+    float flowMask = smoothstep(0.0, 0.02, abs(delta.x - flowField));
+
+    float core = (size * 0.0004) / distFinal;
+    float glow = smoothstep(0.8, 0.0, distFinal * 12.0);
+    float star = core * 0.6 + glow * 0.08;
+    star *= flowMask;
+    star = clamp(star, 0.0, 1.5);
+
+    vec3 baseCol = vec3(0.6, 0.7, 1.0);
+    float colVar = fract(sin(i * 789.1) * 456.7);
+    if (colVar > 0.7) baseCol = vec3(1.0, 0.7, 0.9);
+    else if (colVar > 0.4) baseCol = vec3(0.8, 0.6, 1.0);
+
+    accum += baseCol * star;
+  }
+
+  float alpha = clamp(accum.r + accum.g + accum.b, 0.0, 1.0);
+  vec3 col = accum * 0.9;
+
+  float distCenter = length(uv - vec2(0.5));
+  float bgMask = smoothstep(0.0, 0.2, distCenter);
+  col = mix(vec3(0.05, 0.05, 0.1), col, bgMask);
+  col += vec3(0.05, 0.05, 0.1) * (1.0 - alpha);
+
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
 export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean }) {
