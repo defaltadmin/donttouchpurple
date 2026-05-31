@@ -2,105 +2,90 @@
 import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle, Vec2 } from 'ogl';
 
-const vertex = `
-attribute vec2 uv;
-attribute vec2 position;
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = vec4(position, 0, 1);
-}`;
+const vertex = `#version 300 es
+in vec2 position;
+in vec2 uv;
+out vec2 vUv;
+void main() { vUv = uv; gl_Position = vec4(position, 0, 1); }`;
 
-const fragment = `
+const fragment = `#version 300 es
 precision highp float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uSpeed;
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 fragColor;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+vec3 hash33(vec3 p3) {
+  p3 = fract(p3 * vec3(.1031,.11369,.13787));
+  p3 += dot(p3, p3.yxz+19.19);
+  return -1.0+2.0*fract(vec3(p3.x+p3.y, p3.x+p3.z, p3.y+p3.z)*p3.zyx);
 }
 
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
-    f.y
+float snoise3(vec3 p) {
+  const float F3 = 0.3333333, G3 = 0.1666667;
+  vec3 s = floor(p + dot(p, vec3(F3)));
+  vec3 x = p - s + dot(s, vec3(G3));
+  vec3 e = step(vec3(0.0), x - x.yzx);
+  vec3 i1 = e*(1.0-e.zxy);
+  vec3 i2 = 1.0-e.zxy*(1.0-e);
+  vec3 x1 = x - i1 + G3, x2 = x - i2 + 2.0*G3, x3 = x - 1.0+3.0*G3;
+  vec4 w = max(0.6-vec4(dot(x,x),dot(x1,x1),dot(x2,x2),dot(x3,x3)), 0.0);
+  w *= w; w *= w;
+  return dot(w, vec4(dot(hash33(s),x),dot(hash33(s+i1),x1),dot(hash33(s+i2),x2),dot(hash33(s+1.0),x3)))*52.0;
+}
+
+float snoise(vec2 p) {
+  return snoise3(vec3(p, 0.0));
+}
+
+float fbm2(vec2 p, int it) {
+  float val = 0.0, amp = 0.5;
+  for (int i = 0; i < 12; i++) {
+    if (i >= it) break;
+    val += amp * snoise(p);
+    p *= 2.0;
+    amp *= 0.5;
+  }
+  return val;
+}
+
+vec3 domain(vec2 z, float t) {
+  z *= 1.2; // slightly zoomed out for more coverage
+  return vec3(
+    fbm2(z - vec2(1.0-sin(t*0.2)*0.3, 1.0+cos(t*0.3)*0.3), 12),
+    fbm2(z + vec2(1.0+cos(t*0.1)*0.2, 1.0-sin(t*0.15)*0.2), 12),
+    fbm2(z + vec2(2.0+sin(t*0.25)*0.2, 2.0-cos(t*0.2)*0.2), 12)
   );
 }
 
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {
-    v += a * noise(p);
-    p *= 2.0;
-    a *= 0.5;
-  }
-  return v;
+vec3 colour(float t) {
+  vec3 a = vec3(0.5,0.5,0.5);
+  vec3 b = vec3(0.5,0.5,0.5);
+  vec3 c = vec3(1.0,1.0,0.5);
+  vec3 d = vec3(0.80,0.90,0.30);
+  return a + b * cos(6.28318 * (c*t+d));
 }
 
 void main() {
-  vec2 uv = vUv;
-  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
-  vec2 p = uv * aspect;
+  vec2 uv = gl_FragCoord.xy / uResolution;
+  float t = uTime * 0.015 * uSpeed;
 
-  // Mouse influence (elastic warp)
-  vec2 mouse = uMouse * aspect;
-  float mouseDist = length(p - mouse);
-  float mouseInfluence = smoothstep(0.5, 0.0, mouseDist) * 0.15;
+  // Mouse warp influence
+  vec2 mouseUv = uMouse;
+  float mouseDist = length(uv - mouseUv);
+  float warp = smoothstep(0.4, 0.0, mouseDist) * 0.08;
+  vec2 warpOffset = normalize(uv - mouseUv + 0.001) * warp;
 
-  float t = uTime * 0.08 * uSpeed;
+  vec2 z = uv * 3.0 + warpOffset;
+  vec3 n = domain(z, t);
+  vec3 c = colour(n.x + n.y + n.z + t*0.1);
 
-  // Nebula layers
-  float n1 = fbm(p * 2.0 + vec2(t * 0.3, t * 0.2) + mouseInfluence);
-  float n2 = fbm(p * 3.0 - vec2(t * 0.2, t * 0.4) - mouseInfluence * 0.5);
-  float n3 = fbm(p * 1.5 + vec2(t * 0.15, -t * 0.1));
+  // Mouse glow
+  c += vec3(0.2,0.04,0.24) * smoothstep(0.2, 0.0, mouseDist) * 0.6;
 
-  // Color palette (purple/pink/cyan game theme)
-  vec3 col1 = vec3(0.75, 0.15, 1.0);
-  vec3 col2 = vec3(1.0, 0.4, 0.67);
-  vec3 col3 = vec3(0.27, 0.55, 1.0);
-
-  vec3 color = mix(col1, col2, n1);
-  color = mix(color, col3, n2 * 0.5);
-
-  // Center glow
-  float centerGlow = smoothstep(0.8, 0.0, length(uv - vec2(0.5, 0.4))) * 0.4;
-  color += vec3(0.75, 0.06, 0.78) * centerGlow;
-
-  // Starfield
-  float stars = 0.0;
-  for (float i = 1.0; i < 4.0; i++) {
-    vec2 starUV = uv * (200.0 * i);
-    vec2 starCell = floor(starUV);
-    float starHash = hash(starCell + i * 100.0);
-    if (starHash > 0.97) {
-      vec2 starPos = fract(starUV) - 0.5;
-      float starDist = length(starPos);
-      float twinkle = sin(uTime * (2.0 + starHash * 3.0) + starHash * 6.28) * 0.5 + 0.5;
-      stars += smoothstep(0.05, 0.0, starDist) * twinkle * (1.0 / i);
-    }
-  }
-  color += stars * vec3(2.0, 1.8, 2.5);
-
-  // Combine nebula layers into final color
-  float intensity = n3 * 0.6 + 0.4 + centerGlow;
-  color *= intensity;
-
-  // Soft vignette
-  float vignette = 1.0 - smoothstep(0.4, 1.4, length(uv - 0.5));
-  color *= vignette * 0.5 + 0.5;
-
-  // Ensure minimum visibility
-  color = max(color, vec3(0.02, 0.01, 0.04));
-
-  gl_FragColor = vec4(color, 1.0);
+  fragColor = vec4(c, 1.0);
 }`;
 
 export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean }) {
@@ -111,9 +96,9 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     if (!ctnRef.current) return;
     const ctn = ctnRef.current;
 
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+    const renderer = new Renderer({ alpha: false, premultipliedAlpha: false });
     const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
+    gl.clearColor(0, 0, 0, 1);
 
     const geometry = new Triangle(gl);
     const speed = reducedMotion ? 0.3 : 1.0;
@@ -163,7 +148,6 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     animateId = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
 
-    // Make canvas fill container and ignore pointer events
     Object.assign(gl.canvas.style, {
       position: 'absolute',
       inset: '0',
@@ -194,7 +178,6 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
       ref={ctnRef}
       className="background-canvas"
       aria-hidden="true"
-      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
     />
   );
 }
