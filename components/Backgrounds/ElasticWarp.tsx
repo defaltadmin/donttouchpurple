@@ -1,4 +1,4 @@
-// components/Backgrounds/ElasticWarp.tsx — starfield with elastic mouse warp (ported from NebulaCanvas)
+// components/Backgrounds/ElasticWarp.tsx — starfield nebula with mouse warp (from website NebulaCanvas)
 import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle, Vec2 } from 'ogl';
 
@@ -13,89 +13,84 @@ void main() {
 
 const fragment = `
 precision highp float;
-uniform vec3 uResolution;
+uniform vec2 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uSpeed;
 varying vec2 vUv;
 
-#define NUM_STARS 60.0
-
-vec3 hash33(vec3 p3) {
-  p3 = fract(p3 * vec3(.1031, .11369, .13787));
-  p3 += dot(p3, p3.yxz + 19.19);
-  return -1.0 + 2.0 * fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
-float snoise(vec2 p) {
-  vec2 s = vec2(1.0, 1.414213562);
-  vec2 a = floor(p);
-  vec2 b = fract(p);
-  float k = 0.5 * (3.0 - s.x);
-  float l = 0.5 * (3.0 - s.y);
-  vec2 d = vec2(k * (b.x * b.x + b.y * b.y), l * ((b.x - s.x) * (b.x - s.x) + (b.y - s.y) * (b.y - s.y)));
-  return clamp(d.x + d.y, 0.0, 1.0);
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+    f.y
+  );
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    v += a * noise(p);
+    p *= 2.0;
+    a *= 0.5;
+  }
+  return v;
 }
 
 void main() {
   vec2 uv = vUv;
-  vec2 mouseUv = uMouse;
-  float t = uTime * 0.015 * uSpeed;
+  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
+  vec2 p = uv * aspect;
 
-  vec3 accum = vec3(0.0);
+  vec2 mouse = uMouse * aspect;
+  float mouseDist = length(p - mouse);
+  float mouseInfluence = smoothstep(0.5, 0.0, mouseDist) * 0.15;
 
-  for (float i = 0.0; i < NUM_STARS; i++) {
-    vec2 rand = vec2(
-      fract(sin(i * 234.5 + 78.9) * 543.3),
-      fract(sin(i * 123.4 + 567.8) * 901.2)
-    );
-    float speed = fract(sin(i * 456.7) * 321.4) * 0.5 + 0.1;
-    float size = fract(cos(i * 111.1) * 543.2) * 15.0 + 5.0;
+  float t = uTime * 0.08 * uSpeed;
 
-    vec2 pos = fract(rand + vec2(sin(speed * 10.0) * 0.02, -t * speed * 0.3));
+  float n1 = fbm(p * 2.0 + vec2(t * 0.3, t * 0.2) + mouseInfluence);
+  float n2 = fbm(p * 3.0 - vec2(t * 0.2, t * 0.4) - mouseInfluence * 0.5);
+  float n3 = fbm(p * 1.5 + vec2(t * 0.15, -t * 0.1));
 
-    vec2 delta = uv - pos;
-    delta.x *= uResolution.z;
+  vec3 col1 = vec3(0.65, 0.05, 0.95);
+  vec3 col2 = vec3(0.90, 0.15, 0.70);
+  vec3 col3 = vec3(0.45, 0.10, 0.85);
 
-    float dist = length(delta);
-    float flowDomain = pos.y + pos.x * 0.3 + t * 0.5;
-    float flowField = sin(flowDomain * 3.14159) * 0.02;
+  vec3 color = mix(col1, col2, n1);
+  color = mix(color, col3, n2 * 0.5);
 
-    vec2 warpDelta = uv - mouseUv;
-    warpDelta.x *= uResolution.z;
-    float warpDist = length(warpDelta);
-    float influence = smoothstep(0.4, 0.0, warpDist);
-    float angle = atan(warpDelta.y, warpDelta.x);
-    float freq = 8.0;
-    float wave = sin(angle * freq + uTime * 2.0) * 0.5 + 0.5;
-    float morph = mix(1.0, 0.3 + 0.7 * wave, influence);
-    float distFinal = dist * morph;
+  float centerGlow = smoothstep(0.8, 0.0, length(uv - vec2(0.5, 0.4))) * 0.4;
+  color += vec3(0.55, 0.0, 0.65) * centerGlow;
 
-    float flowMask = smoothstep(0.0, 0.02, abs(delta.x - flowField));
-
-    float core = (size * 0.0004) / distFinal;
-    float glow = smoothstep(0.8, 0.0, distFinal * 12.0);
-    float star = core * 0.6 + glow * 0.08;
-    star *= flowMask;
-    star = clamp(star, 0.0, 1.5);
-
-    vec3 baseCol = vec3(0.55, 0.3, 0.95);
-    float colVar = fract(sin(i * 789.1) * 456.7);
-    if (colVar > 0.7) baseCol = vec3(1.0, 0.4, 0.67);
-    else if (colVar > 0.4) baseCol = vec3(0.75, 0.15, 1.0);
-
-    accum += baseCol * star;
+  float stars = 0.0;
+  for (float i = 1.0; i < 4.0; i++) {
+    vec2 starUV = uv * (200.0 * i);
+    vec2 starCell = floor(starUV);
+    float starHash = hash(starCell + i * 100.0);
+    if (starHash > 0.97) {
+      vec2 starPos = fract(starUV) - 0.5;
+      float starDist = length(starPos);
+      float twinkle = sin(uTime * (2.0 + starHash * 3.0) + starHash * 6.28) * 0.5 + 0.5;
+      stars += smoothstep(0.05, 0.0, starDist) * twinkle * (1.0 / i);
+    }
   }
+  color += stars * vec3(0.9, 0.8, 1.0);
 
-  float alpha = clamp(accum.r + accum.g + accum.b, 0.0, 1.0);
-  vec3 col = accum * 0.9;
+  float intensity = n3 * 0.45 + 0.35 + centerGlow * 0.5;
+  color *= intensity;
 
-  float distCenter = length(uv - vec2(0.5));
-  float bgMask = smoothstep(0.0, 0.2, distCenter);
-  col = mix(vec3(0.05, 0.05, 0.1), col, bgMask);
-  col += vec3(0.05, 0.05, 0.1) * (1.0 - alpha);
+  float vignette = 1.0 - smoothstep(0.3, 1.2, length(uv - 0.5));
+  color *= vignette * 0.5 + 0.5;
 
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(color, 1.0);
 }`;
 
 export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean }) {
