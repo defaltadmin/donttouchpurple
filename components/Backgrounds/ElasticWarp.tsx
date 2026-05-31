@@ -13,7 +13,7 @@ void main() {
 
 const fragment = `
 precision highp float;
-uniform vec2 uResolution;
+uniform vec3 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uSpeed;
