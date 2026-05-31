@@ -1,4 +1,4 @@
-// components/Backgrounds/ElasticWarp.tsx — starfield nebula with mouse warp (from website NebulaCanvas)
+// components/Backgrounds/ElasticWarp.tsx — exact NebulaCanvas shader, purple colors only
 import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle, Vec2 } from 'ogl';
 
@@ -13,11 +13,10 @@ void main() {
 
 const fragment = `
 precision highp float;
-uniform vec3 uResolution;
 uniform float uTime;
+uniform vec3 uResolution;
 uniform vec2 uMouse;
 uniform float uSpeed;
-varying vec2 vUv;
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -46,11 +45,11 @@ float fbm(vec2 p) {
 }
 
 void main() {
-  vec2 uv = vUv;
-  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
-  vec2 p = uv * aspect;
+  vec2 uv = gl_FragCoord.xy / uResolution.xy;
+  float aspect = uResolution.x / uResolution.y;
+  vec2 p = uv * vec2(aspect, 1.0);
 
-  vec2 mouse = uMouse * aspect;
+  vec2 mouse = uMouse * vec2(aspect, 1.0);
   float mouseDist = length(p - mouse);
   float mouseInfluence = smoothstep(0.5, 0.0, mouseDist) * 0.15;
 
@@ -71,7 +70,7 @@ void main() {
   color += vec3(0.55, 0.0, 0.65) * centerGlow;
 
   float stars = 0.0;
-  for (float i = 1.0; i < 4.0; i++) {
+  for (float i = 1.0; i < 4.0; i += 1.0) {
     vec2 starUV = uv * (200.0 * i);
     vec2 starCell = floor(starUV);
     float starHash = hash(starCell + i * 100.0);
