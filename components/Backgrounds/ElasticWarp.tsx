@@ -1,4 +1,4 @@
-// components/Backgrounds/ElasticWarp.tsx — exact NebulaCanvas with canvas ref pattern
+// components/Backgrounds/ElasticWarp.tsx — NebulaCanvas adapted for game background
 import { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Geometry, Vec2 } from 'ogl';
 
@@ -111,7 +111,7 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
       vertex: VERT,
       fragment: FRAG,
       uniforms: {
-        uResolution: { value: new Vec2(canvas.width, canvas.height) },
+        uResolution: { value: new Vec2(1, 1) },
         uTime: { value: 0 },
         uMouse: { value: mouse },
       },
@@ -121,9 +121,12 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio, 1.5);
-      const w = canvas!.clientWidth;
-      const h = canvas!.clientHeight;
-      renderer.setSize(w * dpr, h * dpr);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // Set drawing buffer size without touching CSS (CSS class handles sizing)
+      gl.canvas.width = w * dpr;
+      gl.canvas.height = h * dpr;
+      gl.viewport(0, 0, w * dpr, h * dpr);
       program.uniforms.uResolution.value.set(w * dpr, h * dpr);
     }
 
