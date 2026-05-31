@@ -140,10 +140,9 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     }
 
     function onPointerMove(e: PointerEvent) {
-      const rect = ctn.getBoundingClientRect();
       mouse.set(
-        (e.clientX - rect.left) / rect.width,
-        1.0 - (e.clientY - rect.top) / rect.height
+        e.clientX / window.innerWidth,
+        1.0 - e.clientY / window.innerHeight
       );
     }
 
@@ -152,8 +151,8 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     }
 
     window.addEventListener('resize', resize);
-    ctn.addEventListener('pointermove', onPointerMove, { passive: true });
-    ctn.addEventListener('pointerleave', onPointerLeave, { passive: true });
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.addEventListener('pointerleave', onPointerLeave, { passive: true });
     resize();
 
     function update(t: number) {
@@ -182,8 +181,8 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      ctn.removeEventListener('pointermove', onPointerMove);
-      ctn.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerleave', onPointerLeave);
       gl.canvas.removeEventListener('webglcontextlost', onContextLost);
       gl.canvas.removeEventListener('webglcontextrestored', onContextRestored);
       ctn.removeChild(gl.canvas);
@@ -195,7 +194,7 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     <div
       ref={ctnRef}
       className="background-canvas"
-      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'auto' }}
+      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
     />
   );
 }
