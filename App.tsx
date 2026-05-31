@@ -179,7 +179,6 @@ export default function App() {
   const [comboPop, setComboPop] = useState(false);
 
   const hydrator = useRef(new AssetHydrator());
-  const [uiReady, setUiReady] = useState(true);
 
   const [gamesPlayed, setGamesPlayed] = useState(() =>
     parseInt(localStorage.getItem('dtp-games-played') || '0', 10)
@@ -207,8 +206,8 @@ export default function App() {
   const { devMode, setDevMode, godMode, setGodMode, devFreezeTime, setDevFreezeTime, devRotationSpeed, setDevRotationSpeed, devAutoPlay, setDevAutoPlay, devHeatmap, setDevHeatmap } = useDevToolsState();
 
   useEffect(() => {
-    // 1. Init i18n
-    i18n.init().then(() => setUiReady(true));
+    // 1. Init i18n (background)
+    i18n.init().catch(() => {});
 
     // 2. Start Web Vitals monitoring
     webVitalsMonitor.startMonitoring();
@@ -689,7 +688,6 @@ export default function App() {
   // Background component mapping
   const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<Record<string, unknown>> }>>(() => ({
     'default': { component: ElasticWarp },
-    'elastic-warp': { component: ElasticWarp },
     'void-tunnel': { component: VoidTunnel },
     'star-warp': { component: StarWarp },
     'grid-pulse': { component: GridPulse },
