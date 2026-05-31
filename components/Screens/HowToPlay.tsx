@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "../../hooks/useTranslation";
 
@@ -58,11 +57,6 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
       <motion.div className="how-modes" initial="hidden" animate="visible" variants={container}>
         <motion.div className="how-mode" variants={row}><b>⊞ {t('how.classic')}</b> — {t('how.classic_desc')}</motion.div>
         <motion.div className="how-mode" variants={row}><b>∞ {t('how.evolve')}</b> — {t('how.evolve_desc')}</motion.div>
-      </motion.div>
-
-      <motion.div className="how-modes" initial="hidden" animate="visible" variants={container}>
-        <motion.div className="how-mode" variants={row}><b>⚡ {t('how.boss_events')}</b></motion.div>
-        <motion.div className="how-row" variants={row}><span className="how-icon" style={{ color: "#0ea5e9" }}>🔄</span><div><b>{t('how.inversion')}</b> — {t('how.inversion_desc')}</div></motion.div>
       </motion.div>
 
       <motion.div className="how-modes" initial="hidden" animate="visible" variants={container}>

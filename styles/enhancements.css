@@ -13,17 +13,6 @@
   --dur-normal: 220ms;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   BACKGROUND CANVAS — shared class for all canvas backgrounds
-   ═══════════════════════════════════════════════════════════════════ */
-.background-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    CELLS — dramatically enhanced press, hover, and pop
@@ -1641,10 +1630,6 @@ body.damage-pulse::after {
   transform: translateZ(0);
 }
 
-/* Canvas backgrounds: already on GPU via canvas, ensure no style recalc */
-.background-canvas {
-  contain: strict;
-}
 
 /* ── Score float-up animation ── */
 @keyframes score-float-up {
