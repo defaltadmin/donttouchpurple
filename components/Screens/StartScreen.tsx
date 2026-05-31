@@ -172,7 +172,6 @@ export interface StartScreenProps {
   pendingReplaySeed?: string | null;
   onClearReplaySeed?: () => void;
   onToast?: (message: string) => void;
-  onLearnMore?: () => void;
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────
@@ -191,7 +190,6 @@ export function StartScreen({
   dailyObjectives: _dailyObjectives,
   pendingReplaySeed, onClearReplaySeed,
   onToast,
-  onLearnMore,
 }: StartScreenProps) {
   const { t } = useTranslation();
   const isKbd = inputMode === "keyboard";
@@ -363,12 +361,6 @@ export function StartScreen({
         <button className="btn-icon-sm" onClick={onOpenRewardsHub} disabled={!isFeatureUnlocked('daily_challenges') && !devMode} title={t('menu.rewards')} aria-label={t('menu.rewards')}><Icon name="star" size={20} /></button>
         {isKbd && <button className="btn-icon-sm" onClick={onKeybind} title={t('menu.keys')} aria-label={t('menu.keys')}>⌨</button>}
       </div>
-
-      {onLearnMore && (
-        <button className="btn-ghost learn-more-trigger" onClick={onLearnMore}>
-          Learn more
-        </button>
-      )}
 
       {/* Screen reader instructions */}
       <div className="sr-only" aria-live="polite">
