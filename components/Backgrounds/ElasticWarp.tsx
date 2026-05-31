@@ -101,6 +101,10 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
     const renderer = new Renderer({ canvas, alpha: true, antialias: false });
     const gl = renderer.gl;
 
+    // Clear inline styles OGL sets — CSS class handles sizing
+    gl.canvas.style.removeProperty('width');
+    gl.canvas.style.removeProperty('height');
+
     const geometry = new Geometry(gl, {
       position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
     });
@@ -123,11 +127,13 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
       const dpr = Math.min(window.devicePixelRatio, 1.5);
       const w = window.innerWidth;
       const h = window.innerHeight;
-      // Set drawing buffer size without touching CSS (CSS class handles sizing)
       gl.canvas.width = w * dpr;
       gl.canvas.height = h * dpr;
       gl.viewport(0, 0, w * dpr, h * dpr);
       program.uniforms.uResolution.value.set(w * dpr, h * dpr);
+      // Clear inline styles so CSS class controls visual size
+      gl.canvas.style.width = '';
+      gl.canvas.style.height = '';
     }
 
     function onMouseMove(e: MouseEvent) {
