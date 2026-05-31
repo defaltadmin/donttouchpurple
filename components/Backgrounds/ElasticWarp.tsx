@@ -59,8 +59,8 @@ float fbm(vec2 p) {
 vec3 palette(float t) {
   vec3 a = vec3(0.5, 0.5, 0.5);
   vec3 b = vec3(0.5, 0.5, 0.5);
-  vec3 c = vec3(1.0, 1.0, 0.5);
-  vec3 d = vec3(0.80, 0.90, 0.30);
+  vec3 c = vec3(1.0, 0.7, 0.4);
+  vec3 d = vec3(0.00, 0.15, 0.20);
   return a + b * cos(6.28318 * (c * t + d));
 }
 
@@ -85,11 +85,11 @@ void main() {
   // Color from cosine palette
   vec3 color = palette(f * 0.5 + 0.3);
 
-  // Boost brightness
-  color *= 1.2;
-
   // Mouse glow
-  color += vec3(0.3, 0.05, 0.35) * smoothstep(0.2, 0.0, mDist);
+  color += vec3(0.15, 0.02, 0.18) * smoothstep(0.2, 0.0, mDist);
+
+  // Darken overall
+  color *= 0.7;
 
   gl_FragColor = vec4(color, 1.0);
 }`;
