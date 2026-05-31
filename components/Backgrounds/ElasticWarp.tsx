@@ -2,90 +2,96 @@
 import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle, Vec2 } from 'ogl';
 
-const vertex = `#version 300 es
-in vec2 position;
-in vec2 uv;
-out vec2 vUv;
-void main() { vUv = uv; gl_Position = vec4(position, 0, 1); }`;
+const vertex = `
+attribute vec2 uv;
+attribute vec2 position;
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 0, 1);
+}`;
 
-const fragment = `#version 300 es
+const fragment = `
 precision highp float;
-uniform vec2 uResolution;
+uniform vec3 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uSpeed;
-in vec2 vUv;
-out vec4 fragColor;
+varying vec2 vUv;
 
-vec3 hash33(vec3 p3) {
-  p3 = fract(p3 * vec3(.1031,.11369,.13787));
-  p3 += dot(p3, p3.yxz+19.19);
-  return -1.0+2.0*fract(vec3(p3.x+p3.y, p3.x+p3.z, p3.y+p3.z)*p3.zyx);
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+float snoise(vec2 v) {
+  const vec4 C = vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+  vec2 i = floor(v + dot(v, C.yy));
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod289(i);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m; m = m*m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+  vec3 g;
+  g.x = a0.x * x0.x + h.x * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
 }
 
-float snoise3(vec3 p) {
-  const float F3 = 0.3333333, G3 = 0.1666667;
-  vec3 s = floor(p + dot(p, vec3(F3)));
-  vec3 x = p - s + dot(s, vec3(G3));
-  vec3 e = step(vec3(0.0), x - x.yzx);
-  vec3 i1 = e*(1.0-e.zxy);
-  vec3 i2 = 1.0-e.zxy*(1.0-e);
-  vec3 x1 = x - i1 + G3, x2 = x - i2 + 2.0*G3, x3 = x - 1.0+3.0*G3;
-  vec4 w = max(0.6-vec4(dot(x,x),dot(x1,x1),dot(x2,x2),dot(x3,x3)), 0.0);
-  w *= w; w *= w;
-  return dot(w, vec4(dot(hash33(s),x),dot(hash33(s+i1),x1),dot(hash33(s+i2),x2),dot(hash33(s+1.0),x3)))*52.0;
-}
-
-float snoise(vec2 p) {
-  return snoise3(vec3(p, 0.0));
-}
-
-float fbm2(vec2 p, int it) {
-  float val = 0.0, amp = 0.5;
-  for (int i = 0; i < 12; i++) {
-    if (i >= it) break;
-    val += amp * snoise(p);
-    p *= 2.0;
-    amp *= 0.5;
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  vec2 shift = vec2(100.0);
+  for (int i = 0; i < 6; i++) {
+    v += a * snoise(p);
+    p = p * 2.0 + shift;
+    a *= 0.5;
   }
-  return val;
+  return v;
 }
 
-vec3 domain(vec2 z, float t) {
-  z *= 1.2; // slightly zoomed out for more coverage
-  return vec3(
-    fbm2(z - vec2(1.0-sin(t*0.2)*0.3, 1.0+cos(t*0.3)*0.3), 12),
-    fbm2(z + vec2(1.0+cos(t*0.1)*0.2, 1.0-sin(t*0.15)*0.2), 12),
-    fbm2(z + vec2(2.0+sin(t*0.25)*0.2, 2.0-cos(t*0.2)*0.2), 12)
-  );
-}
-
-vec3 colour(float t) {
-  vec3 a = vec3(0.5,0.5,0.5);
-  vec3 b = vec3(0.5,0.5,0.5);
-  vec3 c = vec3(1.0,1.0,0.5);
-  vec3 d = vec3(0.80,0.90,0.30);
-  return a + b * cos(6.28318 * (c*t+d));
+vec3 palette(float t) {
+  vec3 a = vec3(0.5, 0.5, 0.5);
+  vec3 b = vec3(0.5, 0.5, 0.5);
+  vec3 c = vec3(1.0, 1.0, 0.5);
+  vec3 d = vec3(0.80, 0.90, 0.30);
+  return a + b * cos(6.28318 * (c * t + d));
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
+  vec2 uv = vUv;
   float t = uTime * 0.015 * uSpeed;
 
-  // Mouse warp influence
-  vec2 mouseUv = uMouse;
-  float mouseDist = length(uv - mouseUv);
-  float warp = smoothstep(0.4, 0.0, mouseDist) * 0.08;
-  vec2 warpOffset = normalize(uv - mouseUv + 0.001) * warp;
+  // Mouse warp
+  vec2 mouseDist = uv - uMouse;
+  float mDist = length(mouseDist);
+  float warp = smoothstep(0.35, 0.0, mDist) * 0.06;
+  vec2 warpDir = normalize(mouseDist + 0.001);
+  uv += warpDir * warp;
 
-  vec2 z = uv * 3.0 + warpOffset;
-  vec3 n = domain(z, t);
-  vec3 c = colour(n.x + n.y + n.z + t*0.1);
+  // Domain warping
+  vec2 q = vec2(fbm(uv * 3.0 + vec2(0.0, 0.0) + t * 0.3),
+                fbm(uv * 3.0 + vec2(5.2, 1.3) - t * 0.2));
+  vec2 r = vec2(fbm(uv * 3.0 + q * 4.0 + vec2(1.7, 9.2) + t * 0.15),
+                fbm(uv * 3.0 + q * 4.0 + vec2(8.3, 2.8) - t * 0.12));
+  float f = fbm(uv * 3.0 + r * 2.0);
+
+  // Color from cosine palette
+  vec3 color = palette(f * 0.5 + 0.3);
+
+  // Boost brightness
+  color *= 1.2;
 
   // Mouse glow
-  c += vec3(0.2,0.04,0.24) * smoothstep(0.2, 0.0, mouseDist) * 0.6;
+  color += vec3(0.3, 0.05, 0.35) * smoothstep(0.2, 0.0, mDist);
 
-  fragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(color, 1.0);
 }`;
 
 export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean }) {
