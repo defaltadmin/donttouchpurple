@@ -79,10 +79,10 @@ void main() {
     star *= flowMask;
     star = clamp(star, 0.0, 1.5);
 
-    vec3 baseCol = vec3(0.6, 0.7, 1.0);
+    vec3 baseCol = vec3(0.55, 0.3, 0.95);
     float colVar = fract(sin(i * 789.1) * 456.7);
-    if (colVar > 0.7) baseCol = vec3(1.0, 0.7, 0.9);
-    else if (colVar > 0.4) baseCol = vec3(0.8, 0.6, 1.0);
+    if (colVar > 0.7) baseCol = vec3(1.0, 0.4, 0.67);
+    else if (colVar > 0.4) baseCol = vec3(0.75, 0.15, 1.0);
 
     accum += baseCol * star;
   }
