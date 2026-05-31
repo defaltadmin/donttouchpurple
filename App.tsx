@@ -80,6 +80,7 @@ const Galaxy         = lazy(() => import("./components/Backgrounds/Galaxy"));
 const Hyperspeed     = lazy(() => import("./components/Backgrounds/Hyperspeed"));
 const Silk           = lazy(() => import("./components/Backgrounds/Silk"));
 const Lightning      = lazy(() => import("./components/Backgrounds/Lightning"));
+const ElasticWarp    = lazy(() => import("./components/Backgrounds/ElasticWarp"));
 import { MouseFollower } from "./components/Backgrounds/MouseFollower";
 import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
@@ -687,11 +688,13 @@ export default function App() {
 
   // Background component mapping
   const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<Record<string, unknown>> }>>(() => ({
-    'default': { component: PurpleRain },
+    'default': { component: ElasticWarp },
+    'elastic-warp': { component: ElasticWarp },
     'void-tunnel': { component: VoidTunnel },
     'star-warp': { component: StarWarp },
     'grid-pulse': { component: GridPulse },
     'purple-cascade': { component: PurpleCascade },
+    'purple-rain': { component: PurpleRain },
     'block-orbit': { component: BlockOrbit },
     'data-stream': { component: DataStream },
     'cell-breath': { component: CellBreath },
@@ -1254,25 +1257,11 @@ export default function App() {
 
   return (
     <>
-      {/* WebGL galaxy background — full viewport behind everything */}
-      {screen === "menu" && (!shopData.equippedBackground || shopData.equippedBackground === 'default') && (
-        <Suspense fallback={null}><Galaxy /></Suspense>
-      )}
     <div ref={containerRef} className={`root root--${screen}${is2P ? " root--2p" : ""}${gameMode === "classic" ? " root--classic" : ""}${theme === "light" ? " light-theme" : ""}${reducedMotion ? " root--reduced-motion" : ""}${freezeActive ? " fx-freeze-active" : ""}${multActive ? " fx-mult-active" : ""}${shieldActive ? " fx-shield-active" : ""}`}
       style={{ "--cell-1p": cellSizeVar, ...themeVars } as React.CSSProperties}>
-      
-      {/* CSS orbs: show when no animated background equipped AND not on menu */}
-      {(!shopData.equippedBackground || shopData.equippedBackground === 'default') && screen !== 'menu' ? (
-        <>
-          <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-          <div className="orb orb-3" />
-        </>
-      ) : (
-        /* Still render bg-pulse for rare mode effect, but no orbs */
-        <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
-      )}
+
+      {/* Rare mode flash overlay */}
+      <div className="bg-pulse" style={snapshot?.rareMode.active && screen === "playing" ? { background: `radial-gradient(ellipse at 50% 30%, ${snapshot.rareMode.cssColor}44 0%, transparent 65%)`, opacity: 1 } : {}} />
 
       {showFps && devMode && (
         <div className="dtp-fps-monitor" aria-live="off" aria-label="Performance Monitor">

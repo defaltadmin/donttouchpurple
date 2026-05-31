@@ -128,11 +128,11 @@ export interface ShopBackground {
   icon: string;
   cost: number;
   desc: string;
-  component: "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "PulseField" | "GlitchGrid" | "AmbientFlow" | "Nebula" | "DigitalRain" | "AuroraBorealis" | "Galaxy" | "Hyperspeed" | "Silk" | "Lightning" | "none";
+  component: "ElasticWarp" | "VoidTunnel" | "StarWarp" | "GridPulse" | "PurpleCascade" | "PurpleRain" | "BlockOrbit" | "DataStream" | "CellBreath" | "WarpGate" | "PulseField" | "GlitchGrid" | "AmbientFlow" | "Nebula" | "DigitalRain" | "AuroraBorealis" | "Galaxy" | "Hyperspeed" | "Silk" | "Lightning" | "none";
 }
 
 export const SHOP_BACKGROUNDS: ShopBackground[] = [
-  { id: "default",          name: "Default",          icon: "🌑", cost: 0,   desc: "Static dark void",                  component: "none" },
+  { id: "default",          name: "Elastic Warp",      icon: "🌌", cost: 0,   desc: "Nebula warp with mouse-reactive distortion", component: "none" },
   { id: "void-tunnel",      name: "Void Tunnel",       icon: "🌀", cost: 400, desc: "Thick purple shapes spiral inward", component: "VoidTunnel" },
   { id: "star-warp",        name: "Star Warp",         icon: "✨", cost: 350, desc: "DTP shapes accelerating outward",   component: "StarWarp" },
   { id: "grid-pulse",       name: "Grid Pulse",        icon: "⬛", cost: 300, desc: "5×5 grid of cells breathing",     component: "GridPulse" },
@@ -151,4 +151,5 @@ export const SHOP_BACKGROUNDS: ShopBackground[] = [
   { id: "hyperspeed",       name: "Hyperspeed",        icon: "⚡", cost: 500, desc: "Speed lines racing toward you", component: "Hyperspeed" },
   { id: "silk",             name: "Silk",              icon: "🧵", cost: 400, desc: "Flowing fabric waves in purple", component: "Silk" },
   { id: "lightning",        name: "Lightning",         icon: "⚡", cost: 450, desc: "Electric bolts crackling in purple", component: "Lightning" },
+  { id: "purple-rain",      name: "Purple Rain",       icon: "🟣", cost: 200, desc: "Classic purple particles falling softly", component: "PurpleRain" },
 ];
