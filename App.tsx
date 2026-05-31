@@ -182,8 +182,7 @@ export default function App() {
   const [comboPop, setComboPop] = useState(false);
 
   const hydrator = useRef(new AssetHydrator());
-  const [uiReady, setUiReady] = useState(false);
-  const [loadPct, setLoadPct] = useState({ critical: 0, deferred: 0, background: 0 });
+  const [uiReady, setUiReady] = useState(true);
 
   const [gamesPlayed, setGamesPlayed] = useState(() =>
     parseInt(localStorage.getItem('dtp-games-played') || '0', 10)
@@ -217,11 +216,8 @@ export default function App() {
     // 2. Start Web Vitals monitoring
     webVitalsMonitor.startMonitoring();
 
-    // 3. Configure asset tiers
-    const h = hydrator.current;
-    h.setProgress((pct: number, tier: AssetTier) => setLoadPct(prev => ({ ...prev, [tier]: pct })));
-
-    h.hydrateAll();
+    // 3. Hydrate assets in background
+    hydrator.current.hydrateAll();
   }, []);
 
   const [playerName, setPlayerName] = useState(() => {
@@ -1253,17 +1249,6 @@ export default function App() {
     ? "clamp(58px, 14vw, 78px)"
     : "clamp(52px, min(16vw,16vh), 80px)";
 
-  if (!uiReady) {
-    return (
-      <div className="dtp-gate-screen">
-        <h2>{i18n.t('game.title')}</h2>
-        <div className="dtp-hydrate-bar">
-          <span>Critical: {Math.round(loadPct.critical * 100)}%</span>
-          {loadPct.deferred > 0 && <span>UI: Ready</span>}
-        </div>
-      </div>
-    );
-  }
 
 
   // Screen effect classes based on active powerups

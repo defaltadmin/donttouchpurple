@@ -3397,11 +3397,6 @@ input[type="range"] { accent-color: var(--theme-primary, #fda9ff); width: 120px;
   animation: fadeSlide 0.3s ease; pointer-events: none; z-index: 10001;
 }
 
-/* ─── Hydration Progress ─── */
-.dtp-hydrate-bar { display: flex; gap: 1rem; font-family: monospace; color: #aaa; margin-top: 1rem; }
-.dtp-hydrate-bar span { opacity: 0.7; }
-.dtp-hydrate-bar span:last-child { color: #4ade80; opacity: 1; }
-
 /* Phase 1 — Dev Visual QA Harness */
 .dev-qa-section {
   margin: 1rem 0;
