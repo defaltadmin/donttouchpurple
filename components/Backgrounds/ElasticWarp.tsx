@@ -87,19 +87,18 @@ void main() {
       stars += smoothstep(0.05, 0.0, starDist) * twinkle * (1.0 / i);
     }
   }
-  color += stars * vec3(0.9, 0.8, 1.0);
+  color += stars * vec3(2.0, 1.8, 2.5);
 
-  // Intensity
-  float intensity = n3 * 0.3 + 0.15 + centerGlow * 0.5;
+  // Combine nebula layers into final color
+  float intensity = n3 * 0.6 + 0.4 + centerGlow;
   color *= intensity;
 
-  // Vignette
-  float vignette = 1.0 - smoothstep(0.3, 1.2, length(uv - 0.5));
-  color *= vignette * 0.8 + 0.2;
+  // Soft vignette
+  float vignette = 1.0 - smoothstep(0.4, 1.4, length(uv - 0.5));
+  color *= vignette * 0.5 + 0.5;
 
-  // Edge fade
-  float edgeFade = smoothstep(0.0, 0.15, uv.y) * smoothstep(1.0, 0.85, uv.y);
-  color *= edgeFade;
+  // Ensure minimum visibility
+  color = max(color, vec3(0.02, 0.01, 0.04));
 
   gl_FragColor = vec4(color, 1.0);
 }`;
