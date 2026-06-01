@@ -55,8 +55,8 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
       </motion.div>
 
       <motion.div className="how-modes" initial="hidden" animate="visible" variants={container}>
-        <motion.div className="how-mode" variants={row}><b>⊞ {t('how.classic')}</b> — {t('how.classic_desc')}</motion.div>
-        <motion.div className="how-mode" variants={row}><b>∞ {t('how.evolve')}</b> — {t('how.evolve_desc')}</motion.div>
+        <motion.div className="how-mode" variants={row}><b>⊞ {t('how.classic')}</b> - {t('how.classic_desc')}</motion.div>
+        <motion.div className="how-mode" variants={row}><b>∞ {t('how.evolve')}</b> - {t('how.evolve_desc')}</motion.div>
       </motion.div>
 
       <motion.div className="how-modes" initial="hidden" animate="visible" variants={container}>
@@ -78,7 +78,7 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
         {BOSS_EVENTS.map((boss) => (
           <motion.div key={boss.name} className="how-row" variants={row}>
             <span className="how-icon" style={{ fontSize: "1.5rem" }}>{boss.icon}</span>
-            <div><b>{boss.name}</b> — {boss.desc}</div>
+            <div><b>{boss.name}</b> - {boss.desc}</div>
           </motion.div>
         ))}
       </motion.div>
@@ -89,7 +89,7 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
         {FEATURES.map((f) => (
           <motion.div key={f.title} className="how-row" variants={row}>
             <span className="how-icon" style={{ fontSize: "1.3rem" }}>{f.icon}</span>
-            <div><b>{f.title}</b> — {f.desc}</div>
+            <div><b>{f.title}</b> - {f.desc}</div>
           </motion.div>
         ))}
       </motion.div>

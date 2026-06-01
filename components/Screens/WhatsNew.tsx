@@ -11,16 +11,16 @@ interface WhatsNewProps {
 }
 
 const CHANGES = [
-  { emoji: "💣", text: "Bomb cells now show a circular SVG countdown ring — tap before it drains!" },
-  { emoji: "🔄", text: "Inversion boss event fully fixed — purple is safe to tap, safe colors are the threat" },
-  { emoji: "🌀", text: "Storm boss event RNG fixed — seeded replays stay accurate through storms" },
-  { emoji: "🎯", text: "Score display upgraded — smooth glow bloom per point, streak-heat color ramp" },
-  { emoji: "🤖", text: "Bot assist button moved into HUD row — never overlaps the grid" },
+  { emoji: "💣", text: "Bomb cells now show a circular SVG countdown ring - tap before it drains!" },
+  { emoji: "🔄", text: "Inversion boss event fully fixed - purple is safe to tap, safe colors are the threat" },
+  { emoji: "🌀", text: "Storm boss event RNG fixed - seeded replays stay accurate through storms" },
+  { emoji: "🎯", text: "Score display upgraded - smooth glow bloom per point, streak-heat color ramp" },
+  { emoji: "🤖", text: "Bot assist button moved into HUD row - never overlaps the grid" },
   { emoji: "🎁", text: "Daily check-in panel animates closed after claiming dust" },
-  { emoji: "🖼️", text: "Animated backgrounds now only show during gameplay — Shop and Menu stay clean" },
+  { emoji: "🖼️", text: "Animated backgrounds now only show during gameplay - Shop and Menu stay clean" },
   { emoji: "💣", text: "Bombs now spawn in 2-player Evolve mode for both players" },
   { emoji: "∞",  text: "Evolve mode: grid grows 2×2 → 5×5 with named shape stages" },
-  { emoji: "⚡", text: "Boss events: Storm, Inversion, Blackout — every 500 points in Evolve" },
+  { emoji: "⚡", text: "Boss events: Storm, Inversion, Blackout - every 500 points in Evolve" },
   { emoji: "🏆", text: "Global leaderboard, daily streaks, dust economy, and cosmetic shop" },
 ];
 

@@ -21,6 +21,9 @@ importers:
       '@sentry/react':
         specifier: ^10.51.0
         version: 10.51.0(react@18.3.1)
+      blendy:
+        specifier: ^0.0.1
+        version: 0.0.1
       firebase:
         specifier: ^12.13.0
         version: 12.13.0
@@ -2604,6 +2607,9 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
+
+  blendy@0.0.1:
+    resolution: {integrity: sha512-6zw2to19jBTF8HchX/gLgVav9gLcV+oTxGJLCCNVMFHuUtF1FdUOP+AiL1lcVIJi8gRiY1NHhiVzgu8D2+qbig==}
 
   bmp-ts@1.0.9:
     resolution: {integrity: sha512-cTEHk2jLrPyi+12M3dhpEbnnPOsaZuq7C45ylbbQIiWgDFZq4UVYPEY5mlqjvsj/6gJv9qX5sa+ebDzLXT28Vw==}
@@ -8096,6 +8102,8 @@ snapshots:
       require-from-string: 2.0.2
 
   blake3-wasm@2.1.5: {}
+
+  blendy@0.0.1: {}
 
   bmp-ts@1.0.9: {}
 

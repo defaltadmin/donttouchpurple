@@ -47,7 +47,7 @@ export function EnergyBar({
                 onRefill();
               }
             }}
-            title={i >= energy && dust >= GAME.DUST_PER_ENERGY ? `${t('energy.refill_pip')} — 💜${GAME.DUST_PER_ENERGY}` : undefined}
+            title={i >= energy && dust >= GAME.DUST_PER_ENERGY ? `${t('energy.refill_pip')} - 💜${GAME.DUST_PER_ENERGY}` : undefined}
           >
             ⚡
           </span>

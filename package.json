@@ -54,6 +54,7 @@
     "@lottiefiles/dotlottie-web": "^0.74.0",
     "@microsoft/clarity": "^1.0.2",
     "@sentry/react": "^10.51.0",
+    "blendy": "^0.0.1",
     "firebase": "^12.13.0",
     "framer-motion": "^12.38.0",
     "gameanalytics": "^4.4.7",

@@ -38,12 +38,12 @@ export const EnergyPopup = React.memo(function EnergyPopup({
           <button className="btn-ghost" style={{ width: "100%" }}
             disabled={energyCount >= GAME.MAX_ENERGY || dust < GAME.DUST_PER_ENERGY}
             onClick={onRefill1}>
-            {t('ui.refill_1')} — {GAME.DUST_PER_ENERGY} 💜
+            {t('ui.refill_1')} - {GAME.DUST_PER_ENERGY} 💜
           </button>
           <button className="btn-primary" style={{ width: "100%" }}
             disabled={energyCount >= GAME.MAX_ENERGY || dust < fullCost}
             onClick={onRefillFull}>
-            {t('ui.refill_full')} — {fullCost} 💜
+            {t('ui.refill_full')} - {fullCost} 💜
           </button>
         </div>
       </div>

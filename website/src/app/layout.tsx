@@ -9,7 +9,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Don't Touch Purple — Free Reflex Game",
+  title: "Don't Touch Purple - Free Reflex Game",
   description:
     'Tap every color. Avoid purple. Survive the boss. A free reflex game with boss events, 12 special cell types, and daily challenges.',
   keywords: [

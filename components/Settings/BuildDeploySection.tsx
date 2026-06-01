@@ -106,7 +106,7 @@ export function BuildDeploySection({ onClose }: BuildDeploySectionProps) {
             style={{ width: "100%" }}
             onClick={togglePreview}
           >
-            {livePreview ? "🟢 Preview ON — changes affect live game" : "⚫ Preview OFF — safe to tune"}
+            {livePreview ? "🟢 Preview ON - changes affect live game" : "⚫ Preview OFF - safe to tune"}
           </button>
         </div>
 

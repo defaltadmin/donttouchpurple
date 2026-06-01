@@ -538,7 +538,7 @@ export default function App() {
           toast$("🏆 Score submitted to global leaderboard!");
         } catch {
           logger.warn("Score sync failed");
-          toast$("💾 Score saved offline — will sync soon");
+          toast$("💾 Score saved offline - will sync soon");
         }
       }
     } catch (err: unknown) {
@@ -610,7 +610,7 @@ export default function App() {
   useEffect(() => {
     challengeLink.parseAndVerify().then(({ isChallenge, valid, seed }) => {
       if (isChallenge && seed) {
-        if (!valid) logger.warn('Challenge link signature invalid — score claim untrusted');
+        if (!valid) logger.warn('Challenge link signature invalid - score claim untrusted');
         logger.info('Challenge link loaded', { seed, valid });
       }
     });
@@ -1625,7 +1625,7 @@ export default function App() {
               <button
                 className={`bot-hud-btn${botOn ? " bot-hud-btn--on" : ""}${dust < 30 ? " bot-hud-btn--off" : ""}`}
                 onClick={() => { if (dust >= 30) handleBotToggle(1); }}
-                title={dust < 30 ? "Need 30+ dust" : botOn ? "Bot ON — tap to stop" : "Bot assist (30💜/use)"}
+                title={dust < 30 ? "Need 30+ dust" : botOn ? "Bot ON - tap to stop" : "Bot assist (30💜/use)"}
                 aria-label="Toggle bot assist"
                 aria-pressed={botOn}
               >
