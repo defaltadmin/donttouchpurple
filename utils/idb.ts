@@ -82,6 +82,24 @@ export const idb = {
     });
   },
 
+  async removeBySessionId(sessionId: string): Promise<void> {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      const store = tx.objectStore(this.STORE);
+      const cursorReq = store.openCursor();
+      cursorReq.onsuccess = (e) => {
+        const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          if (cursor.value.sessionId === sessionId) cursor.delete();
+          cursor.continue();
+        }
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
   async removeItems(ids: number[]): Promise<void> {
     if (ids.length === 0) return;
     const db = await this.open();

@@ -282,7 +282,7 @@ export class GameEngine {
     if (this._deathCleanupTimer) { clearTimeout(this._deathCleanupTimer); this._deathCleanupTimer = null; }
     this.gameSeed   = forceSeed ?? seedManager.initOrRestore();
     this.rng        = mulberry32(this.gameSeed);
-    this._bot.setRng(this.rng);
+    this._bot.setRng(mulberry32(this.gameSeed ^ 0xDEADBEEF)); // separate RNG stream to preserve determinism
     this.rareMode        = { active: false, color: "", cssColor: "", turnsLeft: 0, shape: "circle", emoji: "" };
     this.bossEvent = null;
     this.nextBossTriggerScore = 500;
@@ -673,6 +673,7 @@ destroy(): void {
     const reaction = this._lastTapTime ? now - this._lastTapTime : 0;
     this._lastTapTime = now;
     if (reaction > 0) this.dda.recordAttempt(true, reaction, false);
+    this._purpleTaps = (this._purpleTaps ?? 0) + (cell.type === 'purple' ? 1 : 0);
     this._checkTapAchievements(ref);
     ref.cells = activeToCellsP(ref.active, pat);
     this.dirty = true;
@@ -680,6 +681,7 @@ destroy(): void {
   }
 
   private _checkTapAchievements(ref: PlayerState): void {
+    achievementSystem.check('secret_purple_tap', () => (this._purpleTaps ?? 0) >= 10);
     achievementSystem.check('first_blood', () => true);
     achievementSystem.check('survivor', () => ref.health <= 1 && this.tickCount > 300);
     achievementSystem.check('score_100', () => ref.score >= 100);
@@ -959,7 +961,8 @@ private triggerGameOver(winner: Winner): void {
     }
 
     // Game count achievements — read current count; hook layer handles the localStorage increment
-    const gamesPlayed = Math.max(0, Math.min(99999, parseInt(localStorage.getItem('dtp-games-played') || '0') || 0)) + 1;
+    let gamesPlayed = 1;
+    try { gamesPlayed = Math.max(0, Math.min(99999, parseInt(localStorage.getItem('dtp-games-played') || '0') || 0)) + 1; } catch { /* privacy mode */ }
     achievementSystem.check('games_50', () => gamesPlayed >= 50);
     achievementSystem.check('games_200', () => gamesPlayed >= 200);
 

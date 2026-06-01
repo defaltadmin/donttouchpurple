@@ -98,6 +98,7 @@ export class TickProcessor {
     const mode = ctx.config.mode;
     ctx._flushTapBuffer(1);
     if (ctx.numPlayers === 2) ctx._flushTapBuffer(2);
+    if (ctx.phase !== "playing") return; // tap buffer flush can trigger game over
     ctx.evolveTick += 1;
     if (mode === "evolve") ctx.cellShape = pickCellShape(ctx.evolveTick);
 

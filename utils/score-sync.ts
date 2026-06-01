@@ -21,16 +21,19 @@ export const scoreSync = {
     } catch { /* storage denied */ }
     const pending = { score, initials, mode, tick, attempts: 0, nextRetry: Date.now(), sessionId: crypto.randomUUID?.() || `sess-${Date.now()}`, practiceMode, godMode };
 
-    if (navigator.onLine) {
-      const result = await this._submit(pending);
-      if (result === 'success' || result === 'permanent') return;
-    }
-
+    // Always persist to IDB first — prevents score loss if tab closes during network submit
     try {
       await idb.enqueue(pending);
-      logger.info('📦 Score queued offline', { score, initials });
     } catch (e) {
-      logger.warn('Failed to queue score offline', e);
+      logger.warn('Failed to persist score to IDB', e);
+    }
+
+    if (navigator.onLine) {
+      const result = await this._submit(pending);
+      if (result === 'success' || result === 'permanent') {
+        try { await idb.removeBySessionId?.(pending.sessionId); } catch { /* */ }
+        return;
+      }
     }
   },
 
