@@ -95,7 +95,42 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-05-31)
+## Recent Session (2026-06-01)
+
+### Skills Installed + Taste-Skill Audits + Anti-Slop Fixes
+
+#### Skills Installed (4 repos, 30+ skills)
+
+| Repo | Skills | Location |
+|------|--------|----------|
+| taste-skill (Leonxlnx) | 13 design/anti-slop | `~/.openclaude/skills/taste-skill/` + `taste-skill-v1/` + `gpt-tasteskill/` + `image-to-code-skill/` + `redesign-skill/` + `soft-skill/` + `output-skill/` + `minimalist-skill/` + `brutalist-skill/` + `stitch-skill/` + `imagegen-frontend-web/` + `imagegen-frontend-mobile/` + `brandkit/` |
+| PentesterFlow | 10 pentesting | `~/.openclaude/skills/pf-recon/` + `pf-webvuln/` + `pf-ssrf/` + `pf-ssti/` + `pf-jwt/` + `pf-graphql/` + `pf-race/` + `pf-takeover/` + `pf-supabase/` + `pf-deserialize/` |
+| open-code-review | 1 multi-agent review (29 personas) | `~/.openclaude/skills/open-code-review/` |
+| webwright (Microsoft) | 1 browser automation | `~/.openclaude/skills/webwright/` |
+
+#### SkillOpt Installed
+- **Repo**: `C:\Users\user\My Drive\Documents\MSC\Development\SkillOpt` (cloned, `pip install -e .`)
+- **Purpose**: Iteratively optimize agent skill prompts via rollout scoring
+- **Backend**: OpenAI-compatible via `opengateway.gitlawb.com` with `mimo-v2.5-pro`
+- **Config**: `.env` configured with OpenGateway key
+- **Potential**: Optimize DTP domain agent prompts (security-audit, game-engine, ui-components) with task datasets
+
+#### Taste-Skill Audits
+- `.review-packet/taste-audit-game.md` — DTP scored 7.5/10 against anti-slop framework
+- `.review-packet/taste-audit-corp.md` — MSCArabia had 5 HIGH + 6 Medium findings
+
+#### DTP Game Fixes Applied
+- Em-dashes replaced with hyphens in all user-facing text (GameOver, EnergyPopup, HowToPlay, EnergyBar, App, WhatsNew, BuildDeploySection, website/layout)
+- Hardcoded hex reviewed: Cell bomb urgency colors are intentional; Canvas backgrounds can't use CSS vars — no action needed
+
+#### MSCArabia Fixes Applied (`MSCArabia.com-work/index.html`)
+- Scroll cue removed (hero-scroll div)
+- sec-pill eyebrows 5 → 3 (removed Manpower Solutions + Free Quote)
+- Filler verbs replaced ("accelerate your digital transformation" → concrete copy)
+- Service cards: first card now spans 2 cols (`.svc-card--featured`)
+- `100vh` → `100dvh` for mobile viewport
+
+## Previous Session (2026-05-31)
 
 ### Landing/Game Merge + Background Separation + Leaderboard Investigation
 
@@ -392,16 +427,16 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 8. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
 9. **Product Hunt** — listing content ready in .github/LAUNCH.md
 10. **Multiplayer prototype** — Cloudflare Durable Objects + WebSockets
-11. **Resume game removal** — user reported it doesn't work well. Remove: session.ts module, GameEngine autoSaveSession/restoreSessionSnapshot/startSessionPersistence/stopSessionPersistence, App.tsx resume detection/handleResumeGame/resumeReady/resumeData state, StartScreen.tsx resume button + R shortcut
+11. ~~**Resume game removal**~~ ✓ — already removed (no session.ts, no persistence methods, no resume UI in StartScreen)
 
 ### From Deep Analysis Report
-- STAB-001: Track gameover timeout ref, clear on unmount
-- SEC-006: dust_wallet monotonic check in Firestore rule
+- ~~STAB-001: Track gameover timeout ref, clear on unmount~~ ✓ — useGameEngine.ts:333-339 clears all 3 timer refs on unmount
+- ~~SEC-006: dust_wallet monotonic check in Firestore rule~~ ✓ — firestore.rules:82-84 +10000/-5000 bounds per write
 - ~~SEC-003: Move challenge HMAC to Worker~~ ✓ (SEC-010)
 - ~~SEC-013: Add HMAC to session snapshot~~ ✓ (SEC-012)
 - ~~ARCH-001: App.tsx hook extraction~~ ✓ (partial — 2 hooks extracted)
-- QOL-001: Bomb countdown ring on cells
-- QOL-002: Boss event timer in HUD
+- ~~QOL-001: Bomb countdown ring on cells~~ ✓ — Cell/index.tsx:44-71 + 286-289 SVG ring with --bomb-remaining CSS var
+- ~~QOL-002: Boss event timer in HUD~~ ✓ — BossOverlay.tsx:7-18 BossCountdown component with 250ms interval
 
 ### From Multi-AI Review Session (2026-05-27) — ALL DONE
 - ~~SEC-013 sign-challenge rate limiting~~ ✓
