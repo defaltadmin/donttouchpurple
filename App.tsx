@@ -394,7 +394,7 @@ export default function App() {
   // Dev Toggle — type d→d→p on menu screen (dev builds only)
   const devKeyBuffer = useRef<string[]>([]);
   useEffect(() => {
-    if (devMode) return;
+    if (devMode || !import.meta.env.DEV) return;
     const onKey = (e: KeyboardEvent) => {
       if (screen !== "menu") return;
       devKeyBuffer.current = [...devKeyBuffer.current.slice(-2), e.key.toLowerCase()];

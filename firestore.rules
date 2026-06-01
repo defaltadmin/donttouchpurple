@@ -63,7 +63,6 @@ service cloud.firestore {
       allow create: if
         request.auth != null &&
         request.resource.data.keys().hasOnly(['name', 'dust', 'ts', 'uid']) &&
-        request.resource.data.name == docId &&
         request.resource.data.name is string &&
         request.resource.data.name.size() > 0 &&
         request.resource.data.name.size() <= 20 &&
@@ -75,7 +74,6 @@ service cloud.firestore {
         request.auth != null &&
         resource.data.uid == request.auth.uid &&
         request.resource.data.keys().hasOnly(['name', 'dust', 'ts', 'uid']) &&
-        request.resource.data.name == docId &&
         request.resource.data.dust is int &&
         request.resource.data.dust >= 0 &&
         request.resource.data.dust < 10000000 &&

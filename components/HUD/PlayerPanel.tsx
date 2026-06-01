@@ -98,7 +98,7 @@ export const PlayerPanel = memo(function PlayerPanel({
   };
   const gridTotal = cols * rows;
   const frozen    = ps.freezeEnd > now;
-  const maskSet   = mask ? new Set(mask) : null;
+  const maskSet   = React.useMemo(() => mask ? new Set(mask) : null, [mask]);
 
   // Pre-compute botTapFx map for O(1) per-cell lookup instead of O(n) findLast
   const botTapFxMap = React.useMemo(() => {

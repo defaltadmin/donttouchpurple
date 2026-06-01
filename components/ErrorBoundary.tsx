@@ -15,7 +15,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
         } as Record<string, unknown>,
       },
     });
-    // eslint-disable-next-line no-console
+     
     console.error('[DTP] Error caught by boundary:', error?.message?.replace(/[\r\n]/g, ' ') ?? String(error));
   }
   render() {

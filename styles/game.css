@@ -3250,9 +3250,16 @@ input[type="range"] { accent-color: var(--theme-primary, #fda9ff); width: 120px;
 /* ─── GPU Containment ─────────────────────────── */
 .game-grid-cell, .dtp-btn, .dtp-panel {
   contain: layout style paint;
-  will-change: transform, opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+}
+/* will-change only on buttons/panels (few elements), NOT grid cells (25-49 layers) */
+.dtp-btn, .dtp-panel {
+  will-change: transform, opacity;
+}
+/* Grid cells get will-change only during active animation, removed after */
+.game-grid-cell.active-cell {
+  will-change: transform, opacity;
 }
 
 /* ─── Dev Overlay (lightweight) ────────────────── */

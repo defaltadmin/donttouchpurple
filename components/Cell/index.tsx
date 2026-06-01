@@ -26,6 +26,7 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
   useEffect(() => {
     let rafId: number;
     const tick = () => {
+      if (document.hidden) { rafId = requestAnimationFrame(tick); return; }
       const remaining = Math.max(0, expiresAt - Date.now());
       setMs(remaining);
       if (remaining > 0) rafId = requestAnimationFrame(tick);

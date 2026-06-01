@@ -97,7 +97,7 @@ class ErrorLogger {
       }
     } catch { /* Sentry unavailable */ }
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.error('[ErrorLogger]', errorObj, context);
     }
     logger.error('[ErrorLogger]', {

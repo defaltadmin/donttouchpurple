@@ -47,7 +47,6 @@ export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }
         color: amount >= 3 ? '#ff6b6b' : amount >= 2 ? '#ffd93d' : '#ffffff',
         textShadow: '0 1px 3px rgba(0,0,0,0.5)',
         animation: 'score-float-up 0.8s ease-out forwards',
-        willChange: 'transform, opacity',
       }}
     >
       +{amount}
