@@ -6,10 +6,82 @@
       "sourceType": "autoskills-registry",
       "computedHash": "bffe3d08cfe92ebad63699f74ce29e35c19850ebfbf474c1463183cfe34d6a09"
     },
+    "ace-step": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ace-step/SKILL.md",
+      "computedHash": "05d1114168588c00710416b393fb054c22e019ad3b8a2afc1ca5dbc9bf1ee164"
+    },
+    "ai-avatar-video": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ai-avatar-video/SKILL.md",
+      "computedHash": "d16c4d30049bbd87b94c4e66a10cbd89f0d1dbb62544fb771c68deeb41ddce7e"
+    },
+    "ai-image-generation": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ai-image-generation/SKILL.md",
+      "computedHash": "06f41b40b32a080bc38536156b80a7d4a3175e1b1eeece55fc125e54bee467f3"
+    },
+    "ai-music": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ai-music/SKILL.md",
+      "computedHash": "8f9d13767c92d5880914a92ea0c7c723f43003e4ed86f1590737535b3493868d"
+    },
+    "ai-video-generation": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ai-video-generation/SKILL.md",
+      "computedHash": "a23d1ed6537a9a0543bb39fc9b3c3eaccff2c67062e906a6fd324129520faf94"
+    },
     "bash-defensive-patterns": {
       "source": "wshobson/agents",
       "sourceType": "autoskills-registry",
       "computedHash": "1f566c2d9c3b50a784b05d08f6b08ebfeb31f038e4d4173f2d488484edb058a6"
+    },
+    "cavecrew": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/cavecrew/SKILL.md",
+      "computedHash": "326e2f95ddfa1d2aca1c33cbcc2c7352561e4e9a1d26b7c9e84f938590063c9f"
+    },
+    "caveman": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman/SKILL.md",
+      "computedHash": "7935e83f9c6a8b7cbb5404d144b0d19e3ba93583f4388301c3dada37cd25adf8"
+    },
+    "caveman-commit": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-commit/SKILL.md",
+      "computedHash": "1dd642480aee47934d6c202fd471e41922c7dc312e92a6e38059442b39bb0795"
+    },
+    "caveman-compress": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-compress/SKILL.md",
+      "computedHash": "6a1722a4381909febe8c8b23e87e3396e3688c05c302f625143e194b447f5bd2"
+    },
+    "caveman-help": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-help/SKILL.md",
+      "computedHash": "7a667161d6a0644fa175b0cb4a043b76108a603af70cf25f62afd788191a3fa8"
+    },
+    "caveman-review": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-review/SKILL.md",
+      "computedHash": "b9091dbc51de0f3710ea818fd4d638539f8c1784f8fda931eb159c44861e702e"
+    },
+    "caveman-stats": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-stats/SKILL.md",
+      "computedHash": "331f720e2fa97b68cacdae44384878071e8cac6013479edea68f4c8eca308852"
     },
     "cloudflare": {
       "source": "cloudflare/skills",
@@ -21,10 +93,22 @@
       "sourceType": "autoskills-registry",
       "computedHash": "a0e0265fb534369d95944a58ab25159b7838f62abdcd86afa2266d69b3309561"
     },
+    "codex-pet": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "codex-pet/SKILL.md",
+      "computedHash": "90ef9c9b57ee98844291b3dea746fe40d3dc985c711ae8a149f5a84d6bf908a1"
+    },
     "composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "autoskills-registry",
       "computedHash": "c124390cc3441844903ada94cb5820b23d922f2d0ad34e01e029e410197c8a32"
+    },
+    "controlnet-pose": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "controlnet-pose/SKILL.md",
+      "computedHash": "5ea3816317d1661d1bbd6d5d6f9db80b29b473f9ebb2ee13bab1d67b188aad23"
     },
     "developing-genkit-dart": {
       "source": "firebase/agent-skills",
@@ -49,6 +133,24 @@
       "sourceType": "github",
       "skillPath": "skills/developing-genkit-python/SKILL.md",
       "computedHash": "6d80e42acbaec4f53f8f62da5d61e0ae540144552fc07fc06a3605efb5420fba"
+    },
+    "elevenlabs-music-generation": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "elevenlabs-music-generation/SKILL.md",
+      "computedHash": "d86973f0066ea652a66e7d81fa78b30ef11a0f1cddd7855fd713244ba16d9df4"
+    },
+    "extract-design-system": {
+      "source": "arvindrk/extract-design-system",
+      "sourceType": "github",
+      "skillPath": "skills/extract-design-system/SKILL.md",
+      "computedHash": "c66852c6bc6e0267dbcc9651fa698701387fc11c5058104bc33e67f495936f7e"
+    },
+    "face-swap": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "face-swap/SKILL.md",
+      "computedHash": "e4d61aad08ccadf23cf5429535490bcb7041774c6252bfc483fc884b5d7b0b7d"
     },
     "firebase-ai-logic-basics": {
       "source": "firebase/agent-skills",
@@ -104,10 +206,34 @@
       "skillPath": "skills/firebase-security-rules-auditor/SKILL.md",
       "computedHash": "42e793406ca8980c47fcdbd309f02838316849bcbf8475001b4ecaa6a67606b8"
     },
+    "flux-2-klein": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "flux-2-klein/SKILL.md",
+      "computedHash": "6b02c995ed50c34d7df0184b53d79d7c68b06d915dddb8aab119d511a0ef2b98"
+    },
+    "flux-kontext": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "flux-kontext/SKILL.md",
+      "computedHash": "b12a895c4fc746c4cb82249a5aa97f527b78ea9bd04eee8dc264b4a67e7122fe"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "autoskills-registry",
       "computedHash": "82fb11a63fb1e35ee2469516ed02d54695f783115b1540c0e783197af4240a3a"
+    },
+    "gpt-image-2": {
+      "source": "agentspace-so/agent-skills",
+      "sourceType": "github",
+      "skillPath": "gpt-image-2/SKILL.md",
+      "computedHash": "d539380caff7d3ec09ddc8ce7cac4f031e54689d466c3dd5cf2850419f56b969"
+    },
+    "gpt-image-edit": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "gpt-image-edit/SKILL.md",
+      "computedHash": "009adeb99a5f985e382d0eed3c3c90fc72b168201c6eceba25d8cb2605bc639e"
     },
     "gsap-core": {
       "source": "greensock/gsap-skills",
@@ -149,10 +275,70 @@
       "sourceType": "autoskills-registry",
       "computedHash": "4bc9e220b816f74547d770f73a2878e86df035f42e445c1e98875dd9793fe927"
     },
+    "happyhorse-1-0": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "happyhorse-1-0/SKILL.md",
+      "computedHash": "7de2841fb65a970d26ddf8ef53e1ecb79b59c79bb8db407dc2a7c438d4110db7"
+    },
+    "image-edit": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "image-edit/SKILL.md",
+      "computedHash": "9200d5fda0755433f7b0f4b706c08ad3017108f641bdd13d08d101b6f87c3843"
+    },
+    "image-inpainting": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "image-inpainting/SKILL.md",
+      "computedHash": "e5c5bde3a7eccc45636cd9963d68b0989071ba7b7cabc229f1caf208a151b363"
+    },
+    "image-outpainting": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "image-outpainting/SKILL.md",
+      "computedHash": "1bc3e26711c935463c9b0d64c69209cc200c89bd9cb31f4c9f78396122cd5805"
+    },
+    "image-to-video": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "image-to-video/SKILL.md",
+      "computedHash": "ff4a666a6db5af1c3aefe40c6379dd445177cfaa2bd51a1834c4ccf476ffd882"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": "skill/SKILL.md",
+      "computedHash": "e08cc9be673b6b5e66eb55cf77eb50a940fc603245b2f75d8370a2043aa926aa"
+    },
+    "kling-3-0": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "kling-3-0/SKILL.md",
+      "computedHash": "7945e3ee487f995d78765dfdd2e0a6b579fb86e8fbe7c1029a00d85bf208da19"
+    },
+    "lipsync": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "lipsync/SKILL.md",
+      "computedHash": "a2dcb39b46736c170437ed18d57ff5e487c890401629a5237d91ede0cfd5b5f8"
+    },
     "migrate-to-vinext": {
       "source": "cloudflare/vinext",
       "sourceType": "autoskills-registry",
       "computedHash": "c27a89761c37acad8c7a9f2655ac26d87f06d8b8178e762a826150c4598d500b"
+    },
+    "nano-banana-2": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "nano-banana-2/SKILL.md",
+      "computedHash": "bd54876d7d58a56eb64c3279dedc9894d0266ffa4cbf1c110fbfc91597abbb3c"
+    },
+    "nano-banana-edit": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "nano-banana-edit/SKILL.md",
+      "computedHash": "afa784079e20973f131ccc306e33b1e443c9e32ccdc8ce77b7429285b964f48b"
     },
     "nodejs-backend-patterns": {
       "source": "wshobson/agents",
@@ -164,6 +350,36 @@
       "sourceType": "autoskills-registry",
       "computedHash": "7361ab02fb6b09913e3bdd9cf61c629ed6c17de9485e6a781054e5d437ccfc29"
     },
+    "pinme": {
+      "source": "glitternetwork/pinme",
+      "sourceType": "github",
+      "skillPath": "skills/pinme/SKILL.md",
+      "computedHash": "1792595a894255313c842164778ed1459ef911e1a842d7b404712b8856312b83"
+    },
+    "pinme-auth": {
+      "source": "glitternetwork/pinme",
+      "sourceType": "github",
+      "skillPath": "skills/pinme-auth/SKILL.md",
+      "computedHash": "0c68e0efe17e3e8f8e2d8d718cd45067590404377a1dcf8ff472d8360336072d"
+    },
+    "pinme-email": {
+      "source": "glitternetwork/pinme",
+      "sourceType": "github",
+      "skillPath": "skills/pinme-email/SKILL.md",
+      "computedHash": "88f2b19b485ee0a8e198b2eab20da198bccef2d3a8eca924a786e5f249744a88"
+    },
+    "pinme-llm": {
+      "source": "glitternetwork/pinme",
+      "sourceType": "github",
+      "skillPath": "skills/pinme-llm/SKILL.md",
+      "computedHash": "46fe4a9592e4670de2a1bee49fc04df614db6324fdd45283d0d501ef747fb73e"
+    },
+    "pinme-share": {
+      "source": "glitternetwork/pinme",
+      "sourceType": "github",
+      "skillPath": "skills/pinme-share/SKILL.md",
+      "computedHash": "632df9e7392f3ea6d9c08a5f0623eb6e57fff18b7c8383afbffa100f150829fd"
+    },
     "playwright-best-practices": {
       "source": "currents-dev/playwright-best-practices-skill",
       "sourceType": "autoskills-registry",
@@ -173,6 +389,24 @@
       "source": "vercel-labs/agent-skills",
       "sourceType": "autoskills-registry",
       "computedHash": "502eb06700e2c3cb1bd7f710860528f72281320bd5171a2087b05a090b573dc1"
+    },
+    "relight": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "relight/SKILL.md",
+      "computedHash": "654f9deb3e3b2d124c6548bf6d6029ac26bc295fb126e77dbb255152cb2478ad"
+    },
+    "runcomfy-cli": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "runcomfy-cli/SKILL.md",
+      "computedHash": "07d5087dffd6fe2a651908e305eb858d5274066ae00cf48440aa4b1a891efc0c"
+    },
+    "seedance-v2": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "seedance-v2/SKILL.md",
+      "computedHash": "a73a04a285a6589b5544600c4dcc1b864cf53cbff39f555a91b61e5e2531fe88"
     },
     "seo": {
       "source": "addyosmani/web-quality-skills",
@@ -189,6 +423,30 @@
       "sourceType": "autoskills-registry",
       "computedHash": "78ef7cd5ffec2f2781724bd8f14042e27194536964453e51d9c583c151943698"
     },
+    "video-edit": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "video-edit/SKILL.md",
+      "computedHash": "f5e3dae395e536ff13fb2f66c20bbe84120739c161ff4a95b9c9e168b4d84105"
+    },
+    "video-extend": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "video-extend/SKILL.md",
+      "computedHash": "3cc1f2883788607f6647e27182694f6446c017ef269658597af5066f2c613242"
+    },
+    "video-inpainting": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "video-inpainting/SKILL.md",
+      "computedHash": "76535b7590547b844bea8aefa99558d5568bf87bc185e007b83e2858415b17da"
+    },
+    "video-outpainting": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "video-outpainting/SKILL.md",
+      "computedHash": "e48b2084b456716d6ed9f7d06c6b4a87c5e6f6840c7cfd44314f1d509e42b464"
+    },
     "vite": {
       "source": "antfu/skills",
       "sourceType": "autoskills-registry",
@@ -198,6 +456,12 @@
       "source": "antfu/skills",
       "sourceType": "autoskills-registry",
       "computedHash": "be7329a28a492b802061206c2d75603ab294f25f541bc5421d5de8d41abe68b1"
+    },
+    "wan-2-7": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "wan-2-7/SKILL.md",
+      "computedHash": "2059986eadd0f8baf502d833c416c084a8fea4cd3b9b3f6c7249db2c9dd0b9f9"
     },
     "web-perf": {
       "source": "cloudflare/skills",
