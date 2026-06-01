@@ -412,10 +412,27 @@ Follow-up prompt: `.review-packet/prompt-bigpickle-v2.md`
 ## What's Pending / Next Steps
 
 ### Immediate Priority
-1. **Push to remote** — git auth expired, run `git push` manually
+1. ~~**Push to remote**~~ ✓ — `git push` done (3 commits: 880fb91, 655ec76, 09da7c8, 6177005)
 2. **Cloudflare update** — point game.mscarabia.com to Firebase Hosting (fixes leaderboard)
-3. **Lighthouse re-run** — verify scores after layout changes
+3. ~~**Lighthouse re-run**~~ ✓ — A100/B96/S100 (both mobile + desktop)
 4. **Side-panel visual QA** — verify desktop 3-column layout and mobile Learn More overlay look correct
+
+### Review Packets (2026-06-01) — Upload and get feedback
+**Location**: `.review-packet/`
+| Packet | File | AI | Size |
+|--------|------|----|------|
+| Game | `prompt-sonnet-v4.md` or `dtp-v7.6.1-sonnet.zip` | Sonnet | 340KB / 178KB ZIP |
+| Game | `prompt-deepseek-v4.md` | DeepSeek | 291KB |
+| Corp site | `prompt-corp-sonnet-v1.md` or `corp-sonnet-v1.zip` | Sonnet | 46KB / 29KB ZIP |
+| Corp site | `prompt-corp-deepseek-v1.md` | DeepSeek | 48KB |
+
+**Feedback files**: Drop AI responses into `.review-packet/` with names like:
+- `feedback-sonnet-game-v7.6.1.md`
+- `feedback-deepseek-game-v7.6.1.md`
+- `feedback-sonnet-corp-v1.md`
+- `feedback-deepseek-corp-v1.md`
+
+Next session: read feedback, triage findings, fix in phased batches.
 
 ### High Priority
 4. ~~**Achievement notification UX**~~ ✓ — toast extended to 6s (was 3.5s)
