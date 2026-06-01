@@ -20,9 +20,9 @@
 | Typecheck | 0 errors |
 | Tests | 230/230 pass (21 files) |
 | Build | Clean (0 circular warnings) |
-| Lint | Pre-existing worker globals only |
+| Lint | Pre-existing worker globals only (21 issues, not from this session) |
 | Vulnerabilities | 0 (root) |
-| Lighthouse | Needs re-run (layout changed) |
+| Lighthouse | A100/B96/S100 (desktop + mobile) |
 
 ## Architecture Quick Reference
 
@@ -96,6 +96,58 @@ After any session with 5+ file changes:
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
 ## Recent Session (2026-06-01)
+
+### 4-AI Review Fix Session — 26 Fixes, 5 Phases
+
+**Commit** `e040522`. 21 files changed. 230/230 tests. Deployed.
+
+#### Sources
+- Sonnet v7.6.1 game review + Sonnet Corp v1.0
+- DeepSeek v7.6.1 game review + DeepSeek Corp v1.0
+
+#### Phase 1: Critical + Quick Wins (DTP Game)
+- **CRIT-001**: Removed `?documentId=auto` from Worker — leaderboard was broken (only 1 entry ever stored)
+- **DTP-002**: `_isDisposed` guard on `processTick()`
+- **DTP-005**: `.catch()` on challengeLink verification
+- **DTP-006**: `BuildDeploySection` gated behind `import.meta.env.DEV`
+- **MED-005**: Server-side date generation (prevents future-date spam)
+- **LOW-001**: Conditional badge field
+- **MED-003**: Removed duplicate initials sanitization in score-sync
+- **LOW-003**: 30s flush timeout prevents permanent `_flushing` lock
+
+#### Phase 2: ElasticWarp Performance
+- Visibility pause (rAF stops when tab hidden)
+- Connection-line O(n²) gating (only runs when cursor near)
+- Resize clamp for particles
+
+#### Phase 3: React Performance
+- Tick snapshot debounce via rAF (coalesces 60fps→1 render/frame)
+
+#### Phase 4: Security
+- 429 handler on tokeninfo verification
+- **App Check enforced on Firestore** — `hasValidAppCheck()` uncommented in `firestore.rules`
+
+#### Phase 5: Corp Site (mscarabia.com)
+- Deleted dead `HeroStage.tsx`, GSAP timeline cleanup, visibility guard on bot loop
+- Security headers (`_headers`), `robots.txt`, `sitemap.xml`, canonical link
+- `aria-hidden` on decorative game grid
+- NebulaCanvas: ResizeObserver + WebGL context cleanup
+- CrescentRing: removed fighting width/height props
+- Removed unused `@cloudflare/next-on-pages` dep
+
+#### Deployed
+- Firebase Hosting + Firestore rules: `firebase deploy --only hosting,firestore:rules`
+- Cloudflare Worker: `npx wrangler deploy` from `workers/`
+- Corp site: `npx wrangler pages deploy out --project-name=mscarabia`
+
+#### Master Roadmap
+`REVIEW-ROADMAP-v7.6.1.md` — every finding from all 4 reviews, triaged with status
+
+#### SkillNet Installed
+- `pip install skillnet-ai` (v0.0.18)
+- Search works on Windows; `create`/`evaluate` need `API_KEY` env var (uses gpt-4o by default)
+- `download` has Windows encoding bug (charmap codec)
+- Firebase security rules skill downloaded
 
 ### Skills Installed + Taste-Skill Audits + Anti-Slop Fixes
 
@@ -438,7 +490,7 @@ Next session: read feedback, triage findings, fix in phased batches.
 4. ~~**Achievement notification UX**~~ ✓ — toast extended to 6s (was 3.5s)
 5. **Gameplay trailer** (15-30s) — needs screen recording
 6. **Screenshots** (5-6 key moments) — needs screen capture
-7. **App Check enforcement** — code complete, needs Firebase Console toggle
+7. ~~**App Check enforcement**~~ ✓ — enforced in Firebase Console + `hasValidAppCheck()` uncommented in `firestore.rules` (commit `e040522`)
 
 ### Medium Priority
 8. **Game portals** — submit to itch.io, CrazyGames, Poki, Newgrounds
