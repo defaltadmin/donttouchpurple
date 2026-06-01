@@ -173,7 +173,13 @@ export function useGameEngine(
         case "tick": {
           // PERF-004: Always update ref for non-render consumers (bot, handlers)
           snapshotRef.current = event.snapshot;
-          if (mountedRef.current) setSnapshot(event.snapshot);
+          // Coalesce renders — at most one setSnapshot per animation frame
+          if (!rafIdRef.current) {
+            rafIdRef.current = requestAnimationFrame(() => {
+              rafIdRef.current = null;
+              if (mountedRef.current) setSnapshot(snapshotRef.current);
+            });
+          }
           {
             const snap = event.snapshot;
             if (snap && snap.p1.streak > (peakStreakRef.current ?? 0)) {
@@ -317,7 +323,7 @@ export function useGameEngine(
       mountedRef.current = false;
       unsub();
       engine.destroy();
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally read the latest ref value in cleanup
+       
       const rafId = rafIdRef.current;
       if (rafId) cancelAnimationFrame(rafId);
       if (scoreFloatRafRef.current) cancelAnimationFrame(scoreFloatRafRef.current);

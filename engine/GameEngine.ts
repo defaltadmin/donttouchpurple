@@ -501,6 +501,7 @@ destroy(): void {
   }
 
   private processTick(): void {
+    if (this._isDisposed) return;
     try {
       this._cachedNow = Date.now(); // Cache once per tick
       this._tickProcessor.processTick(this._tickCtx);

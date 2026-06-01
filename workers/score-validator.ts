@@ -231,6 +231,9 @@ export default {
     }
     try {
       const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      if (verifyRes.status === 429) {
+        return new Response(JSON.stringify({ error: 'Service busy, retry later' }), { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
       if (!verifyRes.ok) {
         return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -307,15 +310,15 @@ export default {
           score: { integerValue: data.score.toString() },
           initials: { stringValue: data.initials },
           mode: { stringValue: data.mode },
-          badge: { stringValue: data.badge ?? '' },
-          date: { stringValue: data.date ?? new Date().toISOString().split('T')[0] },
+          ...(data.badge ? { badge: { stringValue: data.badge } } : {}),
+          date: { stringValue: new Date().toISOString().split('T')[0] },
           ts: { timestampValue: new Date().toISOString() },
           sessionId: { stringValue: data.sessionId },
           tick: { integerValue: safeTick.toString() },
         },
       };
 
-      const fbRes = await fetch(`${firebaseUrl}?documentId=auto`, {
+      const fbRes = await fetch(firebaseUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

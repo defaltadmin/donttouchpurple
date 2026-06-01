@@ -46,33 +46,26 @@ void main() {
   vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
   vec2 p = uv * aspect;
 
-  // Mouse influence (subtle warp)
   vec2 mouse = uMouse * aspect;
   float mouseDist = length(p - mouse);
   float mouseInfluence = smoothstep(0.5, 0.0, mouseDist) * 0.15;
 
-  // Time
   float t = uTime * 0.08;
 
-  // Nebula layers
   float n1 = fbm(p * 2.0 + vec2(t * 0.3, t * 0.2) + mouseInfluence);
   float n2 = fbm(p * 3.0 - vec2(t * 0.2, t * 0.4) - mouseInfluence * 0.5);
   float n3 = fbm(p * 1.5 + vec2(t * 0.15, -t * 0.1));
 
-  // Color palette (purple/pink/cyan game theme)
-  vec3 col1 = vec3(0.75, 0.15, 1.0);   // purple
-  vec3 col2 = vec3(1.0, 0.4, 0.67);    // pink
-  vec3 col3 = vec3(0.27, 0.55, 1.0);   // blue
+  vec3 col1 = vec3(0.75, 0.15, 1.0);
+  vec3 col2 = vec3(1.0, 0.4, 0.67);
+  vec3 col3 = vec3(0.27, 0.55, 1.0);
 
-  // Blend nebula colors
   vec3 color = mix(col1, col2, n1);
   color = mix(color, col3, n2 * 0.5);
 
-  // Add glow near center
   float centerGlow = smoothstep(0.8, 0.0, length(uv - vec2(0.5, 0.4))) * 0.4;
   color += vec3(0.75, 0.06, 0.78) * centerGlow;
 
-  // Particles (starfield)
   float stars = 0.0;
   for (float i = 1.0; i < 4.0; i++) {
     vec2 starUV = uv * (200.0 * i);
@@ -87,15 +80,12 @@ void main() {
   }
   color += stars * vec3(0.9, 0.8, 1.0);
 
-  // Intensity
   float intensity = n3 * 0.3 + 0.15 + centerGlow * 0.5;
   color *= intensity;
 
-  // Vignette
   float vignette = 1.0 - smoothstep(0.3, 1.2, length(uv - 0.5));
   color *= vignette * 0.8 + 0.2;
 
-  // Fade to black at edges
   float edgeFade = smoothstep(0.0, 0.15, uv.y) * smoothstep(1.0, 0.85, uv.y);
   color *= edgeFade;
 
@@ -148,6 +138,7 @@ export function NebulaCanvas() {
     const start = performance.now();
 
     function loop() {
+      if (document.hidden) { rafId = requestAnimationFrame(loop); return; }
       program.uniforms.uTime.value = (performance.now() - start) / 1000;
       renderer.render({ scene: mesh });
       rafId = requestAnimationFrame(loop);
@@ -155,11 +146,15 @@ export function NebulaCanvas() {
 
     window.addEventListener('resize', resize, { passive: true });
     window.addEventListener('mousemove', onMouseMove, { passive: true });
+    // ResizeObserver for mobile URL bar hide/show
+    const ro = new ResizeObserver(() => resize());
+    ro.observe(canvas);
     resize();
     rafId = requestAnimationFrame(loop);
 
     return () => {
       cancelAnimationFrame(rafId);
+      ro.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', onMouseMove);
       gl.getExtension('WEBGL_lose_context')?.loseContext();

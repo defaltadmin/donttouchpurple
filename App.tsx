@@ -613,7 +613,7 @@ export default function App() {
         if (!valid) logger.warn('Challenge link signature invalid - score claim untrusted');
         logger.info('Challenge link loaded', { seed, valid });
       }
-    });
+    }).catch(e => logger.warn('Challenge link verification failed', e));
   }, []);
 
   const handleDamage = useCallback(() => {
@@ -1390,7 +1390,7 @@ export default function App() {
         </Suspense>
       )}
 
-      {showBuildDeploy && (
+      {import.meta.env.DEV && showBuildDeploy && (
         <BuildDeploySection onClose={() => setShowBuildDeploy(false)} />
       )}
 

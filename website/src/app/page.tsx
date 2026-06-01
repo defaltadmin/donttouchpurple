@@ -126,6 +126,7 @@ export default function Home() {
     }
     tl.from(titleRef.current, { y: -40, opacity: 0, duration: 0.8, ease: 'power3.out' }, 0);
     tl.from(btnRef.current, { scale: 0, opacity: 0, duration: 0.5, ease: 'back.out(3)' }, 0.6);
+    return () => { tl.kill(); };
   }, []);
 
   // Scroll-triggered animations
@@ -165,9 +166,14 @@ export default function Home() {
     };
   }, []);
 
-  // Bot gameplay loop — taps cells automatically, loops forever
+  // Bot gameplay loop — taps cells automatically, pauses when tab hidden
   useEffect(() => {
-    const interval = setInterval(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const start = () => { intervalId = setInterval(botTick, 600); };
+    const stop = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+    const onVisibility = () => document.hidden ? stop() : start();
+
+    function botTick() {
       const current = gridRef.current;
       // Pick a random cell to tap
       const idx = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
@@ -247,8 +253,11 @@ export default function Home() {
           }
         });
       }
-    }, 600);
-    return () => clearInterval(interval);
+    }
+
+    document.addEventListener('visibilitychange', onVisibility);
+    start();
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility); };
   }, []);
 
   return (
@@ -276,6 +285,7 @@ export default function Home() {
             <div
               ref={gridElRef}
               className="game-grid"
+              aria-hidden="true"
               style={{
                 gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
                 zIndex: 10,
@@ -378,7 +388,7 @@ export default function Home() {
           </div>
           <div className="tech-stats">
             <div className="tech-stat">
-              <span className="stat-number">232</span>
+              <span className="stat-number">230</span>
               <span className="stat-label">Tests</span>
             </div>
             <div className="tech-stat">

@@ -36,10 +36,10 @@ service cloud.firestore {
     // Leaderboard — requires authentication, write-once
     match /lb_global/{docId} {
       allow read: if true;
-      // SEC-009: Uncomment hasValidAppCheck() after enabling enforcement in Firebase Console
-      // To enable: Firebase Console → App Check → APIs → Firestore → Enforce
+      // SEC-009: App Check enforcement enabled 2026-06-01
       allow create: if
         request.auth != null &&
+        hasValidAppCheck() &&
         hasRequiredFields() &&
         validScore() &&
         validInitials() &&

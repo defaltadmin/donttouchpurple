@@ -34,6 +34,7 @@ export const scoreSync = {
     }
   },
 
+  /** @param item - must be pre-sanitized by queue() */
   async _submit(item: { score: number; initials: string; mode: string; tick?: number; attempts?: number; sessionId?: string; practiceMode?: boolean; godMode?: boolean }): Promise<'success' | 'permanent' | 'temporary'> {
     try {
       const token = await getAuthToken();
@@ -42,8 +43,8 @@ export const scoreSync = {
         headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           score: Math.max(0, Math.min(9999, Math.floor(item.score || 0))),
-          initials: String(item.initials || 'ANON').replace(/[^a-zA-Z0-9_ ]/g, '').trim().slice(0, 8) || 'ANON',
-          mode: ['classic', 'evolve'].includes(item.mode) ? item.mode : 'classic',
+          initials: item.initials,
+          mode: item.mode,
           tick: typeof item.tick === 'number' ? item.tick : 0,
           sessionId: item.sessionId || crypto.randomUUID?.() || `sess-${Date.now()}`,
           practiceMode: item.practiceMode || false,
@@ -64,6 +65,7 @@ export const scoreSync = {
   async flush() {
     if (this._flushing || !navigator.onLine) return;
     this._flushing = true;
+    const flushTimeout = setTimeout(() => { this._flushing = false; }, 30_000);
     try {
       const pending = await idb.peekAll();
       if (pending.length === 0) return;
@@ -100,6 +102,7 @@ export const scoreSync = {
       });
       await idb.removeAndUpdate(toRemove, updates);
     } finally {
+      clearTimeout(flushTimeout);
       this._flushing = false;
     }
   },

@@ -46,15 +46,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Non-blocking font load — media=swap prevents render-blocking */}
         <link
           href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap"
           rel="stylesheet"
         />
+        <link rel="canonical" href="https://game.mscarabia.com" />
       </head>
       <body className="antialiased">{children}</body>
     </html>
