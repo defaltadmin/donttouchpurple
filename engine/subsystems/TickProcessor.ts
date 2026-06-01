@@ -52,6 +52,11 @@ export interface TickContext {
 
 const _slotsCache = new WeakMap<{ cols: number; rows: number; mask: number[] | null }, Set<number>>();
 
+// Pre-computed constant sets — avoids allocating arrays every tick per cell
+const SPECIAL_TYPES = new Set(["medpack","shield","freeze","multiplier","ice","hold","bomb"]);
+const POWERUP_TYPES = new Set(["medpack","shield","freeze","multiplier"]);
+const CLASSIC_PAT: { readonly cols: 3; readonly rows: 3; readonly mask: null } = { cols: 3, rows: 3, mask: null };
+
 export class TickProcessor {
   processTick(ctx: TickContext): void {
     try {
@@ -74,7 +79,10 @@ export class TickProcessor {
     }
 
     // Fire expired callbacks (may modify ctx._deltaTimers via add/removeDeltaTimer)
-    for (const cb of expiredCallbacks) cb();
+    for (const cb of expiredCallbacks) {
+      cb();
+      if (ctx.phase !== "playing") return; // Bail if callback triggered game over
+    }
 
     // After callbacks: newly added timers are those NOT in the snapshot (by reference)
     const snapshotSet = new Set(snapshot);
@@ -134,7 +142,7 @@ export class TickProcessor {
       }
       const curStage = ref.gridStage;
       const patIdx = ref.patternIdx;
-      const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+      const pat = mode === "evolve" ? (EVOLVE_PATTERNS[patIdx] ?? EVOLVE_PATTERNS[0]) : CLASSIC_PAT;
       if (!pat || pat.cols === 0) { logError("[DTP-002]"); continue; }
       let validSlots = _slotsCache.get(pat);
       if (!validSlots) { validSlots = new Set(pat.mask ?? Array.from({ length: pat.cols * pat.rows }, (_, i) => i)); _slotsCache.set(pat, validSlots); }
@@ -150,7 +158,7 @@ export class TickProcessor {
         // types from CellLifecycle.spawnActive(). GameEngine._processTap has a separate,
         // intentionally narrower list for tap handling (4 collectible types); ice/hold/bomb
         // have their own dedicated tap blocks. Both must stay in sync with CellLifecycle.
-        const isPwr = ["medpack","shield","freeze","multiplier","ice","hold","bomb"].includes(c.type);
+        const isPwr = SPECIAL_TYPES.has(c.type);
         const isMiss = ctx._isInverted ? c.type === "purple" : c.type !== dangerColor && !isPwr;
         if (isMiss) {
           const dmg = mode === "evolve" ? 0.5 : 1;
@@ -177,19 +185,23 @@ export class TickProcessor {
 if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeToCellsP(ref.active, pat); continue; }
       const nextPatIdx = mode === "evolve" ? pickPattern(ctx.rng, curStage, patIdx, ref.score) : 0;
       ref.patternIdx = nextPatIdx;
-      const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : { cols: 3, rows: 3, mask: null as number[] | null };
+      const nextPat = mode === "evolve" ? (EVOLVE_PATTERNS[nextPatIdx] ?? EVOLVE_PATTERNS[0]) : CLASSIC_PAT;
       const rareColor = ctx.rareMode.active ? ctx.rareMode.color : undefined;
       const rareShape = ctx.rareMode.active ? ctx.rareMode.shape : undefined;
       const spawnStage = mode === "evolve" ? curStage : Math.min(Math.floor(ctx.tickCount / 12), 7);
+      // Preserve un-defused bomb from current tick (spawnActive creates a fresh array)
+      const activeBombCell = ref.active.find(c => c.type === "bomb" && !c.clicked) as BombCell | undefined;
       const newActive = spawnActive(ctx.rng, spawnStage, ref.health, nextPat, mode === "evolve", rareColor, rareShape, ctx.tickCount, ctx.devGodMode);
       if (ctx.devForcedPwr && newActive.length > 0) {
         newActive[0] = { ...newActive[0], type: (ctx.devForcedPwr === "heart" ? "medpack" : ctx.devForcedPwr) } as ActiveCell;
         if (pi === 0) ctx.devForcedPwr = null;
       }
       ref.active = newActive;
-      ref.cells = activeToCellsP(newActive, nextPat);
+      // Re-append active bomb so it persists across ticks until defused or exploded
+      if (activeBombCell) { ref.active = [...newActive, activeBombCell]; }
+      ref.cells = activeToCellsP(ref.active, nextPat);
       for (const c of newActive) {
-        if (["medpack", "shield", "freeze", "multiplier"].includes(c.type)) {
+        if (POWERUP_TYPES.has(c.type)) {
           ref.anim[c.idx] = "pwr-drop";
           ctx.scheduleTimeout(() => { if (ref.anim[c.idx] === "pwr-drop") { ref.anim = { ...ref.anim }; delete ref.anim[c.idx]; } }, 600);
         }
@@ -200,20 +212,11 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
     if (mode === "evolve") {
       const stormActive = ctx.bossEvent?.type === "storm" && ctx.now < (ctx.bossEvent?.endsAt ?? 0);
       const shufflePat = EVOLVE_PATTERNS[ctx.p1.patternIdx] ?? EVOLVE_PATTERNS[0];
-      if (stormActive) {
-        ctx.p1.nextShuffleTick = 0;
-        ctx.p2.nextShuffleTick = 0;
-        if (ctx.p1.alive) this._tryShuffleCells(ctx, ctx.p1, shufflePat, 1);
-        if (ctx.numPlayers === 2 && ctx.p2.alive) {
-          const p2Pat = EVOLVE_PATTERNS[ctx.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-          this._tryShuffleCells(ctx, ctx.p2, p2Pat, 2);
-        }
-      } else {
-        if (ctx.p1.alive) this._tryShuffleCells(ctx, ctx.p1, shufflePat, 1);
-        if (ctx.numPlayers === 2 && ctx.p2.alive) {
-          const p2Pat = EVOLVE_PATTERNS[ctx.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
-          this._tryShuffleCells(ctx, ctx.p2, p2Pat, 2);
-        }
+      if (stormActive) { ctx.p1.nextShuffleTick = 0; ctx.p2.nextShuffleTick = 0; }
+      if (ctx.p1.alive) this._tryShuffleCells(ctx, ctx.p1, shufflePat, 1);
+      if (ctx.numPlayers === 2 && ctx.p2.alive) {
+        const p2Pat = EVOLVE_PATTERNS[ctx.p2.patternIdx] ?? EVOLVE_PATTERNS[0];
+        this._tryShuffleCells(ctx, ctx.p2, p2Pat, 2);
       }
 
       const effectiveScore = ctx.numPlayers === 2 ? ctx.p1.score + ctx.p2.score : ctx.p1.score;

@@ -41,7 +41,7 @@ export class BotController {
     this._dustSpentTotal = 0;
 
     this._intervalRef = setInterval(() => {
-      if (!this._active[1] || !this.callbacks.isPlaying()) return;
+      if ((!this._active[1] && !this._active[2]) || !this.callbacks.isPlaying()) return;
       if (typeof document !== 'undefined' && document.hidden) return;
 
       const dust = botCfg.getDust();
@@ -109,7 +109,7 @@ export class BotController {
     this._pendingTaps = [];
   }
 
-  isActive(): boolean { return this._active[1]; }
+  isActive(): boolean { return this._active[1] || this._active[2]; }
 
   setAssist(player: 1 | 2, enabled: boolean): void {
     this._active[player] = enabled;
