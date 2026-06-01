@@ -1,34 +1,32 @@
 import { GameAnalytics } from "gameanalytics";
+import { logger } from "../utils/logger";
 
 const GA_GAME_KEY = import.meta.env.VITE_GA_GAME_KEY;
 const GA_SECRET_KEY = import.meta.env.VITE_GA_SECRET_KEY;
 
 const IS_PROD =
   typeof window !== "undefined" &&
-  (window.location.hostname === "game.mscarabia.com" || 
+  (window.location.hostname === "game.mscarabia.com" ||
    window.location.hostname === "dont-touch-purple.web.app" ||
    window.location.hostname === "dont-touch-purple.firebaseapp.com");
 
 export function initGA(version: string) {
   if (!IS_PROD || !GA_GAME_KEY || !GA_SECRET_KEY) {
-    if (!IS_PROD) console.log("[GA] Development mode: Skip init");
+    if (!IS_PROD) logger.info("[GA] Development mode: Skip init");
     return;
   }
 
   try {
     GameAnalytics.configureBuild(version);
-    
-    // Configure available custom dimensions if needed
-    // GameAnalytics.configureAvailableCustomDimensions01(["classic", "evolve"]);
-    
+
     // Configure available virtual currencies and item types for business events
     GameAnalytics.configureAvailableVirtualCurrencies(["Dust"]);
     GameAnalytics.configureAvailableResourceItemTypes(["Theme", "Background", "Skin", "Powerup"]);
 
     GameAnalytics.initialize(GA_GAME_KEY, GA_SECRET_KEY);
-    console.log("[GA] Initialized version", version);
+    logger.info("[GA] Initialized version", version);
   } catch (err) {
-    console.error("[GA] Initialization failed", err);
+    logger.error("[GA] Initialization failed", err);
   }
 }
 

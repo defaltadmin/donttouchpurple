@@ -87,19 +87,16 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
       setShouldShowRewardsOnLogin(true);
     }
 
-    const todayISO = new Date().toISOString().slice(0, 10);
-    setDailyChallenges(buildDailyChallenges(todayISO));
+    setDailyChallenges(buildDailyChallenges(todayStr));
 
     getFirebase().then(fb => {
-      fb.fbGetStreak({ clientDate: todayISO }).then(fbStreak => {
+      fb.fbGetStreak({ clientDate: todayStr }).then(fbStreak => {
         const safeStreak = typeof fbStreak === 'number' && isFinite(fbStreak) ? fbStreak : streak;
         setLoginStreakCount(safeStreak);
-        try {
-          localStorage.setItem("dtp_login_streak", JSON.stringify({
-            count: safeStreak,
-            lastDate: new Date().toISOString().slice(0, 10)
-          }));
-        } catch {}
+        safeSet("dtp_login_streak", JSON.stringify({
+          count: safeStreak,
+          lastDate: new Date().toISOString().slice(0, 10)
+        }));
       }).catch(e => logger.warn('Firebase streak fetch failed', e));
     }).catch(e => logger.warn('Firebase init failed', e));
 

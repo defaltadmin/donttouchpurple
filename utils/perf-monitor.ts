@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { safeSet } from './storage';
 
 type Metric = 'LCP' | 'FID' | 'CLS' | 'INP' | 'TTFB';
 const STORAGE_KEY = 'dtp:perf';
@@ -50,6 +51,6 @@ export const perfMonitor = {
   },
 
   _flush() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.metrics)); } catch {}
+    safeSet(STORAGE_KEY, JSON.stringify(this.metrics));
   },
 };
