@@ -116,9 +116,13 @@ export function GameOver({
 
   useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
 
-  const bugHref = React.useMemo(() => `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
-    `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${navigator.userAgent}\nURL: ${window.location.pathname}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
-  )}`, [p1Score, mode, gameSeed, tick, p1.health, spinLevel, p1.streak]);
+  const bugHref = React.useMemo(() => {
+    const safeUA = navigator.userAgent.replace(/[\r\n\t<>"'`]/g, ' ').slice(0, 200);
+    const safePath = window.location.pathname.replace(/[\r\n<>"'`]/g, '').slice(0, 100);
+    return `mailto:info@mscarabia.com?subject=${encodeURIComponent(`DTP Bug Report (Seed: ${gameSeed})`)}&body=${encodeURIComponent(
+      `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${safeUA}\nURL: ${safePath}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
+    )}`;
+  }, [p1Score, mode, gameSeed, tick, p1.health, spinLevel, p1.streak]);
 
   return (
     <>

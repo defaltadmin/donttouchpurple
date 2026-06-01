@@ -12,7 +12,8 @@ export class ChunkErrorBoundary extends React.Component<Props, State> {
   static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error: Error) {
     safeSentry.captureException(error);
-    console.error(`[DTP] Chunk load failed for ${this.props.name}:`, error);
+    // eslint-disable-next-line no-console
+    console.error(`[DTP] Chunk load failed for ${this.props.name}:`, error?.message?.replace(/[\r\n]/g, ' ') ?? String(error));
   }
   render() {
     if (this.state.hasError) return (

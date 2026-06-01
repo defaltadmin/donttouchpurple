@@ -14,7 +14,7 @@ class GridErrorBoundaryInner extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('[DTP] Grid render error:', error, errorInfo);
+    logger.error('[DTP] Grid render error:', error?.message?.replace(/[\r\n]/g, ' ') ?? String(error));
     this.setState({ componentStack: errorInfo.componentStack || '' });
   }
 

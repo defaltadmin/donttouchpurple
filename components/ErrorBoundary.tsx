@@ -15,7 +15,8 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
         } as Record<string, unknown>,
       },
     });
-    console.error('[DTP] Error caught by boundary:', error, errorInfo);
+    // eslint-disable-next-line no-console
+    console.error('[DTP] Error caught by boundary:', error?.message?.replace(/[\r\n]/g, ' ') ?? String(error));
   }
   render() {
     if (this.state.hasError) return <div style={{padding:40, color:"white", textAlign:"center", background:"#111", minHeight:"100vh"}}><h2>Something went wrong.</h2><button className="btn-primary" onClick={() => window.location.reload()}>Reload Page</button></div>;

@@ -339,7 +339,10 @@ export default function App() {
             lastDate: new Date().toDateString()
           }));
         } catch {}
-      }).catch(e => logger.warn('Firebase streak fetch failed', e));
+      }).catch(e => {
+        const msg = e instanceof Error ? e.message.replace(/[\r\n]/g, ' ') : String(e).replace(/[\r\n]/g, ' ');
+        logger.warn('Firebase streak fetch failed', msg);
+      });
 
       const gamesEver = parseInt(localStorage.getItem('dtp-games-played') ?? '0', 10);
       if (gamesEver > 0) {
@@ -495,7 +498,10 @@ export default function App() {
         winner: engineWinner ?? "solo",
         seed: gameSeed ?? 0,
       });
-    }).catch(e => logger.warn('Firebase operation failed', e));
+    }).catch(e => {
+          const msg = e instanceof Error ? e.message.replace(/[\r\n]/g, ' ') : String(e).replace(/[\r\n]/g, ' ');
+          logger.warn('Firebase operation failed', msg);
+        });
     logProgressionLazy("Complete", gameMode, p1Score, snapshotRef.current?.tick ?? 0);
     const gameHighScore = gameMode === "classic" ? p1Score : Math.max(p1Score, p2Score);
 
@@ -573,7 +579,10 @@ export default function App() {
                 level: "info",
                 data: { reward: completed.reward, objective: obj.type },
               });
-              getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type })).catch(e => logger.warn('Firebase operation failed', e));
+              getFirebase().then(fb => fb.fbLogEvent("daily_complete", { reward: completed.reward, objective: obj.type })).catch(e => {
+          const msg = e instanceof Error ? e.message.replace(/[\r\n]/g, ' ') : String(e).replace(/[\r\n]/g, ' ');
+          logger.warn('Firebase operation failed', msg);
+        });
             }, 800);
           }
         }
@@ -1134,7 +1143,10 @@ export default function App() {
       input: inputMode,
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
-    })).catch(e => logger.warn('Firebase operation failed', e));
+    })).catch(e => {
+          const msg = e instanceof Error ? e.message.replace(/[\r\n]/g, ' ') : String(e).replace(/[\r\n]/g, ' ');
+          logger.warn('Firebase operation failed', msg);
+        });
     logProgressionLazy("Start", gameMode, 0, 0);
     startEngine(forceSeed);
     if (forceSeed !== undefined) {
