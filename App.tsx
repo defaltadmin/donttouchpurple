@@ -11,8 +11,6 @@ import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
 import { audioEngine } from "./utils/audio";
 import { i18n, type Locale } from "./utils/i18n";
 import { AssetHydrator } from "./utils/asset-hydrator";
-
-type AssetTier = 'critical' | 'deferred' | 'background';
 import { Preloader } from "./utils/preloader";
 import { gamepadManager } from "./utils/gamepad";
 import { configManager } from "./utils/game-config";

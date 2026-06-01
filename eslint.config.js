@@ -22,6 +22,14 @@ export default tseslint.config(
     },
   },
 
+  // Cloudflare Workers / Pages Functions — Web Worker globals
+  {
+    files: ['workers/**', 'MSCArabia.com/functions/**'],
+    languageOptions: {
+      globals: { ...globals.worker, ...globals.es2021 },
+    },
+  },
+
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
