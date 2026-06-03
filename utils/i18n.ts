@@ -1,5 +1,6 @@
 import { logger } from './logger';
 import type { I18nKey } from './i18n-keys';
+import en from '../locales/en.json';
 
 export type Locale = 'en' | 'es' | 'ja' | 'pt' | 'fr';
 type Dict = Record<string, string>;
@@ -7,23 +8,20 @@ const FALLBACK: Locale = 'en';
 const STORAGE_KEY = 'dtp:locale';
 
 class I18nManager {
-  private dicts: Partial<Record<Locale, Dict>> = {};
+  private dicts: Partial<Record<Locale, Dict>> = { en };
   private _current: Locale = (() => { try { return (localStorage.getItem(STORAGE_KEY) as Locale) || FALLBACK; } catch { return FALLBACK; } })();
-  private _fallback: Dict = {};
+  private _fallback: Dict = en;
 
   async init() {
     try {
-      const en = await import(`../locales/en.json`).then(m => m.default).catch(() => ({}));
-      this.dicts.en = en;
-      this._fallback = this.dicts.en || {};
       // Lazy-load the user's saved locale if non-English
       if (this._current !== 'en' && !this.dicts[this._current]) {
         await this._loadLocale(this._current);
       }
+      window.dispatchEvent(new CustomEvent('dtp:locale-change', { detail: this._current }));
       logger.info('🌍 i18n dictionaries loaded');
     } catch (e) {
-      logger.warn('i18n fallback load failed', e);
-      this.dicts.en = this._fallback;
+      logger.warn('i18n init error', e);
     }
   }
 
