@@ -38,7 +38,7 @@ if (process.env.SENTRY_AUTH_TOKEN) {
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       release: { name: pkg.version },
-      sourcemaps: { assets: './dist/**' },
+      sourcemaps: { assets: ['./dist/**/*.js'] },
     })
   )
 }
@@ -46,13 +46,13 @@ if (process.env.SENTRY_AUTH_TOKEN) {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins,
-  base: './',
+  base: '/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   build: {
     target: 'es2020',
-    sourcemap: true,
+    sourcemap: 'hidden',
     minify: 'terser',
     terserOptions: { compress: { drop_debugger: true, pure_funcs: ['console.log', 'console.info', 'console.debug'] }, mangle: { safari10: true }, format: { comments: false } },
     chunkSizeWarningLimit: 600,

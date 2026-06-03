@@ -857,13 +857,11 @@ destroy(): void {
     const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
     if (!this.autoLowQuality && avgFps < this.lowQualityThreshold) {
       this.autoLowQuality = true;
-      document.documentElement.style.setProperty('--particles-enabled', '0');
-      document.documentElement.style.setProperty('--motion-scale', '0.5');
+      document.documentElement.setAttribute('data-low-quality', '');
       this.emit({ type: "qualityDowngrade", reason: "fps-drop", avgFps });
     } else if (this.autoLowQuality && avgFps > 50) {
       this.autoLowQuality = false;
-      document.documentElement.style.setProperty('--particles-enabled', '1');
-      document.documentElement.style.setProperty('--motion-scale', '1');
+      document.documentElement.removeAttribute('data-low-quality');
       this.emit({ type: "qualityUpgrade", avgFps });
     }
   }

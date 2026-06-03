@@ -4,6 +4,7 @@ import { EVOLVE_PATTERNS, RARE_COLORS } from "../../config/gridPatterns";
 import { logError } from "../../utils/devLog";
 import { haptics } from "../../utils/haptics";
 import { errorTracker } from "../../utils/error-tracker";
+import { achievementSystem } from "../../utils/achievements";
 import { bossEngine } from "../../utils/boss-engine";
 import { rhythmFeedback } from "../../utils/feedback-rhythm";
 import { spawnActive, activeToCellsP, pickPattern, pickCellShape } from "./CellLifecycle";
@@ -415,8 +416,7 @@ if (ref.active.some(c => !c.clicked && c.type === "ice")) { ref.cells = activeTo
         ctx.emit({ type: "toast", message: getBossDoneLabel(completedType) });
         // Inversion survival achievement
         if (completedType === "inversion") {
-          // Dynamic import to avoid circular dependency
-          import('../../utils/achievements').then(m => m.achievementSystem.unlock('boss_inversion')).catch(() => {});
+          achievementSystem.unlock('boss_inversion');
         }
       }
     }, durationMs);

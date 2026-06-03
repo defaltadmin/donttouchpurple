@@ -18,7 +18,7 @@ describe("firebase service helpers", () => {
       mode: "evolve",
       badge: "legend_badge<script>",
     })).toEqual({
-      score: 9999,
+      score: 99999,
       initials: "BadName",
       date: "2026-05-01",
       mode: "evolve",

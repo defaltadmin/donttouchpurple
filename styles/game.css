@@ -29,6 +29,10 @@
   --font-ui: 'Nunito', system-ui, sans-serif;
   --motion-scale: 1;
   --particles-enabled: 1;
+}
+[data-low-quality] {
+  --particles-enabled: 0;
+  --motion-scale: 0.5;
   --focus-ring: 2px solid var(--theme-accent, #9d4edd);
   /* Safe area insets for notch/punch-hole devices */
   --sat: env(safe-area-inset-top, 0px);
