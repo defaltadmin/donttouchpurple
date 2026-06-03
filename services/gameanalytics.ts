@@ -20,7 +20,7 @@ export function initGA(version: string) {
     GameAnalytics.configureBuild(version);
 
     // Configure available virtual currencies and item types for business events
-    GameAnalytics.configureAvailableVirtualCurrencies(["Dust"]);
+    GameAnalytics.configureAvailableResourceCurrencies(["Dust"]);
     GameAnalytics.configureAvailableResourceItemTypes(["Theme", "Background", "Skin", "Powerup"]);
 
     GameAnalytics.initialize(GA_GAME_KEY, GA_SECRET_KEY);

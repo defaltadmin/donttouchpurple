@@ -52,7 +52,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    sourcemap: 'hidden',
+    sourcemap: true,
     minify: 'terser',
     terserOptions: { compress: { drop_debugger: true, pure_funcs: ['console.log', 'console.info', 'console.debug'] }, mangle: { safari10: true }, format: { comments: false } },
     chunkSizeWarningLimit: 600,
