@@ -52,6 +52,7 @@ export interface TickContext {
 }
 
 const _slotsCache = new WeakMap<{ cols: number; rows: number; mask: number[] | null }, Set<number>>();
+// WeakMap key MUST be the exact EVOLVE_PATTERNS[idx] reference — do not spread.
 
 // Pre-computed constant sets — avoids allocating arrays every tick per cell
 const SPECIAL_TYPES = new Set(["medpack","shield","freeze","multiplier","ice","hold","bomb"]);

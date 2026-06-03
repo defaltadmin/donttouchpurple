@@ -2,7 +2,6 @@ import { GameAnalytics } from "gameanalytics";
 import { logger } from "../utils/logger";
 
 const GA_GAME_KEY = import.meta.env.VITE_GA_GAME_KEY;
-const GA_SECRET_KEY = import.meta.env.VITE_GA_SECRET_KEY;
 
 const IS_PROD =
   typeof window !== "undefined" &&
@@ -11,7 +10,7 @@ const IS_PROD =
    window.location.hostname === "dont-touch-purple.firebaseapp.com");
 
 export function initGA(version: string) {
-  if (!IS_PROD || !GA_GAME_KEY || !GA_SECRET_KEY) {
+  if (!IS_PROD || !GA_GAME_KEY) {
     if (!IS_PROD) logger.info("[GA] Development mode: Skip init");
     return;
   }
@@ -23,7 +22,7 @@ export function initGA(version: string) {
     GameAnalytics.configureAvailableResourceCurrencies(["Dust"]);
     GameAnalytics.configureAvailableResourceItemTypes(["Theme", "Background", "Skin", "Powerup"]);
 
-    GameAnalytics.initialize(GA_GAME_KEY, GA_SECRET_KEY);
+    GameAnalytics.initialize(GA_GAME_KEY);
     logger.info("[GA] Initialized version", version);
   } catch (err) {
     logger.error("[GA] Initialization failed", err);

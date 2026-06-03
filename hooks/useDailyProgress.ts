@@ -90,7 +90,7 @@ export function useDailyProgress(opts: DailyProgressOptions): DailyProgressRetur
     setDailyChallenges(buildDailyChallenges(todayStr));
 
     getFirebase().then(fb => {
-      fb.fbGetStreak({ clientDate: todayStr }).then(fbStreak => {
+      fb.fbGetStreak().then(fbStreak => {
         const safeStreak = typeof fbStreak === 'number' && isFinite(fbStreak) ? fbStreak : streak;
         setLoginStreakCount(safeStreak);
         safeSet("dtp_login_streak", JSON.stringify({

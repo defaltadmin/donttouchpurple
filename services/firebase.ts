@@ -34,7 +34,7 @@ export function todayISODate(now = new Date()): string {
 export function normalizeGlobalScoreEntry(entry: GlobalLeaderboardEntry): GlobalLeaderboardEntry {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(entry.date) ? entry.date : todayISODate();
   const safe: GlobalLeaderboardEntry = {
-    score: Math.max(0, Math.min(9999, Math.floor(entry.score))),
+    score: Math.max(0, Math.min(99999, Math.floor(entry.score))),
     initials: entry.initials.replace(/[^a-zA-Z0-9_ ]/g, "").trim().slice(0, 8) || "Player",
     date,
     mode: entry.mode === "evolve" ? "evolve" : "classic",
@@ -56,18 +56,17 @@ let authReady: Promise<void> | null = null;
 
 /** Sign in anonymously so Firestore rules can verify request.auth != null */
 async function ensureAuth(): Promise<void> {
-  if (authReady) return authReady;
+  if (authReady) return;
   authReady = (async () => {
     try {
       const app = await ensureFirebaseApp();
       const { getAuth, signInAnonymously } = await import("firebase/auth");
       const auth = getAuth(app as FirebaseAppInstance);
-      if (auth.currentUser) return; // Already signed in
+      if (auth.currentUser) return;
       await signInAnonymously(auth);
     } catch (err) {
-      // Auth failure is non-fatal — Firestore rules will reject unauthenticated writes
       console.warn('[firebase] Auth failed, Firestore ops will be unauthenticated:', err);
-      authReady = null; // Allow retry
+      authReady = null;
     }
   })();
   return authReady;
@@ -240,14 +239,14 @@ export function getDeviceId(): string {
   }
 }
 
-export async function fbGetStreak(opts?: { clientDate?: string }): Promise<number> {
+export async function fbGetStreak(): Promise<number> {
   try {
     if (!IS_PROD) return getLocalStreakFallback();
     await ensureAuth();
     const app = await getAppInstance();
     const { getFunctions, httpsCallable } = await import("firebase/functions");
     const func = httpsCallable(getFunctions(app), "updateStreak");
-    const result = await func({ clientDate: opts?.clientDate, deviceId: getDeviceId() });
+    const result = await func({ deviceId: getDeviceId() });
     const s = (result.data as { streak?: unknown }).streak;
     return typeof s === 'number' && isFinite(s) ? Math.max(0, Math.min(999, Math.floor(s))) : getLocalStreakFallback();
   } catch {

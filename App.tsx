@@ -327,7 +327,7 @@ export default function App() {
 
       // Fetch latest streak from Firebase
       getFirebase().then(fb =>
-        fb.fbGetStreak({ clientDate: todayStr })
+        fb.fbGetStreak()
       ).then(fbStreak => {
         const safeStreak = typeof fbStreak === 'number' && isFinite(fbStreak) ? fbStreak : streak;
         setLoginStreakCount(safeStreak);
