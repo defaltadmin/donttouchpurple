@@ -1,6 +1,6 @@
 {
   "name": "dont-touch-purple",
-  "version": "7.5.3",
+  "version": "7.7.0",
   "private": true,
   "description": "Fast-paced reflex grid-tapping game. Two modes, 50+ achievements, global leaderboard, 12 WebGL backgrounds. React 19 + TypeScript + Firebase.",
   "type": "module",
@@ -43,7 +43,6 @@
     "prepare": "echo 'prepare script'",
     "lint-staged": "lint-staged",
     "ship": "bash scripts/ship.sh",
-    "semantic-release": "semantic-release",
     "release:patch": "npm version patch && git push && git push --tags",
     "release:minor": "npm version minor && git push && git push --tags",
     "audit:lighthouse": "npx lighthouse http://localhost:4173 --output=json --output=html --output-path=./dist/audit.html --quiet",

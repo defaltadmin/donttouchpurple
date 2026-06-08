@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    exclude: ['e2e/**', 'node_modules/**', 'junk/**', 'website/**', '.agent/**'],
+    exclude: ['**/node_modules/**', 'functions/**', 'e2e/**', 'junk/**', 'website/**', '.agent/**'],
     environment: 'jsdom',
     setupFiles: './test/setup.ts',
     clearMocks: true,

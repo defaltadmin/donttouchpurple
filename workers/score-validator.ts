@@ -111,6 +111,74 @@ async function verifyChallenge(score: number, seed: string, hearts: number, sig:
   return diff === 0;
 }
 
+// Google's public key endpoint for Firebase ID tokens
+const GOOGLE_PUBLIC_KEYS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+let _cachedPublicKeys: Record<string, string> | null = null;
+let _publicKeysExpiry = 0;
+
+async function getGooglePublicKeys(): Promise<Record<string, string>> {
+  if (_cachedPublicKeys && Date.now() < _publicKeysExpiry) return _cachedPublicKeys;
+  const res = await fetch(GOOGLE_PUBLIC_KEYS_URL);
+  if (!res.ok) throw new Error('Failed to fetch Google public keys');
+  // Respect Cache-Control max-age for key rotation
+  const cacheControl = res.headers.get('Cache-Control') ?? '';
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1]) * 1000 : 3_600_000;
+  _cachedPublicKeys = await res.json<Record<string, string>>();
+  _publicKeysExpiry = Date.now() + maxAge;
+  return _cachedPublicKeys!;
+}
+
+function base64urlDecode(s: string): Uint8Array {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/').padEnd(s.length + (4 - s.length % 4) % 4, '=');
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+}
+
+async function pemToCryptoKey(pem: string): Promise<CryptoKey> {
+  const body = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+  const der = Uint8Array.from(atob(body), c => c.charCodeAt(0)).buffer;
+  return crypto.subtle.importKey('spki', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+}
+
+/**
+ * Verifies a Firebase ID token locally using Google's public keys.
+ * Replaces the insecure tokeninfo endpoint approach (SSRF risk, token in URL).
+ */
+async function verifyFirebaseJwt(token: string, projectId: string): Promise<void> {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Malformed JWT');
+  const [headerB64, claimB64, sigB64] = parts;
+
+  let header: { kid?: string; alg?: string };
+  let claims: { aud?: string; iss?: string; sub?: string; exp?: number; iat?: number };
+  try {
+    header = JSON.parse(new TextDecoder().decode(base64urlDecode(headerB64)));
+    claims = JSON.parse(new TextDecoder().decode(base64urlDecode(claimB64)));
+  } catch {
+    throw new Error('Invalid JWT encoding');
+  }
+
+  if (header.alg !== 'RS256') throw new Error('Invalid algorithm');
+  if (!header.kid) throw new Error('Missing kid');
+
+  const now = Math.floor(Date.now() / 1000);
+  if (!claims.exp || claims.exp < now) throw new Error('Token expired');
+  if (!claims.iat || claims.iat > now + 300) throw new Error('Token issued in the future');
+  if (claims.aud !== projectId) throw new Error('Invalid audience');
+  if (claims.iss !== `https://securetoken.google.com/${projectId}`) throw new Error('Invalid issuer');
+  if (!claims.sub) throw new Error('Missing subject');
+
+  const keys = await getGooglePublicKeys();
+  const pem = keys[header.kid];
+  if (!pem) throw new Error('Unknown key id');
+
+  const cryptoKey = await pemToCryptoKey(pem);
+  const signingInput = new TextEncoder().encode(`${headerB64}.${claimB64}`);
+  const signature = base64urlDecode(sigB64);
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', cryptoKey, signature, signingInput);
+  if (!valid) throw new Error('Invalid signature');
+}
+
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight — reflect validated origin (don't hardcode)
@@ -230,29 +298,9 @@ export default {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
     try {
-      const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
-      if (verifyRes.status === 429) {
-        return new Response(JSON.stringify({ error: 'Service busy, retry later' }), { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
-      if (!verifyRes.ok) {
-        return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
-      const tokenInfo = await verifyRes.json<{ aud?: string; sub?: string; iss?: string }>();
-      if (!tokenInfo.sub) {
-        return new Response(JSON.stringify({ error: 'Invalid token claims' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
-      // SEC-015: Validate issuer to prevent cross-project token abuse
-      const expectedIss = `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`;
-      if (!tokenInfo.iss || tokenInfo.iss !== expectedIss) {
-        return new Response(JSON.stringify({ error: 'Invalid issuer' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
-      // Validate audience claim to prevent cross-project token abuse.
-      // Missing aud is also rejected — a valid Google token always includes it.
-      if (!tokenInfo.aud || tokenInfo.aud !== env.FIREBASE_PROJECT_ID) {
-        return new Response(JSON.stringify({ error: 'Invalid audience' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
+      await verifyFirebaseJwt(idToken, env.FIREBASE_PROJECT_ID);
     } catch {
-      return new Response(JSON.stringify({ error: 'Token verification failed' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
     try {

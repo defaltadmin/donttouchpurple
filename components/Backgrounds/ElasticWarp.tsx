@@ -13,6 +13,9 @@ interface Particle {
   glowIntensity: number;
   glowPhase: number;
   opacity: number;
+  // Gradient cache — recreated only when glowRadius changes significantly
+  _cachedGradient: CanvasGradient | null;
+  _cachedGlowRadius: number;
 }
 
 const PARTICLE_COUNT = 120;
@@ -47,6 +50,8 @@ function createParticle(w: number, h: number): Particle {
     glowIntensity: 0.3 + Math.random() * 0.7,
     glowPhase: Math.random() * Math.PI * 2,
     opacity: 0.4 + Math.random() * 0.6,
+    _cachedGradient: null,
+    _cachedGlowRadius: -1,
   };
 }
 
@@ -161,13 +166,17 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
         const intensity = p.glowIntensity * glowPulse * (0.6 + proximity * 0.8);
         const alpha = p.opacity * (0.5 + proximity * 0.5);
 
-        // Draw glow
+        // Draw glow — cache gradient per particle, recreate only when radius shifts >0.5px
         const glowRadius = p.radius * (3 + proximity * 4);
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowRadius);
-        gradient.addColorStop(0, p.color + (alpha * intensity * 0.8) + ')');
-        gradient.addColorStop(0.4, p.color + (alpha * intensity * 0.3) + ')');
-        gradient.addColorStop(1, p.color + '0)');
-        ctx.fillStyle = gradient;
+        if (p._cachedGradient === null || Math.abs(glowRadius - p._cachedGlowRadius) > 0.5) {
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowRadius);
+          g.addColorStop(0, p.color + (alpha * intensity * 0.8) + ')');
+          g.addColorStop(0.4, p.color + (alpha * intensity * 0.3) + ')');
+          g.addColorStop(1, p.color + '0)');
+          p._cachedGradient = g;
+          p._cachedGlowRadius = glowRadius;
+        }
+        ctx.fillStyle = p._cachedGradient;
         ctx.beginPath();
         ctx.arc(p.x, p.y, glowRadius, 0, Math.PI * 2);
         ctx.fill();

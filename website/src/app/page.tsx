@@ -93,6 +93,7 @@ export default function Home() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const btnRef = useRef<HTMLAnchorElement>(null);
   const gridElRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   // Mouse parallax for glass orb
   const orbContainerRef = useRef<HTMLDivElement>(null);
@@ -147,11 +148,11 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  // Cursor glow for glass cards
+  // Cursor glow for glass cards — uses ref array instead of querySelectorAll
   useEffect(() => {
-    const cards = document.querySelectorAll('.glass-card');
+    const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
     const handleMove = (e: MouseEvent) => {
-      const card = (e.currentTarget as HTMLElement);
+      const card = e.currentTarget as HTMLElement;
       const rect = card.getBoundingClientRect();
       card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
       card.style.setProperty('--my', `${e.clientY - rect.top}px`);
@@ -346,8 +347,13 @@ export default function Home() {
           <h2 className="section-heading">Boss Events</h2>
           <p className="section-subtext">Just when you think you&apos;ve got it figured out, the rules change.</p>
           <div className="boss-cards">
-            {BOSS_EVENTS.map((boss) => (
-              <div key={boss.name} className="glass-card boss-card" style={{ '--boss-glow': boss.glow } as React.CSSProperties}>
+            {BOSS_EVENTS.map((boss, bIdx) => (
+              <div
+                key={boss.name}
+                ref={(el) => { cardRefs.current[bIdx] = el; }}
+                className="glass-card boss-card"
+                style={{ '--boss-glow': boss.glow } as React.CSSProperties}
+              >
                 <div className="boss-card-icon">{boss.icon}</div>
                 <div className="boss-card-name" style={{ background: boss.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {boss.name}
@@ -363,8 +369,12 @@ export default function Home() {
           <h2 className="section-heading">Everything You Get</h2>
           <p className="section-subtext">More depth than you&apos;d expect from a &quot;don&apos;t touch the color&quot; game.</p>
           <div className="feature-grid">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="glass-card feature-card">
+            {FEATURES.map((f, fIdx) => (
+              <div
+                key={f.title}
+                ref={(el) => { cardRefs.current[BOSS_EVENTS.length + fIdx] = el; }}
+                className="glass-card feature-card"
+              >
                 <div className="feature-icon">{f.icon}</div>
                 <div className="feature-title">{f.title}</div>
                 <p className="feature-desc">{f.desc}</p>

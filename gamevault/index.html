@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Vault Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-1: #0f0c1b;
+      --bg-2: #1a0f2e;
+      --bg-3: #07050f;
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.07);
+      --glass-hover: rgba(255,255,255,0.06);
+      --text: #f3f1f6;
+      --text-dim: #8a849c;
+      --text-muted: #a49eb5;
+      --accent: #bb86fc;
+      --accent-soft: rgba(187,134,252,0.15);
+      --accent-glow: rgba(187,134,252,0.35);
+      --gold: #ffd700;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    
+    body.light-theme {
+      --bg-1: #f0f2f5;
+      --bg-2: #e4e7eb;
+      --bg-3: #d1d5db;
+      --glass-bg: rgba(0,0,0,0.03);
+      --glass-border: rgba(0,0,0,0.08);
+      --glass-hover: rgba(0,0,0,0.06);
+      --text: #1f2937;
+      --text-dim: #4b5563;
+      --text-muted: #6b7280;
+      --accent: #7c3aed;
+      --accent-soft: rgba(124,58,237,0.1);
+      --accent-glow: rgba(124,58,237,0.2);
+      --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-1);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    .bg-canvas {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 40%, var(--bg-3) 100%);
+      z-index: -2;
+    }
+    .bg-canvas::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(120,80,200,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(187,134,252,0.05) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 80%, rgba(60,40,120,0.06) 0%, transparent 50%);
+      z-index: -1;
+    }
+    .container { max-width: 1360px; margin: 0 auto; padding: 2rem 1.5rem; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+    .header-content h1 {
+      font-size: 2.4rem; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--text) 40%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-top: 0.25rem; }
+    .stats-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
+    .stat-pill {
+      background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border); border-radius: 100px; padding: 0.45rem 1rem;
+      font-size: 0.82rem; color: var(--text-muted);
+    }
+    .stat-pill strong { color: var(--text); font-weight: 600; }
+
+    .glass-panel {
+      background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+
+    .controls-panel { padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+    .control-group { display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; flex: 1 0 130px; }
+    .control-group label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+    .control-group input, .control-group select {
+      background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+      color: var(--text); padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem;
+      outline: none; transition: all 0.2s;
+    }
+    .control-group input:focus, .control-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .btn {
+      background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border);
+      color: var(--text); padding: 0.55rem 1.1rem; border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn:hover { background: var(--glass-hover); border-color: rgba(255,255,255,0.15); }
+    .btn-primary { background: var(--accent); color: #fff; border: none; }
+    .btn-primary:hover { background: var(--accent); opacity: 0.9; box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-1px); }
+
+    .action-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; }
+    .action-bar .spacer { flex: 1; }
+    .result-count { font-size: 0.85rem; color: var(--text-muted); }
+
+    .bulk-bar {
+      display: none; background: var(--accent-soft); border: 1px solid var(--accent); padding: 0.75rem 1.25rem;
+      border-radius: var(--radius); margin-bottom: 1.5rem; align-items: center; gap: 1rem; animation: slideDown 0.3s ease;
+    }
+    .bulk-bar.active { display: flex; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .analytics-panel { margin-bottom: 1.5rem; padding: 1.5rem; display: none; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .analytics-panel.active { display: grid; }
+    .chart-box { height: 240px; position: relative; }
+
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .game-card {
+      background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border); border-radius: var(--radius); overflow: hidden;
+      display: flex; flex-direction: column; transition: all 0.25s ease; position: relative;
+    }
+    .game-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.13); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .game-card.selected { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+
+    .cover-wrap { width: 100%; aspect-ratio: 16/9; background: rgba(0,0,0,0.3); overflow: hidden; position: relative; }
+    .cover-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .game-card:hover .cover-img { transform: scale(1.05); }
+    .cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; opacity: 0.2; font-weight: 800; }
+
+    .card-content { padding: 1.25rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; }
+    .game-title { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+    .game-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.15rem; }
+    .game-meta span { display: flex; align-items: center; gap: 0.35rem; }
+    .game-meta .label { color: var(--text-dim); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; min-width: 48px; }
+    
+    .selection-check {
+      position: absolute; top: 0.75rem; left: 0.75rem; z-index: 10;
+      width: 22px; height: 22px; border-radius: 4px; border: 2px solid #fff;
+      background: rgba(0,0,0,0.5); display: none; cursor: pointer;
+    }
+    .bulk-mode .selection-check { display: block; }
+    .game-card.selected .selection-check { background: var(--accent); border-color: var(--accent); }
+    .game-card.selected .selection-check::after { content: '✓'; color: #fff; font-size: 14px; position: absolute; left: 4px; top: 0px; }
+
+    .stars { display: flex; gap: 0.2rem; }
+    .star { font-size: 1.2rem; cursor: pointer; color: rgba(255,255,255,0.1); transition: all 0.1s; }
+    .star.active { color: var(--gold); }
+    .star:hover { transform: scale(1.2); }
+
+    .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 100px; text-transform: uppercase; }
+    .badge-installed { background: rgba(76,175,80,0.2); color: #81c784; }
+    .badge-uninstalled { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: #161126; border: 1px solid var(--accent); border-radius: var(--radius); padding: 2.5rem; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 0 40px var(--accent-glow); animation: modalIn 0.3s ease; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 2000; pointer-events: none; }
+    .toast { pointer-events: auto; background: rgba(22,17,38,0.95); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 0.75rem 1.25rem; font-size: 0.85rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: toastIn 0.3s ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    @media (max-width: 600px) { .controls-panel { padding: 1rem; } .control-group { min-width: 100%; } .games-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="bg-canvas"></div>
+
+<div class="container">
+  <header>
+    <div class="header-content">
+      <h1>Game Vault Pro</h1>
+      <p class="subtitle">Personal Library Dashboard & Analytics</p>
+      <div class="stats-row" id="stats-row">
+        <span class="stat-pill" id="stat-total">Total: <strong>0</strong></span>
+        <span class="stat-pill" id="stat-installed">Installed: <strong>0</strong></span>
+        <span class="stat-pill" id="stat-playtime">Playtime: <strong>0 hrs</strong></span>
+        <span class="stat-pill" id="stat-platforms">Platforms: <strong>0</strong></span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="theme-toggle" title="Toggle Theme">🌓</button>
+    </div>
+  </header>
+
+  <div class="glass-panel controls-panel">
+    <div class="control-group">
+      <label>Search</label>
+      <input type="text" id="search-input" placeholder="Title...">
+    </div>
+    <div class="control-group">
+      <label>Platform</label>
+      <select id="filter-source"><option value="all">All</option></select>
+    </div>
+    <div class="control-group">
+      <label>Status</label>
+      <select id="filter-status">
+        <option value="all">All</option>
+        <option value="Unassigned">Unassigned</option>
+        <option value="Backlog">Backlog</option>
+        <option value="Playing">Playing</option>
+        <option value="Completed">Completed</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Year</label>
+      <select id="filter-year"><option value="all">All Years</option></select>
+    </div>
+    <div class="control-group">
+      <label>Sort By</label>
+      <select id="sort-by">
+        <option value="Name">Name (A-Z)</option>
+        <option value="Playtime">Playtime</option>
+        <option value="Rating">Rating</option>
+        <option value="ReleaseDate">Newest</option>
+      </select>
+    </div>
+    <div class="control-group" style="flex: 0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" id="random-pick-btn">Random Pick</button>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-sm" id="toggle-analytics">📊 Analytics</button>
+    <button class="btn btn-sm" id="toggle-bulk">☑️ Bulk Edit</button>
+    <div class="spacer"></div>
+    <span class="result-count" id="result-count">0 games</span>
+    <button class="btn btn-sm" id="load-sample-btn">Sample</button>
+    <button class="btn btn-sm" id="export-btn">Export</button>
+    <button class="btn btn-sm" id="reset-btn">Reset</button>
+  </div>
+
+  <div class="glass-panel analytics-panel" id="analytics-panel">
+    <div class="chart-box"><canvas id="platformChart"></canvas></div>
+    <div class="chart-box"><canvas id="statusChart"></canvas></div>
+  </div>
+
+  <div class="bulk-bar" id="bulk-bar">
+    <span id="bulk-count">0 games selected</span>
+    <select id="bulk-status" class="btn btn-sm" style="background:rgba(0,0,0,0.2)">
+      <option value="">Update Status...</option>
+      <option value="Backlog">Backlog</option>
+      <option value="Playing">Playing</option>
+      <option value="Completed">Completed</option>
+    </select>
+    <button class="btn btn-sm" id="bulk-apply">Apply</button>
+    <button class="btn btn-sm" id="bulk-cancel">Cancel</button>
+  </div>
+
+  <main class="games-grid" id="games-container"></main>
+</div>
+
+<div class="modal-overlay" id="picker-modal">
+  <div class="modal-box">
+    <div id="pick-cover" class="cover-wrap" style="border-radius:var(--radius-sm); margin-bottom:1.5rem"></div>
+    <h2 id="pick-title">—</h2>
+    <p id="pick-platform" style="color:var(--text-muted); margin-bottom:1rem"></p>
+    <button class="btn btn-primary" id="close-modal-btn">Close</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  const SAMPLE_GAMES = [
+    { Name: "Cyberpunk 2077", Source: "Steam", ReleaseDate: "2020-12-10", Playtime: 89200, IsInstalled: true, Image: "https://images.unsplash.com/photo-1605898399783-1820b735e127?w=400&q=80" },
+    { Name: "Elden Ring", Source: "Steam", ReleaseDate: "2022-02-25", Playtime: 156400, IsInstalled: true, Image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80" },
+    { Name: "Baldur's Gate 3", Source: "Steam", ReleaseDate: "2023-08-03", Playtime: 214700, IsInstalled: true, Image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&q=80" },
+    { Name: "Hades", Source: "Steam", ReleaseDate: "2020-09-17", Playtime: 45300, IsInstalled: true },
+    { Name: "The Witcher 3", Source: "GOG", ReleaseDate: "2015-05-19", Playtime: 187500, IsInstalled: true },
+    { Name: "Red Dead Redemption 2", Source: "Rockstar", ReleaseDate: "2019-11-05", Playtime: 123800, IsInstalled: false },
+    { Name: "Starfield", Source: "Xbox", ReleaseDate: "2023-09-06", Playtime: 45000, IsInstalled: true },
+    { Name: "Hollow Knight", Source: "GOG", ReleaseDate: "2017-02-24", Playtime: 28700, IsInstalled: false }
+  ];
+
+  let gamesData = [];
+  let metadata = JSON.parse(localStorage.getItem('gamevault_meta')) || {};
+  let selectedGames = new Set();
+  let bulkMode = false;
+  let charts = {};
+
+  const $ = id => document.getElementById(id);
+  const container = $('games-container');
+
+  function init() {
+    $('theme-toggle').onclick = () => { document.body.classList.toggle('light-theme'); localStorage.setItem('gamevault_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark'); };
+    if (localStorage.getItem('gamevault_theme') === 'light') document.body.classList.add('light-theme');
+
+    $('toggle-analytics').onclick = () => { $('analytics-panel').classList.toggle('active'); if ($('analytics-panel').classList.contains('active')) renderCharts(); };
+    $('toggle-bulk').onclick = toggleBulkMode;
+    $('bulk-cancel').onclick = toggleBulkMode;
+    $('bulk-apply').onclick = batchUpdate;
+    
+    ['search-input','filter-source','filter-status','filter-year','sort-by'].forEach(id => $(id).onchange = $(id).oninput = render);
+    
+    $('random-pick-btn').onclick = randomPick;
+    $('load-sample-btn').onclick = loadSample;
+    $('reset-btn').onclick = resetAll;
+    $('export-btn').onclick = exportData;
+    $('close-modal-btn').onclick = () => $('picker-modal').classList.remove('open');
+
+    loadSample();
+  }
+
+  function toggleBulkMode() {
+    bulkMode = !bulkMode;
+    selectedGames.clear();
+    document.body.classList.toggle('bulk-mode', bulkMode);
+    $('bulk-bar').classList.toggle('active', bulkMode);
+    updateBulkUI();
+    render();
+  }
+
+  function updateBulkUI() { $('bulk-count').textContent = `${selectedGames.size} games selected`; }
+
+  function batchUpdate() {
+    const status = $('bulk-status').value;
+    if (!status || selectedGames.size === 0) return;
+    selectedGames.forEach(name => saveMeta(name, 'status', status));
+    toggleBulkMode();
+    toast(`Updated ${selectedGames.size} games to ${status}`);
+  }
+
+  function saveMeta(name, key, val) {
+    if (!metadata[name]) metadata[name] = { rating: 0, status: 'Unassigned' };
+    metadata[name][key] = val;
+    localStorage.setItem('gamevault_meta', JSON.stringify(metadata));
+  }
+
+  function getMeta(name) { return metadata[name] || { rating: 0, status: 'Unassigned' }; }
+
+  function render() {
+    const list = getFiltered();
+    $('result-count').textContent = `${list.length} games`;
+    container.innerHTML = '';
+
+    if (list.length === 0) {
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:4rem;opacity:0.5">No games found</div>';
+      return;
+    }
+
+    list.forEach(game => {
+      const meta = getMeta(game.Name);
+      const card = document.createElement('div');
+      card.className = `game-card ${selectedGames.has(game.Name) ? 'selected' : ''}`;
+      card.onclick = () => { if (bulkMode) { selectedGames.has(game.Name) ? selectedGames.delete(game.Name) : selectedGames.add(game.Name); updateBulkUI(); render(); } };
+
+      card.innerHTML = `
+        <div class="selection-check"></div>
+        <div class="cover-wrap">
+          ${game.Image ? `<img src="${game.Image}" class="cover-img" loading="lazy">` : `<div class="cover-placeholder">${game.Name[0]}</div>`}
+        </div>
+        <div class="card-content">
+          <div>
+            <div class="game-title">${game.Name}</div>
+            <div class="game-meta">
+              <span><span class="label">Src</span> ${game.Source}</span>
+              <span><span class="label">Play</span> ${Math.floor(game.Playtime/3600)}h</span>
+              <span>${game.IsInstalled ? '<span class="badge badge-installed">Installed</span>' : '<span class="badge badge-uninstalled">Off</span>'}</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem">
+            <div class="stars" onclick="event.stopPropagation()">${[1,2,3,4,5].map(n => `<span class="star ${n<=meta.rating?'active':''}" onclick="setRating('${game.Name}',${n})">★</span>`).join('')}</div>
+            <select class="btn btn-sm" style="padding:2px 5px;font-size:0.7rem" onclick="event.stopPropagation()" onchange="saveMeta('${game.Name}','status',this.value);render()">
+              ${['Unassigned','Backlog','Playing','Completed'].map(s => `<option value="${s}" ${meta.status===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    updateStats();
+    if ($('analytics-panel').classList.contains('active')) renderCharts();
+  }
+
+  function setRating(name, val) { saveMeta(name, 'rating', val); render(); }
+
+  function getFiltered() {
+    const q = $('search-input').value.toLowerCase();
+    const src = $('filter-source').value;
+    const st = $('filter-status').value;
+    const yr = $('filter-year').value;
+    const sort = $('sort-by').value;
+
+    return gamesData.filter(g => {
+      if (q && !g.Name.toLowerCase().includes(q)) return false;
+      if (src !== 'all' && g.Source !== src) return false;
+      if (st !== 'all' && getMeta(g.Name).status !== st) return false;
+      if (yr !== 'all' && (!g.ReleaseDate || !g.ReleaseDate.startsWith(yr))) return false;
+      return true;
+    }).sort((a, b) => {
+      if (sort === 'Name') return a.Name.localeCompare(b.Name);
+      if (sort === 'Playtime') return b.Playtime - a.Playtime;
+      if (sort === 'Rating') return getMeta(b.Name).rating - getMeta(a.Name).rating;
+      if (sort === 'ReleaseDate') return (b.ReleaseDate||'').localeCompare(a.ReleaseDate||'');
+      return 0;
+    });
+  }
+
+  function updateStats() {
+    $('stat-total').innerHTML = `Total: <strong>${gamesData.length}</strong>`;
+    $('stat-installed').innerHTML = `Installed: <strong>${gamesData.filter(g=>g.IsInstalled).length}</strong>`;
+    const hrs = Math.floor(gamesData.reduce((a,b)=>a+(b.Playtime||0),0)/3600);
+    $('stat-playtime').innerHTML = `Playtime: <strong>${hrs}h</strong>`;
+    $('stat-platforms').innerHTML = `Platforms: <strong>${new Set(gamesData.map(g=>g.Source)).size}</strong>`;
+  }
+
+  function renderCharts() {
+    const ctx1 = $('platformChart').getContext('2d');
+    const ctx2 = $('statusChart').getContext('2d');
+    
+    const platforms = {}; gamesData.forEach(g => platforms[g.Source] = (platforms[g.Source]||0)+1);
+    const statuses = { Unassigned:0, Backlog:0, Playing:0, Completed:0 }; 
+    gamesData.forEach(g => { const s = getMeta(g.Name).status; statuses[s] = (statuses[s]||0)+1; });
+
+    if (charts.p) charts.p.destroy();
+    if (charts.s) charts.s.destroy();
+
+    const color = getComputedStyle(document.body).getPropertyValue('--accent').trim();
+    
+    charts.p = new Chart(ctx1, { type: 'bar', data: { labels: Object.keys(platforms), datasets: [{ label: 'Games by Platform', data: Object.values(platforms), backgroundColor: color+'80', borderColor: color, borderWidth: 1 }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+    charts.s = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(statuses), datasets: [{ data: Object.values(statuses), backgroundColor: [color+'40', color+'70', color+'99', color] }] }, options: { maintainAspectRatio: false } });
+  }
+
+  function loadSample() {
+    gamesData = SAMPLE_GAMES;
+    const sources = [...new Set(gamesData.map(g=>g.Source))];
+    $('filter-source').innerHTML = '<option value="all">All Platforms</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join('');
+    const years = [...new Set(gamesData.map(g=>g.ReleaseDate?g.ReleaseDate.split('-')[0]:null).filter(Boolean))].sort().reverse();
+    $('filter-year').innerHTML = '<option value="all">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    render();
+  }
+
+  function randomPick() {
+    const list = getFiltered();
+    if (list.length === 0) return;
+    const g = list[Math.floor(Math.random()*list.length)];
+    $('pick-title').textContent = g.Name;
+    $('pick-platform').textContent = g.Source + (g.ReleaseDate ? ` (${g.ReleaseDate.split('-')[0]})` : '');
+    $('pick-cover').innerHTML = g.Image ? `<img src="${g.Image}" class="cover-img">` : `<div class="cover-placeholder">${g.Name[0]}</div>`;
+    $('picker-modal').classList.add('open');
+  }
+
+  function toast(m) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = m;
+    $('toast-container').appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify({ games: gamesData, meta: metadata }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'vault-export.json'; a.click();
+  }
+
+  function resetAll() { if (confirm('Clear all metadata?')) { metadata = {}; localStorage.removeItem('gamevault_meta'); render(); } }
+
+  init();
+</script>
+</body>
+</html>

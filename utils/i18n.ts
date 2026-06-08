@@ -6,6 +6,7 @@ export type Locale = 'en' | 'es' | 'ja' | 'pt' | 'fr';
 type Dict = Record<string, string>;
 const FALLBACK: Locale = 'en';
 const STORAGE_KEY = 'dtp:locale';
+const VALID_LOCALES: readonly Locale[] = ['en', 'es', 'ja', 'pt', 'fr'];
 
 class I18nManager {
   private dicts: Partial<Record<Locale, Dict>> = { en };
@@ -26,6 +27,7 @@ class I18nManager {
   }
 
   private async _loadLocale(lang: Locale): Promise<void> {
+    if (!VALID_LOCALES.includes(lang)) return;
     try {
       const m = await import(`../locales/${lang}.json`);
       this.dicts[lang] = m.default;
@@ -34,8 +36,9 @@ class I18nManager {
 
   get current() { return this._current; }
   async set(lang: Locale) {
+    if (!VALID_LOCALES.includes(lang)) { logger.warn('Invalid locale', { lang }); return; }
     if (!this.dicts[lang]) await this._loadLocale(lang);
-    if (!this.dicts[lang]) { logger.warn(`Locale ${lang} not available`); return; }
+    if (!this.dicts[lang]) { logger.warn('Locale not available', { lang }); return; }
     this._current = lang;
     localStorage.setItem(STORAGE_KEY, lang);
     window.dispatchEvent(new CustomEvent('dtp:locale-change', { detail: lang }));

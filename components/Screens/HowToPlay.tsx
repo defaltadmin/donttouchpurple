@@ -85,7 +85,7 @@ export function HowToPlay({ onClose: _onClose }: HowToPlayProps) {
 
       {/* ── Features ── */}
       <motion.div className="how-section" initial="hidden" animate="visible" variants={container}>
-        <motion.h3 className="how-section-title" variants={row}>Everything You Get</motion.h3>
+        <motion.h3 className="how-section-title" variants={row}>Features</motion.h3>
         {FEATURES.map((f) => (
           <motion.div key={f.title} className="how-row" variants={row}>
             <span className="how-icon" style={{ fontSize: "1.3rem" }}>{f.icon}</span>

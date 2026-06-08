@@ -642,7 +642,7 @@ destroy(): void {
         this.emit({ type: "sound", name: "bad" }); this.triggerCellAnim(player, idx, "shake");
         this.emit({ type: "damage", player }); this.emit({ type: "shake", player });
         this.hitPause(ref.health <= 0 ? 200 : 40);
-        if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); }
+        if (ref.health <= 0) { ref.alive = false; this.triggerGameOver(this.config.numPlayers === 1 ? null : (player === 1 ? "p2" : "p1")); return; }
       }
     } else {
       this.emit({ type: "sound", name: "ok", pitchMult: 1 + ref.streak * 0.015 });
