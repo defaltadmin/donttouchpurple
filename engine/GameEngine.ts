@@ -329,6 +329,7 @@ export class GameEngine {
     this.lastFrameTime = performance.now();
     const loop = (timestamp: number) => {
       if (this.rafId === null) return;
+      if (document.hidden) { this.rafId = requestAnimationFrame(loop); return; }
       if (this.lastFrameTime > 0) {
         const frameTime = timestamp - this.lastFrameTime;
         if (this.phase === "playing") {

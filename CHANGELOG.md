@@ -2,6 +2,12 @@
 
 ## [7.7.0] — 2026-05-30
 
+### Deployment readiness / build artifacts
+- Verified game build pipeline locally: `pnpm -s test` PASS and `pnpm -s build` PASS.
+- Verified corp/`website/` build pipeline locally: `cd website && pnpm -s build` generates SW version injection (`[sw-inject] Cache name set to dtp-v7.7.0`) plus compression artifacts for both gzip (`*.gz`) and brotli (`*.br`).
+- Observed trailing Windows shell noise (`'rm' is not recognized ...`) after successful builds; treated as non-blocking shell output.
+
+
 ### Changed — Karpathy Big Refactors
 - **Achievement registration**: 33 `register()` calls in GameEngine constructor replaced with `config/achievementDefs.ts` array + 3-line loop. All 33 achievements preserved, zero behavior change.
 - **_processTap() decomposition**: 150-line monolith split into 6 focused methods: `_processTapIce`, `_processTapBomb`, `_processTapPowerup`, `_processTapDanger`, `_processTapSafe`, `_checkTapAchievements`. Each handles one cell type with clean exit.

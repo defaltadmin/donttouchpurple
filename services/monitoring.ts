@@ -96,10 +96,6 @@ class ErrorLogger {
         Sentry.captureException(errorObj);
       }
     } catch { /* Sentry unavailable */ }
-    if (import.meta.env.DEV) {
-       
-      console.error('[ErrorLogger]', errorObj, context);
-    }
     logger.error('[ErrorLogger]', {
       message: errorObj.message,
       stack: errorObj.stack,

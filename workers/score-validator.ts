@@ -338,7 +338,7 @@ export default {
         return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       const safeTick = Math.min(data.tick, 600); // ~10min at 60fps cap, matches Firestore rule
-      if (data.score > Math.floor(safeTick * 8 * 1.5)) { // 8 pts/tick avg with 50% buffer
+      if (data.score > Math.floor(safeTick * 25)) { // 25 pts/tick cap (accounts for powerups, streaks, boss combos)
         return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (typeof data.sessionId !== 'string' || data.sessionId.length < 8) {

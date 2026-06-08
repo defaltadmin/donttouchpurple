@@ -50,7 +50,7 @@ service cloud.firestore {
           (request.resource.data.tick is int &&
            request.resource.data.tick >= 0 &&
            request.resource.data.tick <= 600 &&
-           request.resource.data.score <= request.resource.data.tick * 12)) &&
+           request.resource.data.score <= request.resource.data.tick * 25)) &&
         request.resource.data.keys().hasOnly(['score', 'initials', 'date', 'mode', 'badge', 'ts', 'tick', 'sessionId']);
       allow update, delete: if false;
     }
