@@ -85,3 +85,5 @@ website/odysseus/
 
 # Test coverage
 coverage/
+
+.openclaude-agents.json
