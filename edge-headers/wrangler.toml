@@ -1,8 +1,0 @@
-name = "security-headers"
-main = "src/index.ts"
-compatibility_date = "2026-06-03"
-workers_dev = false
-
-routes = [
-  { pattern = "game.mscarabia.com/*", zone_id = "68f9366799fb9ec5f3cb61e5bdb1405d" }
-]

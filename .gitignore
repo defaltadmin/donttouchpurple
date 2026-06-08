@@ -40,6 +40,26 @@ for sonnet*/
 FILES NEEDED*/
 *.broken
 
+# Dev/agent tooling files that don't belong in repo
+CLAUDE.md.export
+MEMORY-EXPORT.md
+MAC-HANDOFF.md
+skills-export.md
+skills-lock.json
+mcp-config.json
+launch-openclaude.ps1
+mac-setup.sh
+check_db.py
+check_endpoints.py
+LAUNCH_VAULT.bat
+START_ODYSSEUS.bat
+TODO.md
+GAME_PORTALS.md
+gamevault/
+edge-headers/
+tools/
+website/odysseus/
+
 # IDEs
 .vscode/
 .claude/
