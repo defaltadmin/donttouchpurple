@@ -34,6 +34,7 @@ export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }
     <div
       ref={ref}
       className="score-float"
+      data-amount={amount >= 3 ? 'high' : amount >= 2 ? 'medium' : 'low'}
       style={{
         position: 'fixed',
         left: pos.x,
@@ -41,12 +42,7 @@ export function ScoreFloat({ player: _player, idx, amount, cols, rows, gridRef }
         transform: 'translate(-50%, 0)',
         pointerEvents: 'none',
         zIndex: 100,
-        fontFamily: 'var(--font-ui)',
-        fontWeight: 800,
-        fontSize: amount >= 3 ? 22 : 18,
-        color: amount >= 3 ? '#ff6b6b' : amount >= 2 ? '#ffd93d' : '#ffffff',
-        textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-        animation: 'score-float-up 0.8s ease-out forwards',
+        fontSize: amount >= 3 ? '1.375rem' : '1.125rem',
       }}
     >
       +{amount}

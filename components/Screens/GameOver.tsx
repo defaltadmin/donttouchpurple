@@ -5,6 +5,7 @@ import type { GameMode, Winner } from "../../engine/types";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Icon } from "../UI/Icon";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { ShareModal } from "./ShareModal";
 
 const MESSAGES: { min: number; max: number; texts: string[] }[] = [
   { min: 0,   max: 4,   texts: ["Bro couldn't avoid ONE color. 💀","The grid had 12 safe colors. You still lost. 🫠","Have you considered... not touching purple?","A goldfish would've scored higher. Scientifically.","Congratulations on finding the worst possible score.","Purple: 1. You: somehow less than 1.","Even accidentally tapping would've been better.","Did you mean to play a different game? 🙃"] },
@@ -73,6 +74,7 @@ export function GameOver({
 }: GameOverProps) {
   const { t } = useTranslation();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCardUrl, setShareCardUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareTrapRef = useFocusTrap<HTMLDivElement>(showShareModal);
@@ -115,6 +117,9 @@ export function GameOver({
   }, [is2P]);
 
   useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
+  useEffect(() => () => {
+    if (shareCardUrl?.startsWith('blob:')) URL.revokeObjectURL(shareCardUrl);
+  }, [shareCardUrl]);
 
   const bugHref = React.useMemo(() => {
     const safeUA = navigator.userAgent.replace(/[\r\n\t<>"'`]/g, ' ').slice(0, 200);
@@ -123,6 +128,35 @@ export function GameOver({
       `Score: ${p1Score}\nMode: ${mode}\nSeed: ${gameSeed}\nTick: ${tick}\nHealth: ${p1.health}\nSpin: ${spinLevel}\nStreak: ${p1.streak}\n\nUA: ${safeUA}\nURL: ${safePath}\nScreen: ${window.innerWidth}×${window.innerHeight}\n\n(describe what happened)\n`
     )}`;
   }, [p1Score, mode, gameSeed, tick, p1.health, spinLevel, p1.streak]);
+
+  const createScoreCardUrl = React.useCallback(() => {
+    const W = 600, H = 315;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#151028"); bg.addColorStop(1, "#1e0a46");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    const glow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 220);
+    glow.addColorStop(0, "rgba(192,38,211,0.18)"); glow.addColorStop(1, "transparent");
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(192,38,211,0.5)"; ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, W-2, H-2);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 18px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("DON'T TOUCH THE", W/2, 60);
+    ctx.fillStyle = "#c026d3"; ctx.font = "bold 26px system-ui, sans-serif";
+    ctx.fillText("PURPLE", W/2, 92);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 88px system-ui, sans-serif";
+    ctx.fillText(String(p1Score), W/2, 200);
+    const ml = mode === "classic" ? "Classic" : "Evolve";
+    ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.font = "16px system-ui, sans-serif";
+    ctx.fillText(`${ml} Mode · Seed ${gameSeed}`, W/2, 235);
+    ctx.fillStyle = "rgba(192,38,211,0.9)"; ctx.font = "bold 14px system-ui, sans-serif";
+    ctx.fillText("Can you beat this? → game.mscarabia.com", W/2, 285);
+    return canvas.toDataURL("image/png");
+  }, [gameSeed, mode, p1Score]);
 
   return (
     <>
@@ -190,40 +224,10 @@ export function GameOver({
               }}>𝕏 {t('gameover.challenge')}</button>
               <button className="btn-ghost" onClick={() => {
                 try {
-                  const W = 600, H = 315;
-                  const canvas = document.createElement("canvas");
-                  canvas.width = W; canvas.height = H;
-                  const ctx = canvas.getContext("2d");
-                  if (!ctx) return;
-                  const bg = ctx.createLinearGradient(0, 0, W, H);
-                  bg.addColorStop(0, "#151028"); bg.addColorStop(1, "#1e0a46");
-                  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-                  const glow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 220);
-                  glow.addColorStop(0, "rgba(192,38,211,0.18)"); glow.addColorStop(1, "transparent");
-                  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-                  ctx.strokeStyle = "rgba(192,38,211,0.5)"; ctx.lineWidth = 2;
-                  ctx.strokeRect(1, 1, W-2, H-2);
-                  ctx.fillStyle = "#ffffff"; ctx.font = "bold 18px system-ui, sans-serif";
-                  ctx.textAlign = "center";
-                  ctx.fillText("DON'T TOUCH THE", W/2, 60);
-                  ctx.fillStyle = "#c026d3"; ctx.font = "bold 26px system-ui, sans-serif";
-                  ctx.fillText("PURPLE", W/2, 92);
-                  ctx.fillStyle = "#ffffff"; ctx.font = "bold 88px system-ui, sans-serif";
-                  ctx.fillText(String(p1Score), W/2, 200);
-                  const ml = mode === "classic" ? "Classic" : "Evolve";
-                  ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.font = "16px system-ui, sans-serif";
-                  ctx.fillText(`${ml} Mode · Seed ${gameSeed}`, W/2, 235);
-                  ctx.fillStyle = "rgba(192,38,211,0.9)"; ctx.font = "bold 14px system-ui, sans-serif";
-                  ctx.fillText("Can you beat this? → game.mscarabia.com", W/2, 285);
-                  // UX-001: Use toBlob for async non-blocking PNG encoding
-                  canvas.toBlob((blob) => {
-                    if (!blob) return;
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `dtp-score-${p1Score}.png`;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                  }, "image/png");
+                  const url = createScoreCardUrl();
+                  if (!url) return;
+                  setShareCardUrl(url);
+                  setShowShareModal(false);
                 } catch { /* canvas not available */ }
               }}>🖼️ Save Card</button>
               <button className="btn-ghost" onClick={() => {
@@ -239,6 +243,8 @@ export function GameOver({
           </div>
         </div>
       )}
+
+      {shareCardUrl && <ShareModal shareUrl={shareCardUrl} onClose={() => setShareCardUrl(null)} />}
 
       <a className="go-bug-icon" href={bugHref} target="_blank" rel="noopener noreferrer" title="Report a bug">🐛</a>
     </>

@@ -87,6 +87,7 @@ export const GameArea = React.memo(function GameArea({
   const onToggleBotP2 = useCallback(() => onToggleBot(2), [onToggleBot]);
 
   const scoreFloatsP1 = useMemo(() => scoreFloats.filter(f => f.player === 1), [scoreFloats]);
+  const scoreFloatsP2 = useMemo(() => scoreFloats.filter(f => f.player === 2), [scoreFloats]);
 
   return (
     <div className="game-area">
@@ -171,7 +172,8 @@ export const GameArea = React.memo(function GameArea({
             showBotAssist={screen === "playing" && is2P}
             isBotActive={botAssistActive[2]}
             botTapHighlights={botTapHighlights[2]}
-            dust={dust} />
+            dust={dust}
+            scoreFloats={scoreFloatsP2} />
         )}
       </GridErrorBoundary>
     </div>

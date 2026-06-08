@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import gsap from "gsap";
 import Cell from "../Cell";
 import { Hearts } from "./Hearts";
+import { ScoreFloat } from "./ScoreFloat";
 import { useRef, useEffect, useState } from "react";
 import { animateDustClaim } from "../../utils/dustAnimation";
 import type { PlayerState, CellShape, RareColorMode, GameMode, GameSnapshot, ActiveCell } from "../../engine/types";
@@ -88,6 +89,7 @@ export const PlayerPanel = memo(function PlayerPanel({
   onToggleBotAssist,
   showBotAssist = false,
   dust = 0,
+  scoreFloats = [],
 }: PlayerPanelProps) {
   const { t } = useTranslation();
   const now = Date.now();
@@ -274,6 +276,17 @@ export const PlayerPanel = memo(function PlayerPanel({
           })()}
           </div>
         </div>
+        {scoreFloats.map(float => (
+          <ScoreFloat
+            key={float.id}
+            player={float.player}
+            idx={float.idx}
+            amount={float.amount}
+            cols={cols}
+            rows={rows}
+            gridRef={gridRef}
+          />
+        ))}
       </div>
       {showBotAssist && !practiceMode && onToggleBotAssist && (
         <button
