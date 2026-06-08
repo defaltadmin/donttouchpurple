@@ -15,15 +15,9 @@ importers:
       '@lottiefiles/dotlottie-web':
         specifier: ^0.74.0
         version: 0.74.0
-      '@microsoft/clarity':
-        specifier: ^1.0.2
-        version: 1.0.2
       '@sentry/react':
         specifier: ^10.51.0
         version: 10.51.0(react@18.3.1)
-      blendy:
-        specifier: ^0.0.1
-        version: 0.0.1
       firebase:
         specifier: ^12.13.0
         version: 12.13.0
@@ -1483,9 +1477,6 @@ packages:
     resolution: {integrity: sha512-rG12+dJSVhQDdleGr9epR7zU/UJ6hh8jzBDHAurClHP5t5dSrOh3eP3UCFxolpVPcobaRVYsBnYg4HQokQewpg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
-  '@microsoft/clarity@1.0.2':
-    resolution: {integrity: sha512-9EZYROFpJxEGmQpHvUFqvD3ZJ7QQSqnibYSWmS+1xusoZfG1QQ1/Al9yVBBc11DWMbJrs1pe1hLT273it/skJg==}
-
   '@napi-rs/wasm-runtime@1.1.4':
     resolution: {integrity: sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow==}
     peerDependencies:
@@ -2607,9 +2598,6 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
-
-  blendy@0.0.1:
-    resolution: {integrity: sha512-6zw2to19jBTF8HchX/gLgVav9gLcV+oTxGJLCCNVMFHuUtF1FdUOP+AiL1lcVIJi8gRiY1NHhiVzgu8D2+qbig==}
 
   bmp-ts@1.0.9:
     resolution: {integrity: sha512-cTEHk2jLrPyi+12M3dhpEbnnPOsaZuq7C45ylbbQIiWgDFZq4UVYPEY5mlqjvsj/6gJv9qX5sa+ebDzLXT28Vw==}
@@ -6986,8 +6974,6 @@ snapshots:
 
   '@lottiefiles/dotlottie-web@0.74.0': {}
 
-  '@microsoft/clarity@1.0.2': {}
-
   '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
     dependencies:
       '@emnapi/core': 1.10.0
@@ -8102,8 +8088,6 @@ snapshots:
       require-from-string: 2.0.2
 
   blake3-wasm@2.1.5: {}
-
-  blendy@0.0.1: {}
 
   bmp-ts@1.0.9: {}
 
