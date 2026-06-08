@@ -218,6 +218,11 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
+    const contentType = request.headers.get('Content-Type') ?? '';
+    if (!contentType.includes('application/json')) {
+      return new Response(JSON.stringify({ error: 'Content-Type must be application/json' }), { status: 415, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     const url = new URL(request.url);
 
     // SEC-010: Server-side HMAC signing for challenge links
