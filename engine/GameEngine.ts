@@ -9,7 +9,6 @@
 import { GAME } from "../config/difficulty";
 import { STAGES, EVOLVE_PATTERNS } from "../config/gridPatterns";
 import { computeMs, makeGameSeed, getSpinConfig, mulberry32, speedLabel } from "./DifficultyScaler";
-import { logError } from "../utils/devLog";
 import { InputBuffer } from "../utils/input-smoothing";
 import { haptics } from "../utils/haptics";
 import { scoreSync } from "../utils/score-sync";
@@ -27,6 +26,7 @@ import { DailyChallenge } from "../utils/seed-challenge";
 import { perfMonitor } from "../utils/perf-monitor";
 import { scoreCardGen } from "../utils/score-card";
 import { rhythmFeedback } from "../utils/feedback-rhythm";
+import { settingsManager } from "../utils/settings";
 import type {
   ActiveCell, CellShape, GameConfig, GameEvent,
   GameSnapshot, PlayerState, RareColorMode, Winner,
@@ -147,9 +147,7 @@ export class GameEngine {
       achievementSystem.register({ ...def, unlocked: false });
     }
     audioEngine.init();
-    import('../utils/settings').then(m => {
-      this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
-    }).catch(e => logError('Settings module failed', e));
+    this._settingsUnsub = settingsManager.subscribe(s => this._applySettings(s));
     this._configUnsub = configManager.subscribe(cfg => { this._config = cfg; });
     this._bossCompleteHandler = () => {
       this._bossActive = false;
@@ -472,10 +470,8 @@ destroy(): void {
     if (!keepSettings) {
       this._settingsUnsub?.();
       this._settingsUnsub = null;
-      // Re-subscribe to settings after reset
-      import('../utils/settings').then(m => {
-        this._settingsUnsub = m.settingsManager.subscribe(s => this._applySettings(s));
-      }).catch(e => logError('Settings module failed', e));
+      // Re-subscribe to settings after reset.
+      this._settingsUnsub = settingsManager.subscribe(s => this._applySettings(s));
     }
     this.start();
   }
