@@ -8,7 +8,7 @@
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
 - **Stack**: React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
-- **Version**: 7.6.1
+- **Version**: 7.8.0
 - **Live**: https://game.mscarabia.com (Firebase Hosting, auto-deployed)
 - **GitHub**: https://github.com/defaltadmin/donttouchpurple
 - **Branch**: main (all work merged)
@@ -97,7 +97,38 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-06-01)
+## Recent Session (2026-06-08)
+
+### Cleanup + Wiring + Git History Repair — 4 Commits
+
+**Commits**: `8355d2a` → `9602dbc` (4 total). All pushed + force-pushed. All gates green.
+
+#### What Was Done
+
+**Dead Code Removal:**
+- Removed unused deps: `@microsoft/clarity`, `blendy`
+- Removed dead components: `BorderGlow.tsx`, `ParticleLayer.tsx` + associated CSS (~200 lines)
+- Removed unused `logError` import from GameEngine.ts
+
+**Wiring Fixes (Components That Existed But Were Disconnected):**
+- `ScoreFloat.tsx` wired into `PlayerPanel.tsx` — score float animations now fire for both P1 and P2
+- `ShareModal.tsx` wired into GameOver — share button now opens the modal (was previously disconnected from the hook)
+
+**Vite Chunk Warning Fix:**
+- SettingsDrawer: dynamic `import()` → static import to eliminate async race
+
+**CSS Hardening:**
+- Hardcoded hex colors in `game.css`, `fx-enhancements.css` moved to CSS custom properties
+- ShareModal: added `aria-modal`, `aria-label`, `role="dialog"`, focus trap, Escape-to-close
+
+**Git History Cleanup:**
+- `.openclaude-agents.json` contained a Groq API key — removed from tracking, added to `.gitignore`, scrubbed from 8-commit range via `git filter-branch --index-filter`
+- Force-pushed rewritten history to GitHub
+
+#### Deployed
+- Game commits pushed to `defaltadmin/donttouchpurple` (force-push, 4 commits)
+
+## Previous Session (2026-06-01)
 
 ### Full Review + Fix Session — 6 Commits, 40+ Fixes (2026-06-01)
 

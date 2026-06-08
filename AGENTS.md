@@ -2,6 +2,15 @@
 
 Reflex-based grid-tapping game. React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL backgrounds.
 
+## Repos
+
+| Repo | URL | Deploy |
+|------|-----|--------|
+| Game (this repo) | `https://github.com/defaltadmin/donttouchpurple` | Firebase (game.mscarabia.com) |
+| Corpo site | `https://github.com/defaltadmin/mscarabia` | Cloudflare Pages (mscarabia.com) |
+
+Commits to this repo go to **donttouchpurple** (the game). Corpo site changes go to the **mscarabia** repo — separate clone, separate remote.
+
 ## Quick Reference
 
 | Area | Location | Key File |

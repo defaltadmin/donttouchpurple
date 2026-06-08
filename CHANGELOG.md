@@ -1,5 +1,24 @@
 # Don't Touch Purple — Changelog
 
+## [7.8.0] — 2026-06-08
+
+### Removed
+- **Unused dependencies**: `@microsoft/clarity`, `blendy` (dead imports, 0 references)
+- **Dead components**: `BorderGlow.tsx`, `ParticleLayer.tsx` plus their CSS (~200 lines)
+- **Unused `logError` import** from GameEngine.ts
+
+### Changed
+- **Score floats wired**: `ScoreFloat.tsx` now receives active score refs for both P1 and P2; float animations fire on score changes
+- **ShareModal wired**: `ShareModal.tsx` now opens on GameOver share button click (was previously disconnected from the hook)
+- **Settings import**: Dynamic `import('./Settings/SettingsDrawer')` → static import to fix Vite chunk warning and eliminate async race
+- **Hardcoded hex → CSS vars**: Moved inline hexes to CSS custom properties in `game.css`, `fx-enhancements.css`
+- **ShareModal a11y**: Added `aria-modal`, `aria-label`, `role="dialog"`, focus trap on open, Escape to close
+- **Git history**: `.openclaude-agents.json` (secret file) removed from tracking, added to `.gitignore`, scrubbed from 8-commit range via `git filter-branch`; force-pushed clean history
+
+### Fixed
+- **GitHub push protection** (Groq API key leak in `.openclaude-agents.json`): file removed from history, repo re-pushed
+- **Settings drawer race**: static import prevents chunk load failure during gameplay
+
 ## [7.7.0] — 2026-05-30
 
 ### Deployment readiness / build artifacts
