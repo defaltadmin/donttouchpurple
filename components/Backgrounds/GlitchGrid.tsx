@@ -16,7 +16,7 @@ export default function GlitchGrid() {
     if (!ctx || !canvas) return;
 
     const FONT_SIZE = 16;
-    ctx.fillStyle = "rgba(13,13,26,0.15)";
+    ctx.fillStyle = "rgba(13,8,26,0.15)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.font = `${FONT_SIZE}px monospace`;
     for (const col of colsRef.current) {
@@ -24,9 +24,10 @@ export default function GlitchGrid() {
         const cy = col.y - i * FONT_SIZE;
         if (cy < -FONT_SIZE || cy > canvas.height) return;
         const brightness = 1 - i / col.chars.length;
+        // On-brand: bright pink-white lead glyph, trail fades through magenta/purple.
         ctx.fillStyle = i === 0
-          ? `rgba(200,255,200,${brightness * 0.9})`
-          : `rgba(0,${Math.floor(180 * brightness + 40)},${Math.floor(60 * brightness)},${brightness * 0.7})`;
+          ? `rgba(253,230,255,${brightness * 0.95})`
+          : `rgba(${Math.floor(150 * brightness + 70)},${Math.floor(40 * brightness + 10)},${Math.floor(180 * brightness + 50)},${brightness * 0.7})`;
         if (Math.random() < 0.02) col.chars[i] = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
         ctx.fillText(ch, col.x, cy);
       });
