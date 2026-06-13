@@ -20,12 +20,20 @@
 ### Added — Score-float value tiers (`styles/fx-enhancements.css`, additive)
 - `.score-float[data-amount]` now tiers by hit value: low = accent, medium = secondary pink, high = gold tertiary with stronger neon. Uses the `data-amount` attr already emitted by `ScoreFloat.tsx`; no component change.
 
+### Fixed — Boss-event & HUD visual anomalies
+- **Boss-event banner overlap** (the user-reported "bar on top that overlaps existing UI"): `.boss-banner` was a full-bleed `position:fixed; top:0` bar (z 800) covering the header/score/logo and ignoring safe-area. Reworked into a centered glass **pill** positioned just below the header/notch (`top: safe-area + 52px`, z 120 — above L1 game content, below L3 modals), with a spring entrance. No longer overlaps gameplay UI.
+- **Boss variants readability**: Blackout banner text was near-invisible (`#888` on black) -> now readable amber-on-dark with a subtle border. Storm/Inversion get distinct, on-brand gradients.
+- **Shield-boss HP bar** (`.dtp-boss-bar`) was fixed at `top:12px`, also overlapping the header -> moved into the same below-header band (z 119) so the two boss UIs stack cleanly.
+- **Score-float tier conflict**: `enhancements.css` (loaded last) defined `medium=gold/high=accent`, which contradicted and overrode the tiers added in the previous commit. Consolidated to a single source of truth in `enhancements.css`: low=accent, medium=secondary pink, high=gold; removed the dead/duplicate block and duplicate `bombUrgentPulse` keyframe from `fx-enhancements.css`.
+
 ### Changed — Backgrounds wow factor + brand cohesion (`components/Backgrounds/`)
-- **Galaxy** (default / first impression): richer purple bloom (`uGlowIntensity` 0.4->0.6), deeper parallax star field (`uDensity` 1.2->1.5), punchier saturation (0.6->0.85), livelier twinkle (0.4->0.6); hue kept purple-locked (260). Pure uniform tuning; OGL pattern unchanged (resize, mouse lerp, webglcontextlost/restored, `WEBGL_lose_context` cleanup all intact). `reducedMotion` still halves speed.
-- **Nebula**: clouds now span the brand range (purple 270 / magenta 290 / pink 320) with depth-varied opacity; a minority of stars carry a faint gold/pink tint. `useBackgroundController` pause/resume and `document.hidden` idle-skip unchanged. Stays atmospheric/low-contrast so it never competes with grid readability.
+- **Galaxy** (default / first impression): richer purple bloom (`uGlowIntensity` 0.4->0.6), deeper parallax star field (`uDensity` 1.2->1.5), punchier saturation (0.6->0.85), livelier twinkle (0.4->0.6); hue kept purple-locked (260). Pure uniform tuning; OGL pattern unchanged. `reducedMotion` still halves speed.
+- **Nebula**: clouds now span the brand range (purple/magenta/pink) with depth-varied opacity; minority of stars carry a faint gold/pink tint. `useBackgroundController` + `document.hidden` idle-skip unchanged.
+- **Hyperspeed**: more streaks (40->56), magenta->pink->cyan brand blend, brighter additive output, richer magenta center bloom. OGL pattern + context-loss handlers intact.
+- **PurpleRain**: ~80% purple / ~13% pink / ~7% gold shapes for subtle brand variety + soft glow on filled shapes. Keeps cached-color perf pattern, `useBackgroundController`, and idle-skip. Low-opacity so the grid stays readable.
 
 ### Planned (next session / follow-up agents)
-- **Remaining 19 backgrounds**: apply the same brand-cohesion + wow-factor pass to the most generic ones first (suggested order: Hyperspeed, PurpleRain, DataStream, StarWarp, GlitchGrid, AuroraBorealis, DigitalRain), keeping each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/` per repo rule.
+- **Remaining backgrounds** (most-generic first): DataStream, StarWarp, GlitchGrid, AuroraBorealis, DigitalRain, GridPulse, BlockOrbit, CellBreath, PulseField, AmbientFlow, Lightning, Silk, etc. Same brand-cohesion + wow pass, each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/`.
 - **Background picker preview thumbnails**: verify the shop background previews still represent the tuned looks.
 - **Cell juice tuning**: validate press-collapse / bloom intensities on a real device; expose timing as CSS vars if they need per-theme tuning.
 - **Verify Lighthouse** (target A100/B96) and bundle-size budget after the broader background pass.
