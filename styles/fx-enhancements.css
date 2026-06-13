@@ -62,3 +62,15 @@
   0%,100% { filter: brightness(1)    drop-shadow(0 0 4px rgba(255,34,0,0.5)); transform: scale(1); }
   50%     { filter: brightness(1.25) drop-shadow(0 0 12px rgba(255,34,0,0.95)); transform: scale(1.04); }
 }
+
+/* Score-float value tiers: higher hits read as more rewarding.
+   Uses the data-amount attribute already emitted by ScoreFloat.tsx. */
+.score-float {
+  font-family: var(--font-game);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  will-change: transform, opacity;
+}
+.score-float[data-amount="low"]    { color: var(--accent);    text-shadow: 0 0 8px rgba(253,169,255,0.55); }
+.score-float[data-amount="medium"] { color: var(--secondary); text-shadow: 0 0 10px rgba(243,174,255,0.7); }
+.score-float[data-amount="high"]   { color: var(--gold);      text-shadow: 0 0 14px rgba(249,189,34,0.85); }
