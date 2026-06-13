@@ -8,7 +8,7 @@
 
 - **Game**: Don't Touch Purple — reflex-based grid-tapping game
 - **Stack**: React 18, TypeScript 5, Vite 7, Firebase, OGL/WebGL, GSAP, framer-motion
-- **Version**: 7.8.0
+- **Version**: 7.9.1
 - **Live**: https://game.mscarabia.com (Firebase Hosting, auto-deployed)
 - **GitHub**: https://github.com/defaltadmin/donttouchpurple
 - **Branch**: main (all work merged)

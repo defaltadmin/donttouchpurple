@@ -1,5 +1,23 @@
 # Don't Touch Purple — Changelog
 
+## [7.9.1] — 2026-06-13 (Default Background Upgrade)
+
+### Changed — Galaxy default background (`components/Backgrounds/Galaxy.tsx`)
+- Full GLSL shader rewrite: 6 parallax star layers (was 4), FBM-based nebula fog
+  in brand hues (purple/magenta/pink), sparse cosmic dust particles, star halo bloom,
+  vignette, and centre glow for depth.
+- Tuned uniforms: density 1.8, glow 0.8, saturation 0.90, twinkle 0.7.
+- Reduced-motion still halves animation speed.
+
+### Changed — Default background (`App.tsx`, `utils/shop-storage.ts`)
+- `backgroundMap['default']` now maps to `Galaxy` (was `ElasticWarp`).
+- Removed unused `ElasticWarp` lazy import.
+
+### Fixed — ESLint artifact noise (`eslint.config.js`)
+- Added `android/app/build/**`, `android/app/src/main/assets/**`, `android/.gradle/**`,
+  `android/.idea/**`, and Capacitor cache dirs to `ignores`.
+- Lint now runs cleanly on source only (0 errors, 0 warnings).
+
 ## [7.9.0] — 2026-06-13 (Visual Polish Pass)
 
 > Branch `polish/cell-cleanup` -> MR !19. All changes additive and low-risk:

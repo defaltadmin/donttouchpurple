@@ -1,6 +1,6 @@
 {
   "name": "dont-touch-purple",
-  "version": "7.7.0",
+  "version": "7.9.1",
   "private": true,
   "description": "Fast-paced reflex grid-tapping game. Two modes, 50+ achievements, global leaderboard, 12 WebGL backgrounds. React 19 + TypeScript + Firebase.",
   "type": "module",
@@ -50,6 +50,8 @@
     "release:major": "npm version major && git push && git push --tags && bash scripts/release-v6.sh"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@lottiefiles/dotlottie-web": "^0.74.0",
     "@sentry/react": "^10.51.0",
     "firebase": "^12.13.0",
@@ -62,6 +64,7 @@
     "web-vitals": "^4.2.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@cloudflare/workers-types": "^4.20260517.1",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
