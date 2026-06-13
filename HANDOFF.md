@@ -97,6 +97,68 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
+## Recent Session (2026-06-13) — Visual Polish Pass
+
+**Branch**: `polish/cell-cleanup` -> **MR !19** (open, targeting `main`).
+**Status**: changes complete, but **gates NOT run** in this session (the
+developer/code-review flow handoff returned HTTP 403, so work was done
+directly). Before merge, a human/agent MUST run:
+`pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test && pnpm build`.
+
+### What was done (all additive, low-risk — no logic / DOM / testid / engine changes)
+1. **`components/Cell/index.tsx`** — moved `sparkRafRef` above the cleanup effect that used it; extracted spark colors to named constants tied to DESIGN.md tokens (rule 6).
+2. **`styles/fx-enhancements.css`** (additive only, never touched the 3.6k-line `.cell` rules in `game.css`):
+   - `.cell.pressing` acrylic press-collapse
+   - safe-tap bloom on white/blue `.pop` (gold on yellow/medpack)
+   - `.cell.purple` danger rim + `.cell.bomb--urgent` pulse
+   - `.score-float[data-amount]` low/medium/high color tiers (accent / pink / gold)
+3. **Backgrounds (7 done)** — `Galaxy` (cinematic uniform tuning), `Nebula` (brand clouds + accent stars), `Hyperspeed` (magenta->pink->cyan streaks + bloom), `PurpleRain` (purple/pink/gold shapes + glow), `GlitchGrid` (recolored off-brand matrix-green -> magenta/pink), `DataStream` (lead-cell glow + dropped off-brand blue), `StarWarp` (hi-DPI center bug fixed + glow trails). All within their existing OGL or 2D-canvas patterns; context-loss / `useBackgroundController` / idle-skip untouched.
+4. **Boss-event + HUD anomaly fixes** — the user-reported boss "bar on top that overlaps UI": `.boss-banner` reworked from a full-bleed top:0 bar into a centered glass pill below the header (z 120); blackout banner text made readable (amber on dark); shield-boss `.dtp-boss-bar` moved below the header (z 119); score-float tiers consolidated into one source of truth in `enhancements.css` and duplicate `bombUrgentPulse` removed from `fx-enhancements.css`. **Blackout overlay** changed from a flat black box to an intentional radial vignette with purple edge tint.
+5. **`CHANGELOG.md`** — v7.9.0 entry (kept current with all of the above).
+
+### Planned / still TODO (hand to next agent)
+- **Backgrounds overhaul, remaining ~14**: same brand-cohesion + wow pass, most-generic first. Suggested order: `AuroraBorealis`, `DigitalRain`, `GridPulse`, `BlockOrbit`, `CellBreath`, `PulseField`, `AmbientFlow`, `Lightning`, `Silk`, `PurpleCascade`, `ElasticWarp`, `MouseFollower`, `MouseTrail`. Match each file's existing pattern (OGL shader like `Galaxy.tsx`/`Hyperspeed.tsx`, or 2D-canvas + `useBackgroundController` like `Nebula.tsx`/`PurpleRain.tsx`). Watch for the same hi-DPI center bug fixed in `StarWarp` (DPR-scaled `canvas.width` vs DPR-transformed ctx). Keep them atmospheric/low-contrast so the grid stays legible; respect `reducedMotion` + Lite Mode (`[data-low-quality]`) + `document.hidden`. Do NOT delete — move only truly-unreferenced files to `junk/`.
+- **Audit other in-game overlays for overlap/safe-area** the way the boss banner was fixed (e.g. anything `position:fixed; top:0`), especially on notch devices.
+- **Shop background preview thumbnails**: confirm they reflect the tuned looks.
+- **On-device tuning** of cell press-collapse / bloom intensities; consider exposing timings as CSS vars for per-theme control.
+- **Re-run Lighthouse** (target A100/B96) + bundle-size check after the broad background pass.
+
+### Reusable prompt for the next AI agent (copy-paste)
+
+> You are continuing a visual-polish effort on **Don't Touch Purple** (React 18,
+> TS5, Vite 7, OGL/WebGL backgrounds). **Read `AGENTS.md`, `DESIGN.md`, and this
+> `HANDOFF.md` FIRST and follow them strictly.** Work on a new branch off `main`
+> and open one reviewable MR. Before opening the MR you MUST run and pass:
+> `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test && pnpm build`.
+>
+> Hard constraints:
+> - Keep `engine/` React-free. Don't change game logic, cell DOM structure, or
+>   any `data-testid`. Preserve every WebGL `webglcontextlost`/`restored` handler
+>   and `WEBGL_lose_context` cleanup.
+> - Use ONLY the 4 existing animation systems (CSS, GSAP, framer-motion,
+>   dotlottie). Do NOT add a 5th library.
+> - No hardcoded hex in CSS — use the CSS custom properties / DESIGN.md tokens.
+>   For canvas/WebGL (which can't read CSS vars) use named constants tied to the
+>   palette: space indigo `#151028`, primary magenta `#c026d3` / `#fda9ff`,
+>   secondary pink `#f3aeff`, tertiary gold `#f9bd22`.
+> - Gate every decorative animation behind `reducedMotion`; disable particle-
+>   heavy layers under Lite Mode (`[data-low-quality]`); idle-skip via
+>   `document.hidden`. Don't regress Lighthouse (A100/B96) or the bundle budget.
+>
+> Task: improve the WOW factor and brand cohesion of the remaining background
+> components in `components/Backgrounds/` (Galaxy + Nebula already done in MR !19).
+> Tackle the most generic ones first: Hyperspeed, PurpleRain, DataStream,
+> StarWarp, GlitchGrid, AuroraBorealis, DigitalRain. Match each file's existing
+> pattern (OGL shader vs 2D-canvas using `useBackgroundController`). They must
+> stay atmospheric and low-contrast so the gameplay grid stays readable, and all
+> read as the same dark-cyberpunk synthwave family. Do NOT delete components;
+> move only genuinely-unreferenced files to `junk/`.
+>
+> Deliverable: one MR whose description lists each background changed and how,
+> plus confirmation that the gates pass and reducedMotion + Lite Mode are
+> respected. Keep the diff focused — no sweeping unrelated refactors. Then update
+> `CHANGELOG.md` and the "Planned / still TODO" list in `HANDOFF.md`.
+
 ## Recent Session (2026-06-08)
 
 ### Cleanup + Wiring + Git History Repair — 4 Commits

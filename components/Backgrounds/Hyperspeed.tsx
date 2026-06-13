@@ -34,7 +34,7 @@ void main() {
   vec3 col = vec3(0.0);
 
   // Speed lines radiating from center
-  for (int i = 0; i < 40; i++) {
+  for (int i = 0; i < 56; i++) {
     float fi = float(i);
     float angle = hash(vec2(fi, 0.0)) * PI * 2.0;
     float speed = 0.3 + hash(vec2(fi, 1.0)) * 0.7;
@@ -53,18 +53,20 @@ void main() {
     float line = smoothstep(len, 0.0, abs(along)) * smoothstep(width, 0.0, perp);
     line *= smoothstep(0.0, 0.2, lineT) * smoothstep(1.0, 0.8, lineT);
 
-    // Purple-cyan palette
-    vec3 lineCol = mix(
-      vec3(0.55, 0.0, 1.0),
-      vec3(0.0, 0.8, 1.0),
-      hash(vec2(fi, 5.0))
-    );
-    col += line * lineCol * 0.6;
+    // On-brand blend: electric magenta -> cotton-candy pink -> cyan
+    float h = hash(vec2(fi, 5.0));
+    vec3 magenta = vec3(0.75, 0.15, 0.83);
+    vec3 pink    = vec3(0.95, 0.68, 1.0);
+    vec3 cyan    = vec3(0.0, 0.8, 1.0);
+    vec3 lineCol = h < 0.5
+      ? mix(magenta, pink, h * 2.0)
+      : mix(pink, cyan, (h - 0.5) * 2.0);
+    col += line * lineCol * 0.8;
   }
 
-  // Center glow
-  float glow = 0.02 / (length(uv) + 0.05);
-  col += glow * vec3(0.4, 0.0, 0.8) * 0.3;
+  // Center bloom — richer, on-brand magenta core
+  float glow = 0.028 / (length(uv) + 0.045);
+  col += glow * vec3(0.6, 0.1, 0.85) * 0.45;
 
   float alpha = clamp(length(col), 0.0, 1.0);
   gl_FragColor = vec4(col, alpha);

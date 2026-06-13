@@ -1,5 +1,5 @@
 .game-grid { touch-action: none; -webkit-user-select: none; user-select: none; }
-.dtp-boss-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); width: 280px; text-align: center; pointer-events: none; z-index: 1000; }
+.dtp-boss-bar { position: fixed; top: calc(var(--sat, 0px) + 92px); left: 50%; transform: translateX(-50%); width: min(88vw, 280px); text-align: center; pointer-events: none; z-index: 119; }
 .dtp-boss-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); margin-bottom: 4px; }
 .dtp-boss-track { height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
 .dtp-boss-fill { height: 100%; background: linear-gradient(90deg, var(--danger), var(--accent)); transition: width 0.2s cubic-bezier(0.4,0,0.2,1); }
@@ -7,3 +7,51 @@
 .dtp-combo-popup { position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; font-weight: 900; color: var(--accent); text-shadow: 0 4px 12px rgba(249,189,34,0.4); animation: comboPopIn 0.4s ease-out forwards; pointer-events: none; z-index: 1001; }
 @keyframes comboPopIn { 0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 .dtp-btn.previewing { opacity: 0.7; cursor: not-allowed; animation: pulse 1.5s infinite; }
+
+/* ============================================================
+   Cell tactility & feedback juice (additive; non-destructive)
+   Layers on top of the .cell rules in game.css. All decorative
+   motion is auto-neutralised by .root--reduced-motion and scaled
+   by [data-low-quality] --motion-scale. Colours use CSS vars.
+   ============================================================ */
+
+/* Physical "acrylic button" press-collapse: the cell sinks toward the
+   surface and its 4px bevel shadow compresses, matching DESIGN.md. */
+.cell.pressing:not(.inactive) {
+  transform: translateY(3px) scale(0.95);
+  filter: brightness(1.08) saturate(1.08);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.35);
+}
+
+/* Safe-cell tap bloom: a quick neon halo on successful (white/blue) taps.
+   Uses opacity/transform only (no animated box-shadow on mobile). */
+.cell.white.pop::after,
+.cell.blue.pop::after {
+  content: '';
+  position: absolute; inset: -6px; border-radius: inherit;
+  pointer-events: none; z-index: 2;
+  background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 65%);
+  opacity: 0; transform: scale(0.6);
+  animation: cellSafeBloom 0.4s cubic-bezier(0.22,1,0.36,1) forwards;
+  will-change: transform, opacity;
+}
+@keyframes cellSafeBloom {
+  0%   { opacity: 0.55; transform: scale(0.6); }
+  100% { opacity: 0;    transform: scale(1.5); }
+}
+
+/* Streak / gold flavour: when a cell carries the gold accent context it
+   blooms in the tertiary token instead, for a "premium" hit feel. */
+.cell.yellow.pop::after,
+.cell.medpack.pop::after {
+  background: radial-gradient(circle at 50% 50%, var(--gold) 0%, transparent 65%);
+}
+
+/* Clearer at-a-glance danger: stronger electric-magenta rim on purple. */
+.cell.purple:not(.inactive) {
+  outline: 1.5px solid rgba(253,169,255,0.35);
+  outline-offset: -1.5px;
+}
+
+/* NOTE: bomb-urgent pulse + score-float value tiers live in enhancements.css
+   (loaded after this file) so it remains the single source of truth. */

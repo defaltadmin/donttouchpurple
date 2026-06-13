@@ -4,6 +4,10 @@ import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 import { Icon } from '../UI/Icon';
 
+// Spark colors sourced from the DESIGN.md palette (canvas can't read CSS vars directly).
+const SPARK_DANGER_COLOR = '#ff2200'; // error / danger
+const SPARK_DEFAULT_COLOR = '#c026d3'; // primary-container
+
 interface CellProps {
   cell: ActiveCell;
   onTap: (idx: number) => void;
@@ -107,13 +111,12 @@ export default React.memo(function Cell({
   // ── ClickSpark: canvas spark burst on tap ──
   const sparkCanvasRef = useRef<HTMLCanvasElement>(null);
   const sparksRef = useRef<{ x: number; y: number; angle: number; startTime: number }[]>([]);
+  const sparkRafRef = useRef(0);
 
   // Spark rendering is driven by emitSparks — no idle RAF loop needed
   useEffect(() => {
     return () => { if (sparkRafRef.current) cancelAnimationFrame(sparkRafRef.current); };
   }, []);
-
-  const sparkRafRef = useRef(0);
   const emitSparks = useCallback((e: React.PointerEvent) => {
     const canvas = sparkCanvasRef.current;
     if (!canvas) return;
@@ -138,7 +141,8 @@ export default React.memo(function Cell({
           const eased = p * (2 - p);
           const dist = eased * 14;
           const len = 8 * (1 - eased);
-          ctx.strokeStyle = cell.type === 'purple' ? '#ff2200' : '#c026d3';
+          // Palette-sourced (DESIGN.md): error red for purple/danger, primary-container magenta otherwise
+          ctx.strokeStyle = cell.type === 'purple' ? SPARK_DANGER_COLOR : SPARK_DEFAULT_COLOR;
           ctx.lineWidth = 1.5;
           ctx.globalAlpha = 1 - eased;
           ctx.beginPath();

@@ -70,8 +70,10 @@ export default function StarWarp() {
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
 
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    // ctx is DPR-transformed via setTransform, so use CSS-pixel dims for layout
+    // math; clearRect over the full device buffer is fine.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const w = window.innerWidth, h = window.innerHeight;
 
     for (const s of shapesRef.current) {
       s.dist += s.speed * (1 + s.dist / 80);
@@ -83,9 +85,13 @@ export default function StarWarp() {
 
       ctx.globalAlpha = s.opacity * (0.2 + progress * 0.8);
       ctx.fillStyle = s.color;
+      // Glow grows as the shape warps outward, for a cinematic streak.
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 4 + progress * 12;
       drawShape(ctx, s.shape, x, y, s.size * (0.4 + progress * 0.6), s.angle + progress * Math.PI);
     }
 
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   });
 
@@ -117,8 +123,10 @@ export default function StarWarp() {
     window.addEventListener('resize', resize);
 
     const COUNT = 60;
+    // Use CSS pixel dims (not DPR-scaled canvas.width) so shapes spawn at the
+    // visual center — the ctx is already DPR-transformed via setTransform.
     shapesRef.current = Array.from({ length: COUNT }, () =>
-      makeWarpShape(canvas.width, canvas.height)
+      makeWarpShape(window.innerWidth, window.innerHeight)
     );
 
     return () => {

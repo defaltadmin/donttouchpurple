@@ -1,5 +1,49 @@
 # Don't Touch Purple — Changelog
 
+## [7.9.0] — 2026-06-13 (Visual Polish Pass)
+
+> Branch `polish/cell-cleanup` -> MR !19. All changes additive and low-risk:
+> no game logic, DOM structure, `data-testid`, or `engine/` files touched.
+> **Gates were NOT run automatically in this session** (agent/CI handoff returned 403).
+> Before merge, run: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test && pnpm build`.
+
+### Changed — Cell code quality (`components/Cell/index.tsx`)
+- Moved `sparkRafRef` `useRef` declaration above the cleanup `useEffect` that referenced it (clarity; file now reads top-to-bottom). No behavior change.
+- Replaced inline spark hex (`#ff2200`, `#c026d3`) with named module constants documented against DESIGN.md tokens (error red, primary-container magenta). Canvas can't read CSS vars, so constants are the correct pattern (rule 6).
+
+### Added — Cell tactility & feedback juice (`styles/fx-enhancements.css`, additive)
+- `.cell.pressing` physical acrylic **press-collapse** (sinks +3px, bevel compresses) per DESIGN.md "3D bevel" pillar.
+- **Safe-tap bloom** halo on white/blue cell `.pop` (gold tint for yellow/medpack) using transform/opacity only (no animated box-shadow on mobile).
+- Clearer at-a-glance **danger read**: electric-magenta rim on `.cell.purple`; pulsing `.cell.bomb--urgent` threat ring.
+- All decorative motion auto-neutralised by the existing `.root--reduced-motion` rule and scaled by `[data-low-quality] --motion-scale`. Colors use existing CSS vars.
+
+### Added — Score-float value tiers (`styles/fx-enhancements.css`, additive)
+- `.score-float[data-amount]` now tiers by hit value: low = accent, medium = secondary pink, high = gold tertiary with stronger neon. Uses the `data-amount` attr already emitted by `ScoreFloat.tsx`; no component change.
+
+### Fixed — Boss-event & HUD visual anomalies
+- **Boss-event banner overlap** (the user-reported "bar on top that overlaps existing UI"): `.boss-banner` was a full-bleed `position:fixed; top:0` bar (z 800) covering the header/score/logo and ignoring safe-area. Reworked into a centered glass **pill** positioned just below the header/notch (`top: safe-area + 52px`, z 120 — above L1 game content, below L3 modals), with a spring entrance. No longer overlaps gameplay UI.
+- **Boss variants readability**: Blackout banner text was near-invisible (`#888` on black) -> now readable amber-on-dark with a subtle border. Storm/Inversion get distinct, on-brand gradients.
+- **Shield-boss HP bar** (`.dtp-boss-bar`) was fixed at `top:12px`, also overlapping the header -> moved into the same below-header band (z 119) so the two boss UIs stack cleanly.
+- **Score-float tier conflict**: `enhancements.css` (loaded last) defined `medium=gold/high=accent`, which contradicted and overrode the tiers added in the previous commit. Consolidated to a single source of truth in `enhancements.css`: low=accent, medium=secondary pink, high=gold; removed the dead/duplicate block and duplicate `bombUrgentPulse` keyframe from `fx-enhancements.css`.
+
+### Changed — Backgrounds wow factor + brand cohesion (`components/Backgrounds/`)
+- **Galaxy** (default / first impression): richer purple bloom (`uGlowIntensity` 0.4->0.6), deeper parallax star field (`uDensity` 1.2->1.5), punchier saturation (0.6->0.85), livelier twinkle (0.4->0.6); hue kept purple-locked (260). Pure uniform tuning; OGL pattern unchanged. `reducedMotion` still halves speed.
+- **Nebula**: clouds now span the brand range (purple/magenta/pink) with depth-varied opacity; minority of stars carry a faint gold/pink tint. `useBackgroundController` + `document.hidden` idle-skip unchanged.
+- **Hyperspeed**: more streaks (40->56), magenta->pink->cyan brand blend, brighter additive output, richer magenta center bloom. OGL pattern + context-loss handlers intact.
+- **PurpleRain**: ~80% purple / ~13% pink / ~7% gold shapes for subtle brand variety + soft glow on filled shapes. Keeps cached-color perf pattern, `useBackgroundController`, and idle-skip. Low-opacity so the grid stays readable.
+- **GlitchGrid**: recolored from off-brand matrix-**green** to on-brand magenta/pink (bright pink-white lead glyph, magenta/purple trail). Fixes a real brand-cohesion anomaly.
+- **DataStream**: dropped off-brand blue (`#3b82f6`); each column now has a glowing bright lead cell with a fading magenta/purple trail for depth.
+- **StarWarp**: fixed a hi-DPI bug where shapes spawned off the visual center (used DPR-scaled dims while the ctx was DPR-transformed) and added distance-scaled glow trails.
+
+### Fixed — Blackout boss overlay
+- The blackout overlay was a flat `rgba(0,0,0,0.82)` box that read like a render glitch. Now an intentional radial **vignette** (clearer center, darker edges) with a faint purple edge tint and a fade-in. Still `pointer-events:none`, below the boss banner.
+
+### Planned (next session / follow-up agents)
+- **Remaining backgrounds** (most-generic first): AuroraBorealis, DigitalRain, GridPulse, BlockOrbit, CellBreath, PulseField, AmbientFlow, Lightning, Silk, PurpleCascade, ElasticWarp. Same brand-cohesion + wow pass, each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/`.
+- **Background picker preview thumbnails**: verify the shop background previews still represent the tuned looks.
+- **Cell juice tuning**: validate press-collapse / bloom intensities on a real device; expose timing as CSS vars if they need per-theme tuning.
+- **Verify Lighthouse** (target A100/B96) and bundle-size budget after the broader background pass.
+
 ## [7.8.0] — 2026-06-08
 
 ### Removed

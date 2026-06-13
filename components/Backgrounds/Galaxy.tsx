@@ -161,14 +161,14 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
         uFocal: { value: new Float32Array([0.5, 0.5]) },
         uRotation: { value: new Float32Array([1.0, 0.0]) },
         uStarSpeed: { value: 0.5 },
-        uDensity: { value: 1.2 },
+        uDensity: { value: 1.5 }, // deeper star field / more parallax depth
         uHueShift: { value: 260 }, // Purple-shifted to match game theme
         uSpeed: { value: speed },
         uMouse: { value: new Float32Array([0.5, 0.5]) },
-        uGlowIntensity: { value: 0.4 },
-        uSaturation: { value: 0.6 },
+        uGlowIntensity: { value: 0.6 }, // richer neon bloom for first-impression wow
+        uSaturation: { value: 0.85 }, // punchier on-brand purples
         uMouseRepulsion: { value: true },
-        uTwinkleIntensity: { value: 0.4 },
+        uTwinkleIntensity: { value: 0.6 }, // livelier twinkle
         uRotationSpeed: { value: 0.08 },
         uRepulsionStrength: { value: 1.5 },
         uMouseActiveFactor: { value: 0.0 },
