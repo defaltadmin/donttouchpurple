@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'junk/**', 'node_modules/**', 'public/sw.js', 'website/**', 'MSCArabia.com/**', 'functions/lib/**', 'coverage/**', '.agent/**', '.agents/**', '.claude/**', '.continue/**', '.gemini/**', '.trae/**', '.windsurf/**', '.wrangler/**'] },
+  { ignores: ['dist/**', 'junk/**', 'node_modules/**', 'public/sw.js', 'website/**', 'MSCArabia.com/**', 'functions/lib/**', 'coverage/**', '.agent/**', '.agents/**', '.claude/**', '.continue/**', '.gemini/**', '.trae/**', '.windsurf/**', '.wrangler/**', 'android/app/build/**', 'android/app/src/main/assets/**', 'android/.gradle/**', 'android/.idea/**', 'android/capacitor-cordova-cache/**', 'android/capacitor-debug/**', 'android/capacitor-release/**'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,

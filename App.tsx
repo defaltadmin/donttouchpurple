@@ -78,7 +78,6 @@ const Galaxy         = lazy(() => import("./components/Backgrounds/Galaxy"));
 const Hyperspeed     = lazy(() => import("./components/Backgrounds/Hyperspeed"));
 const Silk           = lazy(() => import("./components/Backgrounds/Silk"));
 const Lightning      = lazy(() => import("./components/Backgrounds/Lightning"));
-const ElasticWarp    = lazy(() => import("./components/Backgrounds/ElasticWarp"));
 import { MouseFollower } from "./components/Backgrounds/MouseFollower";
 import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 
@@ -694,7 +693,7 @@ export default function App() {
 
   // Background component mapping
   const backgroundMap = React.useMemo<Record<string, { component: React.ComponentType<Record<string, unknown>> }>>(() => ({
-    'default': { component: ElasticWarp },
+    'default': { component: Galaxy },
     'void-tunnel': { component: VoidTunnel },
     'star-warp': { component: StarWarp },
     'grid-pulse': { component: GridPulse },
