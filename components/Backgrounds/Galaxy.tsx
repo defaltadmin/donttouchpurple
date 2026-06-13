@@ -33,10 +33,12 @@ uniform float uRepulsionStrength;
 uniform float uMouseActiveFactor;
 uniform float uAutoCenterRepulsion;
 uniform bool uTransparent;
+uniform bool uMobile;
 varying vec2 vUv;
 
 // ── Constants ───────────────────────────────────────────────────────────────
-#define NUM_LAYER  6.0
+#define NUM_LAYER_DESKTOP  6.0
+#define NUM_LAYER_MOBILE   3.0
 #define NUM_DUST   40.0
 #define STAR_COLOR_CUTOFF 0.25
 #define MAT45      mat2(0.7071, -0.7071, 0.7071, 0.7071)
@@ -62,11 +64,13 @@ float ValueNoise(vec2 p) {
 }
 
 // Fractal Brownian Motion — layered noise for organic nebula clouds
-float FBM(vec2 p) {
+float FBM(vec2 p, bool mobile) {
   float val = 0.0;
   float amp = 0.5;
   float freq = 1.0;
+  int iterations = mobile ? 2 : 4;
   for (int i = 0; i < 4; i++) {
+    if (i >= iterations) break;
     val += amp * ValueNoise(p * freq);
     freq *= 2.1;
     amp  *= 0.48;
@@ -140,10 +144,10 @@ vec3 StarLayer(vec2 uv) {
 }
 
 // ── Nebula fog ───────────────────────────────────────────────────────────────
-vec3 NebulaFog(vec2 uv, float t) {
+vec3 NebulaFog(vec2 uv, float t, bool mobile) {
   // Layer two FBM passes offset in time for slow organic drift
-  float n1 = FBM(uv * 1.8 + vec2(t * 0.04, t * 0.025));
-  float n2 = FBM(uv * 3.1 + vec2(-t * 0.03, t * 0.055) + 4.2);
+  float n1 = FBM(uv * 1.8 + vec2(t * 0.04, t * 0.025), mobile);
+  float n2 = FBM(uv * 3.1 + vec2(-t * 0.03, t * 0.055) + 4.2, mobile);
   float fog = n1 * n2;
 
   // Brand-colour palette: purple (270°) → magenta (290°) → pink (320°)
@@ -204,10 +208,12 @@ void main() {
   vec3 col = vec3(0.0);
 
   // ── 2. Nebula fog — slow-drifting organic cloud layer ──────────────────
-  col += NebulaFog(uv * 0.6 + vec2(uTime * 0.008, uTime * 0.005), uTime);
+  col += NebulaFog(uv * 0.6 + vec2(uTime * 0.008, uTime * 0.005), uTime, uMobile);
 
-  // ── 3. Star parallax layers (6 instead of 4 for deeper field) ──────────
-  for (float i = 0.0; i < 1.0; i += 1.0 / NUM_LAYER) {
+  // ── 3. Star parallax layers ──────────
+  float layers = uMobile ? NUM_LAYER_MOBILE : NUM_LAYER_DESKTOP;
+  for (float i = 0.0; i < 1.0; i += 1.0 / 6.0) {
+    if (i >= layers / 6.0) break;
     float depth = fract(i + uStarSpeed * uSpeed);
     float scale = mix(22.0 * uDensity, 0.4 * uDensity, depth);
     float fade  = depth * smoothstep(1.0, 0.9, depth);
@@ -215,7 +221,9 @@ void main() {
   }
 
   // ── 4. Cosmic dust — tiny drifting specks for atmosphere ────────────────
-  col += vec3(0.75, 0.55, 1.0) * Dust(uv * 1.2 + vec2(uTime * 0.012), uTime);
+  if (!uMobile) {
+    col += vec3(0.75, 0.55, 1.0) * Dust(uv * 1.2 + vec2(uTime * 0.012), uTime);
+  }
 
   // ── 5. Vignette — darker edges focus attention on centre ───────────────
   vec2 vigUv = vUv - 0.5;
@@ -243,7 +251,17 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
   useEffect(() => {
     if (!ctnRef.current) return;
     const ctn = ctnRef.current;
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Clamp DPR to 1.0 on mobile to save GPU fill rate (huge performance gain)
+    const dpr = isMobile ? 1.0 : window.devicePixelRatio;
+
+    const renderer = new Renderer({
+      alpha: true,
+      premultipliedAlpha: false,
+      dpr: dpr
+    });
+
     const gl = renderer.gl;
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -273,6 +291,7 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
         uMouseActiveFactor:  { value: 0.0 },
         uAutoCenterRepulsion:{ value: 0 },
         uTransparent:        { value: true },
+        uMobile:             { value: isMobile },
       },
     });
 

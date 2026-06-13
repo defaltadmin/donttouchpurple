@@ -137,6 +137,7 @@ import { buildDailyChallenges, buildWeeklyTasks } from './utils/rewards';
 
 // --- App Component ---
 export default function App() {
+  const isTouchDevice = !(window.matchMedia?.("(pointer: fine)")?.matches);
   const {
     showNameEntry, setShowNameEntry,
     showRotatePrompt, setShowRotatePrompt,
@@ -236,6 +237,7 @@ export default function App() {
 
   // Spotlight effect - update CSS vars for card hover glow (throttled via RAF)
   useEffect(() => {
+    if (isTouchDevice) return; // Disable on touch devices to save CPU
     let rafId: number | null = null;
     let lastX = 0, lastY = 0;
     const handleMove = (e: MouseEvent) => {
@@ -254,7 +256,7 @@ export default function App() {
       window.removeEventListener('mousemove', handleMove);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [isTouchDevice]);
 
   
   const [gameMode, setGameMode]      = useState<GameMode>("classic");
@@ -262,7 +264,6 @@ export default function App() {
   const [inputMode, setInputMode]    = useState<InputMode>("touch");
   const [practiceMode, setPracticeMode] = useState(false);
   const { muted, toggleMuted, volume, setVolume, haptics, setHaptics, screenShake, setScreenShakePersisted, reducedMotion, setReducedMotion } = useGameSettings();
-  const isTouchDevice = !(window.matchMedia?.("(pointer: fine)")?.matches);
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);

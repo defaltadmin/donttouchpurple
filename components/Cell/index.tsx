@@ -4,9 +4,8 @@ import type { ActiveCell } from '../../engine/types';
 import { getRareModeConfig } from '../../config/gridPatterns';
 import { Icon } from '../UI/Icon';
 
-// Spark colors sourced from the DESIGN.md palette (canvas can't read CSS vars directly).
-const SPARK_DANGER_COLOR = '#ff2200'; // error / danger
-const SPARK_DEFAULT_COLOR = '#c026d3'; // primary-container
+const SPARK_DANGER_COLOR = '#ff2200';
+const SPARK_DEFAULT_COLOR = '#c026d3';
 
 interface CellProps {
   cell: ActiveCell;
@@ -24,7 +23,7 @@ interface CellProps {
 }
 
 function BombTimer({ expiresAt }: { expiresAt: number }) {
-  const TOTAL_MS = 2000; // matches BALANCE.bomb.fuseTimeMs
+  const TOTAL_MS = 2000;
   const [ms, setMs] = useState(() => Math.max(0, expiresAt - Date.now()));
 
   useEffect(() => {
@@ -42,14 +41,12 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
   const pct = Math.max(0, Math.min(1, ms / TOTAL_MS));
   const R = 20;
   const CIRC = 2 * Math.PI * R;
-  const dashOffset = CIRC * (1 - pct); // drains clockwise
+  const dashOffset = CIRC * (1 - pct);
   const isUrgent = pct < 0.35;
 
   return (
     <svg className="bomb-ring" viewBox="0 0 52 52" width="100%" height="100%">
-      {/* Track */}
       <circle cx="26" cy="26" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="4" />
-      {/* Draining arc */}
       <circle
         cx="26" cy="26" r={R}
         fill="none"
@@ -61,7 +58,6 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
         transform="rotate(-90 26 26)"
         style={{ transition: "stroke-dashoffset 0.06s linear, stroke 0.3s ease" }}
       />
-      {/* Center label */}
       <text
         x="26" y="30"
         textAnchor="middle"
@@ -77,7 +73,7 @@ function BombTimer({ expiresAt }: { expiresAt: number }) {
   );
 }
 
-export default React.memo(function Cell({
+const CellContent = ({
   cell,
   onTap,
   onHoldStart,
@@ -90,13 +86,13 @@ export default React.memo(function Cell({
   botDustCost,
   holdProgress,
   bombFuse,
-}: CellProps) {
+}: CellProps) => {
 
   const isBomb = cell.type === 'bomb';
-  const bombUrgent = isBomb && (bombFuse !== undefined ? bombFuse < 700 : false); // last 700ms = urgent
+  const bombUrgent = isBomb && (bombFuse !== undefined ? bombFuse < 700 : false);
   const isClicked = cell.clicked;
   const shape = cell.shape || 'circle';
-  const shapeClass = `cell-shape--${shape}`;
+  const shapeClass = "cell-shape--" + shape;
 
   const rareConfig = cell.shape && colorblindMode !== '' 
     ? getRareModeConfig(cell.type) 
@@ -105,18 +101,15 @@ export default React.memo(function Cell({
   const isHold = cell.type === 'hold';
   const isIce = cell.type === 'ice';
 
-  // ── Touch feedback: immediate visual response on pointer down ──
   const [isTouched, setIsTouched] = useState(false);
-
-  // ── ClickSpark: canvas spark burst on tap ──
   const sparkCanvasRef = useRef<HTMLCanvasElement>(null);
   const sparksRef = useRef<{ x: number; y: number; angle: number; startTime: number }[]>([]);
   const sparkRafRef = useRef(0);
 
-  // Spark rendering is driven by emitSparks — no idle RAF loop needed
   useEffect(() => {
     return () => { if (sparkRafRef.current) cancelAnimationFrame(sparkRafRef.current); };
   }, []);
+
   const emitSparks = useCallback((e: React.PointerEvent) => {
     const canvas = sparkCanvasRef.current;
     if (!canvas) return;
@@ -129,7 +122,6 @@ export default React.memo(function Cell({
     sparksRef.current.push(...Array.from({ length: count }, (_, i) => ({
       x, y, angle: (2 * Math.PI * i) / count, startTime: now,
     })));
-    // Restart RAF loop if it was idle
     if (!sparkRafRef.current && ctx) {
       const SPARK_DURATION = 350;
       const draw = (ts: number) => {
@@ -141,7 +133,6 @@ export default React.memo(function Cell({
           const eased = p * (2 - p);
           const dist = eased * 14;
           const len = 8 * (1 - eased);
-          // Palette-sourced (DESIGN.md): error red for purple/danger, primary-container magenta otherwise
           ctx.strokeStyle = cell.type === 'purple' ? SPARK_DANGER_COLOR : SPARK_DEFAULT_COLOR;
           ctx.lineWidth = 1.5;
           ctx.globalAlpha = 1 - eased;
@@ -159,23 +150,22 @@ export default React.memo(function Cell({
     }
   }, [cell.type]);
 
-  // ── Ice hit flash tracking ──
-  const prevIceCount = useRef(cell.type === 'ice' ? cell.iceCount : undefined);
+  const iceCount = cell.type === 'ice' ? (cell as any).iceCount : undefined;
+  const prevIceCount = useRef(iceCount);
   const [iceFlash, setIceFlash] = useState(false);
   useEffect(() => {
-    if (cell.type === 'ice' && prevIceCount.current !== undefined && (cell.iceCount ?? 0) < prevIceCount.current) {
+    if (cell.type === 'ice' && prevIceCount.current !== undefined && iceCount < prevIceCount.current) {
       setIceFlash(true);
       const t = setTimeout(() => setIceFlash(false), 200);
-      prevIceCount.current = cell.iceCount;
+      prevIceCount.current = iceCount;
       return () => clearTimeout(t);
     }
-    if (cell.type === 'ice') prevIceCount.current = cell.iceCount;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cell.type === 'ice' ? cell.iceCount : false]);
+    if (cell.type === 'ice') prevIceCount.current = iceCount;
+  }, [cell.type, iceCount]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isClicked) return;
-    setIsTouched(true); // Instant visual feedback
+    setIsTouched(true);
     emitSparks(e);
     if (isHold && onHoldStart) {
       onHoldStart(cell.idx);
@@ -198,25 +188,15 @@ export default React.memo(function Cell({
     }
   };
 
-  const cbClass = colorblindMode ? `cb-pattern cb-${cell.type}` : '';
+  const cbClass = colorblindMode ? "cb-pattern cb-" + cell.type : '';
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   return (
     <div
-      className={`
-        cell
-        ${cell.type || ''}
-        ${isClicked ? 'clicked inactive' : ''}
-        ${shapeClass}
-        ${cell.shape ? 'rare-danger' : ''}
-        ${isPressing || isTouched ? 'pressing' : ''}
-        ${botPulse ? 'bot-assisted' : ''}
-        ${bombUrgent ? 'bomb--urgent' : ''}
-        ${cbClass}
-      `.trim()}
+      className={"cell " + (cell.type || '') + (isClicked ? ' clicked inactive' : '') + " " + shapeClass + (cell.shape ? ' rare-danger' : '') + (isPressing || isTouched ? ' pressing' : '') + (botPulse ? ' bot-assisted' : '') + (bombUrgent ? ' bomb--urgent' : '') + " " + cbClass}
       data-testid="grid-cell"
       role="gridcell"
       tabIndex={isClicked ? -1 : 0}
-      aria-label={`${cell.type === 'purple' ? 'Danger: purple cell' : cell.type === 'bomb' ? 'Bomb cell' : `Tap ${cell.type} cell`}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
@@ -225,21 +205,16 @@ export default React.memo(function Cell({
       data-shape={shape}
       style={{ '--cb-type': cell.type } as React.CSSProperties}
     >
-      {/* ClickSpark canvas overlay */}
-      <canvas
-        ref={sparkCanvasRef}
-        width={120}
-        height={120}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}
-      />
-
-      {/* Shape background layer */}
-      <div className={`cell-shape-overlay ${shapeClass}`} />
-
-      {/* Ice hit flash overlay */}
+      {!isMobile && (
+        <canvas
+          ref={sparkCanvasRef}
+          width={120}
+          height={120}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}
+        />
+      )}
+      <div className={"cell-shape-overlay " + shapeClass} />
       {iceFlash && <div className="ice-hit-flash" />}
-
-      {/* Powerup / Special icons */}
       <div className="cell-icon">
         {(cell.type === 'medpack' || cell.type === 'shield' || cell.type === 'freeze' || cell.type === 'multiplier') ? (
           <span className="cell-icon-spring">
@@ -253,12 +228,7 @@ export default React.memo(function Cell({
         {isIce && (
           <div className="multi-tap-visual" aria-hidden="true">
             <div className="multi-tap-core"><Icon name="ice" size={20} /></div>
-            <div className="multi-tap-count">{cell.iceCount || 1}</div>
-            <div className="multi-tap-pips">
-              {Array.from({ length: Math.max(1, Math.min(4, cell.iceCount || 1)) }, (_, i) => (
-                <span key={i} />
-              ))}
-            </div>
+            <div className="multi-tap-count">{iceCount || 1}</div>
           </div>
         )}
         {cell.type === 'bomb' && (
@@ -267,65 +237,66 @@ export default React.memo(function Cell({
       </div>
 
       {/* Ice pips (bottom) */}
-      {isIce && cell.iceCount !== undefined && (
-        <div className="ice-pip-container" aria-label={`Ice: ${cell.iceCount} taps remaining`}>
+      {isIce && iceCount !== undefined && (
+        <div className="ice-pip-container" aria-label={"Ice: " + iceCount + " taps remaining"}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <span key={i} className={`ice-pip ${i < cell.iceCount! ? 'active' : 'spent'}`} />
+            <span key={i} className={"ice-pip " + (i < iceCount ? 'active' : 'spent')} />
           ))}
         </div>
       )}
 
-      {/* Hold cell SVG progress ring */}
       {isHold && holdProgress !== undefined && (
         <svg className="hold-progress-ring" viewBox="0 0 36 36" aria-hidden="true">
           <path className="hold-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
           <path
             className="hold-fill"
-            strokeDasharray={`${holdProgress * 100}, 100`}
+            strokeDasharray={(holdProgress * 100) + ", 100"}
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
           />
         </svg>
       )}
-
-      {/* Bomb escalation ring */}
       {isBomb && bombFuse !== undefined && (
         <div
           className="bomb-timer-ring"
-          style={{ '--bomb-remaining': `${Math.max(0, bombFuse / 3000)}` } as React.CSSProperties}
+          style={{ '--bomb-remaining': (Math.max(0, bombFuse / 3000)) } as React.CSSProperties}
         />
       )}
-
-      {/* Rare danger symbol */}
       {cell.shape && (
         <span className="rare-danger-symbol" aria-label="Rare danger">
           <Icon name="warning" size={20} />
         </span>
       )}
-
       {botPulse && (
         <div className="bot-tap-fx" aria-hidden="true">
           <span className="bot-tap-orbit" />
           <span className="bot-tap-label">BOT</span>
         </div>
       )}
-
       {botDustCost !== undefined && (
-        <div className="bot-dust-marker" aria-label={`Bot spent ${botDustCost} dust`}>
+        <div className="bot-dust-marker">
           -{botDustCost}
         </div>
       )}
-
-      {/* Rare mode emoji for colorblind players */}
       {rareConfig && (
         <div className="cell-rare-emoji">
           {rareConfig.emoji}
         </div>
       )}
-
-      {/* Keyboard label */}
       {showKeyLabel && keyLabel && (
         <div className="cell-key-label">{keyLabel}</div>
       )}
     </div>
   );
+};
+
+export default React.memo(CellContent, (prev, next) => {
+  return prev.cell.idx === next.cell.idx &&
+         prev.cell.type === next.cell.type &&
+         prev.cell.clicked === next.cell.clicked &&
+         prev.isPressing === next.isPressing &&
+         prev.botPulse === next.botPulse &&
+         prev.colorblindMode === next.colorblindMode &&
+         prev.showKeyLabel === next.showKeyLabel &&
+         prev.keyLabel === next.keyLabel &&
+         Math.abs((prev.bombFuse ?? 0) - (next.bombFuse ?? 0)) < 100;
 });

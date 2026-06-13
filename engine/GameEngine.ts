@@ -323,11 +323,16 @@ export class GameEngine {
   private lastFrameTime = 0;
 
   private startSnapshotRaf(): void {
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId); // Fix #1: Prevent RAF leak
+    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.lastFrameTime = performance.now();
+    let lastEmitTime = 0;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const minEmitInterval = isMobile ? 32 : 16; // 30fps cap on mobile for logic-driven renders
+
     const loop = (timestamp: number) => {
       if (this.rafId === null) return;
       if (document.hidden) { this.rafId = requestAnimationFrame(loop); return; }
+
       if (this.lastFrameTime > 0) {
         const frameTime = timestamp - this.lastFrameTime;
         if (this.phase === "playing") {
@@ -335,10 +340,16 @@ export class GameEngine {
         }
       }
       this.lastFrameTime = timestamp;
+
       if (this.dirty && this.phase !== "gameover") {
-        this.dirty = false;
-        this.emitSnapshot();
+        const now = performance.now();
+        if (now - lastEmitTime >= minEmitInterval) {
+          this.dirty = false;
+          lastEmitTime = now;
+          this.emitSnapshot();
+        }
       }
+
       if (this.phase !== "gameover") {
         this.rafId = requestAnimationFrame(loop);
       }

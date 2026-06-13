@@ -190,31 +190,29 @@ export const PlayerPanel = memo(function PlayerPanel({
               ...(cbFilter      ? { filter: cbFilter } : {}),
               ...(rareMode.active ? { outline: `2px solid ${rareMode.cssColor}` } : {}),
             } as React.CSSProperties}>
-            {/* Pre-build active cell map for O(1) lookup instead of O(n) find per cell */}
-            {(() => {
+            {/* Pre-build active cell map for O1 lookup instead of On find per cell */}
+            {React.useMemo(() => {
               const activeMap = new Map(ps.active.map(c => [c.idx, c]));
               return Array.from({ length: gridTotal }, (_, i) => {
-              const isVoid = maskSet && !maskSet.has(i);
-              if (isVoid) return <div key={i} className="cell-void" />;
+                const isVoid = maskSet && !maskSet.has(i);
+                if (isVoid) return <div key={i} className="cell-void" />;
 
-              const type = ps.cells[i] ?? "inactive";
-              if (type === "inactive" || type === "void") return <div key={i} className="cell-void" />;
+                const type = ps.cells[i] ?? "inactive";
+                if (type === "inactive" || type === "void") return <div key={i} className="cell-void" />;
 
-              const activeCell = activeMap.get(i) || {
-              idx: i,
-              clicked: true,
-              type,
-              shape: undefined,
-            } as unknown as ActiveCell;
+                const activeCell = activeMap.get(i) || {
+                  idx: i,
+                  clicked: true,
+                  type,
+                  shape: undefined,
+                } as unknown as ActiveCell;
 
-            const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
+                const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
-            const bombFuse = activeCell.type === 'bomb' && 'expiresAt' in activeCell
-              ? Math.max(0, activeCell.expiresAt - now)
-              : undefined;
+                const bombFuse = activeCell.type === 'bomb' && 'expiresAt' in activeCell
+                  ? Math.max(0, activeCell.expiresAt - now)
+                  : undefined;
 
-            return (
-              (() => {
                 if (activeCell.type === "hold") {
                   return (
                     <HoldCellDisplay
@@ -227,34 +225,10 @@ export const PlayerPanel = memo(function PlayerPanel({
                     />
                   );
                 }
-                // K5: Apply slide animation if cell was shuffled
+
                 const slideInfo = ps.slideAnim?.[activeCell.idx];
 
-                return slideInfo ? (
-                  <SlidingCell
-                    key={i}
-                    idx={activeCell.idx}
-                    fromIdx={slideInfo.fromIdx}
-                    startMs={slideInfo.startMs}
-                    cols={cols}
-                    durationMs={200}
-                  >
-                    <Cell
-                      cell={activeCell}
-                      onTap={stableOnTap}
-                      onHoldStart={stableOnHoldStart}
-                      onHoldEnd={stableOnHoldEnd}
-                      colorblindMode={colorblind ? 'colorblind' : ''}
-                      showKeyLabel={showKeys}
-                      keyLabel={keyLabels[keyIdx] || ''}
-                      isPressing={pressing.has(i)}
-                      botPulse={Boolean(botTapHighlights[i])}
-                      botDustCost={botTapFxMap?.get(i)}
-                      bombFuse={bombFuse}
-                    />
-                  </SlidingCell>
-                ) : (
-                  <div key={i}>
+                const cellComp = (
                   <Cell
                     cell={activeCell}
                     onTap={stableOnTap}
@@ -268,12 +242,26 @@ export const PlayerPanel = memo(function PlayerPanel({
                     botDustCost={botTapFxMap?.get(i)}
                     bombFuse={bombFuse}
                   />
+                );
+
+                return slideInfo ? (
+                  <SlidingCell
+                    key={i}
+                    idx={activeCell.idx}
+                    fromIdx={slideInfo.fromIdx}
+                    startMs={slideInfo.startMs}
+                    cols={cols}
+                    durationMs={200}
+                  >
+                    {cellComp}
+                  </SlidingCell>
+                ) : (
+                  <div key={i}>
+                    {cellComp}
                   </div>
                 );
-              })()
-            );
-          });
-          })()}
+              });
+            }, [gridTotal, maskSet, ps.cells, ps.active, ps.slideAnim, now, cols, keyLabels, showKeys, pressing, botTapHighlights, botTapFxMap, colorblind, onHoldStart, onHoldEnd, stableOnTap, stableOnHoldStart, stableOnHoldEnd])}
           </div>
         </div>
         {scoreFloats.map(float => (

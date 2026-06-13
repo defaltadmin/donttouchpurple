@@ -1,9 +1,38 @@
 /* GPU Containment & Layout Isolation */
-.dtp-btn, .cell {
+.dtp-btn, .cell, .gpanel {
   contain: layout style paint;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
+}
+
+/* Mobile-Specific Performance Strip (Extreme) */
+@media (max-width: 768px) {
+  .orb, .bg-pulse {
+    display: none !important;
+  }
+
+  body {
+    /* Replace heavy stacked gradients with a solid color on mobile */
+    background: #151028 !important;
+    background-image: none !important;
+  }
+
+  .gpanel {
+    backdrop-filter: none !important;
+    background: rgba(13, 8, 32, 0.8) !important;
+  }
+
+  /* Disable expensive real-time filter effects on mobile */
+  .root--playing, .root--gameover {
+    backdrop-filter: none !important;
+  }
+
+  /* Simplify HUD cards */
+  .hud-card {
+    backdrop-filter: none !important;
+    background: #1e1838 !important;
+  }
 }
 
 /* Reduced motion — kill decorative animations, preserve functional transitions */

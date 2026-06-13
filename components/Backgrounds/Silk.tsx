@@ -63,11 +63,15 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
   useEffect(() => {
     if (!ctnRef.current) return;
     const ctn = ctnRef.current;
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const dpr = isMobile ? 1.0 : window.devicePixelRatio;
+
+    const renderer = new Renderer({
+      alpha: true,
+      premultipliedAlpha: false,
+      dpr: dpr
+    });
     const gl = renderer.gl;
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0, 0, 0, 0);
 
     const geometry = new Triangle(gl);
     const speed = reducedMotion ? 0.3 : 1.0;
