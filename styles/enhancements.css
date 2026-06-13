@@ -1673,18 +1673,16 @@ body.damage-pulse::after {
 }
 
 .score-float {
-  font-family: var(--font-ui);
-  font-weight: 800;
-  color: var(--text);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  font-family: var(--font-game);
+  font-weight: 900;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 8px rgba(253,169,255,0.55), 0 1px 3px rgba(0,0,0,0.5);
   animation: score-float-up 0.8s ease-out forwards;
   will-change: transform, opacity;
 }
 
-.score-float[data-amount="medium"] {
-  color: var(--gold);
-}
-
-.score-float[data-amount="high"] {
-  color: var(--accent);
-}
+/* Value tiers: higher hits read as more rewarding (low=accent, mid=pink, high=gold) */
+.score-float[data-amount="low"]    { color: var(--accent);    text-shadow: 0 0 8px rgba(253,169,255,0.55), 0 1px 3px rgba(0,0,0,0.5); }
+.score-float[data-amount="medium"] { color: var(--secondary); text-shadow: 0 0 10px rgba(243,174,255,0.7), 0 1px 3px rgba(0,0,0,0.5); }
+.score-float[data-amount="high"]   { color: var(--gold);      text-shadow: 0 0 14px rgba(249,189,34,0.85), 0 1px 3px rgba(0,0,0,0.5); }

@@ -1,5 +1,5 @@
 .game-grid { touch-action: none; -webkit-user-select: none; user-select: none; }
-.dtp-boss-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); width: 280px; text-align: center; pointer-events: none; z-index: 1000; }
+.dtp-boss-bar { position: fixed; top: calc(var(--sat, 0px) + 92px); left: 50%; transform: translateX(-50%); width: min(88vw, 280px); text-align: center; pointer-events: none; z-index: 119; }
 .dtp-boss-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); margin-bottom: 4px; }
 .dtp-boss-track { height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
 .dtp-boss-fill { height: 100%; background: linear-gradient(90deg, var(--danger), var(--accent)); transition: width 0.2s cubic-bezier(0.4,0,0.2,1); }
@@ -53,24 +53,5 @@
   outline-offset: -1.5px;
 }
 
-/* Bomb urgency: pulsing threat ring in the final seconds. */
-.cell.bomb--urgent:not(.inactive) {
-  animation: bombUrgentPulse 0.45s ease-in-out infinite;
-  will-change: transform, filter;
-}
-@keyframes bombUrgentPulse {
-  0%,100% { filter: brightness(1)    drop-shadow(0 0 4px rgba(255,34,0,0.5)); transform: scale(1); }
-  50%     { filter: brightness(1.25) drop-shadow(0 0 12px rgba(255,34,0,0.95)); transform: scale(1.04); }
-}
-
-/* Score-float value tiers: higher hits read as more rewarding.
-   Uses the data-amount attribute already emitted by ScoreFloat.tsx. */
-.score-float {
-  font-family: var(--font-game);
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  will-change: transform, opacity;
-}
-.score-float[data-amount="low"]    { color: var(--accent);    text-shadow: 0 0 8px rgba(253,169,255,0.55); }
-.score-float[data-amount="medium"] { color: var(--secondary); text-shadow: 0 0 10px rgba(243,174,255,0.7); }
-.score-float[data-amount="high"]   { color: var(--gold);      text-shadow: 0 0 14px rgba(249,189,34,0.85); }
+/* NOTE: bomb-urgent pulse + score-float value tiers live in enhancements.css
+   (loaded after this file) so it remains the single source of truth. */
