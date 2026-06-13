@@ -13,7 +13,12 @@ interface Shape {
   breathPhase: number; breathSpeed: number;
   type: "square" | "circle" | "triangle";
   filled: boolean; rotation: number; rotSpeed: number;
+  tint: "purple" | "pink" | "gold";
 }
+
+// Brand accents for the minority of shapes (most stay purple so it reads clean).
+const SHAPE_PINK = '#f3aeff';
+const SHAPE_GOLD = '#f9bd22';
 
 const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
   const types: Shape["type"][] = ["square", "circle", "triangle"];
@@ -31,15 +36,19 @@ const makeShape = (canvasW: number, canvasH: number, y?: number): Shape => {
     filled: Math.random() > 0.5,
     rotation: Math.random() * Math.PI * 2,
     rotSpeed: (Math.random() - 0.5) * 0.002,
+    // ~80% purple, ~13% pink, ~7% gold for subtle brand variety
+    tint: (() => { const r = Math.random(); return r > 0.93 ? 'gold' : r > 0.8 ? 'pink' : 'purple'; })(),
   };
 };
 
 const drawShape = (ctx: CanvasRenderingContext2D, s: Shape, purple: string) => {
+  const color = s.tint === 'pink' ? SHAPE_PINK : s.tint === 'gold' ? SHAPE_GOLD : purple;
   ctx.save();
   ctx.globalAlpha = s.opacity;
-  ctx.strokeStyle = purple;
-  ctx.fillStyle   = purple;
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
   ctx.lineWidth   = 1.5;
+  if (s.filled) { ctx.shadowColor = color; ctx.shadowBlur = 12; }
   ctx.translate(s.x, s.y);
   ctx.rotate(s.rotation);
 
