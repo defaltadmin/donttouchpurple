@@ -1,5 +1,35 @@
 # Don't Touch Purple — Changelog
 
+## [7.9.0] — 2026-06-13 (Visual Polish Pass)
+
+> Branch `polish/cell-cleanup` -> MR !19. All changes additive and low-risk:
+> no game logic, DOM structure, `data-testid`, or `engine/` files touched.
+> **Gates were NOT run automatically in this session** (agent/CI handoff returned 403).
+> Before merge, run: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test && pnpm build`.
+
+### Changed — Cell code quality (`components/Cell/index.tsx`)
+- Moved `sparkRafRef` `useRef` declaration above the cleanup `useEffect` that referenced it (clarity; file now reads top-to-bottom). No behavior change.
+- Replaced inline spark hex (`#ff2200`, `#c026d3`) with named module constants documented against DESIGN.md tokens (error red, primary-container magenta). Canvas can't read CSS vars, so constants are the correct pattern (rule 6).
+
+### Added — Cell tactility & feedback juice (`styles/fx-enhancements.css`, additive)
+- `.cell.pressing` physical acrylic **press-collapse** (sinks +3px, bevel compresses) per DESIGN.md "3D bevel" pillar.
+- **Safe-tap bloom** halo on white/blue cell `.pop` (gold tint for yellow/medpack) using transform/opacity only (no animated box-shadow on mobile).
+- Clearer at-a-glance **danger read**: electric-magenta rim on `.cell.purple`; pulsing `.cell.bomb--urgent` threat ring.
+- All decorative motion auto-neutralised by the existing `.root--reduced-motion` rule and scaled by `[data-low-quality] --motion-scale`. Colors use existing CSS vars.
+
+### Added — Score-float value tiers (`styles/fx-enhancements.css`, additive)
+- `.score-float[data-amount]` now tiers by hit value: low = accent, medium = secondary pink, high = gold tertiary with stronger neon. Uses the `data-amount` attr already emitted by `ScoreFloat.tsx`; no component change.
+
+### Changed — Backgrounds wow factor + brand cohesion (`components/Backgrounds/`)
+- **Galaxy** (default / first impression): richer purple bloom (`uGlowIntensity` 0.4->0.6), deeper parallax star field (`uDensity` 1.2->1.5), punchier saturation (0.6->0.85), livelier twinkle (0.4->0.6); hue kept purple-locked (260). Pure uniform tuning; OGL pattern unchanged (resize, mouse lerp, webglcontextlost/restored, `WEBGL_lose_context` cleanup all intact). `reducedMotion` still halves speed.
+- **Nebula**: clouds now span the brand range (purple 270 / magenta 290 / pink 320) with depth-varied opacity; a minority of stars carry a faint gold/pink tint. `useBackgroundController` pause/resume and `document.hidden` idle-skip unchanged. Stays atmospheric/low-contrast so it never competes with grid readability.
+
+### Planned (next session / follow-up agents)
+- **Remaining 19 backgrounds**: apply the same brand-cohesion + wow-factor pass to the most generic ones first (suggested order: Hyperspeed, PurpleRain, DataStream, StarWarp, GlitchGrid, AuroraBorealis, DigitalRain), keeping each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/` per repo rule.
+- **Background picker preview thumbnails**: verify the shop background previews still represent the tuned looks.
+- **Cell juice tuning**: validate press-collapse / bloom intensities on a real device; expose timing as CSS vars if they need per-theme tuning.
+- **Verify Lighthouse** (target A100/B96) and bundle-size budget after the broader background pass.
+
 ## [7.8.0] — 2026-06-08
 
 ### Removed
