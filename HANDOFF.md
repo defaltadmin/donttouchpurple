@@ -112,12 +112,13 @@ directly). Before merge, a human/agent MUST run:
    - safe-tap bloom on white/blue `.pop` (gold on yellow/medpack)
    - `.cell.purple` danger rim + `.cell.bomb--urgent` pulse
    - `.score-float[data-amount]` low/medium/high color tiers (accent / pink / gold)
-3. **`components/Backgrounds/Galaxy.tsx`** — cinematic uniform tuning (glow, density, saturation, twinkle) for the default/start-screen first impression. OGL pattern + context-loss handlers untouched.
-4. **`components/Backgrounds/Nebula.tsx`** — brand-cohesive purple/magenta/pink clouds + gold/pink star accents. `useBackgroundController` + `document.hidden` idle-skip untouched.
-5. **`CHANGELOG.md`** — v7.9.0 entry.
+3. **Backgrounds (4 done)** — `Galaxy` (cinematic uniform tuning), `Nebula` (brand clouds + accent stars), `Hyperspeed` (magenta->pink->cyan streaks + bloom), `PurpleRain` (purple/pink/gold shapes + glow). All within their existing OGL or 2D-canvas patterns; context-loss / `useBackgroundController` / idle-skip untouched.
+4. **Boss-event + HUD anomaly fixes** — the user-reported boss "bar on top that overlaps UI": `.boss-banner` reworked from a full-bleed top:0 bar into a centered glass pill below the header (z 120); blackout text made readable (amber on dark); shield-boss `.dtp-boss-bar` moved below the header (z 119); score-float tiers consolidated into one source of truth in `enhancements.css` and duplicate `bombUrgentPulse` removed from `fx-enhancements.css`.
+5. **`CHANGELOG.md`** — v7.9.0 entry (kept current with all of the above).
 
 ### Planned / still TODO (hand to next agent)
-- **Backgrounds overhaul, remaining 19**: same brand-cohesion + wow pass, most-generic first. Suggested order: `Hyperspeed`, `PurpleRain`, `DataStream`, `StarWarp`, `GlitchGrid`, `AuroraBorealis`, `DigitalRain`. Match each file's existing pattern (OGL shader like `Galaxy.tsx`, or 2D-canvas + `useBackgroundController` like `Nebula.tsx`). Keep them atmospheric/low-contrast so the grid stays legible; respect `reducedMotion` + Lite Mode (`[data-low-quality]`) + `document.hidden`. Do NOT delete — move only truly-unreferenced files to `junk/`.
+- **Backgrounds overhaul, remaining ~17**: same brand-cohesion + wow pass, most-generic first. Suggested order: `DataStream`, `StarWarp`, `GlitchGrid`, `AuroraBorealis`, `DigitalRain`, `GridPulse`, `BlockOrbit`, `CellBreath`, `PulseField`, `AmbientFlow`, `Lightning`, `Silk`, `PurpleCascade`, `ElasticWarp`, `MouseFollower`, `MouseTrail`, `StarWarp`. Match each file's existing pattern (OGL shader like `Galaxy.tsx`/`Hyperspeed.tsx`, or 2D-canvas + `useBackgroundController` like `Nebula.tsx`/`PurpleRain.tsx`). Keep them atmospheric/low-contrast so the grid stays legible; respect `reducedMotion` + Lite Mode (`[data-low-quality]`) + `document.hidden`. Do NOT delete — move only truly-unreferenced files to `junk/`.
+- **Audit other in-game overlays for overlap/safe-area** the way the boss banner was fixed (e.g. anything `position:fixed; top:0`), especially on notch devices.
 - **Shop background preview thumbnails**: confirm they reflect the tuned looks.
 - **On-device tuning** of cell press-collapse / bloom intensities; consider exposing timings as CSS vars for per-theme control.
 - **Re-run Lighthouse** (target A100/B96) + bundle-size check after the broad background pass.
