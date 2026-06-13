@@ -70,8 +70,10 @@ export default function StarWarp() {
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
 
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    // ctx is DPR-transformed via setTransform, so use CSS-pixel dims for layout
+    // math; clearRect over the full device buffer is fine.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const w = window.innerWidth, h = window.innerHeight;
 
     for (const s of shapesRef.current) {
       s.dist += s.speed * (1 + s.dist / 80);
