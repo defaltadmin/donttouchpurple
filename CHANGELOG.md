@@ -31,9 +31,15 @@
 - **Nebula**: clouds now span the brand range (purple/magenta/pink) with depth-varied opacity; minority of stars carry a faint gold/pink tint. `useBackgroundController` + `document.hidden` idle-skip unchanged.
 - **Hyperspeed**: more streaks (40->56), magenta->pink->cyan brand blend, brighter additive output, richer magenta center bloom. OGL pattern + context-loss handlers intact.
 - **PurpleRain**: ~80% purple / ~13% pink / ~7% gold shapes for subtle brand variety + soft glow on filled shapes. Keeps cached-color perf pattern, `useBackgroundController`, and idle-skip. Low-opacity so the grid stays readable.
+- **GlitchGrid**: recolored from off-brand matrix-**green** to on-brand magenta/pink (bright pink-white lead glyph, magenta/purple trail). Fixes a real brand-cohesion anomaly.
+- **DataStream**: dropped off-brand blue (`#3b82f6`); each column now has a glowing bright lead cell with a fading magenta/purple trail for depth.
+- **StarWarp**: fixed a hi-DPI bug where shapes spawned off the visual center (used DPR-scaled dims while the ctx was DPR-transformed) and added distance-scaled glow trails.
+
+### Fixed — Blackout boss overlay
+- The blackout overlay was a flat `rgba(0,0,0,0.82)` box that read like a render glitch. Now an intentional radial **vignette** (clearer center, darker edges) with a faint purple edge tint and a fade-in. Still `pointer-events:none`, below the boss banner.
 
 ### Planned (next session / follow-up agents)
-- **Remaining backgrounds** (most-generic first): DataStream, StarWarp, GlitchGrid, AuroraBorealis, DigitalRain, GridPulse, BlockOrbit, CellBreath, PulseField, AmbientFlow, Lightning, Silk, etc. Same brand-cohesion + wow pass, each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/`.
+- **Remaining backgrounds** (most-generic first): AuroraBorealis, DigitalRain, GridPulse, BlockOrbit, CellBreath, PulseField, AmbientFlow, Lightning, Silk, PurpleCascade, ElasticWarp. Same brand-cohesion + wow pass, each within its existing pattern (OGL shader vs 2D-canvas + `useBackgroundController`). Do NOT delete; move truly-unreferenced ones to `junk/`.
 - **Background picker preview thumbnails**: verify the shop background previews still represent the tuned looks.
 - **Cell juice tuning**: validate press-collapse / bloom intensities on a real device; expose timing as CSS vars if they need per-theme tuning.
 - **Verify Lighthouse** (target A100/B96) and bundle-size budget after the broader background pass.
