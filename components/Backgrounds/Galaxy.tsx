@@ -307,7 +307,7 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
     const TARGET_MS = isCoarse ? 33.3 : 0; // 30fps cap on mobile
 
     function resize() {
-      renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
       program.uniforms.uResolution.value = new Color(
         gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height
       );
@@ -333,7 +333,17 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
       renderer.render({ scene: mesh });
     }
     animateId = requestAnimationFrame(update);
-    ctn.appendChild(gl.canvas);
+    gl.canvas.classList.add('dtp-bg-canvas');
+    gl.canvas.setAttribute('aria-hidden', 'true');
+    Object.assign(gl.canvas.style, {
+      position: 'fixed',
+      inset: '0',
+      width: '100vw',
+      height: '100dvh',
+      zIndex: '0',
+      pointerEvents: 'none',
+    });
+    document.body.appendChild(gl.canvas);
 
     const onContextLost = (e: Event) => {
       e.preventDefault();
@@ -344,23 +354,22 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
     gl.canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     const handleMove = (e: MouseEvent) => {
-      const rect = ctn.getBoundingClientRect();
-      mouse.x = (e.clientX - rect.left) / rect.width;
-      mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+      mouse.x = e.clientX / window.innerWidth;
+      mouse.y = 1.0 - (e.clientY / window.innerHeight);
       mouseActive = 1.0;
     };
     const handleLeave = () => { mouseActive = 0.0; };
-    ctn.addEventListener('mousemove', handleMove);
-    ctn.addEventListener('mouseleave', handleLeave);
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseleave', handleLeave);
 
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      ctn.removeEventListener('mousemove', handleMove);
-      ctn.removeEventListener('mouseleave', handleLeave);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseleave', handleLeave);
       gl.canvas.removeEventListener('webglcontextlost', onContextLost);
       gl.canvas.removeEventListener('webglcontextrestored', onContextRestored);
-      ctn.removeChild(gl.canvas);
+      if (gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [reducedMotion, ctxVersion]);

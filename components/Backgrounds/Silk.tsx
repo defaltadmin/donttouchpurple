@@ -100,7 +100,7 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
     const TARGET_MS = isCoarse ? 33.3 : 0; // 30fps cap on mobile
 
     function resize() {
-      renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
       program.uniforms.uResolution.value = new Color(
         gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height
       );
@@ -120,7 +120,13 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
       renderer.render({ scene: mesh });
     }
     animateId = requestAnimationFrame(update);
-    ctn.appendChild(gl.canvas);
+    gl.canvas.classList.add('dtp-bg-canvas');
+    gl.canvas.setAttribute('aria-hidden', 'true');
+    Object.assign(gl.canvas.style, {
+      position: 'fixed', inset: '0', width: '100vw', height: '100dvh',
+      zIndex: '0', pointerEvents: 'none',
+    });
+    document.body.appendChild(gl.canvas);
 
     const onContextLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(animateId); };
     const onContextRestored = () => setCtxVersion(v => v + 1);
@@ -132,7 +138,7 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
       window.removeEventListener('resize', resize);
       gl.canvas.removeEventListener('webglcontextlost', onContextLost);
       gl.canvas.removeEventListener('webglcontextrestored', onContextRestored);
-      ctn.removeChild(gl.canvas);
+      if (gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [reducedMotion, ctxVersion]);
