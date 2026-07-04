@@ -1694,3 +1694,23 @@ body.damage-pulse::after {
 .score-float[data-amount="low"]    { color: var(--accent);    text-shadow: 0 0 8px rgba(253,169,255,0.55), 0 1px 3px rgba(0,0,0,0.5); }
 .score-float[data-amount="medium"] { color: var(--secondary); text-shadow: 0 0 10px rgba(243,174,255,0.7), 0 1px 3px rgba(0,0,0,0.5); }
 .score-float[data-amount="high"]   { color: var(--gold);      text-shadow: 0 0 14px rgba(249,189,34,0.85), 0 1px 3px rgba(0,0,0,0.5); }
+
+/* ── Start Screen Entrance ─────────────────────────────────────── */
+@keyframes dtpStartIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.menu-card { animation: dtpStartIn .5s var(--ease-spring) both; }
+.menu-card > * { animation: dtpStartIn .45s ease-out both; }
+.menu-card > *:nth-child(1) { animation-delay: .05s; }
+.menu-card > *:nth-child(2) { animation-delay: .10s; }
+.menu-card > *:nth-child(3) { animation-delay: .15s; }
+.menu-card > *:nth-child(4) { animation-delay: .20s; }
+.menu-card > *:nth-child(5) { animation-delay: .25s; }
+@media (prefers-reduced-motion: reduce) { .menu-card, .menu-card > * { animation: none; } }
+
+/* ── 320px HUD Guard ──────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .game-header { gap: 4px; padding-inline: 6px; }
+  .stat-card { min-width: 0; flex: 1 1 0; padding: 4px 6px; }
+  .stat-card .stat-label { font-size: 8px; letter-spacing: .08em; }
+  .stat-card .stat-value { font-size: 14px; }
+  .hearts { transform: scale(.85); transform-origin: right center; }
+}
