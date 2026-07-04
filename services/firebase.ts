@@ -93,6 +93,11 @@ let firebaseModules: FirebaseModuleFunctions | null = null;
 async function ensureFirebaseApp(): Promise<unknown> {
   if (firebaseApp) return firebaseApp;
 
+  if (!FIREBASE_CONFIG.projectId) {
+    console.warn('[firebase] VITE_FIREBASE_PROJECT_ID not set — Functions/Firestore unavailable');
+    return null;
+  }
+
   const { initializeApp, getApps } = await import("firebase/app");
   firebaseApp = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
 
