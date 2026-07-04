@@ -1,65 +1,73 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 import { useSafeRaf } from './cleanup-pattern';
 
-export default function CellBreath() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const linesRef = useRef<{ y: number; speed: number; width: number; alpha: number; hue: number; trail: number; }[]>([]);
+const COLORS = ['#fda9ff', '#f3aeff', '#f9bd22', '#c026d3'];
+const CELL_COUNT = 12;
+
+interface Cell {
+  x: number; y: number; baseRadius: number; phase: number; speed: number; color: string;
+}
+
+export default function CellBreath({ reducedMotion }: { reducedMotion?: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const cellsRef = useRef<Cell[]>([]);
+  const timeRef = useRef(0);
   const { register } = useBackgroundController(true);
 
-  const { start, stop } = useSafeRaf(() => {
-    const ctx = ctxRef.current;
-    const canvas = ref.current;
-    if (!ctx || !canvas) return;
+  const draw = () => {
+    const ctx = ctxRef.current, canvas = canvasRef.current;
+    if (!ctx || !canvas || document.hidden) return;
+    const lowQ = document.documentElement.hasAttribute('data-low-quality');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
 
-    const W = canvas.width, H = canvas.height;
-    ctx.fillStyle = "rgba(13,13,26,0.08)";
-    ctx.fillRect(0, 0, W, H);
-    for (const ln of linesRef.current) {
-      const grad = ctx.createLinearGradient(0, ln.y - ln.trail, W, ln.y);
-      grad.addColorStop(0, `hsla(${ln.hue},100%,60%,0)`);
-      grad.addColorStop(0.6, `hsla(${ln.hue},100%,60%,${ln.alpha * 0.3})`);
-      grad.addColorStop(1, `hsla(${ln.hue},100%,70%,${ln.alpha})`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, ln.y - ln.trail, W, ln.trail);
-      ctx.fillStyle = `hsla(${ln.hue},100%,85%,${ln.alpha})`;
-      ctx.fillRect(0, ln.y - ln.width, W, ln.width * 2);
-      ln.y += ln.speed;
-      if (ln.y > H + ln.trail) ln.y = -ln.trail;
-    }
-  });
+    timeRef.current += 0.015;
+    const t = timeRef.current;
 
-  useEffect(() => {
-    const unregister = register({ pause: stop, resume: start });
-    start();
-    return () => {
-      unregister?.();
-      stop();
-    };
-  }, [register, start, stop]);
+    cellsRef.current.forEach(c => {
+      const breathe = Math.sin(t * c.speed + c.phase) * 0.3 + 0.7;
+      const r = c.baseRadius * breathe;
+      ctx.globalAlpha = 0.15 * breathe;
+      if (!lowQ) { ctx.shadowColor = c.color; ctx.shadowBlur = 20; }
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, Math.max(1, r), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  };
+
+  const { start, stop } = useSafeRaf(draw);
 
   useEffect(() => {
-    const c = ref.current; if (!c) return;
-    const ctx = c.getContext("2d")!;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
     ctxRef.current = ctx;
-    const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; };
-    resize(); window.addEventListener("resize", resize);
-
-    linesRef.current = Array.from({ length: 8 }, () => ({
-      y: Math.random() * window.innerHeight,
-      speed: 0.4 + Math.random() * 0.8,
-      width: 1 + Math.random() * 2,
-      alpha: 0.3 + Math.random() * 0.4,
-      hue: 170 + Math.random() * 40,
-      trail: 60 + Math.random() * 120,
-    }));
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      ctxRef.current = null;
+    const resize = () => {
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      cellsRef.current = Array.from({ length: CELL_COUNT }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        baseRadius: 40 + Math.random() * 80,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.3 + Math.random() * 0.5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      }));
     };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => { window.removeEventListener('resize', resize); ctxRef.current = null; };
   }, []);
 
-  return <canvas ref={ref} className="background-canvas" />;
+  useEffect(() => {
+    if (reducedMotion) { draw(); return; }
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => { unregister?.(); stop(); };
+  }, [register, start, stop, reducedMotion]);
+
+  return <canvas ref={canvasRef} className="dtp-bg-canvas" aria-hidden="true" />;
 }

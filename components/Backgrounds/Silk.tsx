@@ -67,11 +67,20 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
     const dpr = isMobile ? 1.0 : window.devicePixelRatio;
 
     const renderer = new Renderer({
-      alpha: true,
+      alpha: isMobile ? false : true,
       premultipliedAlpha: false,
       dpr: dpr
     });
     const gl = renderer.gl;
+
+    if (!isMobile) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(0, 0, 0, 0);
+    } else {
+      // Opaque background #151028 for mobile to save compositor blending
+      gl.clearColor(0.08, 0.04, 0.16, 1.0);
+    }
 
     const geometry = new Triangle(gl);
     const speed = reducedMotion ? 0.3 : 1.0;
@@ -87,10 +96,14 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
 
     const mesh = new Mesh(gl, { geometry, program });
     let animateId: number;
+    let lastSilkFrame = 0;
+    const TARGET_MS = isMobile ? 33.3 : 0; // 30fps cap on mobile
 
     function resize() {
       renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
-      program.uniforms.uResolution.value = new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height);
+      program.uniforms.uResolution.value = new Color(
+        gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height
+      );
     }
     window.addEventListener('resize', resize);
     resize();
@@ -98,6 +111,11 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
     function update(t: number) {
       animateId = requestAnimationFrame(update);
       if (document.hidden) return;
+
+      // Mobile frame-skip to hit 30fps target
+      if (isMobile && t - lastSilkFrame < TARGET_MS) return;
+      lastSilkFrame = t;
+
       program.uniforms.uTime.value = t * 0.001;
       renderer.render({ scene: mesh });
     }

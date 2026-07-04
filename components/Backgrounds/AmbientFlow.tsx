@@ -1,82 +1,78 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 import { useSafeRaf } from './cleanup-pattern';
 
-interface Drifter {
-  x: number; y: number;
-  vx: number; vy: number;
-  size: number; shape: "square" | "diamond" | "triangle";
-  opacity: number; rotation: number; rotSpeed: number;
+const COLORS = ['#fda9ff', '#f3aeff', '#f9bd22', '#c026d3'];
+const BLOB_COUNT = 5;
+
+interface Blob {
+  x: number; y: number; vx: number; vy: number; radius: number; color: string; phase: number;
 }
 
-export default function AmbientFlow() {
-  const cvs = useRef<HTMLCanvasElement>(null);
-  const shapesRef = useRef<Drifter[]>([]);
+export default function AmbientFlow({ reducedMotion }: { reducedMotion?: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const blobsRef = useRef<Blob[]>([]);
+  const timeRef = useRef(0);
   const { register } = useBackgroundController(true);
 
-  const { start, stop } = useSafeRaf(() => {
-    const ctx = ctxRef.current;
-    const canvas = cvs.current;
-    if (!ctx || !canvas) return;
+  const draw = () => {
+    const ctx = ctxRef.current, canvas = canvasRef.current;
+    if (!ctx || !canvas || document.hidden) return;
+    const lowQ = document.documentElement.hasAttribute('data-low-quality');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    timeRef.current += 0.005;
 
-    ctx.fillStyle = "rgba(13,13,26,0.12)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    for (const s of shapesRef.current) {
-      s.x += s.vx; s.y += s.vy;
-      if (s.x < -s.size) s.x = canvas.width + s.size;
-      if (s.y < -s.size) s.y = canvas.height + s.size;
-      if (s.x > canvas.width + s.size) s.x = -s.size;
-      if (s.y > canvas.height + s.size) s.y = -s.size;
-      s.rotation += s.rotSpeed;
-      ctx.save();
-      ctx.globalAlpha = s.opacity;
-      ctx.fillStyle = "#c026d3";
-      ctx.translate(s.x, s.y);
-      ctx.rotate(s.rotation);
-      const sz = s.size;
+    blobsRef.current.forEach(b => {
+      b.x += b.vx + Math.sin(timeRef.current + b.phase) * 0.5;
+      b.y += b.vy + Math.cos(timeRef.current + b.phase) * 0.5;
+      if (b.x < -b.radius) b.x = w + b.radius;
+      if (b.x > w + b.radius) b.x = -b.radius;
+      if (b.y < -b.radius) b.y = h + b.radius;
+      if (b.y > h + b.radius) b.y = -b.radius;
+
+      const pulse = Math.sin(timeRef.current * 2 + b.phase) * 0.2 + 0.8;
+      ctx.globalAlpha = 0.08 * pulse;
+      if (!lowQ) { ctx.shadowColor = b.color; ctx.shadowBlur = 30; }
+      ctx.fillStyle = b.color;
       ctx.beginPath();
-      if (s.shape === "square") ctx.rect(-sz/2,-sz/2,sz,sz);
-      else if (s.shape === "diamond") { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,0); ctx.lineTo(0,sz/2); ctx.lineTo(-sz/2,0); ctx.closePath(); }
-      else { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,sz/2); ctx.lineTo(-sz/2,sz/2); ctx.closePath(); }
+      ctx.arc(b.x, b.y, b.radius * pulse, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
-    }
-  });
+    });
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  };
+
+  const { start, stop } = useSafeRaf(draw);
 
   useEffect(() => {
-    const unregister = register({ pause: stop, resume: start });
-    start();
-    return () => {
-      unregister?.();
-      stop();
-    };
-  }, [register, start, stop]);
-
-  useEffect(() => {
-    const c = cvs.current; if (!c) return;
-    const ctx = c.getContext("2d")!;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
     ctxRef.current = ctx;
-    const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; };
-    resize(); window.addEventListener("resize", resize);
-
-    shapesRef.current = Array.from({ length: 40 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      size: 12 + Math.random() * 24,
-      shape: (["square","diamond","triangle"] as const)[Math.floor(Math.random()*3)],
-      opacity: 0.04 + Math.random() * 0.08,
-      rotation: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.002,
-    }));
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      ctxRef.current = null;
+    const resize = () => {
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      blobsRef.current = Array.from({ length: BLOB_COUNT }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        radius: 100 + Math.random() * 150,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        phase: Math.random() * Math.PI * 2,
+      }));
     };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => { window.removeEventListener('resize', resize); ctxRef.current = null; };
   }, []);
 
-  return <canvas ref={cvs} className="background-canvas" />;
+  useEffect(() => {
+    if (reducedMotion) { draw(); return; }
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => { unregister?.(); stop(); };
+  }, [register, start, stop, reducedMotion]);
+
+  return <canvas ref={canvasRef} className="dtp-bg-canvas" aria-hidden="true" />;
 }

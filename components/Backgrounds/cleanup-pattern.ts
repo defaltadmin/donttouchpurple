@@ -1,15 +1,22 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+const IS_MOBILE = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 export function useSafeRaf(callback: (time: number) => void) {
   const rafRef = useRef<number>();
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
+  const lastFrameTimeRef = useRef(0);
+  const TARGET_MS = IS_MOBILE ? 33.3 : 0;
 
   const start = useCallback(() => {
     if (!rafRef.current) {
-      const loop = (time: number) => {
-        callbackRef.current(time);
+      const loop = (timestamp: number) => {
         rafRef.current = requestAnimationFrame(loop);
+        if (document.hidden) return;
+        if (IS_MOBILE && timestamp - lastFrameTimeRef.current < TARGET_MS) return;
+        lastFrameTimeRef.current = timestamp;
+        callbackRef.current(timestamp);
       };
       rafRef.current = requestAnimationFrame(loop);
     }

@@ -2,141 +2,72 @@ import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 import { useSafeRaf } from './cleanup-pattern';
 
-type Shape = 'square' | 'circle' | 'triangle' | 'diamond';
-const SHAPES: Shape[] = ['square', 'circle', 'triangle', 'diamond'];
-const COLORS = ['#c026d3', '#a21caf', '#7c3aed', '#9333ea', '#db2777', '#e879f9'];
+const STAR_COUNT = 120;
+const COLORS = ['#fda9ff', '#f3aeff', '#f9bd22', '#fff'];
 
-interface WarpShape {
-  x: number; y: number;
-  angle: number;
-  speed: number;
-  dist: number;
-  maxDist: number;
-  size: number;
-  shape: Shape;
-  color: string;
-  opacity: number;
-}
+interface Star { x: number; y: number; z: number; speed: number; }
 
-function makeWarpShape(w: number, h: number): WarpShape {
-  const angle = Math.random() * Math.PI * 2;
-  return {
-    x: w / 2, y: h / 2,
-    angle,
-    speed: 1.5 + Math.random() * 2.5,
-    dist: Math.random() * 40,
-    maxDist: Math.max(w, h) * 0.7,
-    size: 6 + Math.random() * 12,
-    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    opacity: 0.6 + Math.random() * 0.4,
-  };
-}
-
-function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, x: number, y: number, size: number, angle: number) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.beginPath();
-  if (shape === 'square') {
-    ctx.rect(-size / 2, -size / 2, size, size);
-  } else if (shape === 'circle') {
-    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-  } else if (shape === 'triangle') {
-    ctx.moveTo(0, -size / 2);
-    ctx.lineTo(size / 2, size / 2);
-    ctx.lineTo(-size / 2, size / 2);
-    ctx.closePath();
-  } else {
-    ctx.moveTo(0, -size / 2);
-    ctx.lineTo(size / 2, 0);
-    ctx.lineTo(0, size / 2);
-    ctx.lineTo(-size / 2, 0);
-    ctx.closePath();
-  }
-  ctx.fill();
-  ctx.restore();
-}
-
-export default function StarWarp() {
+export default function StarWarp({ reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const shapesRef = useRef<WarpShape[]>([]);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const starsRef = useRef<Star[]>([]);
   const { register } = useBackgroundController(true);
 
-  const { start, stop } = useSafeRaf(() => {
-    // FPS cap handled by useSafeRaf (reduced motion, low battery, background)
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    if (!ctx || !canvas) return;
+  const draw = () => {
+    const ctx = ctxRef.current, canvas = canvasRef.current;
+    if (!ctx || !canvas || document.hidden) return;
+    const lowQ = document.documentElement.hasAttribute('data-low-quality');
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2, cy = h / 2;
+    ctx.fillStyle = 'rgba(21,16,40,0.15)';
+    ctx.fillRect(0, 0, w, h);
 
-    // ctx is DPR-transformed via setTransform, so use CSS-pixel dims for layout
-    // math; clearRect over the full device buffer is fine.
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const w = window.innerWidth, h = window.innerHeight;
+    starsRef.current.forEach((s, i) => {
+      s.z -= s.speed;
+      if (s.z <= 0) { s.z = 1; s.x = (Math.random() - 0.5) * w * 2; s.y = (Math.random() - 0.5) * h * 2; }
 
-    for (const s of shapesRef.current) {
-      s.dist += s.speed * (1 + s.dist / 80);
-      if (s.dist > s.maxDist) { Object.assign(s, makeWarpShape(w, h)); continue; }
+      const sx = cx + (s.x / s.z) * 100;
+      const sy = cy + (s.y / s.z) * 100;
+      if (sx < 0 || sx > w || sy < 0 || sy > h) { s.z = 1; s.x = (Math.random() - 0.5) * w * 2; s.y = (Math.random() - 0.5) * h * 2; }
 
-      const x = w / 2 + Math.cos(s.angle) * s.dist;
-      const y = h / 2 + Math.sin(s.angle) * s.dist;
-      const progress = s.dist / s.maxDist;
-
-      ctx.globalAlpha = s.opacity * (0.2 + progress * 0.8);
-      ctx.fillStyle = s.color;
-      // Glow grows as the shape warps outward, for a cinematic streak.
-      ctx.shadowColor = s.color;
-      ctx.shadowBlur = 4 + progress * 12;
-      drawShape(ctx, s.shape, x, y, s.size * (0.4 + progress * 0.6), s.angle + progress * Math.PI);
-    }
-
+      const size = Math.max(0.5, (1 - s.z / 800) * 3);
+      const color = COLORS[i % COLORS.length];
+      ctx.globalAlpha = Math.min(1, (1 - s.z / 600) * 0.8);
+      if (!lowQ) { ctx.shadowColor = color; ctx.shadowBlur = 6; }
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
+      ctx.fill();
+    });
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
-  });
+  };
+
+  const { start, stop } = useSafeRaf(draw);
 
   useEffect(() => {
-    const unregister = register({ pause: stop, resume: start });
-    start();
-    return () => {
-      unregister?.();
-      stop();
-    };
-  }, [register, start, stop]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
     ctxRef.current = ctx;
-
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctxRef.current?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      starsRef.current = Array.from({ length: STAR_COUNT }, () => ({
+        x: (Math.random() - 0.5) * canvas.width * 2,
+        y: (Math.random() - 0.5) * canvas.height * 2,
+        z: Math.random() * 800, speed: 1.5 + Math.random() * 3,
+      }));
     };
     resize();
     window.addEventListener('resize', resize);
-
-    const COUNT = 60;
-    // Use CSS pixel dims (not DPR-scaled canvas.width) so shapes spawn at the
-    // visual center — the ctx is already DPR-transformed via setTransform.
-    shapesRef.current = Array.from({ length: COUNT }, () =>
-      makeWarpShape(window.innerWidth, window.innerHeight)
-    );
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      ctxRef.current = null;
-    };
+    return () => { window.removeEventListener('resize', resize); ctxRef.current = null; };
   }, []);
 
-  return (
-    <canvas ref={canvasRef}
-      className="background-canvas" style={{ opacity: 0.5 }} />
-  );
+  useEffect(() => {
+    if (reducedMotion) { draw(); return; }
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => { unregister?.(); stop(); };
+  }, [register, start, stop, reducedMotion]);
+
+  return <canvas ref={canvasRef} className="dtp-bg-canvas" aria-hidden="true" />;
 }

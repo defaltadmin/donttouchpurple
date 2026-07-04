@@ -253,19 +253,25 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
     const ctn = ctnRef.current;
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // Clamp DPR to 1.0 on mobile to save GPU fill rate (huge performance gain)
+    // Low-end mobile optimization: native resolution is too heavy for fragment shaders
+    // Clamp DPR to 1.0 on mobile to drastically reduce fill-rate cost
     const dpr = isMobile ? 1.0 : window.devicePixelRatio;
 
     const renderer = new Renderer({
-      alpha: true,
+      alpha: isMobile ? false : true,
       premultipliedAlpha: false,
       dpr: dpr
     });
 
     const gl = renderer.gl;
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0, 0, 0, 0);
+    if (!isMobile) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(0, 0, 0, 0);
+    } else {
+      // Opaque background #151028 for mobile to save compositor blending
+      gl.clearColor(0.08, 0.04, 0.16, 1.0);
+    }
 
     const geometry = new Triangle(gl);
     const speed = reducedMotion ? 0.2 : 1.0;
@@ -290,13 +296,15 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
         uRepulsionStrength:  { value: 1.5 },
         uMouseActiveFactor:  { value: 0.0 },
         uAutoCenterRepulsion:{ value: 0 },
-        uTransparent:        { value: true },
+        uTransparent:        { value: !isMobile },
         uMobile:             { value: isMobile },
       },
     });
 
     const mesh = new Mesh(gl, { geometry, program });
     let animateId: number;
+    let lastGalaxyFrame = 0;
+    const TARGET_MS = isMobile ? 33.3 : 0; // 30fps cap on mobile
 
     function resize() {
       renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
@@ -312,6 +320,9 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
     function update(t: number) {
       animateId = requestAnimationFrame(update);
       if (document.hidden) return;
+      if (isMobile && t - lastGalaxyFrame < TARGET_MS) return;
+      lastGalaxyFrame = t;
+
       program.uniforms.uTime.value = t * 0.001;
       program.uniforms.uStarSpeed.value = (t * 0.001 * 0.5) / 10.0;
       const m = program.uniforms.uMouse.value as Float32Array;

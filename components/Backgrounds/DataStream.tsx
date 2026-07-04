@@ -2,90 +2,73 @@ import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 import { useSafeRaf } from './cleanup-pattern';
 
-// Brand-cohesive palette (dropped the off-brand bright blue #3b82f6).
-const COLORS = ['#c026d3','#a21caf','#7c3aed','#9333ea','#db2777','#e879f9'];
-const LEAD_COLOR = '#fde6ff';
-const CELL = 14; const GAP = 3;
+const COLS = 30;
+const CHARS = '01アイウエオカキクケコ∞∑∂∫√';
+const COLORS = ['#fda9ff', '#f3aeff', '#f9bd22'];
 
-interface Column { x:number; cells:{y:number; color:string; opacity:number}[]; speed:number; }
+interface Stream { x: number; speed: number; chars: string[]; y: number; }
 
-export default function DataStream() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const colsRef = useRef<Column[]>([]);
+export default function DataStream({ reducedMotion }: { reducedMotion?: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const streamsRef = useRef<Stream[]>([]);
   const { register } = useBackgroundController(true);
 
-  const { start, stop } = useSafeRaf(() => {
-    const ctx = ctxRef.current;
-    const canvas = ref.current;
-    if (!ctx || !canvas) return;
+  const draw = () => {
+    const ctx = ctxRef.current, canvas = canvasRef.current;
+    if (!ctx || !canvas || document.hidden) return;
+    const lowQ = document.documentElement.hasAttribute('data-low-quality');
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = 'rgba(21,16,40,0.12)';
+    ctx.fillRect(0, 0, w, h);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const col of colsRef.current) {
-      // The lowest cell (max y) is the bright "lead" of the stream.
-      let leadIdx = 0;
-      for (let i = 1; i < col.cells.length; i++) {
-        if (col.cells[i].y > col.cells[leadIdx].y) leadIdx = i;
-      }
-      col.cells.forEach((cell, i) => {
-        cell.y += col.speed;
-        if (cell.y > canvas.height + CELL) cell.y = -CELL - Math.random() * canvas.height * 0.5;
-        if (i === leadIdx) {
-          ctx.globalAlpha = Math.min(1, cell.opacity + 0.4);
-          ctx.fillStyle = LEAD_COLOR;
-          ctx.shadowColor = '#c026d3';
-          ctx.shadowBlur = 10;
-          ctx.fillRect(col.x, cell.y, CELL, CELL);
-          ctx.shadowBlur = 0;
-        } else {
-          ctx.globalAlpha = cell.opacity * 0.5;
-          ctx.fillStyle = cell.color;
-          ctx.fillRect(col.x, cell.y, CELL, CELL);
-        }
+    const fontSize = lowQ ? 12 : 14;
+    ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+
+    streamsRef.current.forEach((s, i) => {
+      s.y += s.speed;
+      if (s.y > h + 200) { s.y = -200; s.chars = Array.from({ length: 15 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]); }
+
+      const color = COLORS[i % COLORS.length];
+      s.chars.forEach((ch, j) => {
+        const yPos = s.y - j * fontSize;
+        if (yPos < 0 || yPos > h) return;
+        const alpha = j === 0 ? 1 : Math.max(0.1, 1 - j / s.chars.length);
+        ctx.globalAlpha = alpha * (lowQ ? 0.3 : 0.5);
+        ctx.fillStyle = j === 0 ? '#fff' : color;
+        ctx.fillText(ch, s.x, yPos);
       });
-    }
+    });
     ctx.globalAlpha = 1;
-  });
+  };
+
+  const { start, stop } = useSafeRaf(draw);
 
   useEffect(() => {
-    const unregister = register({ pause: stop, resume: start });
-    start();
-    return () => {
-      unregister?.();
-      stop();
-    };
-  }, [register, start, stop]);
-
-  useEffect(() => {
-    const c = ref.current; if (!c) return;
-    const ctx = c.getContext('2d')!;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
     ctxRef.current = ctx;
-
-    const buildCols = () => {
-      const cols: Column[] = [];
-      for (let x = 0; x < c.width; x += CELL + GAP) {
-        const len = 3 + Math.floor(Math.random() * 6);
-        cols.push({
-          x,
-          cells: Array.from({length: len}, (_, i) => ({
-            y: -i * (CELL + GAP) - Math.random() * c.height,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            opacity: (len - i) / len,
-          })),
-          speed: 1 + Math.random() * 1.5,
-        });
-      }
-      colsRef.current = cols;
+    const resize = () => {
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      const colW = canvas.width / COLS;
+      streamsRef.current = Array.from({ length: COLS }, (_, i) => ({
+        x: i * colW + colW / 2,
+        speed: 1.5 + Math.random() * 3,
+        y: Math.random() * canvas.height,
+        chars: Array.from({ length: 15 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]),
+      }));
     };
-
-    const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; buildCols(); };
-    resize(); window.addEventListener('resize', resize);
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      ctxRef.current = null;
-    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => { window.removeEventListener('resize', resize); ctxRef.current = null; };
   }, []);
 
-  return <canvas ref={ref} className="background-canvas" style={{opacity:0.45}} />;
+  useEffect(() => {
+    if (reducedMotion) { draw(); return; }
+    const unregister = register({ pause: stop, resume: start });
+    start();
+    return () => { unregister?.(); stop(); };
+  }, [register, start, stop, reducedMotion]);
+
+  return <canvas ref={canvasRef} className="dtp-bg-canvas" aria-hidden="true" />;
 }
