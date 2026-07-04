@@ -195,8 +195,9 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': allowOrigin,
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
           'Access-Control-Max-Age': '86400',
+          'Vary': 'Origin',
         },
       });
     }
@@ -215,7 +216,8 @@ export default {
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': origin || 'https://dont-touch-purple.web.app',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
+      'Vary': 'Origin',
     };
 
     const contentType = request.headers.get('Content-Type') ?? '';
