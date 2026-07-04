@@ -61,7 +61,6 @@ class WebVitalsMonitor {
         this.checkThresholds('ttfb', metric.value);
       });
 
-      console.log('[WebVitals] Monitoring started');
     } catch {
       errorLogger.error('Failed to start Web Vitals monitoring');
     }

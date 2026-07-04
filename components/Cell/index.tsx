@@ -6,6 +6,7 @@ import { Icon } from '../UI/Icon';
 
 const SPARK_DANGER_COLOR = '#ff2200';
 const SPARK_DEFAULT_COLOR = '#c026d3';
+const IS_COARSE = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)')?.matches ?? false);
 
 interface CellProps {
   cell: ActiveCell;
@@ -20,57 +21,6 @@ interface CellProps {
   botDustCost?: number;
   holdProgress?: number;
   bombFuse?: number;
-}
-
-function BombTimer({ expiresAt }: { expiresAt: number }) {
-  const TOTAL_MS = 2000;
-  const [ms, setMs] = useState(() => Math.max(0, expiresAt - Date.now()));
-
-  useEffect(() => {
-    let rafId: number;
-    const tick = () => {
-      if (document.hidden) { rafId = requestAnimationFrame(tick); return; }
-      const remaining = Math.max(0, expiresAt - Date.now());
-      setMs(remaining);
-      if (remaining > 0) rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [expiresAt]);
-
-  const pct = Math.max(0, Math.min(1, ms / TOTAL_MS));
-  const R = 20;
-  const CIRC = 2 * Math.PI * R;
-  const dashOffset = CIRC * (1 - pct);
-  const isUrgent = pct < 0.35;
-
-  return (
-    <svg className="bomb-ring" viewBox="0 0 52 52" width="100%" height="100%">
-      <circle cx="26" cy="26" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="4" />
-      <circle
-        cx="26" cy="26" r={R}
-        fill="none"
-        stroke={isUrgent ? "#ff2200" : "#ff6600"}
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={CIRC}
-        strokeDashoffset={dashOffset}
-        transform="rotate(-90 26 26)"
-        style={{ transition: "stroke-dashoffset 0.06s linear, stroke 0.3s ease" }}
-      />
-      <text
-        x="26" y="30"
-        textAnchor="middle"
-        fontSize="11"
-        fontWeight="700"
-        fill="#fff"
-        fontFamily="monospace"
-        style={{ filter: isUrgent ? "drop-shadow(0 0 4px #ff2200)" : "none" }}
-      >
-        {(ms / 1000).toFixed(1)}
-      </text>
-    </svg>
-  );
 }
 
 const CellContent = ({
@@ -189,7 +139,6 @@ const CellContent = ({
   };
 
   const cbClass = colorblindMode ? "cb-pattern cb-" + cell.type : '';
-  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   return (
     <div
@@ -205,7 +154,7 @@ const CellContent = ({
       data-shape={shape}
       style={{ '--cb-type': cell.type } as React.CSSProperties}
     >
-      {!isMobile && (
+      {!IS_COARSE && (
         <canvas
           ref={sparkCanvasRef}
           width={120}
@@ -231,8 +180,10 @@ const CellContent = ({
             <div className="multi-tap-count">{iceCount || 1}</div>
           </div>
         )}
-        {cell.type === 'bomb' && (
-          <BombTimer expiresAt={cell.expiresAt} />
+        {isBomb && bombFuse !== undefined && (
+          <div className="bomb-timer-display" aria-hidden="true">
+            {(bombFuse / 1000).toFixed(1)}
+          </div>
         )}
       </div>
 

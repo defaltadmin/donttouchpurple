@@ -1,9 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useBackgroundController } from '../../hooks/useBackground';
 
-const IS_MOBILE = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const IS_COARSE = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)')?.matches ?? false);
 
-export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: boolean }) {
+export function Nebula({ reducedMotion }: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const drawRef = useRef<((timestamp: number) => void) | null>(null);
@@ -27,7 +27,7 @@ export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: bool
     const ctx = canvas.getContext("2d")!;
     let tick = 0;
     let lastFrameTime = 0;
-    const TARGET_MS = IS_MOBILE ? 33.3 : 0;
+    const TARGET_MS = IS_COARSE ? 33.3 : 0;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -66,7 +66,7 @@ export function Nebula({ reducedMotion: _reducedMotion }: { reducedMotion?: bool
     const draw = (timestamp: number) => {
       rafRef.current = requestAnimationFrame(draw);
       if (document.hidden) return;
-      if (IS_MOBILE && timestamp - lastFrameTime < TARGET_MS) return;
+      if (IS_COARSE && timestamp - lastFrameTime < TARGET_MS) return;
       lastFrameTime = timestamp;
 
       const w = canvas.width;
