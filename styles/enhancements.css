@@ -1765,3 +1765,25 @@ body.damage-pulse::after {
     display: none !important;
   }
 }
+
+/* ── Accessibility: canvas + preview layers ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dtp-bg-canvas,
+  canvas[aria-hidden="true"],
+  .mouse-follower,
+  .mouse-trail,
+  .score-float,
+  .spark-canvas,
+  .bg-preview,
+  .theme-preview {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .score-float,
+  .spark-canvas,
+  .mouse-follower,
+  .mouse-trail {
+    display: none !important;
+  }
+}
