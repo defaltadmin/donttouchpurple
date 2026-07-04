@@ -1715,3 +1715,53 @@ body.damage-pulse::after {
   .stat-card .stat-value { font-size: 14px; }
   .hearts { transform: scale(.85); transform-origin: right center; }
 }
+
+/* ── Accessibility: hard stop for decorative motion ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cell,
+  .cell::before,
+  .cell::after,
+  .btn-play,
+  .btn-play::before,
+  .btn-play::after,
+  .btn-primary,
+  .btn-ghost,
+  .btn-icon,
+  .hud-card,
+  .hud-card--score,
+  .hud-val--pb,
+  .spd-fill,
+  .combo-wrap,
+  .menu-card,
+  .menu-title,
+  .pill-thumb,
+  .go-overlay,
+  .go-num--anim,
+  .go-dust-inline,
+  .go-humanlimit,
+  .pause-overlay,
+  .pause-card,
+  .pause-title,
+  .toast,
+  .rare-splash-text,
+  .heart--loss,
+  .heart--gain,
+  .ice-hit-flash,
+  .hud-val--speed-high,
+  .fx-freeze-active::before,
+  .fx-slowmo-active::before,
+  .fx-speed-active::before {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cell:not(.inactive):not(.void) {
+    animation: none !important;
+  }
+
+  .btn-play::before,
+  .hero-particles,
+  .spark-canvas {
+    display: none !important;
+  }
+}
