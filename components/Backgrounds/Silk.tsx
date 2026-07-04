@@ -63,17 +63,17 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
   useEffect(() => {
     if (!ctnRef.current) return;
     const ctn = ctnRef.current;
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const dpr = isMobile ? 1.0 : window.devicePixelRatio;
+    const isCoarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+    const dpr = isCoarse ? 1.0 : window.devicePixelRatio;
 
     const renderer = new Renderer({
-      alpha: isMobile ? false : true,
+      alpha: isCoarse ? false : true,
       premultipliedAlpha: false,
       dpr: dpr
     });
     const gl = renderer.gl;
 
-    if (!isMobile) {
+    if (!isCoarse) {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.clearColor(0, 0, 0, 0);
@@ -97,7 +97,7 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
     const mesh = new Mesh(gl, { geometry, program });
     let animateId: number;
     let lastSilkFrame = 0;
-    const TARGET_MS = isMobile ? 33.3 : 0; // 30fps cap on mobile
+    const TARGET_MS = isCoarse ? 33.3 : 0; // 30fps cap on mobile
 
     function resize() {
       renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
@@ -113,7 +113,7 @@ export default function Silk({ reducedMotion }: { reducedMotion?: boolean }) {
       if (document.hidden) return;
 
       // Mobile frame-skip to hit 30fps target
-      if (isMobile && t - lastSilkFrame < TARGET_MS) return;
+      if (isCoarse && t - lastSilkFrame < TARGET_MS) return;
       lastSilkFrame = t;
 
       program.uniforms.uTime.value = t * 0.001;
