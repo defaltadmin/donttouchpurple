@@ -159,8 +159,7 @@ export class GameEngine {
       const bonus = Math.round(50 * rhythmFeedback.state.multiplier);
       this.p1.score += bonus;
       this.emit({ type: "toast", message: ` Difficulty adjusted! +${bonus} pts` });
-      document.documentElement.setAttribute('data-dda-emergency', 'true');
-      setTimeout(() => document.documentElement.removeAttribute('data-dda-emergency'), 2200);
+      this.emit({ type: "ddaEmergency", durationMs: 2200 });
     };
     window.addEventListener('dtp:boss:complete', this._bossCompleteHandler);
     window.addEventListener('dtp:boss:shield-break', this._bossShieldBreakHandler);
@@ -326,8 +325,7 @@ export class GameEngine {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.lastFrameTime = performance.now();
     let lastEmitTime = 0;
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const minEmitInterval = isMobile ? 32 : 16; // 30fps cap on mobile for logic-driven renders
+    const minEmitInterval = this.config.isTouch ? 32 : 16; // 30fps cap on touch for logic-driven renders
 
     const loop = (timestamp: number) => {
       if (this.rafId === null) return;
@@ -524,7 +522,10 @@ destroy(): void {
     if (this.phase !== "playing") return;
     const cellId = `p${player}-${idx}`;
     if (!this.inputBuffer.register(cellId)) return;
-    haptics.tap();
+
+    // Non-blocking haptics to reduce input latency
+    Promise.resolve().then(() => haptics.tap());
+
     const ref = player === 1 ? this.p1 : this.p2;
     if (!ref || !ref.alive) return;
     this.tapBuffer[player] = { idx, ts: Date.now() };

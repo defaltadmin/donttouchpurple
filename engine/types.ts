@@ -100,6 +100,7 @@ export interface GameConfig {
   numPlayers: NumPlayers;
   speedMult:  number;      // iMultRef equivalent
   inputMode?: 'touch' | 'keys';  // default 'touch'
+  isTouch?:   boolean;     // coarse pointer detection (replaces UA sniffing)
   godMode?:   boolean;     // practice / dev invincibility
   storage?: {
     loadStoredPowerups: () => StoredPowerups;
@@ -160,4 +161,5 @@ export type GameEvent =
   | { type: "botTap"; player: 1 | 2; idx: number; dustCost: number }
   | { type: "cellShuffle"; player: 1 | 2; fromIdx: number; toIdx: number }
   | { type: "qualityDowngrade"; reason: "fps-drop"; avgFps: number }
-  | { type: "qualityUpgrade"; avgFps: number };
+  | { type: "qualityUpgrade"; avgFps: number }
+  | { type: "ddaEmergency"; durationMs: number };

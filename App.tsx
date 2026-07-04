@@ -426,8 +426,9 @@ export default function App() {
     numPlayers,
     speedMult,
     inputMode: inputMode === "keyboard" ? "keys" as const : "touch" as const,
+    isTouch: isTouchDevice,
     godMode: godMode || practiceMode,
-  }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode]);
+  }), [gameMode, numPlayers, speedMult, inputMode, godMode, practiceMode, isTouchDevice]);
 
   // Update challenge progress from game over
   const updateChallengeProgress = useCallback((p1Score: number, finalTick: number) => {

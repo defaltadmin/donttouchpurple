@@ -316,6 +316,12 @@ export function useGameEngine(
         case "qualityUpgrade":
           toast$("📈 Standard mode restored");
           break;
+        case "ddaEmergency": {
+          document.documentElement.setAttribute('data-dda-emergency', 'true');
+          const t = setTimeout(() => document.documentElement.removeAttribute('data-dda-emergency'), event.durationMs);
+          botTapTimersRef.current.push(t);
+          break;
+        }
       }
     });
 

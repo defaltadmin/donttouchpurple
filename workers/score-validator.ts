@@ -325,7 +325,7 @@ export default {
       attempts.push(now);
       await env.RATE_LIMIT_KV.put(rateKey, JSON.stringify(attempts), { expirationTtl: 61 });
 
-      if (typeof data.score !== 'number' || data.score < 0 || data.score > 9999) {
+      if (typeof data.score !== 'number' || data.score < 0) {
         return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (!data.initials || typeof data.initials !== 'string' || data.initials.length > 8 || !/^[a-zA-Z0-9_ ]{1,8}$/.test(data.initials)) {
@@ -337,8 +337,11 @@ export default {
       if (typeof data.tick !== 'number' || data.tick < 0) {
         return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
+      // Single binding score cap: rate-based heuristic (25 pts/tick) with hard ceiling
+      const HARD_MAX = 15000;
       const safeTick = Math.min(data.tick, 600); // ~10min at 60fps cap, matches Firestore rule
-      if (data.score > Math.floor(safeTick * 25)) { // 25 pts/tick cap (accounts for powerups, streaks, boss combos)
+      const maxScore = Math.min(HARD_MAX, Math.floor(safeTick * 25));
+      if (data.score > maxScore) {
         return new Response(JSON.stringify({ error: 'Impossible score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (typeof data.sessionId !== 'string' || data.sessionId.length < 8) {
@@ -383,7 +386,8 @@ export default {
 
       return new Response(JSON.stringify({ success: true, score: data.score }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     } catch (err) {
-      console.error('Worker error:', err);
+      const msg = err instanceof Error ? err.message.replace(/[\r\n]/g, ' ') : 'unknown';
+      console.error('score-validator failure:', msg);
       return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
   },
