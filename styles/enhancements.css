@@ -1797,3 +1797,48 @@ body.damage-pulse::after {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Full-bleed background layer ─────────────────────────────────────── */
+.dtp-bg-canvas,
+.bg-canvas,
+canvas[aria-hidden="true"].dtp-bg-canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-width: 100vw !important;
+  min-height: 100dvh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  object-fit: cover !important;
+}
+
+.root,
+.app,
+.game-shell,
+.menu-layout,
+.game-layout,
+.start-screen,
+.menu-card {
+  position: relative;
+  z-index: 1;
+}
+
+html,
+body,
+#root {
+  min-width: 100%;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(192,38,211,0.18), transparent 45%),
+    #151028;
+  overflow-x: hidden;
+}
+
+/* ── 320px fluid type guard ──────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .menu-title { font-size: clamp(18px, 7vw, 22px); }
+  .menu-card { width: min(100% - 20px, 420px); padding: 20px 18px; }
+  .pill { min-height: 38px; }
+  .btn-play { min-height: 54px; font-size: 18px; }
+}
