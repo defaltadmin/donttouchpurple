@@ -1,118 +1,70 @@
 # Don't Touch Purple
 
-> A reflex-based browser game where you must never touch purple — tap fast, survive longer.
+> A fast reflex-grid browser game: tap every safe cell, never touch purple, survive boss events, climb the leaderboard.
 
-**Don't Touch Purple** is a free, open-source browser game built with React 18, TypeScript 5, and Vite 7. Players tap colored cells on a grid to score points while avoiding purple. The game features two modes (Classic and Evolve), 37 achievements, a dust economy, 12 GPU-accelerated animated backgrounds (OGL/WebGL), boss events (Storm, Inversion, Blackout), rare color modes, Bot Assist AI, and a global leaderboard via Firebase. It supports 5 languages, PWA install, gamepad input, and ships as a static site to Firebase Hosting.
+Don't Touch Purple is a production React + TypeScript browser game at https://game.mscarabia.com. It uses a pure TypeScript game engine, React UI, Vite, Firebase, Cloudflare Workers, OGL/WebGL backgrounds, achievements, daily challenges, cosmetics, a dust economy, bot assist, signed challenge links, and a global leaderboard.
 
-- **Play now:** https://defaltadmin.github.io/donttouchpurple
-- **Tech stack:** React 18, TypeScript 5, Vite 7, Firebase (Firestore, Analytics, Auth, App Check), GSAP, Framer Motion, dotlottie-web, OGL
-- **Testing:** Vitest (162+ unit tests), Playwright (E2E)
-- **Version:** 7.5.3
-- **License:** MIT
+## Canonical URLs
 
-## Docs
+- Live game: https://game.mscarabia.com
+- Repository: https://github.com/defaltadmin/donttouchpurple
 
-- [README](README.md): Project overview, game modes, features, tech stack, quick start
-- [CLAUDE.md](CLAUDE.md): Architecture guide, common commands, key layers, game modes, special cells
-- [CONTRIBUTING](CONTRIBUTING.md): How to contribute — setup, code style, PR process
-- [DESIGN](DESIGN.md): Design system tokens, color palette (Dark-Cyberpunk Synthwave), CSS variables
-- [CHANGELOG](CHANGELOG.md): Version history
-- [SECURITY](SECURITY.md): Security policy
-- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md): Community guidelines
+## Current architecture
 
-## Architecture
+- App shell: `App.tsx`
+- React entry: `main.tsx`
+- Pure engine: `engine/GameEngine.ts`
+- Engine types: `engine/types.ts`
+- Tick processing: `engine/subsystems/TickProcessor.ts`
+- Cell lifecycle: `engine/subsystems/CellLifecycle.ts`
+- Bot AI: `engine/subsystems/BotController.ts`
+- React bridge: `hooks/useGameEngine.ts`
+- Firebase services: `services/firebase.ts`
+- Score validation Worker: `workers/score-validator.ts`
+- Backgrounds: `components/Backgrounds/`
+- HUD: `components/HUD/`
+- Screens: `components/Screens/`
+- Styles: `styles/game.css`, `styles/enhancements.css`, `styles/fx-enhancements.css`
 
-The project uses a flat directory structure (no `src/` layer). Source code lives at the repo root.
+## Product features
 
-- [App.tsx](App.tsx): Main screen state machine, game lifecycle orchestration (entry point)
-- [main.tsx](main.tsx): React root mount, Sentry init, service worker registration
-- [index.html](index.html): HTML shell with font loading, CSP, meta tags
+- Classic and Evolve game modes
+- Touch, keyboard, and gamepad input
+- 50+ achievements
+- Daily challenges and weekly reward tasks
+- Global leaderboard backed by Firebase
+- Signed challenge links
+- Dust economy and cosmetics shop
+- Bot assist system
+- Boss events: Storm, Inversion, Blackout, Shield Boss
+- 22 animated background themes using CSS, canvas, and OGL/WebGL
+- Reduced-motion and Lite Mode support
+- PWA-ready static deployment
 
-### Engine (game logic, no React dependencies)
+## Design system
 
-- [engine/GameEngine.ts](engine/GameEngine.ts): Main game loop, player state, RNG, boss events, tick scheduling
-- [engine/DifficultyScaler.ts](engine/DifficultyScaler.ts): Progressive difficulty curves, grid expansion logic
-- [engine/types.ts](engine/types.ts): Core type definitions — PlayerState, ActiveCell, CellType, GameState
-- [engine/subsystems/TickProcessor.ts](engine/subsystems/TickProcessor.ts): Per-tick cell spawning, rare color mode activation, difficulty scaling
-- [engine/subsystems/CellLifecycle.ts](engine/subsystems/CellLifecycle.ts): Click handling, special cell effects (shield, freeze, multiplier, medpack, bomb)
-- [engine/subsystems/ScoreTracker.ts](engine/subsystems/ScoreTracker.ts): Score calculation, combo tracking, multiplier management
-- [engine/subsystems/EventOrchestrator.ts](engine/subsystems/EventOrchestrator.ts): Boss event scheduling (Storm, Inversion, Blackout)
-- [engine/subsystems/BotController.ts](engine/subsystems/BotController.ts): AI companion that taps safe cells, costs dust
+The visual direction is Hyper-Juice Arcade: deep space indigo surfaces, neon magenta/pink/gold accents, glass panels, tactile 3D buttons, and high-feedback micro-interactions.
 
-### Hooks (React-Engine bridge)
+Primary palette:
+- Space indigo: `#151028`
+- Primary pink: `#fda9ff`
+- Secondary pink: `#f3aeff`
+- Gold: `#f9bd22`
+- Magenta: `#c026d3`
 
-- [hooks/useGameEngine.ts](hooks/useGameEngine.ts): Wraps GameEngine, provides snapshot to UI, manages game lifecycle
+## Quality gates
 
-### Config (game balance and patterns)
+Before shipping changes:
 
-- [config/gameBalance.ts](config/gameBalance.ts): Core balance constants — timing, scoring, health
-- [config/difficulty.ts](config/difficulty.ts): Difficulty curve definitions per stage
-- [config/gridPatterns.ts](config/gridPatterns.ts): Grid layouts and expansion patterns
-- [config/powerupWeights.ts](config/powerupWeights.ts): Special cell spawn probability weights
-- [config/dailyObjective.ts](config/dailyObjective.ts): Daily challenge definitions
-- [config/keybindings.ts](config/keybindings.ts): Gamepad and keyboard input mapping
+```bash
+pnpm typecheck
+pnpm lint --max-warnings=0
+pnpm test
+pnpm build
+```
 
-### Services (backend, analytics, external)
-
-- [services/firebase.ts](services/firebase.ts): Firebase initialization, Firestore, Auth, Analytics
-- [services/achievements.ts](services/achievements.ts): 37 achievement definitions and unlock logic
-- [services/analytics.ts](services/analytics.ts): Event tracking, funnel metrics
-- [services/sentry.ts](services/sentry.ts): Error reporting configuration
-- [services/gameanalytics.ts](services/gameanalytics.ts): GameAnalytics SDK integration
-- [services/audio.ts](services/audio.ts): Sound effects and music management
-- [services/boss-engine.ts](services/boss-engine.ts): Boss event state machine and transitions
-- [services/dda.ts](services/dda.ts): Dynamic difficulty adjustment
-- [services/score-validator.ts](services/score-validator.ts): Server-side score validation
-
-### Utils (shared utilities)
-
-- [utils/](utils/): Error logging, asset hydration, cleanup patterns, dust animations, dev logging
-
-### Workers (serverless)
-
-- [workers/](workers/): Cloudflare Workers for score validation, rate limiting (see [workers/wrangler.toml](workers/wrangler.toml))
-
-### Styles
-
-- [styles/](styles/): CSS files, design tokens, component styles
-
-### Types
-
-- [types/](types/): Shared TypeScript type declarations
-
-### Locales
-
-- [locales/](locales/): i18n translations — English, Spanish, French, Japanese, Portuguese
-
-### Config files
-
-- [vite.config.ts](vite.config.ts): Vite build configuration, plugins, compression
-- [tsconfig.json](tsconfig.json): TypeScript compiler options
-- [firebase.json](firebase.json): Firebase Hosting and Firestore config
-- [firestore.rules](firestore.rules): Firestore security rules
-- [playwright.config.ts](playwright.config.ts): E2E test configuration
-- [vitest.config.ts](vitest.config.ts): Unit test configuration
-- [.releaserc.json](.releaserc.json): semantic-release configuration
-
-## Wiki
-
-- [docs/wiki/Home.md](docs/wiki/Home.md): Wiki index
-- [docs/wiki/Game-Mechanics.md](docs/wiki/Game-Mechanics.md): Core mechanics deep-dive
-- [docs/wiki/Game-Modes.md](docs/wiki/Game-Modes.md): Classic and Evolve mode details
-- [docs/wiki/Achievements.md](docs/wiki/Achievements.md): All 37 achievements listed
-- [docs/wiki/Backgrounds.md](docs/wiki/Backgrounds.md): 12 animated background themes
-- [docs/wiki/Bot-Assist.md](docs/wiki/Bot-Assist.md): AI companion feature
-- [docs/wiki/Leaderboard.md](docs/wiki/Leaderboard.md): Global leaderboard system
-- [docs/wiki/Development.md](docs/wiki/Development.md): Developer guide and setup
-
-## Optional
-
-- [DESIGN.md](DESIGN.md): Full design system — MD3 tokens, Dark-Cyberpunk Synthwave palette, component specs
-- [CLAUDE.md](CLAUDE.md): AI agent guide — architecture, commands, conventions, pitfalls
-- [docs/](docs/): Extended documentation, audit findings, roadmap, archived prompts
-- [e2e/](e2e/): Playwright end-to-end tests
-- [test/](test/): Test utilities and fixtures
-- [scripts/](scripts/): Build, release, and CI helper scripts
-- [functions/](functions/): Firebase Cloud Functions
-- [public/](public/): Static assets served directly
-- [firestore.rules](firestore.rules): Firestore security rules — score validation, user data access
+Expected state:
+- TypeScript: 0 errors
+- ESLint: 0 warnings
+- Tests: 230+ passing
+- Production build succeeds
