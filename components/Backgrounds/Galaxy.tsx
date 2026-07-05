@@ -250,7 +250,6 @@ export default function Galaxy({ reducedMotion }: { reducedMotion?: boolean }) {
 
   useEffect(() => {
     if (!ctnRef.current) return;
-    const ctn = ctnRef.current;
     const isCoarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
 
     // Low-end mobile optimization: native resolution is too heavy for fragment shaders

@@ -100,6 +100,7 @@ const CellContent = ({
     }
   }, [cell.type]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const iceCount = cell.type === 'ice' ? (cell as any).iceCount : undefined;
   const prevIceCount = useRef(iceCount);
   const [iceFlash, setIceFlash] = useState(false);

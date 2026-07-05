@@ -2485,7 +2485,7 @@ body { background-color: var(--bg); }
 }
 
 /* ── Background Canvas ── */
-.background-canvas {
+.background-canvas, .dtp-bg-canvas {
   position: fixed;
   inset: 0;
   z-index: -1;

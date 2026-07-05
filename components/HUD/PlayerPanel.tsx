@@ -192,6 +192,7 @@ export const PlayerPanel = memo(function PlayerPanel({
             } as React.CSSProperties}>
             {/* Pre-build active cell map for O1 lookup instead of On find per cell */}
             {React.useMemo(() => {
+              const nowInner = Date.now();
               const activeMap = new Map(ps.active.map(c => [c.idx, c]));
               return Array.from({ length: gridTotal }, (_, i) => {
                 const isVoid = maskSet && !maskSet.has(i);
@@ -210,7 +211,7 @@ export const PlayerPanel = memo(function PlayerPanel({
                 const keyIdx = Math.floor(i / cols) * 4 + (i % cols);
 
                 const bombFuse = activeCell.type === 'bomb' && 'expiresAt' in activeCell
-                  ? Math.max(0, activeCell.expiresAt - now)
+                  ? Math.max(0, activeCell.expiresAt - nowInner)
                   : undefined;
 
                 if (activeCell.type === "hold") {
@@ -261,7 +262,7 @@ export const PlayerPanel = memo(function PlayerPanel({
                   </div>
                 );
               });
-            }, [gridTotal, maskSet, ps.cells, ps.active, ps.slideAnim, now, cols, keyLabels, showKeys, pressing, botTapHighlights, botTapFxMap, colorblind, onHoldStart, onHoldEnd, stableOnTap, stableOnHoldStart, stableOnHoldEnd])}
+            }, [gridTotal, maskSet, ps.cells, ps.active, ps.slideAnim, cols, keyLabels, showKeys, pressing, botTapHighlights, botTapFxMap, colorblind, onHoldStart, onHoldEnd, stableOnTap, stableOnHoldStart, stableOnHoldEnd])}
           </div>
         </div>
         {scoreFloats.map(float => (

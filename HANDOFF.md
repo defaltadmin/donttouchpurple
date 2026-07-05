@@ -97,7 +97,7 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-07-04) — Triple-Repo Audit + Full Polish Overhaul
+## Recent Session (2026-07-04) — Triple-Repo Audit + Full Polish Overhaul + WebGL Full-Bleed Fix
 
 **Duration**: Single session, 10+ hours
 **Status**: All fixes committed and pushed. 230/230 tests pass. Lighthouse A94-100 / BP92 / SEO100 across all three sites.
@@ -106,7 +106,7 @@ After any session with 5+ file changes:
 
 **Background Overhaul (13 rewritten, 3 WebGL fixed):**
 - `GridPulse`, `VoidTunnel`, `StarWarp`, `PurpleRain`, `DataStream`, `CellBreath`, `AmbientFlow`, `PulseField`, `WarpGate`, `DigitalRain`, `PurpleCascade` — rewritten to brand palette (`#fda9ff`, `#f3aeff`, `#f9bd22`, `#c026d3`), with `reducedMotion` prop, `data-low-quality` guard, `dtp-bg-canvas` class, `document.hidden` idle-skip
-- `Galaxy`, `Hyperspeed`, `Silk` — WebGL renderers fixed: UA regex → `matchMedia('(pointer: coarse)')`, full-bleed canvas (appended to `document.body` with `position: fixed` instead of container-relative), cleanup uses `gl.canvas.parentNode`
+- `Galaxy`, `Hyperspeed`, `Silk` — WebGL renderers fixed: UA regex → `matchMedia('(pointer: coarse)')`, full-bleed canvas (appended to `document.body` with `position: fixed` instead of container-relative), cleanup uses `gl.canvas.parentNode`. **Critical discovery**: CSS `.dtp-bg-canvas` rules alone cannot fix full-bleed — the OGL renderers size themselves to `ctn.offsetWidth` in source code. Must change `renderer.setSize()` to `window.innerWidth/Height` AND append canvas to `document.body` with inline fixed styles. All three had identical pattern.
 - `AuroraBorealis` — gradient-preserving rewrite with gold accent band, star field, shimmer
 - `Nebula` — UA regex fixed, `reducedMotion` prop now accepted (was `_reducedMotion`)
 - Skipped: `Silk` and `Lightning` full rewrites (already premium WebGL shaders, rewrites would downgrade)
@@ -146,7 +146,7 @@ After any session with 5+ file changes:
 
 **UI Polish:**
 - Container-query prayer labels (rotate vertically when block too narrow)
-- Donate CTA: compact fixed pill (not full-width bar), runtime normalization
+- Donate CTA: compact fixed pill (not full-width bar), runtime normalization via `normalizeDonatePill()` (finds by text content, not CSS class)
 - Location coachmark: max-width + mobile bottom card
 - 320px fluid type guard
 - SW v2: notification scheduling + cache bump + icon precache + notification API guard
@@ -208,14 +208,14 @@ After any session with 5+ file changes:
 
 | Repo | Commit | Description |
 |------|--------|-------------|
-| DTP | `5a7a4b3` | WebGL backgrounds full-bleed (Galaxy, Hyperspeed, Silk) |
+| DTP | `5a7a4b3` | WebGL backgrounds full-bleed — Galaxy, Hyperspeed, Silk renderer→window sizing + document.body append |
 | DTP | `96d3f59` | Full-bleed background CSS + 320px fluid type guard |
 | DTP | `be32930` | DTP reduced-motion canvas sweep |
 | DTP | `818a2c9` | Reduced-motion hard stop for all enhancement animations |
 | DTP | `76527aa` | DTP reduced-motion canvas sweep |
 | DTP | `c49886a` | Score Worker CORS Vary + AppCheck header |
 | DTP | `64accf0` | UA regex cleanup (3 remaining files) |
-| Prayer | `a78a0dd` | Donate pill runtime normalization |
+| Prayer | `a78a0dd` | Donate pill runtime normalization — normalizeDonatePill() finds by text content |
 | Prayer | `1c12772` | Container-query labels, donate pill, coach responsive |
 | Prayer | `5bac8fe` | SW notification API guard + precache icon |
 | Prayer | `d42fb79` | Notification status helper |

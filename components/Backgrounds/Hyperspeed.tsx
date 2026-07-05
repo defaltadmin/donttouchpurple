@@ -79,7 +79,6 @@ export default function Hyperspeed({ reducedMotion }: { reducedMotion?: boolean 
 
   useEffect(() => {
     if (!ctnRef.current) return;
-    const ctn = ctnRef.current;
     const isCoarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
     const dpr = isCoarse ? 1.0 : window.devicePixelRatio;
 

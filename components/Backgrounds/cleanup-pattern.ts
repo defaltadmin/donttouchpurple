@@ -20,7 +20,7 @@ export function useSafeRaf(callback: (time: number) => void) {
       };
       rafRef.current = requestAnimationFrame(loop);
     }
-  }, []);
+  }, [TARGET_MS]);
 
   const stop = useCallback(() => {
     if (rafRef.current) {

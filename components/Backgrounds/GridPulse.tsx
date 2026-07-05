@@ -112,7 +112,7 @@ export default function GridPulse({ reducedMotion }: { reducedMotion?: boolean }
     const unregister = register({ pause: stop, resume: start });
     start();
     return () => { unregister?.(); stop(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [register, start, stop, reducedMotion]);
 
   return <canvas ref={canvasRef} className="dtp-bg-canvas" aria-hidden="true" />;

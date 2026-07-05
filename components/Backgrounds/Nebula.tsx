@@ -3,7 +3,7 @@ import { useBackgroundController } from '../../hooks/useBackground';
 
 const IS_COARSE = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)')?.matches ?? false);
 
-export function Nebula({ reducedMotion }: { reducedMotion?: boolean }) {
+export function Nebula(_props: { reducedMotion?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const drawRef = useRef<((timestamp: number) => void) | null>(null);
