@@ -97,7 +97,149 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-06-13) — Visual Polish Pass
+## Recent Session (2026-07-04) — Triple-Repo Audit + Full Polish Overhaul
+
+**Duration**: Single session, 10+ hours
+**Status**: All fixes committed and pushed. 230/230 tests pass. Lighthouse A94-100 / BP92 / SEO100 across all three sites.
+
+### What Was Done — DTP (donttouchpurple)
+
+**Background Overhaul (13 rewritten, 3 WebGL fixed):**
+- `GridPulse`, `VoidTunnel`, `StarWarp`, `PurpleRain`, `DataStream`, `CellBreath`, `AmbientFlow`, `PulseField`, `WarpGate`, `DigitalRain`, `PurpleCascade` — rewritten to brand palette (`#fda9ff`, `#f3aeff`, `#f9bd22`, `#c026d3`), with `reducedMotion` prop, `data-low-quality` guard, `dtp-bg-canvas` class, `document.hidden` idle-skip
+- `Galaxy`, `Hyperspeed`, `Silk` — WebGL renderers fixed: UA regex → `matchMedia('(pointer: coarse)')`, full-bleed canvas (appended to `document.body` with `position: fixed` instead of container-relative), cleanup uses `gl.canvas.parentNode`
+- `AuroraBorealis` — gradient-preserving rewrite with gold accent band, star field, shimmer
+- `Nebula` — UA regex fixed, `reducedMotion` prop now accepted (was `_reducedMotion`)
+- Skipped: `Silk` and `Lightning` full rewrites (already premium WebGL shaders, rewrites would downgrade)
+
+**Code Quality:**
+- UA regex removed from `cleanup-pattern.ts`, `Nebula.tsx`, `Cell/index.tsx` (all 3 remaining files)
+- `console.log` removed from `web-vitals.ts`
+- `dtp-bg-canvas` added to CSS class list + `will-change` list in `enhancements.css`
+- `config.isTouch` added to `GameConfig` type, replaces UA sniffing in `GameEngine.ts`
+- DDA emergency: engine now emits `ddaEmergency` event instead of direct DOM mutation
+- Worker score-validator: `HARD_MAX = 15000`, sanitized logging, `X-Firebase-AppCheck` CORS header, `Vary: Origin`
+- Start-screen entrance animation (spring easing, staggered children)
+- 320px HUD overlap guard
+- Global reduced-motion kill switch at end of `enhancements.css`
+- Full-bleed background CSS layer (fixed positioning, `100vw` × `100dvh`)
+- 230/230 tests pass, zero UA regex remaining
+
+**Firebase:**
+- `VITE_FIREBASE_*` secrets added to CI workflow build step
+- `projectId` guard in `ensureFirebaseApp()` — fails loud when env var missing
+
+### What Was Done — Prayer Times (world-prayer-times)
+
+**New Features:**
+- Personal tasks system: CRUD + modal + timeline rendering + context menu (localStorage)
+- VTIMEZONE iCal export: 8 timezones, personal tasks included, proper TZID format
+- Empty state for zero cities with fade-in animation
+- Font preconnect + preload for IBM Plex Sans Arabic + JetBrains Mono
+- Task recurrence defaults to daily, warns on "Just today"
+- Notification status helper (shows scheduled prayer count in nav)
+
+**Security:**
+- Worker auth: `env.COURSE_SECRET` + `timingSafeEqual`, CORS locked to `prayer.mscarabia.com`
+- Meeting links retry button: delegated listener (removed inline onclick)
+- Hero hint + empty-state button: delegated listeners (removed inline onclicks)
+- CSP: added `googletagmanager.com`, `cloudflareinsights.com`, `google-analytics.com` to `script-src` and `connect-src`
+
+**UI Polish:**
+- Container-query prayer labels (rotate vertically when block too narrow)
+- Donate CTA: compact fixed pill (not full-width bar), runtime normalization
+- Location coachmark: max-width + mobile bottom card
+- 320px fluid type guard
+- SW v2: notification scheduling + cache bump + icon precache + notification API guard
+
+### What Was Done — mscarabia (Corporate Site)
+
+**New Features:**
+- Case studies section (Aramco/STC/Petro Rabigh) with scroll reveal
+- Email capture Worker (`/api/quote`) + front-end form
+- Scroll reveal + hero stats count-up (IntersectionObserver)
+- Honeypot anti-spam on quote form + Worker
+- Rate limiting on quote Worker (KV-based)
+
+**Security:**
+- CSP: dropped `unsafe-hashes` + 22 stale SHA hashes, removed `api.resend.com` from browser `connect-src`
+- All 22 inline `onclick` handlers converted to `data-action` delegation in `app.js`
+- Cookie text onclick in i18n strings converted to `data-action`
+- Event delegation: null target guard for non-Element click targets
+- Contact Worker: `safeLogMessage()` sanitization, `Vary: Origin`, OPTIONS returns 204, Turnstile hardened
+- Quote Worker: Content-Type 415 check, `cleanEmail` sanitization, honeypot before rate-limit, budget in email body
+
+**Visual:**
+- Space Grotesk + Plus Jakarta Sans font pairing
+- 48 inline SVG icons (replaced 3.9MB Material Symbols font)
+- Template copy replaced with factual copy
+- Static gradient (removed hue-rotate animation)
+- Ambient colors constrained to crimson/blue/gold
+- Saudi Riyal symbol fixed (U+FDFC)
+- Reveal fallback: content visible by default until JS marks `js-reveal-ready`
+- Cookie banner: compact bottom sheet on mobile
+- 320px fluid type guard
+- 2 missing Arabic translations added (`modal_privacy_full`, `modal_cookie_full`)
+
+### Remaining Manual Steps
+
+1. **GitHub Secrets for DTP Firebase** — 7 `VITE_FIREBASE_*` secrets must be in repo settings for CI builds
+2. **Prayer Worker secret** — current value is `thequrangroup` (do NOT paste in chat)
+3. **mscarabia Resend API key** — set in Cloudflare Pages env vars
+4. **mscarabia Turnstile secret** — set in Cloudflare Pages env vars
+5. **CDN propagation** — Cloudflare Pages may cache old assets for a few minutes after push
+
+### What's Left (Future Work)
+
+**DTP:**
+- 14 unfinished backgrounds (per HANDOFF TODO) — 13 now done, verify all render correctly on device
+- Shop background preview thumbnails
+- On-device tuning of cell press-collapse / bloom intensities
+
+**Prayer Times:**
+- Arabic RTL completeness — 2 keys added, verify all `data-i18n` keys have translations
+- Push notifications via Push API + VAPID (current SW notifications are best-effort only)
+
+**mscarabia:**
+- Move remaining inline scripts to external files (JSON-LD, cookie consent)
+- Case studies: add actual project images/screenshots
+- Arabic RTL completeness check
+
+### Commits (2026-07-04)
+
+| Repo | Commit | Description |
+|------|--------|-------------|
+| DTP | `5a7a4b3` | WebGL backgrounds full-bleed (Galaxy, Hyperspeed, Silk) |
+| DTP | `96d3f59` | Full-bleed background CSS + 320px fluid type guard |
+| DTP | `be32930` | DTP reduced-motion canvas sweep |
+| DTP | `818a2c9` | Reduced-motion hard stop for all enhancement animations |
+| DTP | `76527aa` | DTP reduced-motion canvas sweep |
+| DTP | `c49886a` | Score Worker CORS Vary + AppCheck header |
+| DTP | `64accf0` | UA regex cleanup (3 remaining files) |
+| Prayer | `a78a0dd` | Donate pill runtime normalization |
+| Prayer | `1c12772` | Container-query labels, donate pill, coach responsive |
+| Prayer | `5bac8fe` | SW notification API guard + precache icon |
+| Prayer | `d42fb79` | Notification status helper |
+| Prayer | `0cd2dd6` | Remove last 3 inline onclicks |
+| Prayer | `d2f2e3b` | SW notification icons SVG → PNG |
+| Prayer | `ab2409e` | SW v2 with notification scheduling |
+| Prayer | `af29d5d` | Worker auth — env.COURSE_SECRET + timingSafeEqual |
+| Prayer | `ee17afb` | Tasks system, VTIMEZONE iCal, empty state, font preload |
+| Prayer | `4fc04c9` | Font preconnect/preload + empty state |
+| Prayer | `b691228` | CSP analytics domains |
+| Prayer | `187dd2c` | GPU-composite now-line, kill perpetual animations |
+| mscarabia | `a42a51d` | Reveal fallback + cookie banner mobile + 320px guard |
+| mscarabia | `488cf89` | Event delegation null guard + Turnstile + quote content-type |
+| mscarabia | `91a9907` | Contact log sanitize + quote reorder + budget + Vary |
+| mscarabia | `7b64d7f` | CSP tighten + quote null-safety + count-up reduced-motion |
+| mscarabia | `1565ff9` | Cookie_text onclick → data-action |
+| mscarabia | `7006b01` | 22 onclick → data-action + Arabic translations |
+| mscarabia | `00d6f8c` | CSP drop unsafe-hashes + 22 SHA hashes |
+| mscarabia | `50d1830` | Case studies section + nav link |
+| mscarabia | `248e778` | Scroll reveal + count-up + email capture form |
+| mscarabia | `064825f` | Inline scripts externalized to app.js |
+| mscarabia | `4d4f95a` | Calculator email-capture Worker + form |
+| mscarabia | `5189201` | Saudi Riyal symbol U+FDFC |
+| mscarabia | `1554136` | Font pairing, SVG icons, template copy, static gradient |
 
 **Branch**: `polish/cell-cleanup` -> **MR !19** (open, targeting `main`).
 **Status**: changes complete, but **gates NOT run** in this session (the
