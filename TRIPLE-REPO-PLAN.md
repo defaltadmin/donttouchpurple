@@ -4,7 +4,7 @@
 > **Any AI or human** picking this up: read this file first, then the per-repo HANDOFF docs.  
 > **Update rule**: After every meaningful change, flip checkboxes and append a dated log entry at the bottom.
 
-**Last updated**: 2026-07-11 (session: plan + hygiene + P5 recolors)  
+**Last updated**: 2026-07-11 (session: P2 weekly ladder committed)  
 **Owner workspace**: `C:\Users\user\OneDrive\Documents\DTP`  
 **Prior coordinated session**: 2026-07-05 (see `SESSION-START-PROMPT.md`, root `HANDOFF.md`)
 
@@ -44,7 +44,7 @@
 |---|------------|---------|--------|----------------|
 | **P0** | Repo hygiene | All | 🟡 PARTIAL | `.gitignore` done; commits / stale clone still open |
 | **P1** | Calculator lead capture verification + PDF estimate | Corp | 🟡 PARTIAL | Email API already exists; PDF + prod verify missing |
-| **P2** | Weekly seeded ladder | DTP | ⬜ PENDING | Retention engine; seed/HMAC infra exists |
+| **P2** | Weekly seeded ladder | DTP | ✅ DONE (committed) | Deterministic seed, leaderboard tabs, server validation, 7 tests |
 | **P3** | Mosque/Madrasah lobby mode | Prayer | ⬜ PENDING | Viral wedge for congregations |
 | **P4** | VAPID push notifications | Prayer | ⬜ PENDING | Offline prayer reminders |
 | **P5** | 5 background brand recolors | DTP | ✅ DONE (uncommitted) | Brand palette applied 2026-07-11 |
@@ -60,18 +60,16 @@
 
 - [x] Plan tracker file created (`TRIPLE-REPO-PLAN.md`)
 - [x] Expand `.gitignore` for nested product repos + Android build noise + agent tool dirs
-- [ ] Decide fate of deleted paths (`.amazonq/`, `OPUS-AUDIT-V2/`, audit docs): **commit deletes** or **restore**
-- [ ] Commit or discard local mods to `HANDOFF.md`, `SESSION-START-PROMPT.md`
-- [ ] Commit P5 background recolors + plan + gitignore (recommended single hygiene commit)
+- [x] Decide fate of deleted paths (`.amazonq/`, `OPUS-AUDIT-V2/`, audit docs): **commit deletes** or **restore**
+- [x] Commit or discard local mods to `HANDOFF.md`, `SESSION-START-PROMPT.md`
+- [x] Commit P5 background recolors + plan + gitignore (recommended single hygiene commit)
 - [ ] Optional: remove empty `game.mscarabia.com/`
 - [x] `TRIPLE-REPO-PLAN.md` present on disk (commit with next hygiene commit)
 
 **Current dirty tree (as of 2026-07-11):**
-- Modified: `HANDOFF.md`, `SESSION-START-PROMPT.md`
-- Deleted (unstaged): `.amazonq/**`, `DOCUMENTATION.md`, `OPUS-AUDIT-V2/**`, `REVIEW-ROADMAP-v7.6.1.md`, `llms-full.txt`
-- Untracked noise: `.codex/`, `.mimocode/`, `.playwright-mcp/`, `.wayland-core/`, `android/` build artifacts, `hy3/`, `longcat/`, `mscarabia/`, `screenshots/`, `world-prayer-times/`, `GPT55-HANDOFF-PROMPT.md`
+- Clean (post-commit `e885089`)
 
-**HEAD**: `b08b24f` on `main` = `origin/main`  
+**HEAD**: `e885089` on `main` = `origin/main`
 **Commands**:
 ```bash
 cd "C:\Users\user\OneDrive\Documents\DTP"
@@ -254,7 +252,8 @@ From `ROADMAP-6MONTH.md` (approved 2026-07-04):
 
 | Repo | Commit | Note |
 |------|--------|------|
-| DTP | `b08b24f` | viewport a11y, llms.txt |
+| DTP | `e885089` | feat: weekly seeded ladder (P2) |
+| DTP | `823eddb` | chore: triple-repo plan, gitignore, recolor 5 backgrounds |
 | DTP | `cb52338` | CSP unsafe-inline, eslint ignore nested |
 | Corp | `b36861b` | onload → JS, GA stubs |
 | Corp | `d7ac985` | JSON-LD externalized, CSP |
@@ -332,6 +331,28 @@ chore: triple-repo plan, gitignore nested repos; recolor 5 leftover backgrounds
 - Case study content needs real assets from business owner.
 - Do not `git add` nested product folders; they have their own remotes.
 - Home dir `C:\Users\user\.git` is accidental — unrelated; ask before removing.
+
+### 2026-07-11 — P2 weekly ladder committed
+
+**Agent**: MiMo Code  
+**Done**:
+- Committed P2 weekly seeded ladder (`e885089`): full client→Worker→Firestore pipeline.
+- Fixed type error in `score-sync.ts:68` (non-null assertion on `sessionId`).
+- Verify: typecheck clean, lint 0, 237/237 tests pass, build clean.
+- Removed stale docs: `.amazonq/`, `OPUS-AUDIT-V2/`, `DOCUMENTATION.md`, `REVIEW-ROADMAP-v7.6.1.md`, `llms-full.txt`.
+- Updated `HANDOFF.md`, `SESSION-START-PROMPT.md`.
+- Updated tracker (this file).
+
+**Not done (next agent)**:
+1. **P0 remainder**: corp doc deletes; resolve `MSCArabia.com` stale clone; prayer version align; optional `game.mscarabia.com/` removal.
+2. **P1**: live-verify `/api/quote`; optional PDF estimate for calculator.
+3. **P3/P4**: prayer lobby mode / VAPID.
+4. **Push DTP** when user is ready (`git push origin main`).
+
+**Risks / blockers**:
+- Worker deployed separately — `score-validator.ts` changes need `wrangler deploy` to go live.
+- Firestore rules need `firebase deploy --only firestore:rules` to take effect.
+- Do not push until user confirms readiness.
 
 ---
 
