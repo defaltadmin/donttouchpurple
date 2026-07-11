@@ -157,6 +157,10 @@ export interface StartScreenProps {
   playerName:      string | null;
   isFeatureUnlocked: (id: import('../../utils/featureGates').FeatureId) => boolean;
   onPlay:          () => void;
+  /** Weekly seeded ladder — same seed for all players this UTC week. */
+  onPlayLadder?:   () => void;
+  weekLabel?:      string;
+  weekCountdown?:  string;
   onHowTo:         () => void;
   onLeaderboard:   () => void;
   onShop:          () => void;
@@ -184,7 +188,8 @@ export function StartScreen({
   dust, devMode,
   playerName,
   isFeatureUnlocked,
-  onPlay, onHowTo, onLeaderboard, onShop, onKeybind,
+  onPlay, onPlayLadder, weekLabel, weekCountdown,
+  onHowTo, onLeaderboard, onShop, onKeybind,
   onRefillEnergy, onSwitchPlayer, onOpenRewardsHub, onGameMaster: _onGameMaster, rewardsBadgeCount: _rewardsBadgeCount,
   dustWidget: _dustWidget, energyBar,
   dailyObjectives: _dailyObjectives,
@@ -344,9 +349,31 @@ export function StartScreen({
       </div>
 
       {(devMode || energyCount > 0) ? (
-        <MagneticButton className="btn-play" onClick={onPlay}>
-          {t('menu.play_btn')}
-        </MagneticButton>
+        <>
+          <MagneticButton className="btn-play" onClick={onPlay}>
+            {t('menu.play_btn')}
+          </MagneticButton>
+          {onPlayLadder && (
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={onPlayLadder}
+              disabled={practiceMode}
+              title={practiceMode ? 'Turn off Practice to enter the Weekly Ladder' : `Weekly Ladder ${weekLabel ?? ''} — resets in ${weekCountdown ?? '?'}`}
+              style={{
+                marginTop: 10,
+                width: '100%',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                borderColor: 'rgba(192,38,211,0.45)',
+                color: '#fda9ff',
+              }}
+            >
+              🗓️ Weekly Ladder{weekLabel ? ` · ${weekLabel}` : ''}
+              {weekCountdown ? ` · ${weekCountdown}` : ''}
+            </button>
+          )}
+        </>
       ) : (
         <div className="no-energy-block">
           <EnergyCountdown energyLastRegen={energyLastRegen} />

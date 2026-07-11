@@ -85,7 +85,15 @@ import { MouseTrail } from "./components/Backgrounds/MouseTrail";
 import { getDailyObjectives, markObjectiveComplete, checkObjective, getObjectiveProgress, type DailyObjective, type BossObjectiveCounters } from "./config/dailyObjective";
 
 // Services (lazy loaded - see getFirebase() below)
-import { fbFetchTop20Global } from "./services/firebase";
+import { fbFetchTop20Global, fbFetchTopWeekly } from "./services/firebase";
+import {
+  getUtcWeekId,
+  getCurrentWeeklySeed,
+  formatWeekCountdown,
+  msUntilWeekReset,
+  saveWeeklyBest,
+  loadWeeklyBest,
+} from "./utils/weekly-ladder";
 // Lazy-loaded GameAnalytics (~91KB off initial bundle)
 const gaPromise = import("./services/gameanalytics");
 async function initGALazy(version: string) {
@@ -267,6 +275,9 @@ export default function App() {
   const [toast, setToast]            = useState<string|null>(null);
   const [shareMsg, setShareMsg]      = useState("");
   const [gameSeedState, setGameSeedState] = useState(0);
+  /** When true, current run uses the weekly ladder seed and submits to lb_weekly. */
+  const ladderRunRef = useRef(false);
+  const ladderWeekIdRef = useRef(getUtcWeekId());
   const [lbMode, setLbMode]          = useState<GameMode>("classic");
 
   // Aggressive preload on menu (Shop + default background)
@@ -534,13 +545,25 @@ export default function App() {
     // Auto-submit score through scoreSync (with offline fallback)
     try {
       const submitVal = numPlayers === 1 ? p1Score : Math.max(p1Score, p2Score);
+      const isLadder = ladderRunRef.current;
 
       if (submitVal > 0 && !scoreSubmittedRef.current && !practiceMode && !godMode) {
         scoreSubmittedRef.current = true;
 
         try {
-          await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0, practiceMode, godMode);
-          toast$("🏆 Score submitted to global leaderboard!");
+          if (isLadder) {
+            const weekId = ladderWeekIdRef.current || getUtcWeekId();
+            const seed = getCurrentWeeklySeed();
+            saveWeeklyBest(submitVal, weekId);
+            await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0, practiceMode, godMode, {
+              weekId,
+              ladderSeed: seed,
+            });
+            toast$("🏆 Weekly ladder score submitted!");
+          } else {
+            await scoreSync.queue(submitVal, gameMode, snapshotRef.current?.tick || 0, practiceMode, godMode);
+            toast$("🏆 Score submitted to global leaderboard!");
+          }
         } catch {
           logger.warn("Score sync failed");
           toast$("💾 Score saved offline - will sync soon");
@@ -548,6 +571,8 @@ export default function App() {
       }
     } catch (err: unknown) {
       logger.warn('[DTP] Score submission failed', err);
+    } finally {
+      ladderRunRef.current = false;
     }
 
     // Update daily challenge progress
@@ -1106,7 +1131,8 @@ export default function App() {
     return () => { unsub(); gesture.destroy(); };
   }, [paused, resumeGame, pauseGame]);
 
-  const startGame = useCallback((skipTutorialCheck = false) => {
+  const startGame = useCallback((skipTutorialCheck = false, opts?: { ladder?: boolean }) => {
+    const isLadder = opts?.ladder === true;
     if (!practiceMode && energyData.count <= 0) {
       toast$("⚡ No energy! Wait or refill with 💜 dust.");
       return;
@@ -1129,12 +1155,18 @@ export default function App() {
     if (next === 1) {
       safeSet('dtp-show-rewards-after-first-game', '1');
     }
-    const forceSeed = pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined;
+    // Ladder uses shared weekly seed; else optional replay seed; else random.
+    const weekId = getUtcWeekId();
+    ladderWeekIdRef.current = weekId;
+    ladderRunRef.current = isLadder;
+    const forceSeed = isLadder
+      ? getCurrentWeeklySeed()
+      : (pendingReplaySeed ? parseInt(pendingReplaySeed, 10) : undefined);
     safeSentry.addBreadcrumb({
       category: "game",
       message: "game_start",
       level: "info",
-      data: { gameMode, numPlayers, inputMode, practiceMode, forceSeed },
+      data: { gameMode, numPlayers, inputMode, practiceMode, forceSeed, ladder: isLadder, weekId },
     });
     getFirebase().then(fb => fb.fbLogEvent("game_start", {
       mode: gameMode,
@@ -1142,16 +1174,26 @@ export default function App() {
       input: inputMode,
       practice: practiceMode,
       replay_seed: forceSeed ?? 0,
+      ladder: isLadder,
+      week_id: weekId,
     })).catch(e => {
           const msg = e instanceof Error ? e.message.replace(/[\r\n]/g, ' ') : String(e).replace(/[\r\n]/g, ' ');
           logger.warn('Firebase operation failed', msg);
         });
-    logProgressionLazy("Start", gameMode, 0, 0);
+    logProgressionLazy("Start", isLadder ? `ladder-${weekId}` : gameMode, 0, 0);
     startEngine(forceSeed);
-    if (forceSeed !== undefined) {
+    if (!isLadder && forceSeed !== undefined) {
       clearReplaySeed();
     }
   }, [startEngine, energyData, practiceMode, gameMode, toast$, pendingReplaySeed, clearReplaySeed, gamesPlayed, numPlayers, inputMode, evolveTutorialSeen, spendEnergy, setScreen, dustRef, setShowTutorial]);
+
+  const startLadder = useCallback(() => {
+    if (practiceMode) {
+      toast$("Turn off Practice to play the Weekly Ladder.");
+      return;
+    }
+    startGame(false, { ladder: true });
+  }, [startGame, practiceMode, toast$]);
 
   // Tutorial close handler — mark seen, then delegate to startGame
   const handleTutorialClose = useCallback(() => {
@@ -1169,10 +1211,13 @@ export default function App() {
     setInitials(playerName || "Player");
     setIE(false);
     setShareMsg("");
+    ladderRunRef.current = false;
     // Clear snapshot so rare badge and other game-specific UI don't persist on menu
     snapshotRef.current = null;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshotRef is a stable ref, not a reactive dep
   }, [pauseEngine, playerName, setScreen]);
+
+  const fetchWeeklyScores = useCallback(() => fbFetchTopWeekly(getUtcWeekId()), []);
 
   // --- Daily Rewards handlers (Phase C) ---
   const handleLoginStreakClaim = () => {
@@ -1480,9 +1525,13 @@ export default function App() {
           mode={lbMode}
           onClose={() => setScreen("menu")}
           fetchGlobalScores={fbFetchTop20Global}
+          fetchWeeklyScores={fetchWeeklyScores}
+          weekId={getUtcWeekId()}
+          weekCountdown={formatWeekCountdown(msUntilWeekReset())}
           classicStorageKey={LS_KEYS.LB_CLASSIC}
           evolveStorageKey={LS_KEYS.LB_EVOLVE}
           personalBest={lbMode === "classic" ? best1 : best2}
+          weeklyPersonalBest={loadWeeklyBest()}
           playerName={playerName}
           onScoresFetched={checkTop10Achievement}
         />
@@ -1529,6 +1578,9 @@ export default function App() {
           practiceMode={practiceMode}
           setPracticeMode={setPracticeMode}
           onPlay={startGame}
+          onPlayLadder={startLadder}
+          weekLabel={getUtcWeekId()}
+          weekCountdown={formatWeekCountdown(msUntilWeekReset())}
           onHowTo={() => { if (!hasSeenHowTo) { localStorage.setItem('dtp:howto-seen', 'true'); setHasSeenHowTo(true); } setScreen("howto"); }}
           onLeaderboard={() => { setLbMode(gameMode); setScreen("leaderboard"); }}
           onShop={() => setScreen("shop")}

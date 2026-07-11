@@ -195,6 +195,26 @@ export async function fbFetchTop20Global(): Promise<GlobalLeaderboardEntry[]> {
   });
 }
 
+/** Top scores for the current (or given) UTC ISO week ladder. */
+export async function fbFetchTopWeekly(weekId: string): Promise<GlobalLeaderboardEntry[]> {
+  const db = await getDB();
+  if (!db || !weekId || !/^\d{4}-W\d{2}$/.test(weekId)) return [];
+  const modules = await ensureFirebaseModules();
+  const path = `lb_weekly/${weekId}/entries`;
+  const q = modules.query(modules.collection(db, path), modules.orderBy("score", "desc"), modules.limit(20));
+  const snap = await modules.getDocs(q);
+  return snap.docs.map((doc: { data: () => Record<string, unknown> }) => {
+    const data = doc.data() as Record<string, unknown>;
+    return {
+      score: typeof data.score === "number" ? data.score : 0,
+      initials: typeof data.initials === "string" ? data.initials : "???",
+      date: typeof data.date === "string" ? data.date : "",
+      mode: (data.mode === "evolve" ? "evolve" : "classic") as GlobalLeaderboardEntry["mode"],
+      badge: typeof data.badge === "string" ? data.badge : "",
+    };
+  });
+}
+
 export async function fbSyncDust(name: string, dust: number): Promise<void> {
   const db = await getDB();
   const safeName = name.trim().slice(0, 20);

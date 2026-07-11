@@ -18,6 +18,24 @@ interface ScorePayload {
   sessionId: string;
   practiceMode?: boolean;
   godMode?: boolean;
+  /** Weekly ladder: ISO week id e.g. 2026-W28 */
+  weekId?: string;
+  ladderSeed?: number;
+  ladder?: boolean;
+}
+
+/** Current ISO week id in UTC (must match client utils/weekly-ladder.ts). */
+function getUtcWeekId(date = new Date()): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function isValidWeekId(weekId: string): boolean {
+  return /^[0-9]{4}-W[0-9]{2}$/.test(weekId);
 }
 
 interface ChallengePayload {
@@ -360,8 +378,25 @@ export default {
         return new Response(JSON.stringify({ error: 'Invalid badge' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
+      // Weekly ladder path: scores land in lb_weekly/{weekId}/entries
+      const isLadder = data.ladder === true || (typeof data.weekId === 'string' && data.weekId.length > 0);
+      let weekId: string | null = null;
+      if (isLadder) {
+        weekId = typeof data.weekId === 'string' ? data.weekId : getUtcWeekId();
+        if (!isValidWeekId(weekId)) {
+          return new Response(JSON.stringify({ error: 'Invalid weekId' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        // Reject stale/future week ids (only current UTC week accepted)
+        if (weekId !== getUtcWeekId()) {
+          return new Response(JSON.stringify({ error: 'Week closed' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+      }
+
       const token = await getFirebaseToken(env);
-      const firebaseUrl = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/lb_global`;
+      const base = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+      const firebaseUrl = isLadder && weekId
+        ? `${base}/lb_weekly/${encodeURIComponent(weekId)}/entries`
+        : `${base}/lb_global`;
 
       const payload = {
         fields: {
@@ -373,6 +408,10 @@ export default {
           ts: { timestampValue: new Date().toISOString() },
           sessionId: { stringValue: data.sessionId },
           tick: { integerValue: safeTick.toString() },
+          ...(isLadder && weekId ? {
+            weekId: { stringValue: weekId },
+            ladderSeed: { integerValue: String(Math.floor(Number(data.ladderSeed) || 0)) },
+          } : {}),
         },
       };
 
@@ -386,7 +425,11 @@ export default {
         return new Response(JSON.stringify({ error: 'Database error' }), { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
-      return new Response(JSON.stringify({ success: true, score: data.score }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({
+        success: true,
+        score: data.score,
+        ...(weekId ? { weekId, ladder: true } : {}),
+      }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     } catch (err) {
       const msg = err instanceof Error ? err.message.replace(/[\r\n]/g, ' ') : 'unknown';
       console.error('score-validator failure:', msg);

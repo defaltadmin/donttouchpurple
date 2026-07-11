@@ -97,10 +97,63 @@ After any session with 5+ file changes:
 
 **NEVER run full-codebase audit in one call** — causes heap OOM. Always batch per-module.
 
-## Recent Session (2026-07-04) — Triple-Repo Audit + Full Polish Overhaul + WebGL Full-Bleed Fix
+## Recent Session (2026-07-05) — Lighthouse Cleanup + CSP Fix + Live Site Recovery
 
-**Duration**: Single session, 10+ hours
-**Status**: All fixes committed and pushed. 230/230 tests pass. Lighthouse A94-100 / BP92 / SEO100 across all three sites.
+**Duration**: Single session
+**Status**: All fixes committed and pushed. 230/230 tests pass. Live sites verified.
+
+### What Was Done
+
+**Critical Fix: DTP Live Site Was Broken**
+- game.mscarabia.com was showing blank purple background — no UI loaded
+- Root cause: CSP `script-src` in `firebase.json` missing `'unsafe-inline'`, blocking Vite module scripts
+- Also: Cloudflare serving stale assets (old bundle hash)
+- Fix: Added `'unsafe-inline'` to `script-src`, deployed fresh build to Firebase
+
+**Lint Cleanup**
+- ESLint 9 flat config scanning `mscarabia/` and `world-prayer-times/` (602 errors from browser globals)
+- Fix: Added both dirs to `ignores` in `eslint.config.js`
+- Created `.eslintignore` for legacy compat
+- Removed unused `ctn` variable from Galaxy/Hyperspeed/Silk (full-bleed refactor leftover)
+- Fixed `reducedMotion` unused param in Nebula.tsx
+- Added `TARGET_MS` to `useCallback` deps in cleanup-pattern.ts
+
+**Performance Fix**
+- PlayerPanel.tsx: local `Date.now()` inside `useMemo` avoids stale closure re-renders
+- TickProcessor.ts: simplified delta timer processing (set state before callbacks)
+
+**Lighthouse Cleanup Batch**
+- DTP viewport: removed `user-scalable=no, maximum-scale=1.0` (Lighthouse a11y failure)
+- DTP `llms.txt`: fresh AI agent project overview
+- Prayer `llms.txt`: new file for AI agent context
+- mscarabia: JSON-LD externalized from inline `<script>` to `app.js` (CSP compliance)
+- mscarabia: removed Google Analytics script, cleaned CSP (dropped GTM/Cloudflare Insights domains)
+- mscarabia: converted inline `onload` handlers to `id` + JS flip
+- mscarabia: stubbed `loadGA`/`denyGA` functions to prevent ReferenceError
+
+**Commits**
+| Repo | Commit | Description |
+|------|--------|-------------|
+| DTP | `cb52338` | CSP script-src unsafe-inline, eslintignore nested repos, lint cleanup |
+| DTP | `b08b24f` | Remove user-scalable=no from viewport, update llms.txt |
+| Prayer | `e44f005` | Add llms.txt for AI agent project overview |
+| mscarabia | `d7ac985` | Externalize JSON-LD to app.js, remove analytics, clean CSP |
+| mscarabia | `b36861b` | Remove inline onload handlers, stub loadGA/denyGA |
+
+### What's Left (Future Work)
+
+**DTP:**
+- 5 backgrounds still need brand palette recolor (BlockOrbit, Lightning, MouseFollower, MouseTrail, ElasticWarp)
+- Shop background preview thumbnails
+- On-device tuning of cell press-collapse / bloom intensities
+
+**Prayer Times:**
+- Push API + VAPID for guaranteed offline notifications
+- Arabic RTL completeness check
+
+**mscarabia:**
+- Case studies: add actual project images/screenshots
+- Arabic RTL completeness check
 
 ### What Was Done — DTP (donttouchpurple)
 

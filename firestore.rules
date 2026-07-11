@@ -55,6 +55,18 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Weekly seeded ladder — public read; writes only via Worker (SA bypasses rules).
+    // Clients never create/update directly.
+    match /lb_weekly/{weekId}/entries/{docId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+    // Parent week docs (if any metadata is written later)
+    match /lb_weekly/{weekId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Dust wallet — requires authentication, UID-bound writes
     // docId = player name, uid field must match authenticated user
     match /dust_wallet/{docId} {

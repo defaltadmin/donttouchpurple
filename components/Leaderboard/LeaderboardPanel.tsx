@@ -18,10 +18,14 @@ interface LeaderboardPanelProps {
   mode: "classic" | "evolve";
   onClose: () => void;
   fetchGlobalScores: () => Promise<LeaderboardEntry[]>;
+  fetchWeeklyScores?: () => Promise<LeaderboardEntry[]>;
+  weekId?: string;
+  weekCountdown?: string;
   classicStorageKey: string;
   evolveStorageKey: string;
   // F6: personal best for pinned row
   personalBest?: number;
+  weeklyPersonalBest?: number;
   playerName?: string;
   // P1: callback when scores are fetched (for top-10 achievement check)
   onScoresFetched?: (entries: { score: number; initials: string }[]) => void;
@@ -31,9 +35,13 @@ export function LeaderboardPanel({
   mode: _mode,
   onClose: _onClose,
   fetchGlobalScores,
+  fetchWeeklyScores,
+  weekId,
+  weekCountdown,
   classicStorageKey,
   evolveStorageKey,
   personalBest,
+  weeklyPersonalBest,
   playerName,
   onScoresFetched,
 }: LeaderboardPanelProps) {
@@ -41,57 +49,88 @@ export function LeaderboardPanel({
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGlobal, setIsGlobal] = useState(false);
+  const [board, setBoard] = useState<"global" | "weekly">("global");
   const [modeFilter, setModeFilter] = useState<"all" | "classic" | "evolve">("all");
 
   const filteredEntries = modeFilter === "all"
     ? entries
     : entries.filter(e => e.mode === modeFilter);
 
+  const activePersonalBest = board === "weekly" ? weeklyPersonalBest : personalBest;
+
   const fetchScores = useCallback(async () => {
     setLoading(true);
     try {
-      const global = await fetchGlobalScores();
+      const list = board === "weekly" && fetchWeeklyScores
+        ? await fetchWeeklyScores()
+        : await fetchGlobalScores();
       // F6: cap at top 10
-      setEntries(global.slice(0, 10));
+      setEntries(list.slice(0, 10));
       setIsGlobal(true);
       // P1: notify parent with fetched entries (for top-10 achievement check)
-      if (onScoresFetched) onScoresFetched(global);
+      if (onScoresFetched && board === "global") onScoresFetched(list);
     } catch (err) {
       logger.warn("[DTP-LB] Firebase fetch failed, using local fallback:", err);
-      try {
-        const classicRaw = localStorage.getItem(classicStorageKey);
-        const evolveRaw  = localStorage.getItem(evolveStorageKey);
-        const classic: LeaderboardEntry[] = classicRaw
-          ? JSON.parse(classicRaw).map((e: LeaderboardEntry) => ({ ...e, mode: "classic" as const }))
-          : [];
-        const evolve: LeaderboardEntry[] = evolveRaw
-          ? JSON.parse(evolveRaw).map((e: LeaderboardEntry) => ({ ...e, mode: "evolve" as const }))
-          : [];
-        setEntries([...classic, ...evolve].sort((a, b) => b.score - a.score).slice(0, 10));
-      } catch {
+      if (board === "weekly") {
         setEntries([]);
+        setIsGlobal(false);
+      } else {
+        try {
+          const classicRaw = localStorage.getItem(classicStorageKey);
+          const evolveRaw  = localStorage.getItem(evolveStorageKey);
+          const classic: LeaderboardEntry[] = classicRaw
+            ? JSON.parse(classicRaw).map((e: LeaderboardEntry) => ({ ...e, mode: "classic" as const }))
+            : [];
+          const evolve: LeaderboardEntry[] = evolveRaw
+            ? JSON.parse(evolveRaw).map((e: LeaderboardEntry) => ({ ...e, mode: "evolve" as const }))
+            : [];
+          setEntries([...classic, ...evolve].sort((a, b) => b.score - a.score).slice(0, 10));
+        } catch {
+          setEntries([]);
+        }
+        setIsGlobal(false);
       }
-      setIsGlobal(false);
     } finally {
       setLoading(false);
     }
-  }, [classicStorageKey, evolveStorageKey, fetchGlobalScores, onScoresFetched]);
+  }, [board, classicStorageKey, evolveStorageKey, fetchGlobalScores, fetchWeeklyScores, onScoresFetched]);
 
   useEffect(() => { fetchScores(); }, [fetchScores]);
 
   // F6: is player already in top 10?
-  const playerInTop10 = personalBest != null && playerName
-    ? entries.some(e => e.initials === playerName && e.score >= personalBest)
+  const playerInTop10 = activePersonalBest != null && playerName
+    ? entries.some(e => e.initials === playerName && e.score >= activePersonalBest)
     : false;
 
   return (
     <div className="lb-wrap screen-slide scrollable-screen">
       <div className="lb-header">
-        <span className="lb-title"><Icon name="trophy" size={20} /> {isGlobal ? t('leaderboard.global') : t('leaderboard.local')} {t('leaderboard.title')}</span>
+        <span className="lb-title">
+          <Icon name="trophy" size={20} />{" "}
+          {board === "weekly"
+            ? `Weekly Ladder${weekId ? ` · ${weekId}` : ""}`
+            : `${isGlobal ? t('leaderboard.global') : t('leaderboard.local')} ${t('leaderboard.title')}`}
+        </span>
         <span className="lb-sub" style={{ fontSize: 10, opacity: 0.55 }}>
-          {isGlobal ? `🌐 ${t('leaderboard.live')}` : `📴 ${t('leaderboard.offline')}`}
+          {board === "weekly"
+            ? `🗓️ Resets Mon 00:00 UTC${weekCountdown ? ` · ${weekCountdown} left` : ""}`
+            : (isGlobal ? `🌐 ${t('leaderboard.live')}` : `📴 ${t('leaderboard.offline')}`)}
         </span>
       </div>
+
+      {/* Board type: Global vs Weekly */}
+      {fetchWeeklyScores && (
+        <div style={{ padding: "0 16px 8px" }}>
+          <FilterTabs
+            options={[
+              { key: "global", label: "🌐 Global" },
+              { key: "weekly", label: "🗓️ Weekly" },
+            ]}
+            active={board}
+            onChange={(k) => setBoard(k as typeof board)}
+          />
+        </div>
+      )}
 
       {/* Mode filter tabs */}
       <div style={{ padding: "0 16px 12px" }}>
@@ -159,11 +198,11 @@ export function LeaderboardPanel({
           </div>
 
           {/* F6: Personal best pinned row — shown only if not already in top 10 */}
-          {!playerInTop10 && personalBest != null && personalBest > 0 && playerName && (
+          {!playerInTop10 && activePersonalBest != null && activePersonalBest > 0 && playerName && (
             <div className="lb-pb-row">
               <span className="lb-pb-label">{t('leaderboard.your_best')}</span>
               <span className="lb-ini">{playerName}</span>
-              <span className="lb-score">{personalBest}</span>
+              <span className="lb-score">{activePersonalBest}</span>
             </div>
           )}
         </>
