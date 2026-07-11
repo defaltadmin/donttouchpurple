@@ -345,7 +345,7 @@ export default {
       attempts.push(now);
       await env.RATE_LIMIT_KV.put(rateKey, JSON.stringify(attempts), { expirationTtl: 61 });
 
-      if (typeof data.score !== 'number' || data.score < 0) {
+      if (typeof data.score !== 'number' || !Number.isFinite(data.score) || data.score < 0) {
         return new Response(JSON.stringify({ error: 'Invalid score' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       if (!data.initials || typeof data.initials !== 'string' || data.initials.length > 8 || !/^[a-zA-Z0-9_ ]{1,8}$/.test(data.initials)) {
@@ -354,11 +354,11 @@ export default {
       if (!data.mode || !['classic', 'evolve'].includes(data.mode)) {
         return new Response(JSON.stringify({ error: 'Invalid mode' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
-      if (typeof data.tick !== 'number' || data.tick < 0) {
+      if (typeof data.tick !== 'number' || !Number.isFinite(data.tick) || data.tick < 0) {
         return new Response(JSON.stringify({ error: 'Missing tick' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       // Single binding score cap: rate-based heuristic (25 pts/tick) with hard ceiling
-      const HARD_MAX = 15000;
+      const HARD_MAX = 9999;
       const safeTick = Math.min(data.tick, 600); // ~10min at 60fps cap, matches Firestore rule
       const maxScore = Math.min(HARD_MAX, Math.floor(safeTick * 25));
       if (data.score > maxScore) {
@@ -400,14 +400,14 @@ export default {
 
       const payload = {
         fields: {
-          score: { integerValue: data.score.toString() },
+          score: { integerValue: Math.floor(data.score).toString() },
           initials: { stringValue: data.initials },
           mode: { stringValue: data.mode },
           ...(data.badge ? { badge: { stringValue: data.badge } } : {}),
           date: { stringValue: new Date().toISOString().split('T')[0] },
           ts: { timestampValue: new Date().toISOString() },
           sessionId: { stringValue: data.sessionId },
-          tick: { integerValue: safeTick.toString() },
+          tick: { integerValue: Math.floor(safeTick).toString() },
           ...(isLadder && weekId ? {
             weekId: { stringValue: weekId },
             ladderSeed: { integerValue: String(Math.floor(Number(data.ladderSeed) || 0)) },
