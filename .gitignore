@@ -29,9 +29,26 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Subdomain projects (each has its own git repo)
+# Nested product repos (each has its own .git — never commit into DTP parent)
 MSCArabia.com/
+mscarabia/
+world-prayer-times/
 crm.mscarabia.com/
+game.mscarabia.com/
+website/
+
+# Sibling experiments / unrelated checkouts
+hy3/
+longcat/
+mscarabia/
+screenshots/
+android/
+
+# Android / Capacitor build outputs (if android/ is ever tracked partially)
+**/build/
+**/.gradle/
+**/local.properties
+**/capacitor-cordova-android-plugins/
 
 # Temp/Junk folders
 junk/
@@ -59,10 +76,15 @@ gamevault/
 edge-headers/
 tools/
 website/odysseus/
+GPT55-HANDOFF-PROMPT.md
+GPT55-AUDIT-PROMPT.md
+OPUS-AUDIT-V2.zip
+dtp-review-v7.9.1.zip
 
-# IDEs
+# IDEs / agent tooling dirs
 .vscode/
 .claude/
+.codex/
 .idea/
 .openclaude/
 .qodo/
@@ -73,6 +95,10 @@ website/odysseus/
 .trae/
 .windsurf/
 .aider*
+.mimocode/
+.playwright-mcp/
+.wayland-core/
+.review-packet/
 
 # Firebase
 .firebase/

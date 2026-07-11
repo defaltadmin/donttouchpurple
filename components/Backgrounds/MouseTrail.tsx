@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 
 const POOL_SIZE = 100;
 
+// Brand palette — hex colors (not freeform HSL rainbow)
+const BRAND_COLORS = ['#fda9ff', '#f3aeff', '#f9bd22', '#c026d3'];
+
 interface Particle {
   x: number;
   y: number;
@@ -9,7 +12,7 @@ interface Particle {
   vy: number;
   alpha: number;
   size: number;
-  hue: number;
+  color: string;
   active: boolean;
 }
 
@@ -17,7 +20,9 @@ interface MouseTrailProps {
   particleCount?: number;
   fadeSpeed?: number;
   gravity?: number;
+  /** @deprecated kept for call-site compat; brand palette is fixed */
   hueMin?: number;
+  /** @deprecated kept for call-site compat; brand palette is fixed */
   hueMax?: number;
   sizeMin?: number;
   sizeMax?: number;
@@ -26,7 +31,7 @@ interface MouseTrailProps {
 
 function createPool(): Particle[] {
   return Array.from({ length: POOL_SIZE }, () => ({
-    x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 0, hue: 0, active: false,
+    x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 0, color: BRAND_COLORS[0], active: false,
   }));
 }
 
@@ -103,7 +108,7 @@ export function MouseTrail({
         p.vy = Math.sin(angle) * speed - 0.5;
         p.alpha = 0.8 + Math.random() * 0.2;
         p.size = Math.random() * (sizeMax - sizeMin) + sizeMin;
-        p.hue = Math.random() * (hueMax - hueMin) + hueMin;
+        p.color = BRAND_COLORS[(Math.random() * BRAND_COLORS.length) | 0];
       }
     };
 
@@ -128,8 +133,10 @@ export function MouseTrail({
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 70%, 60%, ${p.alpha})`;
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
         ctx.fill();
+        ctx.globalAlpha = 1;
       }
 
       rafRef.current = requestAnimationFrame(animate);

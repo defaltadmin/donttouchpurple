@@ -24,15 +24,14 @@ const DAMPING = 0.985;
 const MOUSE_RADIUS = 300;
 const MAX_SPEED = 3.5;
 
+// Brand palette (DESIGN.md) — magenta / pink / gold / purple only
 const COLORS = [
-  'rgba(191, 64, 255,',   // purple
-  'rgba(138, 43, 226,',   // blue-violet
-  'rgba(255, 105, 180,',  // pink
-  'rgba(100, 149, 237,',  // cornflower blue
-  'rgba(200, 160, 255,',  // light lavender
-  'rgba(160, 120, 240,',  // medium purple
-  'rgba(255, 200, 255,',  // light pink
-  'rgba(120, 180, 255,',  // sky blue
+  'rgba(253, 169, 255,',  // #fda9ff
+  'rgba(243, 174, 255,',  // #f3aeff
+  'rgba(249, 189, 34,',   // #f9bd22
+  'rgba(192, 38, 211,',   // #c026d3
+  'rgba(253, 169, 255,',  // weight pinks slightly
+  'rgba(192, 38, 211,',   // weight purple
 ];
 
 function createParticle(w: number, h: number): Particle {
@@ -218,7 +217,7 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
                 ((a.y + b.y) / 2 - mouse.y) ** 2
               );
               const lineAlpha = (1 - lineDist / 80) * Math.min(1, MOUSE_RADIUS / midDistToMouse) * 0.15;
-              ctx.strokeStyle = `rgba(180, 130, 255, ${lineAlpha})`;
+              ctx.strokeStyle = `rgba(192, 38, 211, ${lineAlpha})`; // brand #c026d3
               ctx.lineWidth = 0.5;
               ctx.beginPath();
               ctx.moveTo(a.x, a.y);
@@ -249,7 +248,7 @@ export default function ElasticWarp({ reducedMotion }: { reducedMotion?: boolean
   return (
     <canvas
       ref={canvasRef}
-      className="background-canvas"
+      className="dtp-bg-canvas"
       aria-hidden="true"
     />
   );

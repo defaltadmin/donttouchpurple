@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useBackgroundController } from '../../hooks/useBackground';
 import { useSafeRaf } from './cleanup-pattern';
 
-const COLORS = ['#c026d3','#7c3aed','#db2777','#9333ea','#a21caf','#e879f9'];
+// Brand palette (DESIGN.md / HANDOFF) — magenta / pink / gold / purple
+const COLORS = ['#fda9ff', '#f3aeff', '#f9bd22', '#c026d3'];
 type Shape = 'square'|'triangle'|'diamond'|'circle';
 const SHAPES: Shape[] = ['square','triangle','diamond','circle'];
 
@@ -17,7 +18,7 @@ function drawShape(ctx:CanvasRenderingContext2D, shape:Shape, x:number, y:number
   ctx.fill(); ctx.restore();
 }
 
-export default function BlockOrbit() {
+export default function BlockOrbit({ reducedMotion }: { reducedMotion?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const blocksRef = useRef<OrbBlock[]>([]);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -27,27 +28,32 @@ export default function BlockOrbit() {
     const ctx = ctxRef.current;
     const canvas = ref.current;
     if (!ctx || !canvas) return;
+    if (document.hidden) return;
 
+    const lowQ = document.documentElement.hasAttribute('data-low-quality');
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
     for (const b of blocksRef.current) {
       b.angle += b.speed;
       const x = w/2 + Math.cos(b.angle)*b.radius;
       const y = h/2 + Math.sin(b.angle)*b.radius;
-      ctx.globalAlpha = 0.5; ctx.fillStyle = b.color;
+      if (!lowQ) { ctx.shadowColor = b.color; ctx.shadowBlur = 12; }
+      ctx.globalAlpha = 0.55; ctx.fillStyle = b.color;
       drawShape(ctx, b.shape, x, y, b.size, b.angle);
     }
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   });
 
   useEffect(() => {
+    if (reducedMotion) return;
     const unregister = register({ pause: stop, resume: start });
     start();
     return () => {
       unregister?.();
       stop();
     };
-  }, [register, start, stop]);
+  }, [register, start, stop, reducedMotion]);
 
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -69,7 +75,7 @@ export default function BlockOrbit() {
         size: ring.size,
         shape: SHAPES[Math.floor(Math.random()*SHAPES.length)],
         color: COLORS[Math.floor(Math.random()*COLORS.length)],
-        speed: ring.speed,
+        speed: reducedMotion ? 0 : ring.speed,
       }))
     );
 
@@ -77,7 +83,7 @@ export default function BlockOrbit() {
       window.removeEventListener('resize',resize);
       ctxRef.current = null;
     };
-  }, []);
+  }, [reducedMotion]);
 
-  return <canvas ref={ref} className="background-canvas" style={{opacity:0.5}} />;
+  return <canvas ref={ref} className="dtp-bg-canvas" style={{opacity:0.5}} aria-hidden="true" />;
 }

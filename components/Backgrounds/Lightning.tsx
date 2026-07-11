@@ -106,8 +106,11 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
         uv += 2.0 * fbm(uv * 1.5 + 0.8 * iTime * uSpeed) - 1.0;
 
         float dist = abs(uv.x);
-        // Purple hue for DTP theme
-        vec3 baseColor = hsv2rgb(vec3(0.75, 0.7, 0.8));
+        // Brand palette: magenta core (#c026d3) with gold edge tint (#f9bd22)
+        // HSV ~0.83 = magenta-purple; mix gold into bright core
+        vec3 magenta = hsv2rgb(vec3(0.83, 0.72, 0.92));
+        vec3 gold = vec3(0.976, 0.741, 0.133); // #f9bd22
+        vec3 baseColor = mix(magenta, gold, 0.18 * (1.0 - smoothstep(0.0, 0.15, dist)));
         vec3 col = baseColor * pow(mix(0.0, 0.07, hash11(iTime * uSpeed)) / dist, 1.0);
         float a = clamp(max(col.r, max(col.g, col.b)), 0.0, 1.0);
         gl_FragColor = vec4(col, a);
@@ -185,6 +188,8 @@ export default function Lightning({ reducedMotion }: { reducedMotion?: boolean }
   return (
     <canvas
       ref={canvasRef}
+      className="dtp-bg-canvas"
+      aria-hidden="true"
       style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, display: 'block' }}
     />
   );

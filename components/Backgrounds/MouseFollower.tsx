@@ -10,7 +10,8 @@ interface MouseFollowerProps {
 }
 
 export function MouseFollower({
-  color = "rgba(138, 43, 226, 0.4)",
+  // Brand magenta #c026d3 @ 40% — matches DESIGN.md / background overhaul
+  color = "rgba(192, 38, 211, 0.4)",
   size = 300,
   blur = 80,
   opacity = 0.6,
