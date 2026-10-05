@@ -10,6 +10,8 @@
   --bg3: #1e1838;
   --glass: #231d3a;
   --glass-border: rgba(200,180,255,0.15);
+  --glass-blur: 24px;
+  --glass-glow: rgba(192,38,211,0.12);
   --shadow-elevated: 0 8px 24px rgba(0,0,0,0.5);
   --shadow-card: 0 4px 12px rgba(0,0,0,0.16);
   --text: #e7deff;
@@ -487,11 +489,13 @@ body.death-flash::after {
   width: 90vw;
   max-width: 420px;
   background: linear-gradient(165deg, rgba(45,16,96,0.82), rgba(13,8,32,0.92));
-  border: 1px solid rgba(200,160,255,0.12); border-radius: 28px; padding: 20px 18px 28px;
-  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(200,160,255,0.15);
+  border-radius: 28px;
+  padding: 20px 18px 28px;
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   display: flex; flex-direction: column; gap: 14px;
   justify-content: center;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.6), 0 0 60px rgba(192,38,211,0.1), 0 0 120px rgba(124,58,237,0.05);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.6), 0 0 60px var(--glass-glow), 0 0 120px rgba(124,58,237,0.05);
   overflow: hidden;
 }
 .menu-card-glow {
